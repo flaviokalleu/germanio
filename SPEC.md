@@ -93,8 +93,12 @@ segundo operando quando o primeiro é verdadeiro; `ou`, quando é falso. Somente
 presenças garantidas em **todos** os caminhos alcançam o bloco seguinte. Isso
 permite `se valor != nulo e quantidade(valor) > 0`. Uma condição verdadeira
 também refina o corpo de `enquanto` quando o valor é imutável. Se o ramo oposto
-termina com `retorne`, o refinamento vale até o fim do bloco. Variáveis mutáveis
-continuam sem refinamento. Não há desreferência implícita de opcional.
+termina com `retorne`, o refinamento vale até o fim do bloco para valores
+imutáveis. Variáveis `variavel`/`mut` também refinam dentro de um ramo se
+nenhuma instrução do ramo (incluindo blocos internos) puder reatribuir a mesma
+variável. A análise é conservadora: mesmo a escrita depois de uma leitura
+impede o refinamento do ramo inteiro, e ele não continua após o `se` para
+variáveis mutáveis. Não há desreferência implícita de opcional.
 
 `+` soma números ou concatena dois textos; `-`, `*`, `/`, `%` são numéricos.
 Mistura aritmética de inteiro e decimal promove para decimal; isso não permite

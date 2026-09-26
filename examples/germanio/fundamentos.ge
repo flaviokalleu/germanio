@@ -17,8 +17,11 @@ se total == 6
 senao
   mostre "Total inesperado"
 
-telefone: texto? = nulo
+variavel telefone: texto? = nulo
 mostre telefone == nulo
+telefone = "61 99999-9999"
+se telefone != nulo
+  mostre telefone + " confirmado"
 mostre somar(contador, total)
 mostre dobro(valores[1])
 mostre numero("5") + 2

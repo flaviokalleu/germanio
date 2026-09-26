@@ -91,6 +91,8 @@ opcionais; `nulo` não entra em um parâmetro ou lista de tipo obrigatório.
 Após `se nome != nulo`, um `nome: texto?` imutável pode ser usado como texto
 dentro do ramo. Condições `e`/`ou` respeitam o curto circuito: `nome != nulo e
 quantidade(nome) > 0` é seguro. Veja [opcionais.ge](examples/germanio/opcionais.ge).
+Isso também funciona com `variavel` quando o ramo não altera o valor; se houver
+reatribuição, mantenha a verificação e o uso em um trecho sem escrita.
 
 ### Funções sem cerimônia
 
