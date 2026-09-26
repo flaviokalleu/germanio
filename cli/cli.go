@@ -1348,7 +1348,7 @@ func getFlangModPath() string {
 		modPath := filepath.Join(dir, "go.mod")
 		if _, err := os.Stat(modPath); err == nil {
 			data, _ := os.ReadFile(modPath)
-			if strings.Contains(string(data), "flavio/flang") || strings.Contains(string(data), "module") {
+			if strings.Contains(string(data), "module github.com/flaviokalleu/germanio") {
 				return dir
 			}
 		}
@@ -1365,7 +1365,7 @@ func getFlangModPath() string {
 		home, _ := os.UserHomeDir()
 		gopath = filepath.Join(home, "go")
 	}
-	return filepath.Join(gopath, "src", "github.com", "flavio", "flang")
+	return filepath.Join(gopath, "src", "github.com", "flaviokalleu", "germanio")
 }
 
 func cmdIDE(dir string, porta string) {

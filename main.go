@@ -2,10 +2,18 @@ package main
 
 import (
 	"os"
+	"path/filepath"
+	"strings"
 
-	"github.com/flaviokalleu/germanio/cli"
+	legacy "github.com/flaviokalleu/germanio/cli"
+	"github.com/flaviokalleu/germanio/tooling/gecli"
 )
 
 func main() {
-	cli.Run(os.Args)
+	// Existing installers build the root entry point as flang/flang.exe.
+	if strings.TrimSuffix(filepath.Base(os.Args[0]), ".exe") == "flang" {
+		legacy.Run(os.Args)
+		return
+	}
+	os.Exit(gecli.Run(os.Args, os.Stdin, os.Stdout, os.Stderr))
 }
