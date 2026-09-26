@@ -101,13 +101,22 @@ func load(path, root string, cache map[string]*Module, visiting map[string]bool)
 		if _, ok := m.Imports[alias]; ok {
 			return nil, diag(p, im.Pos, "GE3001", "Import duplicado", "O nome do módulo já está em uso.", "Remova ou renomeie o módulo duplicado.")
 		}
-		full, err := filepath.EvalSymlinks(filepath.Join(filepath.Dir(path), im.Path))
-		if err != nil {
-			return nil, fileError(im.Path, err)
-		}
-		rel, err := filepath.Rel(root, full)
+		candidate := filepath.Join(filepath.Dir(path), im.Path)
+		rel, err := filepath.Rel(root, candidate)
 		if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
 			return nil, diag(p, im.Pos, "GE3001", "Import fora do projeto", "Um módulo não pode ler arquivos externos ao diretório do programa.", "Mova o módulo para dentro do projeto.")
+		}
+		full, err := filepath.EvalSymlinks(candidate)
+		if err != nil {
+			return nil, diag(p, im.Pos, "GE3001", "Import não encontrado", fmt.Sprintf("Não foi possível abrir %q: %v", im.Path, err), `Confira o caminho relativo e escreva usa "matematica.ge".`)
+		}
+		rel, err = filepath.Rel(root, full)
+		if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+			return nil, diag(p, im.Pos, "GE3001", "Import fora do projeto", "Um módulo não pode ler arquivos externos ao diretório do programa.", "Mova o módulo para dentro do projeto.")
+		}
+		info, err := os.Stat(full)
+		if err != nil || !info.Mode().IsRegular() {
+			return nil, diag(p, im.Pos, "GE3001", "Import precisa de arquivo", fmt.Sprintf("%q não é um arquivo .ge legível.", im.Path), `Use um arquivo existente, por exemplo usa "matematica.ge".`)
 		}
 		child, err := load(full, root, cache, visiting)
 		if err != nil {

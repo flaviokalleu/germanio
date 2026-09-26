@@ -182,3 +182,31 @@ func TestImportCannotEscapeProject(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestImportFailuresPointToImport(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.Mkdir(filepath.Join(dir, "pasta.ge"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct{ imported, message string }{
+		{`"faltando.ge"`, "Import não encontrado"},
+		{`"../segredo.ge"`, "Import fora do projeto"},
+		{`"pasta.ge"`, "Import precisa de arquivo"},
+	} {
+		t.Run(tc.imported, func(t *testing.T) {
+			path := filepath.Join(dir, "inicio.ge")
+			if err := os.WriteFile(path, []byte("# título\nusa "+tc.imported+"\n"), 0600); err != nil {
+				t.Fatal(err)
+			}
+			_, err := Load(path)
+			if err == nil {
+				t.Fatal("expected import error")
+			}
+			for _, part := range []string{"GE3001", "inicio.ge:2:1", tc.message, "Por quê:", "Como corrigir:", "Exemplo:"} {
+				if !strings.Contains(err.Error(), part) {
+					t.Errorf("missing %q in %v", part, err)
+				}
+			}
+		})
+	}
+}

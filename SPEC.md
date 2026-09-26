@@ -142,7 +142,9 @@ namespace. Exportam funções, não estado. O código de topo do arquivo importa
 é verificado, mas não executado. Arquivos dentro de subdiretórios são permitidos;
 caminhos fora da pasta do entrypoint, inclusive por symlinks, são bloqueados.
 Ciclos, módulos duplicados, funções inexistentes e imports não utilizados são
-erros. Não há download automático, stdlib remota, manifesto ou lockfile ainda.
+erros. Arquivos ausentes, pastas com extensão `.ge` e tentativas de escapar da
+raiz do projeto são diagnosticados na instrução `usa`. Não há download
+automático, stdlib remota, manifesto ou lockfile ainda.
 
 ## Fundação de UI natural
 
