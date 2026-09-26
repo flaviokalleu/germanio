@@ -183,9 +183,8 @@ func presenceFacts(x *ast.Expression, whenTrue bool) presenceSet {
 	return nil
 }
 
-// A mutable optional can be narrowed only when the checked region cannot
-// assign to it. Scan nested blocks too: one path writing nulo is enough to
-// invalidate a branch-wide guarantee.
+// Nested writes need a control-flow merge. Until that merge exists, keep the
+// parent optional throughout such a region; direct writes are handled in order.
 func writesName(stmts []*ast.Statement, name string) bool {
 	for _, st := range stmts {
 		switch st.Type {
@@ -213,6 +212,31 @@ func writesName(stmts []*ast.Statement, name string) bool {
 	}
 	return false
 }
+func writesNestedName(stmts []*ast.Statement, name string) bool {
+	for _, st := range stmts {
+		switch st.Type {
+		case "if":
+			if writesName(st.If.Body, name) || writesName(st.If.Else, name) {
+				return true
+			}
+		case "while":
+			if writesName(st.While.Body, name) {
+				return true
+			}
+		case "for_each":
+			if st.ForEach.VarName == name || writesName(st.ForEach.Body, name) {
+				return true
+			}
+		}
+	}
+	return false
+}
+func declared(b *Binding) *Binding {
+	for b.Origin != nil {
+		b = b.Origin
+	}
+	return b
+}
 func refine(s *Scope, name string, allowMutable bool) {
 	if name == "" {
 		return
@@ -223,7 +247,7 @@ func refine(s *Scope, name string, allowMutable bool) {
 }
 func applyPresence(s *Scope, facts presenceSet, region []*ast.Statement, allowMutable bool) {
 	for name := range facts {
-		refine(s, name, allowMutable && !writesName(region, name))
+		refine(s, name, allowMutable && !writesNestedName(region, name))
 	}
 }
 func (c *checker) child(stmts []*ast.Statement, parent *Scope, facts presenceSet) (bool, error) {
@@ -268,9 +292,11 @@ func (c *checker) block(stmts []*ast.Statement, s *Scope) (bool, error) {
 				if !b.Mutable {
 					return false, c.err(st.Pos, "GE2002", "Valor imutável", d.Name+" foi declarado como imutável.", "Declare variavel "+d.Name+" = valor para permitir alterações.")
 				}
-				if !assignable(b.Type, t) {
-					return false, c.mismatch(st.Pos, b.Type, t)
+				base := declared(b)
+				if !assignable(base.Type, t) {
+					return false, c.mismatch(st.Pos, base.Type, t)
 				}
+				s.Bindings[d.Name] = base // A write invalidates a refined optional.
 				continue
 			}
 			want := parseType(d.Annotation)
@@ -293,9 +319,11 @@ func (c *checker) block(stmts []*ast.Statement, s *Scope) (bool, error) {
 			if e != nil {
 				return false, e
 			}
-			if !assignable(b.Type, t) {
-				return false, c.mismatch(st.Pos, b.Type, t)
+			base := declared(b)
+			if !assignable(base.Type, t) {
+				return false, c.mismatch(st.Pos, base.Type, t)
 			}
+			s.Bindings[st.Assign.Target] = base
 		case "print", "expr", "return":
 			x := st.Expr
 			if st.Type == "print" {
