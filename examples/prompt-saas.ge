@@ -1,0 +1,14 @@
+app MeuSaaS
+
+banco postgres
+
+tabela Cliente
+  nome: texto
+  whatsapp: texto único
+  saldo: dinheiro padrão 0
+
+quando receber cobranca com cliente_id
+  cliente = buscar Cliente onde id == cliente_id
+  se cliente.saldo > 0
+    enviar whatsapp para cliente.whatsapp: "Olá {cliente.nome}, seu saldo é {cliente.saldo}"
+    responder sucesso

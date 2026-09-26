@@ -48,6 +48,8 @@ const (
 	TokenBanco
 	TokenAutenticacao
 	TokenConfig
+	TokenTabelaTop
+	TokenQuandoTop
 
 	// Import
 	TokenImportar
@@ -95,6 +97,12 @@ const (
 	TokenAtualizar
 	TokenDeletar
 	TokenEnviar
+	TokenReceber
+	TokenBuscar
+	TokenOnde
+	TokenResponder
+	TokenSucesso
+	TokenCom
 
 	// Logic keywords
 	TokenSe
@@ -215,7 +223,8 @@ func (t Token) String() string {
 
 var keywords = map[string]TokenType{
 	// ===================== PORTUGUÊS =====================
-	"sistema": TokenSistema, "dados": TokenDados, "telas": TokenTelas,
+	"sistema": TokenSistema, "app": TokenSistema, "aplicacao": TokenSistema,
+	"dados": TokenDados, "modelos": TokenDados, "telas": TokenTelas,
 	"acoes": TokenAcoes, "eventos": TokenEventos, "integracoes": TokenIntegracoes,
 	"tema": TokenTema, "logica": TokenLogica, "banco": TokenBanco,
 	"autenticacao": TokenAutenticacao, "config": TokenConfig,
@@ -236,6 +245,9 @@ var keywords = map[string]TokenType{
 	// Eventos
 	"quando": TokenQuando, "clicar": TokenClicar, "criar": TokenCriar,
 	"atualizar": TokenAtualizar, "deletar": TokenDeletar, "enviar": TokenEnviar,
+	"receber": TokenReceber, "buscar": TokenBuscar,
+	"onde": TokenOnde, "responder": TokenResponder, "sucesso": TokenSucesso,
+	"com": TokenCom,
 	// Lógica
 	"se": TokenSe, "senao": TokenSenao, "igual": TokenIgual,
 	"maior": TokenMaior, "menor": TokenMenor, "e": TokenE, "ou": TokenOu,
@@ -701,7 +713,8 @@ func (l *Lexer) scanIdentifier() error {
 func IsBlockKeyword(tt TokenType) bool {
 	switch tt {
 	case TokenSistema, TokenDados, TokenTelas, TokenAcoes, TokenEventos, TokenIntegracoes,
-		TokenTema, TokenLogica, TokenBanco, TokenAutenticacao, TokenConfig:
+		TokenTema, TokenLogica, TokenBanco, TokenAutenticacao, TokenConfig,
+		TokenTabela, TokenQuando:
 		return true
 	}
 	return false

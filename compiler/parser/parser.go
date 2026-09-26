@@ -43,6 +43,14 @@ func (p *Parser) Parse() (*ast.Program, error) {
 			if err := p.parseDados(); err != nil {
 				return nil, err
 			}
+		case lexer.TokenTabela:
+			if err := p.parseDirectTable(); err != nil {
+				return nil, err
+			}
+		case lexer.TokenQuando:
+			if err := p.parseDirectQuando(); err != nil {
+				return nil, err
+			}
 		case lexer.TokenTelas:
 			if err := p.parseTelas(); err != nil {
 				return nil, err
@@ -201,6 +209,31 @@ func (p *Parser) isNameToken(tok lexer.Token) bool {
 		return false
 	}
 	return true
+}
+
+// parseDirectTable parses "tabela Nome" directly at the top level
+func (p *Parser) parseDirectTable() error {
+	p.advance() // consume 'tabela'
+	p.skipIndent()
+
+	model, err := p.parseModel()
+	if err != nil {
+		return err
+	}
+	p.program.Models = append(p.program.Models, model)
+	return nil
+}
+
+// parseDirectQuando parses top-level prompt events like:
+// quando receber cobranca com cliente_id:
+//   ...
+func (p *Parser) parseDirectQuando() error {
+	event, err := p.parseEvent()
+	if err != nil {
+		return err
+	}
+	p.program.Events = append(p.program.Events, event)
+	return nil
 }
 
 // parseDados parses the data models block.
