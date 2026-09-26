@@ -144,3 +144,32 @@ func TestImportedGenericFunction(t *testing.T) {
 		t.Fatalf("result %q: %v", out.String(), err)
 	}
 }
+func TestNativeTestsAreIsolatedAndNotRunByProgram(t *testing.T) {
+	source := "variavel x = 42\nmostre x\nteste \"primeiro\"\n  valor = 1\n  espera valor == 1\nteste \"segundo\"\n  espera 2 + 2 == 4"
+	m, err := semantic.CheckSource("soma_teste.ge", source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	if err := (&Engine{Output: &out}).Run(m); err != nil || out.String() != "42\n" {
+		t.Fatalf("rodar executed tests or failed: %q %v", out.String(), err)
+	}
+	out.Reset()
+	passed, err := (&Engine{Output: &out}).RunTests(m)
+	if err != nil || len(passed) != 2 || out.Len() != 0 {
+		t.Fatalf("test execution: %+v %q %v", passed, out.String(), err)
+	}
+	m, err = semantic.CheckSource("falha_teste.ge", "teste \"falha\"\n  espera falso")
+	if err != nil {
+		t.Fatal(err)
+	}
+	passed, err = (&Engine{}).RunTests(m)
+	if len(passed) != 0 || err == nil {
+		t.Fatalf("expected failing assertion: %+v %v", passed, err)
+	}
+	for _, part := range []string{"GE2008", "falha_teste.ge:2:3", "Teste falhou: falha", "Por quê:", "Como corrigir:", "Exemplo:"} {
+		if !strings.Contains(err.Error(), part) {
+			t.Errorf("missing %s: %v", part, err)
+		}
+	}
+}

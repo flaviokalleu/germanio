@@ -68,6 +68,7 @@ Experimente os exemplos reais:
 ./ge rodar examples/germanio/fundamentos.ge
 ./ge rodar examples/germanio/opcionais.ge
 ./ge rodar examples/germanio/genericos.ge
+./ge testar examples/germanio
 ./ge rodar examples/germanio/imports.ge
 ./ge check examples/germanio/entrada.ge
 ./ge fmt examples/germanio --check
@@ -164,6 +165,21 @@ Dentro de `matematica.ge`, `privado auxiliar(x) = x * 2` pode servir a outras
 funções do módulo. Chamadas externas a `matematica.auxiliar(...)` recebem um
 diagnóstico; funções sem `privado` compõem a API pública.
 
+### Testes executáveis
+
+```ge
+usa "matematica.ge"
+
+teste "soma"
+  espera matematica.somar(2, 2) == 4
+```
+
+Salve como `matematica_teste.ge` e execute `ge testar` na pasta ou
+`ge testar matematica_teste.ge`. Os testes têm variáveis locais isoladas.
+`ge check` verifica suas condições sem executá-las; `ge rodar` executa apenas
+o programa. Falhas apontam a linha `espera`; cobertura e detecção de corrida
+pela CLI ainda não estão disponíveis.
+
 ### Erros que ajudam a corrigir
 
 `"5" + 2` é erro, não uma coerção escondida. Use `numero("5") + 2`.
@@ -201,6 +217,7 @@ produz GE4102, com orientação para usar comprimento, como `45px`.
 | --- | --- |
 | `ge rodar arquivo.ge` | Verifica e executa; usa `inicio.ge` se omitido |
 | `ge check arquivo.ge` | Analisa sem executar entrada, banco ou servidor |
+| `ge testar [arquivo-ou-pasta]` | Executa testes `.ge`; pastas buscam `*_teste.ge` |
 | `ge fmt arquivo-ou-pasta` | Formatação inicial com preservação de comentários |
 | `ge fmt --check` | Retorna erro se há diferenças; não escreve |
 | `ge novo pasta` | Cria um programa; não sobrescreve pasta existente |
@@ -208,7 +225,7 @@ produz GE4102, com orientação para usar comprimento, como `45px`.
 | `ge versao` / `ge ajuda` | Versão e ajuda |
 | `ge legado ...` | Acesso explícito à CLI Flang |
 
-`ge build`, `ge testar`, package manager, LSP, JIT, WASM, GPU e SIMD **não estão
+`ge build`, package manager, LSP, JIT, WASM, GPU e SIMD **não estão
 implementados**. Não há comandos vazios simulando esses recursos. Os testes do
 projeto são executados com Go.
 

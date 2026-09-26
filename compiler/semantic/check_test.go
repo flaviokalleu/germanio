@@ -243,6 +243,26 @@ func TestGenericCalls(t *testing.T) {
 		}
 	}
 }
+func TestTestConditionsAreChecked(t *testing.T) {
+	for _, source := range []string{
+		"dobro(x: inteiro) = x * 2\nteste \"dobro\"\n  espera dobro(2) == 4",
+		"teste \"variaveis locais\"\n  variavel x = 1\n  x += 1\n  espera x == 2",
+	} {
+		if _, err := CheckSource("teste.ge", source); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, tc := range []struct{ src, code string }{
+		{"teste \"x\"\n  espera 1", "GE2004"},
+		{"teste \"x\"\n  espera desconhecida == 1", "GE2001"},
+		{"teste \"x\"\n  espera verdadeiro\nteste \"x\"\n  espera verdadeiro", "GE2001"},
+		{"teste \"x\"\n  valor = 1\n  espera verdadeiro", "GE2003"},
+	} {
+		if _, err := CheckSource("teste.ge", tc.src); err == nil || !strings.Contains(err.Error(), tc.code) {
+			t.Fatalf("expected %s for %q, got %v", tc.code, tc.src, err)
+		}
+	}
+}
 func TestImportCannotEscapeProject(t *testing.T) {
 	root := t.TempDir()
 	inside := filepath.Join(root, "project")

@@ -20,6 +20,7 @@ const help = `Germanio — simples para começar, explícito para evoluir.
 Uso: ge <comando> [arquivo]
   rodar [inicio.ge]       Verifica e executa Germanio
   check [inicio.ge]       Verifica sem executar nem ler entrada
+  testar [arquivo/pasta]  Executa testes .ge isolados; pasta busca *_teste.ge
   fmt [arquivo ou pasta] Formata arquivos .ge; --check não escreve
   novo <diretorio>        Cria um programa inicial sem sobrescrever
   explicar <GE0000>       Explica um código de diagnóstico
@@ -58,6 +59,45 @@ func Run(args []string, in io.Reader, out, stderr io.Writer) int {
 			return fail(fmt.Errorf("Use ge legado ajuda (help no Flang)"))
 		}
 		legacy.Run(append([]string{"flang"}, rest...))
+		return 0
+	case "testar":
+		if len(rest) > 1 {
+			return fail(fmt.Errorf("Uso: ge testar [arquivo.ge ou pasta]; --coverage e --race ainda não são suportados"))
+		}
+		path := "."
+		if len(rest) == 1 {
+			path = rest[0]
+		}
+		info, err := os.Lstat(path)
+		if err != nil {
+			return fail(err)
+		}
+		files, err := geFiles(path)
+		if err != nil {
+			return fail(err)
+		}
+		selected := 0
+		for _, file := range files {
+			if info.IsDir() && !strings.HasSuffix(file, "_teste.ge") {
+				continue
+			}
+			m, err := semantic.Load(file)
+			if err != nil {
+				return fail(err)
+			}
+			passed, err := (&germanio.Engine{Input: strings.NewReader(""), Output: io.Discard}).RunTests(m)
+			for _, name := range passed {
+				fmt.Fprintf(out, "ok %s: %s\n", file, name)
+			}
+			if err != nil {
+				return fail(err)
+			}
+			selected += len(passed)
+		}
+		if selected == 0 {
+			return fail(fmt.Errorf("Nenhum teste encontrado em %s. Use teste \"nome\" com espera condição em um arquivo *_teste.ge.", path))
+		}
+		fmt.Fprintf(out, "%d teste(s) passaram.\n", selected)
 		return 0
 	case "rodar", "check":
 		if len(rest) == 0 {

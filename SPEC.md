@@ -19,7 +19,8 @@ continuam no compilador/runtime Flang. Trocar apenas a extensão não migra cód
 
 UTF-8, identificadores Unicode sensíveis a maiúsculas. Palavras reservadas
 canônicas em português: `mostre`, `pergunte`, `variavel`, `const`, `se`, `senao`,
-`enquanto`, `para`, `em`, `retorne`, `pare`, `continue`, `usa`, `crie`, `e`, `ou`,
+`enquanto`, `para`, `em`, `retorne`, `pare`, `continue`, `usa`, `crie`, `teste`,
+`espera`, `privado`, `e`, `ou`,
 `nao`, `verdadeiro`, `falso`, `nulo`.
 `mut` é a grafia curta de `variavel` e continua aceita por compatibilidade.
 
@@ -37,7 +38,7 @@ parte desta versão. Decimais em execução são IEEE-754 de 64 bits, sempre fin
 ## Gramática resumida
 
 ```ebnf
-programa    = { import | funcao | instrucao } ;
+programa    = { import | funcao | teste | instrucao } ;
 import      = "usa" string ;
 funcao      = ["privado"] nome ["<" nome {"," nome} ">"]
               "(" [param {"," param}] ")" ["->" tipo]
@@ -52,6 +53,8 @@ repeticao   = "enquanto" expressao NOVALINHA bloco
             | "para" nome "em" expressao NOVALINHA bloco ;
 saida       = "mostre" expressao ;
 retorno     = "retorne" expressao ;
+teste       = "teste" string NOVALINHA bloco ;
+expectativa = "espera" expressao ;
 lista       = "[" [expressao {"," expressao}] "]" ;
 ```
 
@@ -200,13 +203,25 @@ GE9 segurança/limites. Reservar uma família não implementa os seus recursos.
 `ge fmt --check` não modifica arquivos e retorna 1 se houver diferenças.
 `ge novo pasta` cria `inicio.ge`, sem sobrescrever uma pasta existente.
 
+`teste "nome"` declara um teste no topo do arquivo. `espera` aceita somente
+uma expressão booleana dentro desse teste, inclusive em condicionais e loops.
+`ge check` verifica seus tipos sem executar nada; `ge rodar` não executa testes.
+`ge testar arquivo.ge` executa somente os testes desse arquivo, com variáveis
+locais isoladas e limite de passos reiniciado por teste. `ge testar pasta` ou
+`ge testar` (pasta atual) encontra arquivos `*_teste.ge` recursivamente e
+executa seus testes, incluindo imports locais de funções. Scripts de topo não
+são executados nos testes; testes importados não são executados implicitamente.
+Uma expectativa falsa recebe GE2008 na linha `espera`, com o nome do teste.
+Arquivos sem testes não contam como sucesso; flags futuras `--coverage` e
+`--race` são recusadas até existir suporte real.
+
 ## Próximas fases (não implementadas)
 
-- Fase 2: inferência mais completa, refinamento de opcionais, módulos avançados,
-  contratos, generics, erros tipados, tipos especializados e escopos avançados.
+- Fase 2: inferência e refinamento de opcionais mais completos, módulos
+  avançados, contratos, restrições genéricas, erros tipados e escopos avançados.
 - Fase 3: UI completa, frontend/backend `.ge`, modelos, RPC seguro, banco e auth.
 - Fase 4: manifesto, dependências, stdlib, LSP/Quick Fix, formatter/linter completos,
-  comandos nativos de testes, benchmark, fuzzing e profiling.
+  cobertura de testes, benchmark, fuzzing e profiling.
 - Fase 5: HIR/MIR, otimização, compilação incremental e backends compilados.
 - Fase 6: FFI, WASM/JIT, SIMD/GPU, memória avançada e metaprogramação.
 

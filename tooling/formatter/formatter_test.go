@@ -61,6 +61,10 @@ func TestFormatterStyle(t *testing.T) {
 	if err != nil || got != "privado id<T>(x: T) -> T\n  x\n" {
 		t.Fatalf("generic style %q %v", got, err)
 	}
+	got, err = Format("x.ge", "mostre -1\nmostre 2-1\n")
+	if err != nil || got != "mostre -1\nmostre 2 - 1\n" {
+		t.Fatalf("unary minus style %q %v", got, err)
+	}
 }
 func TestFormatterRejectsInvalid(t *testing.T) {
 	if _, err := Format("x.ge", "mostre [1"); err == nil {

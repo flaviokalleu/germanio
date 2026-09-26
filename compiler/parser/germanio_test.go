@@ -59,6 +59,17 @@ func TestGenericFunctionSyntax(t *testing.T) {
 		}
 	}
 }
+func TestNamedTestsSyntax(t *testing.T) {
+	p, err := ParseGermanio("soma_teste.ge", "teste \"soma\"\n  espera 2 + 2 == 4\n  se verdadeiro\n    espera 1 == 1\nmostre \"executar normalmente\"")
+	if err != nil || len(p.Tests) != 1 || len(p.Tests[0].Body) != 2 || len(p.Scripts) != 1 || p.Tests[0].Body[0].Type != "expect" {
+		t.Fatalf("invalid test AST: %+v %v", p, err)
+	}
+	for _, source := range []string{"espera verdadeiro", "teste \"sem bloco\"", "teste 3\n  espera verdadeiro", "teste \"x\"\n  teste \"y\"\n    espera verdadeiro"} {
+		if _, err := ParseGermanio("bad.ge", source); err == nil {
+			t.Errorf("accepted %q", source)
+		}
+	}
+}
 func TestMutableSpellingPreservesAST(t *testing.T) {
 	for _, keyword := range []string{"mut", "variavel"} {
 		program, err := ParseGermanio("a.ge", keyword+" contador = 0\ncontador += 1\nmostre contador")

@@ -18,6 +18,7 @@ type geLine struct {
 type geParser struct {
 	lines   []geLine
 	at      int
+	inTest  bool
 	program *ast.Program
 }
 
@@ -107,6 +108,25 @@ func (g *geParser) statement(l geLine, top bool) (*ast.Statement, error) {
 		keyword = ""
 	}
 	switch keyword {
+	case "teste":
+		if !top || g.inTest || len(t) != 2 || t[1].Type != lexer.TokenString || t[1].Value == "" {
+			return nil, g.syntax(first, "Use teste \"nome\" no topo do arquivo, seguido de um bloco")
+		}
+		g.inTest = true
+		body, e := g.body(l.indent)
+		g.inTest = false
+		if e != nil {
+			return nil, e
+		}
+		g.program.Tests = append(g.program.Tests, &ast.TestDecl{Pos: g.pos(first), Name: t[1].Value, Body: body})
+		return nil, nil
+	case "espera":
+		if !g.inTest {
+			return nil, g.syntax(first, "espera pertence ao corpo de teste \"nome\"")
+		}
+		s.Type = "expect"
+		s.Expect, err = expr(t[1:])
+		return s, err
 	case "usa":
 		if !top {
 			return nil, g.syntax(first, "Importações pertencem ao topo do arquivo")

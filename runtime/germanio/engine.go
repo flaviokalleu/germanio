@@ -57,6 +57,7 @@ type Engine struct {
 	steps, depth int
 	input        *bufio.Reader
 	module       *semantic.Module
+	testName     string
 }
 
 func (e *Engine) Run(m *semantic.Module) (err error) {
@@ -89,6 +90,41 @@ func (e *Engine) Run(m *semantic.Module) (err error) {
 	e.block(m.Program.Scripts, newEnv(nil))
 	return nil
 }
+
+// RunTests checks the complete module, then executes only named tests with
+// fresh local scopes. Neither top-level scripts nor imported tests are run.
+func (e *Engine) RunTests(m *semantic.Module) (passed []string, err error) {
+	if err = semantic.Check(m); err != nil {
+		return nil, err
+	}
+	if e.Input == nil {
+		e.Input = strings.NewReader("")
+	}
+	if e.Output == nil {
+		e.Output = io.Discard
+	}
+	if e.MaxSteps <= 0 {
+		e.MaxSteps = 1000000
+	}
+	e.input = bufio.NewReader(e.Input)
+	e.module = m
+	defer func() {
+		if p := recover(); p != nil {
+			if d, ok := p.(*diagnostics.Diagnostic); ok {
+				err = d
+			} else {
+				panic(p)
+			}
+		}
+	}()
+	for _, test := range m.Program.Tests {
+		e.steps, e.depth = 0, 0
+		e.testName = test.Name
+		e.block(test.Body, newEnv(nil))
+		passed = append(passed, test.Name)
+	}
+	return passed, nil
+}
 func (e *Engine) fail(pos diagnostics.Position, code, msg, why, fix string) {
 	panic(&diagnostics.Diagnostic{Code: code, Position: pos, Source: e.module.Program.Source, Message: msg, Reason: why, Fix: fix, Example: diagnostics.Explanations[code]})
 }
@@ -107,6 +143,10 @@ func (e *Engine) block(stmts []*ast.Statement, s *env) flow {
 	for _, st := range stmts {
 		e.tick(st.Pos)
 		switch st.Type {
+		case "expect":
+			if !e.eval(st.Expect, s).(bool) {
+				e.fail(st.Pos, "GE2008", "Teste falhou: "+e.testName, "A condição após espera resultou falso.", "Confira a função testada e a comparação esperada.")
+			}
 		case "bind":
 			s.set(st.VarDecl.Name, e.eval(&st.VarDecl.Value, s))
 		case "assign":

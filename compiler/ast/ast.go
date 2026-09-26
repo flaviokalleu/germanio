@@ -27,6 +27,7 @@ type Program struct {
 	Crons                    []*CronJob
 	Env                      map[string]string
 	Functions                []*FuncDecl
+	Tests                    []*TestDecl
 	Scripts                  []*Statement
 	Routes                   []*CustomRoute
 	Pages                    []*CustomPage
@@ -57,6 +58,7 @@ func (p *Program) Merge(other *Program) {
 	p.Notifiers = append(p.Notifiers, other.Notifiers...)
 	p.Crons = append(p.Crons, other.Crons...)
 	p.Functions = append(p.Functions, other.Functions...)
+	p.Tests = append(p.Tests, other.Tests...)
 	p.Scripts = append(p.Scripts, other.Scripts...)
 	p.Routes = append(p.Routes, other.Routes...)
 	p.Pages = append(p.Pages, other.Pages...)
@@ -493,6 +495,15 @@ type FuncDecl struct {
 
 func (f *FuncDecl) NodeType() string { return "FuncDecl" }
 
+// TestDecl is a named, isolated .ge test. It never executes during ge rodar.
+type TestDecl struct {
+	Pos  diagnostics.Position
+	Name string
+	Body []*Statement
+}
+
+func (t *TestDecl) NodeType() string { return "TestDecl" }
+
 // Statement represents any executable statement.
 type Statement struct {
 	Pos     diagnostics.Position
@@ -508,6 +519,7 @@ type Statement struct {
 	Return  *Expression
 	Call    *FuncCall
 	Print   *Expression
+	Expect  *Expression
 	Try     *TryStmt
 }
 

@@ -47,6 +47,7 @@ func Format(filename, source string) (string, error) {
 		}
 		var b strings.Builder
 		var prev lexer.Token
+		unaryMinus := false
 		for i, t := range ts {
 			if t.Type == lexer.TokenEOF {
 				break
@@ -76,10 +77,14 @@ func Format(filename, source string) (string, error) {
 			if i == genericOpen || i == genericOpen+1 && genericOpen >= 0 || i == genericClose || i == genericClose+1 && genericClose >= 0 {
 				space = false
 			}
+			if unaryMinus {
+				space = false
+			}
 			if space {
 				b.WriteByte(' ')
 			}
 			b.WriteString(s)
+			unaryMinus = t.Value == "-" && (i == 0 || isUnaryContext(prev.Value))
 			prev = t
 		}
 		formatted := strings.Repeat(" ", indent) + b.String()
@@ -97,6 +102,13 @@ func Format(filename, source string) (string, error) {
 		return "", err
 	}
 	return result, nil
+}
+func isUnaryContext(prev string) bool {
+	switch prev {
+	case "(", "[", ",", "=", "+", "-", "*", "/", "%", "==", "!=", "<", ">", "<=", ">=", "mostre", "retorne", "espera", "em":
+		return true
+	}
+	return false
 }
 func splitComment(s string) (string, string) {
 	quoted, escape := false, false

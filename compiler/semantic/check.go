@@ -35,7 +35,7 @@ func containsParam(t *Type, name string) bool {
 	return t.Kind == "param" && t.Name == name || t.Elem != nil && containsParam(t.Elem, name)
 }
 
-var reserved = map[string]bool{"privado": true, "mostre": true, "pergunte": true, "mut": true, "variavel": true, "const": true, "se": true, "senao": true, "enquanto": true, "para": true, "em": true, "e": true, "ou": true, "nao": true, "usa": true, "retorne": true, "pare": true, "continue": true, "crie": true, "verdadeiro": true, "falso": true, "nulo": true, "numero": true, "inteiro": true, "decimal": true, "texto": true, "quantidade": true}
+var reserved = map[string]bool{"teste": true, "espera": true, "privado": true, "mostre": true, "pergunte": true, "mut": true, "variavel": true, "const": true, "se": true, "senao": true, "enquanto": true, "para": true, "em": true, "e": true, "ou": true, "nao": true, "usa": true, "retorne": true, "pare": true, "continue": true, "crie": true, "verdadeiro": true, "falso": true, "nulo": true, "numero": true, "inteiro": true, "decimal": true, "texto": true, "quantidade": true}
 
 func Check(m *Module) error {
 	if m.checked {
@@ -119,6 +119,20 @@ func Check(m *Module) error {
 	}
 	if err := c.unused(m.Globals); err != nil {
 		return err
+	}
+	names := map[string]bool{}
+	for _, test := range m.Program.Tests {
+		if names[test.Name] {
+			return c.err(test.Pos, "GE2001", "Teste duplicado", fmt.Sprintf("O teste %q já existe neste arquivo.", test.Name), "Escolha um nome distinto para cada teste.")
+		}
+		names[test.Name] = true
+		env := scope(nil) // tests read functions and imports, never script globals.
+		if _, err := c.block(test.Body, env); err != nil {
+			return err
+		}
+		if err := c.unused(env); err != nil {
+			return err
+		}
 	}
 	for _, im := range m.Program.Imports {
 		alias := strings.TrimSuffix(strings.ReplaceAll(im.Path, "\\", "/"), ".ge")
@@ -342,6 +356,14 @@ func (c *checker) block(stmts []*ast.Statement, s *Scope) (bool, error) {
 			return false, c.err(st.Pos, "GE2007", "Código inalcançável", "A instrução anterior encerra este bloco.", "Remova ou mova esta instrução.")
 		}
 		switch st.Type {
+		case "expect":
+			t, err := c.expr(st.Expect, s)
+			if err != nil {
+				return false, err
+			}
+			if !unify(t, typ("bool")) {
+				return false, c.err(st.Pos, "GE2004", "Expectativa precisa ser booleana", "espera só aceita uma condição verdadeira ou falsa.", "Use espera somar(2, 2) == 4.")
+			}
 		case "bind":
 			d := st.VarDecl
 			t, err := c.expr(&d.Value, s)

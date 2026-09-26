@@ -1,0 +1,9 @@
+usa "matematica.ge"
+
+teste "soma"
+  espera matematica.somar(2, 2) == 4
+  espera matematica.somar(-1, 1) == 0
+
+teste "fatorial"
+  espera matematica.fatorial(0) == 1
+  espera matematica.fatorial(5) == 120
