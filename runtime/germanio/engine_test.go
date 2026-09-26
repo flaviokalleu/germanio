@@ -34,6 +34,8 @@ func TestExecution(t *testing.T) {
 		{`mostre quantidade("Olá 🐱")`, "", "5\n"},
 		{"x: texto? = nulo\nmostre x == nulo", "", "verdadeiro\n"},
 		{"nomes: [texto?] = [nulo, \"Ada\"]\nmostre nomes[0] == nulo\nmostre nomes[1]", "", "verdadeiro\nAda\n"},
+		{"saudar(nome: texto?) -> texto\n  se nome != nulo\n    retorne nome + \"!\"\n  retorne \"sem nome\"\nmostre saudar(\"Ada\")\nmostre saudar(nulo)", "", "Ada!\nsem nome\n"},
+		{"nome: texto? = \"Ada\"\nse nome == nulo\n  mostre \"vazio\"\nsenao\n  mostre nome + \"!\"", "", "Ada!\n"},
 		{"valores = [10, 20]\nmostre valores[1]", "", "20\n"},
 		{`mostre "verdadeiro"`, "", "verdadeiro\n"},
 		{`mostre "["`, "", "[\n"},

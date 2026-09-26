@@ -119,8 +119,36 @@ func (c *checker) unused(s *Scope) error {
 	}
 	return nil
 }
-func (c *checker) child(stmts []*ast.Statement, parent *Scope) (bool, error) {
+
+// presenceGuard recognizes only direct, deterministic presence comparisons.
+// Arbitrary boolean expressions cannot safely establish a variable's type.
+func presenceGuard(x *ast.Expression) (string, bool) {
+	if x.Type == "unary" && x.Operator == "nao" {
+		name, present := presenceGuard(x.Right)
+		return name, !present
+	}
+	if x.Type != "binary" || x.Operator != "==" && x.Operator != "!=" {
+		return "", false
+	}
+	if x.Left.Type == "variable" && x.Right.Type == "literal" && x.Right.Value == nil {
+		return x.Left.Name, x.Operator == "!="
+	}
+	if x.Right.Type == "variable" && x.Left.Type == "literal" && x.Left.Value == nil {
+		return x.Right.Name, x.Operator == "!="
+	}
+	return "", false
+}
+func refine(s *Scope, name string) {
+	if name == "" {
+		return
+	}
+	if b, ok := s.lookup(name); ok && !b.Mutable && resolve(b.Type).Kind == "optional" {
+		s.Bindings[name] = &Binding{Type: resolve(b.Type).Elem, Used: true, Pos: b.Pos, Origin: b}
+	}
+}
+func (c *checker) child(stmts []*ast.Statement, parent *Scope, refinement string) (bool, error) {
 	s := scope(parent)
+	refine(s, refinement)
 	r, e := c.block(stmts, s)
 	if e == nil {
 		e = c.unused(s)
@@ -221,16 +249,28 @@ func (c *checker) block(stmts []*ast.Statement, s *Scope) (bool, error) {
 			if !unify(t, typ("bool")) {
 				return false, c.mismatch(st.Pos, typ("bool"), t)
 			}
-			a, e := c.child(st.If.Body, s)
+			name, present := presenceGuard(&st.If.Condition)
+			thenName, elseName := "", ""
+			if present {
+				thenName = name
+			} else {
+				elseName = name
+			}
+			a, e := c.child(st.If.Body, s, thenName)
 			if e != nil {
 				return false, e
 			}
-			b, e := c.child(st.If.Else, s)
+			b, e := c.child(st.If.Else, s, elseName)
 			if e != nil {
 				return false, e
 			}
 			terminated = a && b
 			returns = terminated
+			if a && !b {
+				refine(s, elseName)
+			} else if b && !a {
+				refine(s, thenName)
+			}
 		case "while":
 			t, e := c.expr(&st.While.Condition, s)
 			if e != nil {
@@ -240,7 +280,7 @@ func (c *checker) block(stmts []*ast.Statement, s *Scope) (bool, error) {
 				return false, c.mismatch(st.Pos, typ("bool"), t)
 			}
 			c.loops++
-			_, e = c.child(st.While.Body, s)
+			_, e = c.child(st.While.Body, s, "")
 			c.loops--
 			if e != nil {
 				return false, e
@@ -307,6 +347,9 @@ func (c *checker) expr(x *ast.Expression, s *Scope) (*Type, error) {
 	case "variable":
 		if b, ok := s.lookup(x.Name); ok {
 			b.Used = true
+			for origin := b.Origin; origin != nil; origin = origin.Origin {
+				origin.Used = true
+			}
 			return b.Type, nil
 		}
 		return nil, c.unknown(x.Pos, x.Name)

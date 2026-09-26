@@ -30,6 +30,7 @@ type Binding struct {
 	Type          *Type
 	Mutable, Used bool
 	Pos           diagnostics.Position
+	Origin        *Binding // Refined branch view; reads still count on the declaration.
 }
 type Scope struct {
 	Parent   *Scope
