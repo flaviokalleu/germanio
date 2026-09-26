@@ -22,6 +22,8 @@ mostre telefone == nulo
 telefone = "61 99999-9999"
 se telefone != nulo
   mostre telefone + " confirmado"
+  telefone = nulo
+mostre telefone == nulo
 mostre somar(contador, total)
 mostre dobro(valores[1])
 mostre numero("5") + 2

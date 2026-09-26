@@ -1,262 +1,85 @@
-# Flang — Documento de Atualizacao e Roadmap Completo
+# Roadmap do Germanio
 
-**Versao atual: v0.5.1** | **Atualizado: Abril 2026**
+Este é o plano de entregas da linguagem `.ge`, baseado no prompt mestre do
+projeto. [SPEC.md](../SPEC.md) descreve a gramática e o comportamento que
+funcionam hoje. O [roadmap original do Flang](FLANG_ROADMAP_LEGACY.md) permanece
+como histórico do modo `.fg`; suas funcionalidades não passam automaticamente
+para `.ge`. Não há data de lançamento anunciada para as fases futuras.
 
----
+## Estado verificado
 
-## PARTE 1: O QUE JA FOI FEITO (116 features)
+| Fase | Estado | Entrega comprovável |
+| --- | --- | --- |
+| 1. Fundação | Implementada no escopo da SPEC | `ge`, `.ge`, lexer/parser/AST, análise inicial, interpretador, exemplos, formatter inicial e compatibilidade `.fg` |
+| 2. Tipos e semântica | Em andamento | Opcionais com refinamento de presença, inferência monomórfica, mutabilidade, funções, escopos e imports locais básicos |
+| 3. Full-stack `.ge` | Pendente | Apenas HTML estático limitado; servidor/banco/auth do Flang continuam em `.fg` |
+| 4. Toolchain | Pendente | CLI/formatter/CI iniciais existem; manifesto, dependências e LSP ainda não |
+| 5. Performance | Pendente | Limites de execução existem; HIR/MIR e compilação incremental ainda não |
+| 6. Poder avançado | Pendente | Nenhum backend FFI/WASM/JIT/SIMD/GPU `.ge` anunciado |
 
-### Core da Linguagem
-- [x] Lexer com 150+ keywords
-- [x] Parser recursivo descendente gerando AST
-- [x] 20 idiomas suportados (PT, EN, ES, FR, DE, IT, ZH, JA, KO, AR, HI, BN, RU, ID, TR, VI, PL, NL, TH, SW)
-- [x] Sistema de imports com deteccao circular
-- [x] Hot reload (re-exec on file change)
-- [x] Comando `flang build` para gerar executavel standalone
-- [x] Modo plano (1 arquivo) e organizado (pastas)
+## Próxima sequência de trabalho
 
-### Tipos de Dados (15 tipos)
-- [x] texto, texto_longo, numero, dinheiro, email, telefone
-- [x] data, booleano, imagem, arquivo, upload, link
-- [x] status, senha, enum(valores)
+### 2A — Segurança e fluxo de tipos
 
-### Relacionamentos
-- [x] pertence_a (FK com dropdown automatico)
-- [x] tem_muitos (1:N)
-- [x] muitos_para_muitos (N:N com join table automatica)
+- Concluir refinamento de opcionais para atribuições e junções entre ramos e
+  loops; rejeitar acesso a valores que podem voltar a ser `nulo`.
+- Verificar inferência e coerção numérica em funções, listas e módulos, incluindo
+  chamadas recursivas e imports compartilhados.
+- Definir contratos verificáveis para funções, genéricos fundamentais e erros
+  tipados, sempre com semântica de execução e diagnósticos.
+- Critério de saída: para cada regra, executar exemplos que passam e falham,
+  testar os caminhos do verificador e do interpretador e registrar limites na SPEC.
 
-### Banco de Dados
-- [x] SQLite, MySQL, PostgreSQL
-- [x] Auto-criacao de tabelas e auto-migration
-- [x] Connection pooling (25 max, 5 idle)
-- [x] Soft delete com restore
-- [x] Validacao de campos e validacao customizada
-- [x] Paginacao, filtros, busca, ordenacao
-- [x] Export CSV/JSON
+### 2B — Módulos e interface semântica
 
-### Autenticacao e Seguranca (16 features)
-- [x] JWT + bcrypt + roles + rate limiting
-- [x] Login/registro no frontend
-- [x] SSRF, XSS, path traversal, upload whitelist, body limits, CSV injection protection
-- [x] JWT secret via env variable
+- Consolidar visibilidade, resolução de nomes, tratamento de ciclos e erros de
+  import com origem no arquivo e na linha corretos.
+- Separar API exportada de código de entrada e manter compatibilidade com `.fg`.
+- Critério de saída: programa multifile executável, dependências inválidas
+  rejeitadas e nenhuma mudança de comportamento silenciosa para `.fg`.
 
-### Frontend
-- [x] SPA com Tailwind CSS + dark/light mode
-- [x] Dashboard com Chart.js
-- [x] Sidebar customizavel + tabs de status/enum
-- [x] Modais no body level + FK/enum dropdowns
-- [x] WebSocket real-time + toast notifications
+### 3 — Aplicações full-stack em `.ge`
 
-### Tema e Customizacao
-- [x] 5 presets (moderno, simples, elegante, corporativo, claro)
-- [x] Cores por nome (14 cores) + 4 estilos visuais
-- [x] CSS customizado, controle total de fonte/borda/fundo
+- Definir domínios `cliente`, `servidor` e `compartilhado` no compilador, com
+  checagem de acessos proibidos e tipos serializáveis na fronteira.
+- Ligar rotas, APIs, modelos, banco e autenticação a programas `.ge` reais,
+  reaproveitando servidor e componentes Flang quando fizer sentido.
+- Evoluir a UI natural com eventos e navegação executáveis; testar no navegador
+  a ida e a volta entre cliente e servidor, incluindo permissões e dados secretos.
+- Critério de saída: exemplo `.ge` completo com frontend e backend, testes de
+  autorização e isolamento, API funcionando e nenhum botão decorativo anunciado
+  como interativo.
 
-### Scripting (30+ funcoes built-in)
-- [x] Variaveis, funcoes, controle de fluxo, try/catch
-- [x] Array indexing, object access, DB queries
-- [x] HTTP client, JSON parse, async (paralelo, esperar, timeout)
+### 4 — Ferramentas de desenvolvimento
 
-### Integracoes
-- [x] WhatsApp (whatsmeow), Email SMTP (HTML), Cron jobs
-- [x] HTTP client, WebSocket hub, proxy endpoint
+- Introduzir `germanio.toml` e lockfile apenas junto com resolução reproduzível
+  de dependências. Completar formatter e linter com saída determinística.
+- Acrescentar testes/benchmarks/fuzzing pela CLI e LSP com diagnósticos e
+  correções verificadas no editor.
+- Critério de saída: projeto criado, formatado, testado e instalado em ambiente
+  limpo; builds reproduzíveis e testes de integração na CI.
 
-### Customizacao Avancada
-- [x] Rotas customizadas, paginas HTML, sidebar customizavel
-- [x] Telas customizadas respeitadas pelo frontend
+### 5 — Compilação e desempenho
 
-### CLI
-- [x] run, check, new, init, build, docker, ide, version, help
+- Introduzir HIR/MIR preservando a semântica atual; comparar saída com o
+  interpretador usando os mesmos exemplos.
+- Acrescentar cache incremental e builds de release somente com medição de
+  tempo/memória e invalidação correta de módulos.
+- Critério de saída: equivalência semântica, benchmarks repetíveis e regressões
+  de compilação detectáveis na CI.
 
-### IDE Web (Flang IDE)
-- [x] Monaco Editor com syntax highlighting para .fg
-- [x] File tree, tabs, Ctrl+S, terminal
-- [x] Run/Stop/Check buttons
-- [x] 3 modos: Codigo, Designer, Fluxos
-- [x] Designer com canvas (Fabric.js em implementacao)
-- [x] Flow editor com nodes + conexoes SVG
+### 6 — Interoperabilidade e recursos avançados
 
-### Testes
-- [x] 59 testes (lexer, parser, AST, interpreter)
+- Planejar APIs de FFI C/Go, WASM, JIT, SIMD, GPU, memória e metaprogramação
+  conforme casos de uso e isolamento das fronteiras do runtime.
+- Implementar cada backend separadamente, com exemplos executáveis e testes no
+  ambiente de destino. Nenhuma sigla conta como entregue por ter uma pasta ou flag.
 
-### VS Code Extension
-- [x] Syntax highlighting, 22 snippets, auto-indentacao
+## Regra para marcar uma entrega como pronta
 
-### Exemplos
-- [x] Loja (plano + organizado)
-- [x] Evoticket (34 arquivos, 24 modelos, 18 funcoes)
-
----
-
-## PARTE 2: EM IMPLEMENTACAO (Onda 1)
-
-### IDE — Canvas Visual com Fabric.js
-- [ ] Canvas infinito com zoom (scroll) e pan (Alt+drag)
-- [ ] 12 componentes arrastaveis com resize livre
-- [ ] Snap-to-grid (20px)
-- [ ] Propriedades no painel direito
-- [ ] Geracao automatica de .fg em tempo real
-- [ ] Controles de zoom (+, -, Reset)
-- [ ] Delete com tecla Del
-
----
-
-## PARTE 3: PROXIMAS IMPLEMENTACOES (50 features planejadas)
-
-### Onda 2 — Novos Tipos de Campo (10 features)
-| # | Feature | Sintaxe | Status |
-|---|---------|---------|--------|
-| 1 | CPF/CNPJ com validacao | `cpf: cpf` | 🔜 |
-| 2 | CEP com busca automatica (ViaCEP) | `cep: cep` | 🔜 |
-| 3 | Color picker | `cor_favorita: cor` | 🔜 |
-| 4 | Rating/estrelas (1-5) | `avaliacao: estrelas` | 🔜 |
-| 5 | Slider numerico | `quantidade: slider(0, 100)` | 🔜 |
-| 6 | Date range (periodo) | `periodo: periodo` | 🔜 |
-| 7 | Tags/chips (multiplos valores) | `habilidades: tags` | 🔜 |
-| 8 | Rich text editor | `conteudo: richtext` | 🔜 |
-| 9 | Assinatura digital (canvas) | `assinatura: assinatura` | 🔜 |
-| 10 | Geolocalizacao (mapa) | `local: localizacao` | 🔜 |
-
-### Onda 3 — Integracoes (15 features)
-| # | Feature | Sintaxe | Status |
-|---|---------|---------|--------|
-| 11 | PIX QR Code | `pix gerar qrcode 49.90` | 🔜 |
-| 12 | Stripe pagamento | `stripe cobrar 99.90` | 🔜 |
-| 13 | MercadoPago | `mercadopago link 49.90` | 🔜 |
-| 14 | Telegram bot | `telegram enviar "msg"` | 🔜 |
-| 15 | Discord webhook | `discord enviar "msg"` | 🔜 |
-| 16 | Slack | `slack enviar "msg"` | 🔜 |
-| 17 | SMS (Twilio) | `sms enviar "msg" para tel` | 🔜 |
-| 18 | Google Sheets | `planilha exportar produto` | 🔜 |
-| 19 | Google Calendar | `calendario criar evento` | 🔜 |
-| 20 | S3/MinIO storage | `storage upload arquivo` | 🔜 |
-| 21 | OpenAI (ChatGPT) | `ia.completar("pergunta")` | 🔜 |
-| 22 | Claude (Anthropic) | `ia.completar("pergunta")` | 🔜 |
-| 23 | Gemini (Google) | `ia.completar("pergunta")` | 🔜 |
-| 24 | Webhook inbound | receber POST externo | 🔜 |
-| 25 | Zapier/Make compativel | webhook padrao | 🔜 |
-
-### Onda 4 — UX para Leigos (15 features)
-| # | Feature | Descricao | Status |
-|---|---------|-----------|--------|
-| 26 | Templates prontos | `flang new loja`, `clinica`, `escola`, `delivery` | 🔜 |
-| 27 | Wizard de criacao | perguntas guiadas → gera .fg | 🔜 |
-| 28 | LSP (autocomplete) | sugestoes no editor | 🔜 |
-| 29 | Preview ao vivo na IDE | iframe com o app rodando | 🔜 |
-| 30 | Undo/Redo no canvas | Ctrl+Z / Ctrl+Y | 🔜 |
-| 31 | Copiar/Colar componentes | Ctrl+C / Ctrl+V | 🔜 |
-| 32 | Alinhar componentes | esquerda, centro, direita, distribuir | 🔜 |
-| 33 | Snap lines | guias ao alinhar com outro componente | 🔜 |
-| 34 | Layers panel | lista de componentes com z-index | 🔜 |
-| 35 | Responsive preview | mobile, tablet, desktop | 🔜 |
-| 36 | Erro com sugestao | "voce quis dizer 'texto'?" | 🔜 |
-| 37 | Tour guiado | primeiro uso mostra cada parte | 🔜 |
-| 38 | Video tutoriais embutidos | dentro da IDE | 💡 |
-| 39 | Documentacao interativa | exemplos clicaveis no browser | 🔜 |
-| 40 | Export PNG/PDF do canvas | botao de exportar design | 🔜 |
-
-### Onda 5 — Deploy e Distribuicao (10 features)
-| # | Feature | Descricao | Status |
-|---|---------|-----------|--------|
-| 41 | Deploy 1 comando | `flang deploy` publica online | 🔜 |
-| 42 | Dominio customizado | `flang deploy --dominio meuapp.com` | 🔜 |
-| 43 | HTTPS automatico | Let's Encrypt integrado | 🔜 |
-| 44 | Compartilhar projeto | `flang share` gera link | 🔜 |
-| 45 | Atualizar sem downtime | `flang update` | 🔜 |
-| 46 | Backup na nuvem | `flang backup` | 💡 |
-| 47 | Git integrado na IDE | commit/push dentro da IDE | 🔜 |
-| 48 | AI assistant na IDE | chat que gera .fg | 🔜 |
-| 49 | Marketplace de templates | baixar e compartilhar | 💡 |
-| 50 | App Electron da IDE | aplicativo desktop instalavel | 🔜 |
-
----
-
-## PARTE 4: VERSOES PLANEJADAS
-
-### v0.6.0 — Canvas Visual + Novos Tipos
-- [ ] Fabric.js canvas no Designer
-- [ ] 10 novos tipos de campo (CPF, CEP, cor, estrelas, slider, etc)
-- [ ] Templates prontos (loja, clinica, escola, delivery)
-- [ ] Preview ao vivo na IDE
-- [ ] Undo/Redo no canvas
-
-### v0.7.0 — Integracoes + AI
-- [ ] PIX, Stripe, MercadoPago (pagamentos)
-- [ ] Telegram, Discord, Slack, SMS (mensageria)
-- [ ] Google Sheets, Calendar (produtividade)
-- [ ] OpenAI/Claude/Gemini (inteligencia artificial)
-- [ ] S3/MinIO (armazenamento)
-
-### v0.8.0 — Developer Experience
-- [ ] LSP (Language Server Protocol) com autocomplete
-- [ ] REPL interativo (`flang repl`)
-- [ ] Formatter (`flang fmt`)
-- [ ] Testing framework built-in
-- [ ] Erro com sugestao de correcao
-
-### v0.9.0 — Enterprise
-- [ ] Multi-tenancy nativo
-- [ ] Permissoes granulares por modelo/campo
-- [ ] Migrations versionadas com rollback
-- [ ] Background jobs com retry
-- [ ] Audit log automatico
-- [ ] SSO / OAuth2
-
-### v1.0.0 — Production Ready
-- [ ] Deploy 1 comando com HTTPS
-- [ ] App Electron da IDE
-- [ ] Marketplace de templates e plugins
-- [ ] Mobile app generation
-- [ ] SSR para SEO + PWA
-- [ ] PDF/report generation
-
----
-
-## PARTE 5: COMPARACAO COM CONCORRENTES
-
-| Feature | Flang | Bubble | Retool | Wasp | Adalo |
-|---------|:-----:|:------:|:------:|:----:|:-----:|
-| Open source | ✅ | ❌ | ❌ | ✅ | ❌ |
-| 20 idiomas | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Declarativo (sem codigo) | ✅ | ❌ | ❌ | ✅ | ❌ |
-| Canvas visual (Figma-like) | ✅ | ✅ | ❌ | ❌ | ✅ |
-| Flow editor (logica visual) | ✅ | ✅ | ❌ | ❌ | ❌ |
-| WhatsApp nativo | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Build executavel (.exe) | ✅ | ❌ | ❌ | ❌ | ❌ |
-| IDE propria | ✅ | ✅ | ✅ | ❌ | ✅ |
-| Multi-banco (SQLite/MySQL/PG) | ✅ | ❌ | ✅ | ❌ | ❌ |
-| Self-hosted | ✅ | ❌ | ❌ | ✅ | ❌ |
-| AI integrado | 🔜 | ✅ | ✅ | ❌ | ❌ |
-| Mobile | 🔜 | ✅ | ✅ | ❌ | ✅ |
-| Preco | **Gratis** | $29-599/mes | $10-50/user | Gratis | $36-200/mes |
-
-### Diferenciais unicos do Flang
-1. **Unica linguagem em 20 idiomas** — escreva em portugues, chines, arabe, etc
-2. **Gera executavel standalone** — um .exe que roda sem instalar nada
-3. **WhatsApp integrado** — nenhum concorrente tem
-4. **100% gratis e open source** — sem limite de usuarios
-5. **IDE com canvas visual + flow editor + code editor** — 3 em 1
-6. **Zero dependencia** — nao precisa de Node, Python, Docker
-
----
-
-## PARTE 6: METRICAS DO PROJETO
-
-| Metrica | Valor |
-|---------|-------|
-| Linhas de Go | ~15.000 |
-| Arquivos Go | 30+ |
-| Keywords | 150+ |
-| Idiomas | 20 |
-| Funcoes built-in | 30+ |
-| Testes | 59 |
-| Plataformas de build | 6 |
-| Exemplos | 3 (loja plano, loja organizado, evoticket) |
-| Releases | 3 (v0.5.0, v0.5.1, em breve v0.6.0) |
-| Features implementadas | 116 de 200 (58%) |
-| Features planejadas | 50 novas |
-
----
-
-*Documento atualizado em Abril 2026.*
-*Baseado em pesquisa de mercado: Bubble.io, Adalo, Retool, Wasp, Budibase, Appsmith, Figma, Flowise.*
+Uma funcionalidade só entra na SPEC como disponível depois de passar por lexer,
+parser, verificador, execução real e documentação, quando essas camadas se
+aplicarem. A CI deve compilar `ge` e `flang`, rodar testes válidos e inválidos,
+`go vet`, detector de corrida, exemplos `.ge`, formatter e exemplos `.fg`.
+Falhas devem identificar arquivo, posição, motivo e correção. A sintaxe natural
+continua determinística: nenhuma LLM decide o significado de um programa.

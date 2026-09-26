@@ -22,6 +22,7 @@
   <a href="#comandos-disponíveis">Comandos</a> ·
   <a href="SPEC.md">Especificação</a> ·
   <a href="docs/PHASE1.md">Entrega da fundação</a> ·
+  <a href="docs/ROADMAP.md">Roadmap Germanio</a> ·
   <a href="#flang-continua-funcionando">Compatibilidade</a>
 </p>
 
@@ -40,6 +41,8 @@ e pensada para frontend e backend. Código natural continua sendo código:
 interpretador AST em Go. A camada full-stack histórica continua disponível em
 `.fg`. A integração full-stack na nova sintaxe `.ge` é uma próxima fase, não uma
 funcionalidade já concluída. A [SPEC.md](SPEC.md) define o suporte real e os limites.
+O [roadmap](docs/ROADMAP.md) apresenta as fases restantes e os critérios para
+considerá-las concluídas.
 
 ## Comece em minutos
 

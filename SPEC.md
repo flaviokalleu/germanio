@@ -95,10 +95,11 @@ permite `se valor != nulo e quantidade(valor) > 0`. Uma condição verdadeira
 também refina o corpo de `enquanto` quando o valor é imutável. Se o ramo oposto
 termina com `retorne`, o refinamento vale até o fim do bloco para valores
 imutáveis. Variáveis `variavel`/`mut` também refinam dentro de um ramo se
-nenhuma instrução do ramo (incluindo blocos internos) puder reatribuir a mesma
-variável. A análise é conservadora: mesmo a escrita depois de uma leitura
-impede o refinamento do ramo inteiro, e ele não continua após o `se` para
-variáveis mutáveis. Não há desreferência implícita de opcional.
+nenhum bloco interno puder reatribuir a mesma variável. Escritas diretas no
+ramo invalidam o refinamento naquela linha: leituras anteriores à escrita
+são aceitas; leituras posteriores exigem
+novo teste. O refinamento não continua após o `se` para variáveis mutáveis.
+Não há desreferência implícita de opcional.
 
 `+` soma números ou concatena dois textos; `-`, `*`, `/`, `%` são numéricos.
 Mistura aritmética de inteiro e decimal promove para decimal; isso não permite
