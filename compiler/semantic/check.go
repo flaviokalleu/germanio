@@ -23,6 +23,11 @@ func (c *checker) mismatch(pos diagnostics.Position, want, got *Type) error {
 	if resolve(got).Kind == "nulo" {
 		return c.err(pos, "GE2004", "nulo exige tipo opcional", fmt.Sprintf("O destino tem tipo %s; somente T? aceita nulo.", want), "Declare explicitamente um tipo opcional, por exemplo valor: texto? = nulo ou f(x: texto?).")
 	}
+	if resolve(got).Kind == "optional" && resolve(want).Kind != "optional" {
+		d := diag(c.m.Program, pos, "GE2004", "Valor opcional sem verificação", fmt.Sprintf("O valor tem tipo %s e pode ser nulo; este uso exige %s.", got, want), "Teste a presença com se valor != nulo antes de usar o valor e confira se os tipos são compatíveis.").(*diagnostics.Diagnostic)
+		d.Example = "valor: texto? = \"Ada\"\nse valor != nulo\n  mostre valor + \"!\""
+		return d
+	}
 	return c.err(pos, "GE2004", "Tipos incompatíveis", fmt.Sprintf("Esperado %s, recebido %s. Não há coerção implícita.", want, got), "Use valores do mesmo tipo ou uma conversão explícita.")
 }
 
@@ -507,8 +512,15 @@ func (c *checker) expr(x *ast.Expression, s *Scope) (*Type, error) {
 		if op == "+" {
 			class = "addable"
 		}
-		if !constrain(a, class) || !constrain(b, class) {
-			return nil, c.mismatch(x.Pos, typ("inteiro ou decimal"), b)
+		expected := typ("inteiro ou decimal")
+		if op == "+" {
+			expected = typ("número ou texto")
+		}
+		if !constrain(a, class) {
+			return nil, c.mismatch(x.Left.Pos, expected, a)
+		}
+		if !constrain(b, class) {
+			return nil, c.mismatch(x.Right.Pos, expected, b)
 		}
 		result := a
 		if numeric(a) && numeric(b) {

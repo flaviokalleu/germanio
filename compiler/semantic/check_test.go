@@ -105,6 +105,19 @@ func TestInvalidPrograms(t *testing.T) {
 	}
 }
 
+func TestOptionalDiagnosticPointsToOperand(t *testing.T) {
+	src := "nome: texto? = nulo\nmostre nome + \"!\""
+	_, err := CheckSource("opcional.ge", src)
+	if err == nil {
+		t.Fatal("expected optional operand error")
+	}
+	for _, part := range []string{"GE2004", "opcional.ge:2:8", "pode ser nulo", "se valor != nulo", "Exemplo:\nvalor: texto?"} {
+		if !strings.Contains(err.Error(), part) {
+			t.Errorf("missing %q: %v", part, err)
+		}
+	}
+}
+
 func TestLocalModules(t *testing.T) {
 	dir := t.TempDir()
 	write := func(name, source string) {
