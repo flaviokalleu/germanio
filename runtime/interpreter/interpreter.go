@@ -82,6 +82,9 @@ type Interpreter struct {
 	LogBuffer  []string
 	logMu      sync.Mutex
 	HTTPClient interface{ Chamar(method, url string, body []byte) ([]byte, error) }
+	WAClient   interface {
+		EnviarMensagem(telefone, mensagem string) error
+	}
 }
 
 // New creates a new interpreter.

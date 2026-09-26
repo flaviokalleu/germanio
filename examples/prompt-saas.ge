@@ -1,6 +1,6 @@
 app MeuSaaS
 
-banco postgres
+banco sqlite
 
 tabela Cliente
   nome: texto

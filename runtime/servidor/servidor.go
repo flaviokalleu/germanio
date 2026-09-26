@@ -118,6 +118,29 @@ func (s *Servidor) Iniciar() error {
 		})
 	}
 
+	// Prompt Events routes (quando receber / quando chamar)
+	for _, evt := range s.Program.Events {
+		if evt.Trigger == "receber" || evt.Trigger == "receive" || evt.Trigger == "chamar" || evt.Trigger == "call" {
+			actionName := strings.TrimSpace(evt.Target)
+			if actionName == "" {
+				actionName = strings.TrimSpace(evt.ActionRef)
+			}
+			parts := strings.Fields(actionName)
+			if len(parts) > 0 {
+				slug := strings.ToLower(parts[0])
+				routePath := "/api/" + slug
+				mux.HandleFunc(routePath, func(w http.ResponseWriter, req *http.Request) {
+					w.Header().Set("Content-Type", "application/json")
+					json.NewEncoder(w).Encode(map[string]interface{}{
+						"status":   "sucesso",
+						"acao":     slug,
+						"executou": true,
+					})
+				})
+			}
+		}
+	}
+
 	// Custom pages
 	for _, page := range s.Program.Pages {
 		pg := page

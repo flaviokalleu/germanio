@@ -218,6 +218,9 @@ func Executar(arquivo string, porta string) error {
 	// Interpreter / Scripting Engine
 	interpreter := interp.New(db)
 	interpreter.HTTPClient = httpClient
+	if waClient != nil {
+		interpreter.WAClient = waClient
+	}
 	srv.Interpreter = interpreter
 
 	// Register functions and execute top-level scripts
