@@ -45,6 +45,13 @@ func parseType(s string) *Type {
 	return typ(s)
 }
 func numeric(t *Type) bool { t = resolve(t); return t.Kind == "inteiro" || t.Kind == "decimal" }
+func unresolvedOptional(t *Type) bool {
+	t = resolve(t)
+	if t.Kind == "optional" && resolve(t.Elem).Kind == "" {
+		return true
+	}
+	return t.Elem != nil && unresolvedOptional(t.Elem)
+}
 func permits(c string, t *Type) bool {
 	t = resolve(t)
 	if c == "" || t.Kind == "" {
@@ -92,6 +99,12 @@ func assignable(want, got *Type) bool {
 			return unify(w.Elem, g.Elem)
 		}
 		return unify(w.Elem, g)
+	}
+	if g.Kind == "nulo" {
+		return false
+	}
+	if w.Kind == "list" && g.Kind == "list" {
+		return assignable(w.Elem, g.Elem)
 	}
 	return unify(w, g)
 }

@@ -20,6 +20,9 @@ func (c *checker) err(pos diagnostics.Position, code, msg, why, fix string) erro
 	return diag(c.m.Program, pos, code, msg, why, fix)
 }
 func (c *checker) mismatch(pos diagnostics.Position, want, got *Type) error {
+	if resolve(got).Kind == "nulo" {
+		return c.err(pos, "GE2004", "nulo exige tipo opcional", fmt.Sprintf("O destino tem tipo %s; somente T? aceita nulo.", want), "Declare explicitamente um tipo opcional, por exemplo valor: texto? = nulo ou f(x: texto?).")
+	}
 	return c.err(pos, "GE2004", "Tipos incompatíveis", fmt.Sprintf("Esperado %s, recebido %s. Não há coerção implícita.", want, got), "Use valores do mesmo tipo ou uma conversão explícita.")
 }
 
@@ -163,7 +166,7 @@ func (c *checker) block(stmts []*ast.Statement, s *Scope) (bool, error) {
 				continue
 			}
 			want := parseType(d.Annotation)
-			if d.Annotation == "" && resolve(t).Kind == "nulo" {
+			if d.Annotation == "" && (resolve(t).Kind == "nulo" || unresolvedOptional(t)) {
 				return false, c.err(st.Pos, "GE2004", "Opcional sem tipo", "nulo não informa qual tipo poderá ser armazenado.", "Declare nome: texto? = nulo.")
 			}
 			if !assignable(want, t) {
@@ -316,14 +319,27 @@ func (c *checker) expr(x *ast.Expression, s *Scope) (*Type, error) {
 		return typ("texto"), nil
 	case "list":
 		item := fresh()
+		optional := false
 		for _, v := range x.Elements {
 			t, e := c.expr(v, s)
 			if e != nil {
 				return nil, e
 			}
+			t = resolve(t)
+			if t.Kind == "nulo" {
+				optional = true
+				continue
+			}
+			if t.Kind == "optional" {
+				optional = true
+				t = t.Elem
+			}
 			if !unify(item, t) {
 				return nil, c.mismatch(v.Pos, item, t)
 			}
+		}
+		if optional {
+			item = &Type{Kind: "optional", Elem: item}
 		}
 		return &Type{Kind: "list", Elem: item}, nil
 	case "index":
@@ -379,6 +395,9 @@ func (c *checker) expr(x *ast.Expression, s *Scope) (*Type, error) {
 			ar, br := resolve(a), resolve(b)
 			if ar.Kind == "nulo" && br.Kind == "optional" || br.Kind == "nulo" && ar.Kind == "optional" {
 				return typ("bool"), nil
+			}
+			if ar.Kind == "nulo" || br.Kind == "nulo" {
+				return nil, c.err(x.Pos, "GE2004", "Comparação sem tipo opcional", "nulo só pode ser comparado com um valor de tipo T?.", "Declare nome: texto? = nulo e compare nome == nulo.")
 			}
 			if !unify(a, b) {
 				return nil, c.mismatch(x.Pos, a, b)

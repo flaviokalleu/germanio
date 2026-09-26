@@ -33,6 +33,7 @@ func TestExecution(t *testing.T) {
 		{`mostre numero("5") + 2`, "", "7\n"},
 		{`mostre quantidade("Olá 🐱")`, "", "5\n"},
 		{"x: texto? = nulo\nmostre x == nulo", "", "verdadeiro\n"},
+		{"nomes: [texto?] = [nulo, \"Ada\"]\nmostre nomes[0] == nulo\nmostre nomes[1]", "", "verdadeiro\nAda\n"},
 		{"valores = [10, 20]\nmostre valores[1]", "", "20\n"},
 		{`mostre "verdadeiro"`, "", "verdadeiro\n"},
 		{`mostre "["`, "", "[\n"},
