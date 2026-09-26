@@ -158,7 +158,8 @@ namespace. Exportam funções públicas, não estado. O código de topo do arqui
 é verificado, mas não executado. Arquivos dentro de subdiretórios são permitidos;
 caminhos fora da pasta do entrypoint, inclusive por symlinks, são bloqueados.
 Ciclos, módulos duplicados, funções inexistentes e imports não utilizados são
-erros. Arquivos ausentes, pastas com extensão `.ge` e tentativas de escapar da
+erros. Um ciclo é apontado na linha `usa` que o fecha. Arquivos ausentes,
+pastas com extensão `.ge` e tentativas de escapar da
 raiz do projeto são diagnosticados na instrução `usa`. Não há download
 automático, stdlib remota, manifesto ou lockfile ainda.
 

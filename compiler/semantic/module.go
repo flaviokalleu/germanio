@@ -118,6 +118,9 @@ func load(path, root string, cache map[string]*Module, visiting map[string]bool)
 		if err != nil || !info.Mode().IsRegular() {
 			return nil, diag(p, im.Pos, "GE3001", "Import precisa de arquivo", fmt.Sprintf("%q não é um arquivo .ge legível.", im.Path), `Use um arquivo existente, por exemplo usa "matematica.ge".`)
 		}
+		if visiting[full] {
+			return nil, diag(p, im.Pos, "GE3001", "Dependência circular", fmt.Sprintf("O import de %q aponta para um módulo que já está sendo carregado.", im.Path), "Remova este import ou extraia o código compartilhado para um terceiro módulo sem ciclo.")
+		}
 		child, err := load(full, root, cache, visiting)
 		if err != nil {
 			return nil, err

@@ -282,3 +282,31 @@ func TestImportFailuresPointToImport(t *testing.T) {
 		})
 	}
 }
+func TestImportCyclePointsToClosingImport(t *testing.T) {
+	dir := t.TempDir()
+	for name, source := range map[string]string{
+		"a.ge": "usa \"b.ge\"\nmostre 1\n",
+		"b.ge": "usa \"c.ge\"\nmostre 2\n",
+		"c.ge": "# ciclo\nusa \"a.ge\"\n",
+	} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(source), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	_, err := Load(filepath.Join(dir, "a.ge"))
+	if err == nil {
+		t.Fatal("expected import cycle error")
+	}
+	for _, part := range []string{"GE3001", "c.ge:2:1", "Dependência circular", "Por quê:", "Como corrigir:", "Exemplo:"} {
+		if !strings.Contains(err.Error(), part) {
+			t.Errorf("missing %q in %v", part, err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(dir, "b.ge"), []byte("usa \"a.ge\""), 0600); err != nil {
+		t.Fatal(err)
+	}
+	_, err = Load(filepath.Join(dir, "a.ge"))
+	if err == nil || !strings.Contains(err.Error(), "b.ge:1:1") {
+		t.Fatalf("expected two-file cycle at b.ge import: %v", err)
+	}
+}
