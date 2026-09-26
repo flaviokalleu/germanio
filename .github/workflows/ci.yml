@@ -22,7 +22,7 @@ jobs:
       - name: Build
         run: |
           CGO_ENABLED=0 go build -o ge ./cmd/ge
-          CGO_ENABLED=0 go build -o germanio ./cmd/germanio
+          CGO_ENABLED=0 go build -o germanio .
 
       - name: Test and vet
         run: |
