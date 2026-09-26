@@ -1,0 +1,24 @@
+somar(a, b)
+  a + b
+
+dobro(x) = x * 2
+
+mut contador = 0
+enquanto contador < 3
+  contador += 1
+
+valores: [inteiro] = [1, 2, 3]
+mut total = 0
+para valor em valores
+  total += valor
+
+se total == 6
+  mostre "Total correto: {total}"
+senao
+  mostre "Total inesperado"
+
+telefone: texto? = nulo
+mostre telefone == nulo
+mostre somar(contador, total)
+mostre dobro(valores[1])
+mostre numero("5") + 2

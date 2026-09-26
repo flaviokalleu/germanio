@@ -20,7 +20,28 @@ jobs:
           go-version-file: go.mod
 
       - name: Build
-        run: CGO_ENABLED=0 go build -o flang .
+        run: |
+          CGO_ENABLED=0 go build -o ge ./cmd/ge
+          CGO_ENABLED=0 go build -o flang ./cmd/flang
+
+      - name: Test and vet
+        run: |
+          go test ./...
+          go vet ./...
+
+      - name: Race checks
+        run: go test -race ./compiler/... ./runtime/germanio ./tooling/...
+
+      - name: Germanio examples and formatter
+        run: |
+          for file in examples/germanio/*.ge; do
+            ./ge check "$file"
+          done
+          ./ge rodar examples/germanio/ola.ge
+          ./ge rodar examples/germanio/fundamentos.ge
+          ./ge rodar examples/germanio/imports.ge
+          printf 'Flavio\n' | ./ge rodar examples/germanio/entrada.ge
+          ./ge fmt examples/germanio --check
 
       - name: Check example files
         run: |

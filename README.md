@@ -1,632 +1,214 @@
 <p align="center">
-  <img src="logo.png" alt="Flang" width="400">
+  <img src="assets/germanio.png" alt="Germanio — mascote cristalino azul com rosto de terminal" width="340">
+</p>
+
+<h1 align="center">Germanio</h1>
+
+<p align="center">
+  <strong>Simplíssima para começar. Difícil de usar errado.<br>Sem teto como direção de evolução.</strong>
 </p>
 
 <p align="center">
-  <strong>A linguagem declarativa que transforma ideias em aplicacoes full-stack.</strong>
+  <a href="https://github.com/flaviokalleu/germanio/actions/workflows/ci.yml"><img src="https://github.com/flaviokalleu/germanio/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <img src="https://img.shields.io/badge/Germanio-0.7.0--dev-00b8ff" alt="0.7.0-dev">
+  <img src="https://img.shields.io/badge/c%C3%B3digo-.ge-00b8ff" alt="extensão .ge">
+  <img src="https://img.shields.io/badge/CLI-ge-00b8ff" alt="CLI ge">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/licen%C3%A7a-MIT-blue" alt="MIT"></a>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-0.5.0-6366f1?style=for-the-badge" alt="v0.5.0">
-  <img src="https://img.shields.io/badge/Extension-.fg-6366f1?style=for-the-badge" alt="Flang .fg">
-  <img src="https://img.shields.io/badge/Go-1.21+-00ADD8?style=for-the-badge&logo=go&logoColor=white" alt="Go 1.21+">
-  <img src="https://img.shields.io/badge/20%20Idiomas-PT%20EN%20ES%20FR%20DE%20...-f59e0b?style=for-the-badge" alt="20 Languages">
-  <img src="https://img.shields.io/badge/Tests-59%20passing-brightgreen?style=for-the-badge" alt="59 Tests">
-  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="MIT License">
+  <a href="#comece-em-minutos">Começar</a> ·
+  <a href="#a-linguagem">Linguagem</a> ·
+  <a href="#comandos-disponíveis">Comandos</a> ·
+  <a href="SPEC.md">Especificação</a> ·
+  <a href="docs/PHASE1.md">Entrega da fundação</a> ·
+  <a href="#flang-continua-funcionando">Compatibilidade</a>
 </p>
 
-<p align="center">
-  <a href="#o-que-e-o-flang">O que e</a> ·
-  <a href="#quick-start">Quick Start</a> ·
-  <a href="#exemplo-completo">Exemplo</a> ·
-  <a href="#20-idiomas">20 Idiomas</a> ·
-  <a href="#temas-e-estilos">Temas</a> ·
-  <a href="#cli">CLI</a> ·
-  <a href="#seguranca">Seguranca</a>
-</p>
+## Uma linguagem que começa com uma conversa
 
----
-
-## O que e o Flang?
-
-**Flang** e uma linguagem de programacao declarativa escrita em Go que gera aplicacoes web full-stack a partir de arquivos `.fg`. Escreva o que voce quer — dados, telas, eventos, logica — e o Flang gera backend, frontend, banco de dados, API REST, autenticacao e muito mais.
-
+```ge
+nome = pergunte "Qual seu nome?"
+mostre "Olá {nome}"
 ```
-sistema loja
 
-tema moderno
-cor primaria azul
+Germanio é a evolução gradual do Flang para uma linguagem simples, determinística
+e pensada para frontend e backend. Código natural continua sendo código:
+**não existe LLM dentro do compilador**.
 
-dados
-  produto
-    nome: texto obrigatorio
-    preco: dinheiro
-    status: enum(ativo, inativo, pendente)
+**Estado atual:** fundação `.ge` executável, com análise estática inicial e
+interpretador AST em Go. A camada full-stack histórica continua disponível em
+`.fg`. A integração full-stack na nova sintaxe `.ge` é uma próxima fase, não uma
+funcionalidade já concluída. A [SPEC.md](SPEC.md) define o suporte real e os limites.
 
-telas
-  tela produtos
-    titulo "Produtos"
-    lista produto
-      mostrar nome, preco, status
-    botao azul
-      texto "Novo Produto"
+## Comece em minutos
 
-eventos
-  quando clicar "Novo Produto"
-    criar produto
-```
+Requisito: **Go 1.26.1 ou superior compatível**, conforme `go.mod`.
 
 ```bash
-flang run loja.fg
-# App completa rodando em http://localhost:8080
+git clone https://github.com/flaviokalleu/germanio.git
+cd germanio
+go build -o ge ./cmd/ge
+
+./ge novo meu_programa
+./ge rodar meu_programa/inicio.ge
 ```
 
----
+No Windows, compile com `go build -o ge.exe ./cmd/ge` e execute `.\ge.exe`.
+Para instalar a CLI a partir deste checkout: `go install ./cmd/ge`.
+Os antigos binários e instaladores Flang **não são releases Germanio**.
 
-## Quick Start
-
-### Instalacao
+Experimente os exemplos reais:
 
 ```bash
-# Build do fonte
-git clone https://github.com/flaviokalleu/flang.git
-cd flang
-go build -o flang .
-
-# Ou via instalador (Linux/macOS)
-curl -fsSL https://github.com/flaviokalleu/flang/releases/latest/download/install.sh | sh
+./ge rodar examples/germanio/ola.ge
+./ge rodar examples/germanio/fundamentos.ge
+./ge rodar examples/germanio/imports.ge
+./ge check examples/germanio/entrada.ge
+./ge fmt examples/germanio --check
 ```
 
-### Criar e rodar
+## A linguagem
+
+### Valores seguros por padrão
+
+```ge
+nome = "Flavio"
+mut contador = 0
+contador += 1
+
+mostre "Olá {nome}"
+mostre contador
+```
+
+Valores são imutáveis, a menos que você escreva `mut`. Tipos são inferidos, mas
+anotações são permitidas: `idade: inteiro = 30`. Tipos iniciais: texto, inteiro,
+decimal, bool, listas homogêneas e opcionais `T?`.
+
+### Funções sem cerimônia
+
+```ge
+dobro(x) = x * 2
+
+somar(a: inteiro, b: inteiro) -> inteiro
+  a + b
+
+mostre dobro(21)
+mostre somar(2, 3)
+```
+
+Não é preciso declarar `main`. Blocos usam dois espaços. Inferência de funções
+é monomórfica nesta versão; generics ainda não estão implementados.
+
+### Coleções, condições e repetição
+
+```ge
+mut total = 0
+para valor em [10, 20, 30]
+  total += valor
+
+se total >= 50
+  mostre "Total: {total}"
+senao
+  mostre "Abaixo de 50"
+```
+
+Também existem `enquanto`, `pare`, `continue`, retorno explícito `retorne`,
+recursão, índices com verificação de limites e imports locais com namespace:
+
+```ge
+usa "matematica.ge"
+mostre matematica.somar(2, 3)
+```
+
+### Erros que ajudam a corrigir
+
+`"5" + 2` é erro, não uma coerção escondida. Use `numero("5") + 2`.
+Condições exigem booleanos. Valores não utilizados, alterações de imutáveis,
+imports circulares, divisão por zero e overflow possuem diagnósticos próprios.
+
+Diagnósticos incluem código estável, arquivo, linha/coluna, trecho, motivo,
+correção e exemplo. Consulte uma explicação sem conexão externa:
 
 ```bash
-# Criar novo projeto
-flang new meu-app
-
-# Rodar
-cd meu-app
-flang run inicio.fg
-
-# Abrir no navegador
-# http://localhost:8080
+./ge explicar GE2004
 ```
 
----
+### Base determinística da sintaxe natural
 
-## Exemplo Completo
-
-```
-sistema restaurante
-
-tema elegante
-cor primaria vermelho
-estilo glassmorphism
-
-dados
-  prato
-    nome: texto obrigatorio
-    descricao: texto_longo
-    preco: dinheiro
-    categoria: texto
-    disponivel: booleano
-    foto: imagem
-    status: enum(disponivel, esgotado, em_preparo)
-
-  pedido
-    cliente: texto obrigatorio
-    telefone: telefone
-    prato: pertence_a prato
-    quantidade: numero
-    observacao: texto_longo
-    status: enum(recebido, preparando, pronto, entregue)
-
-telas
-  tela cardapio
-    titulo "Cardapio"
-    lista prato
-      mostrar nome, preco, status, foto
-    botao vermelho
-      texto "Novo Prato"
-
-  tela pedidos
-    titulo "Pedidos"
-    lista pedido
-      mostrar cliente, prato, quantidade, status
-
-eventos
-  quando clicar "Novo Prato"
-    criar prato
-
-  quando criar pedido
-    notificar "Novo pedido recebido!"
-
-logica
-  funcao calcular_total(preco, quantidade)
-    retornar preco * quantidade
-
-autenticacao
-  modelo: usuario
-  campo_login: email
-  campo_senha: senha
-  roles: admin, garcom, cozinha
-
-integracoes
-  whatsapp
-    quando criar pedido
-      enviar mensagem para telefone
-        texto "Pedido recebido! {prato} x{quantidade}"
-
-  email
-    servidor: "smtp.gmail.com"
-    porta: "587"
-    quando criar pedido
-      enviar email para cliente.email
-        assunto "Pedido confirmado"
-        texto "Seu pedido foi confirmado!"
-
-  cron
-    cada 30 minutos
-      executar verificar_estoque
+```ge
+crie navbar escuro
+crie botão escrito "Comprar" azul
+  borda arredondada 16px
 ```
 
----
-
-## Features
-
-### Linguagem e Runtime
-
-| Feature | Descricao |
-|---------|-----------|
-| 20 idiomas | Keywords em PT, EN, ES, FR, DE, IT, ZH, JA, KO, AR, HI, BN, RU, ID, TR, VI, PL, NL, TH, SW |
-| Mistura livre | Use keywords de qualquer idioma no mesmo arquivo |
-| Variaveis | `definir x = 10` / `set x = 10` |
-| Funcoes | `funcao soma(a, b)` / `function sum(a, b)` |
-| Condicionais | `se/senao/senao se` / `if/else/else if` |
-| Loops | `repetir N vezes`, `enquanto`, `para cada` |
-| Controle de fluxo | `parar`, `continuar`, `retornar` |
-| Tratamento de erros | `tentar/erro` (try/catch) |
-| Enums | `status: enum(ativo, inativo, pendente)` |
-| 30+ funcoes built-in | Texto, numero, async, e mais |
-
-### Full-Stack Automatico
-
-| Feature | Descricao |
-|---------|-----------|
-| Backend | Servidor HTTP embutido com API REST completa |
-| Frontend | Dashboard moderno com dark mode e sidebar |
-| Banco de dados | SQLite, MySQL, PostgreSQL |
-| WebSocket | Tempo real entre multiplos usuarios |
-| Upload | Arquivos com preview automatico |
-| Paginacao | `?pagina=1&limite=10&busca=texto&ordenar=preco` |
-| Export | CSV e JSON com um clique |
-| Hot reload | Alteracoes refletidas automaticamente |
-
-### Seguranca
-
-| Feature | Descricao |
-|---------|-----------|
-| JWT Auth | Login, registro, tokens JWT com bcrypt |
-| Roles | Controle de acesso por papel (admin, user, etc.) |
-| Rate limiting | Protecao contra abuso de requisicoes |
-| SSRF protection | Bloqueio de requisicoes a redes internas |
-| XSS prevention | Sanitizacao automatica de inputs |
-| SQL Injection | Queries parametrizadas |
-| Security headers | X-Content-Type-Options, X-Frame-Options, CSP |
-
-### Integracoes
-
-| Feature | Descricao |
-|---------|-----------|
-| WhatsApp | Mensagens automaticas via whatsmeow |
-| Email | SMTP com templates HTML |
-| Cron | Agendamentos (`cada 5 minutos`, `cada 1 hora`) |
-| HTTP Client | Chamar APIs externas |
-| Webhooks | Receber notificacoes |
-
----
-
-## 20 Idiomas
-
-Flang suporta keywords em **20 idiomas**. Voce pode misturar idiomas livremente no mesmo arquivo.
-
-### Portugues
-
-```
-sistema loja
-
-dados
-  produto
-    nome: texto obrigatorio
-    preco: dinheiro
-```
-
-### English
-
-```
-system store
-
-models
-  product
-    name: text required
-    price: money
-```
-
-### Espanol
-
-```
-sistema tienda
-
-datos
-  producto
-    nombre: texto obligatorio
-    precio: dinero
-```
-
-### Francais
-
-```
-systeme magasin
-
-donnees
-  produit
-    nom: texte obligatoire
-    prix: argent
-```
-
-### Deutsch
-
-```
-system laden
-
-daten
-  produkt
-    name: text erforderlich
-    preis: geld
-```
-
-### Italiano
-
-```
-sistema negozio
-
-dati
-  prodotto
-    nome: testo obbligatorio
-    prezzo: denaro
-```
-
-**Idiomas suportados:** Portugues, English, Espanol, Francais, Deutsch, Italiano, Zhongwen, Nihongo, Hangugeo, Alarabiya, Hindi, Bangla, Russkiy, Bahasa Indonesia, Turkce, Tieng Viet, Polski, Nederlands, Thai, Kiswahili.
-
----
-
-## Temas e Estilos
-
-### Presets de Tema
-
-```
-tema moderno       # Design moderno com sombras e gradientes
-tema simples       # Clean e minimalista
-tema elegante      # Sofisticado com tipografia refinada
-tema corporativo   # Profissional para empresas
-tema claro         # Leve e luminoso
-```
-
-### Cores por Nome
-
-Sem necessidade de codigos hex — use nomes de cores diretamente:
-
-```
-cor primaria azul
-cor primaria vermelho
-cor primaria verde
-cor primaria roxo
-cor primaria laranja
-```
-
-### Estilos Visuais
-
-```
-estilo glassmorphism    # Transparencia e blur (padrao)
-estilo flat             # Cores solidas sem sombras
-estilo neumorphism      # Efeito 3D suave
-estilo minimal          # Minimo de elementos visuais
-```
-
-### Exemplo Combinado
-
-```
-sistema dashboard
-
-tema corporativo
-cor primaria azul
-estilo glassmorphism
-```
-
----
-
-## Tipos de Dados
-
-| Tipo PT | Tipo EN | Descricao | Input HTML |
-|---------|---------|-----------|------------|
-| `texto` | `text` | Texto simples | text |
-| `texto_longo` | `long_text` | Texto longo | textarea |
-| `numero` | `number` | Numero | number |
-| `dinheiro` | `money` | Valor monetario | number |
-| `email` | `email` | Com validacao | email |
-| `telefone` | `phone` | Com validacao | tel |
-| `data` | `date` | Data | date |
-| `booleano` | `boolean` | Sim/Nao | checkbox |
-| `senha` | `password` | Mascarado + bcrypt | password |
-| `imagem` | `image` | Upload de imagem | file |
-| `arquivo` | `file` | Upload de arquivo | file |
-| `link` | `link` | URL | url |
-| `status` | `status` | Badge colorido | text |
-| `enum(...)` | `enum(...)` | Valores pre-definidos | select |
-
-### Modificadores
-
-| PT | EN | Efeito |
-|----|----|--------|
-| `obrigatorio` | `required` | NOT NULL + validacao |
-| `unico` | `unique` | UNIQUE constraint |
-| `indice` | `index` | CREATE INDEX |
-| `soft_delete` | `soft_delete` | Exclusao logica |
-
----
-
-## Relacionamentos
-
-```
-dados
-  categoria
-    nome: texto obrigatorio
-
-  produto
-    nome: texto obrigatorio
-    preco: dinheiro
-    categoria: pertence_a categoria       # FK: produto pertence a uma categoria
-
-  tag
-    nome: texto obrigatorio
-    produtos: muitos_para_muitos produto   # Tabela intermediaria automatica
-
-  pedido
-    cliente: texto
-    itens: tem_muitos item_pedido          # Um pedido tem muitos itens
-```
-
-| Tipo | Descricao |
-|------|-----------|
-| `pertence_a` / `belongs_to` | Foreign key (N:1) |
-| `tem_muitos` / `has_many` | Relacao inversa (1:N) |
-| `muitos_para_muitos` / `many_to_many` | Tabela intermediaria (N:N) |
-
----
-
-## Rotas, Paginas e Sidebar Personalizadas
-
-### Rotas Personalizadas
-
-```
-rotas_personalizadas
-  rota "/dashboard"
-    metodo "GET"
-    resposta "Pagina principal"
-
-  rota "/relatorio"
-    metodo "GET"
-    resposta "Relatorio mensal"
-```
-
-### Paginas Personalizadas
-
-```
-paginas_personalizadas
-  pagina "sobre"
-    titulo "Sobre Nos"
-    conteudo "Texto da pagina sobre a empresa."
-```
-
-### Sidebar Personalizada
-
-```
-sidebar_personalizada
-  item "Dashboard" icone "home" link "/dashboard"
-  item "Relatorios" icone "chart" link "/relatorio"
-  item "Configuracoes" icone "settings" link "/config"
-```
-
----
-
-## Funcoes Async
-
-Flang inclui funcoes async para operacoes paralelas e assincronas:
-
-```
-logica
-  # Executar funcoes em paralelo
-  paralelo
-    chamar buscar_dados()
-    chamar processar_relatorio()
-    chamar enviar_notificacoes()
-
-  # Esperar resultado
-  definir resultado = esperar chamar_async(buscar_dados)
-
-  # Timeout
-  timeout 5000
-    chamar operacao_lenta()
-
-  # Consultas em paralelo
-  definir dados = consultar_paralelo
-    buscar usuarios
-    buscar pedidos
-    buscar produtos
-```
-
-### Lista de Funcoes Built-in (30+)
-
-**Texto:** `texto`, `maiusculo`, `minusculo`, `contem`, `dividir`, `juntar`, `tamanho`
-
-**Numero:** `numero`, `arredondar`, `abs`, `min`, `max`, `inteiro`, `aleatorio`
-
-**Utilitarios:** `tipo`, `agora`, `mostrar`
-
-**Async:** `paralelo`, `esperar`, `timeout`, `chamar_async`, `consultar_paralelo`
-
----
-
-## Seguranca
-
-```
-autenticacao
-  modelo: usuario
-  campo_login: email
-  campo_senha: senha
-  roles: admin, vendedor, cliente
-```
-
-| Recurso | Implementacao |
-|---------|---------------|
-| Autenticacao | JWT tokens com expiracao |
-| Senhas | Hash bcrypt automatico |
-| Roles | Controle de acesso baseado em papel |
-| Rate Limiting | Limite de requisicoes por IP |
-| SSRF | Bloqueio de acesso a redes internas |
-| XSS | Sanitizacao de inputs e outputs |
-| SQL Injection | Queries parametrizadas |
-| Headers | CSP, X-Frame-Options, X-Content-Type-Options |
-| Validacao | `obrigatorio`, `unico`, `email`, `telefone` |
-
----
-
-## CLI
-
-| Comando | Descricao |
-|---------|-----------|
-| `flang run arquivo.fg` | Executa o arquivo .fg |
-| `flang arquivo.fg` | Atalho para run |
-| `flang check arquivo.fg` | Verifica sintaxe sem executar |
-| `flang new nome` | Cria novo projeto com estrutura basica |
-| `flang init nome` | Cria projeto com .env e Docker |
-| `flang build arquivo.fg` | Gera executavel standalone |
-| `flang docker` | Gera Dockerfile e docker-compose |
-| `flang version` | Mostra a versao atual |
-| `flang help` | Mostra ajuda |
-
----
-
-## API REST
-
-Cada modelo gera automaticamente endpoints REST:
-
-| Metodo | Rota | Acao |
-|--------|------|------|
-| `GET` | `/api/{modelo}` | Listar (com paginacao, filtros, busca) |
-| `GET` | `/api/{modelo}/{id}` | Buscar por ID |
-| `POST` | `/api/{modelo}` | Criar |
-| `PUT` | `/api/{modelo}/{id}` | Atualizar |
-| `DELETE` | `/api/{modelo}/{id}` | Deletar |
-
-### Query Parameters
-
-```
-?pagina=1&limite=10          # Paginacao
-?busca=texto                 # Busca full-text
-?status=ativo                # Filtro por campo
-?ordenar=preco&ordem=ASC     # Ordenacao
-```
-
-### Endpoints Especiais
-
-| Rota | Descricao |
-|------|-----------|
-| `/api/login` | Login (JWT) |
-| `/api/registro` | Registro |
-| `/api/me` | Usuario atual |
-| `/api/_stats` | Estatisticas |
-| `/api/{modelo}/export/csv` | Exportar CSV |
-| `/api/{modelo}/export/json` | Exportar JSON |
-| `/upload` | Upload de arquivos |
-| `/health` | Health check |
-| `/ws` | WebSocket |
-
----
-
-## Extensao VS Code
-
-A extensao `vscode-flang` oferece:
-
-- **Syntax highlighting** para arquivos `.fg`
-- **22 snippets** para produtividade rapida
-- **Reconhecimento de keywords** nos 20 idiomas suportados
-
-### Instalacao
+Esse subconjunto produz **HTML estático escapado no terminal**:
 
 ```bash
-# Na pasta do projeto
-cd vscode-flang
-# Copie para extensoes do VS Code
-cp -r . ~/.vscode/extensions/vscode-flang
+./ge rodar examples/germanio/interface.ge > interface.html
 ```
 
----
+Ainda não há eventos, hover, responsividade ou conexão automática com backend
+na sintaxe nova. Propriedades desconhecidas são rejeitadas. `45deg` em uma borda
+produz GE4102, com orientação para usar comprimento, como `45px`.
 
-## Estrutura do Projeto
+## Comandos disponíveis
 
-```
-flang/
-├── main.go                  # Ponto de entrada
-├── cli/                     # Comandos CLI
-├── compiler/
-│   ├── lexer/               # Tokenizador (20 idiomas)
-│   ├── parser/              # Parser -> AST
-│   └── ast/                 # Nodes da AST
-├── runtime/
-│   ├── interpreter/         # Motor de scripting
-│   ├── auth/                # JWT + bcrypt + roles
-│   ├── banco/               # SQLite, MySQL, PostgreSQL
-│   ├── servidor/            # HTTP + WebSocket + Renderer
-│   ├── whatsapp/            # Integracao WhatsApp
-│   ├── email/               # SMTP com templates HTML
-│   ├── cron/                # Agendamentos
-│   └── httpclient/          # HTTP client
-├── vscode-flang/            # Extensao VS Code
-├── examples/                # Programas de exemplo
-├── demo/                    # Aplicacoes completas
-├── docs/                    # Documentacao
-└── installer/               # Instaladores Windows/Linux
-```
+| Comando | Comportamento real |
+| --- | --- |
+| `ge rodar arquivo.ge` | Verifica e executa; usa `inicio.ge` se omitido |
+| `ge check arquivo.ge` | Analisa sem executar entrada, banco ou servidor |
+| `ge fmt arquivo-ou-pasta` | Formatação inicial com preservação de comentários |
+| `ge fmt --check` | Retorna erro se há diferenças; não escreve |
+| `ge novo pasta` | Cria um programa; não sobrescreve pasta existente |
+| `ge explicar GE2004` | Explica um diagnóstico conhecido |
+| `ge versao` / `ge ajuda` | Versão e ajuda |
+| `ge legado ...` | Acesso explícito à CLI Flang |
 
----
+`ge build`, `ge testar`, package manager, LSP, JIT, WASM, GPU e SIMD **não estão
+implementados**. Não há comandos vazios simulando esses recursos. Os testes do
+projeto são executados com Go.
 
-## Contribuir
+## Flang continua funcionando
 
 ```bash
-git clone https://github.com/flaviokalleu/flang.git
-cd flang
-go build -o flang .
-go test ./... -v
+./ge check demo/plano/inicio.fg
+./ge rodar demo/plano/inicio.fg 8080
+
+# CLI histórica, com os comandos originais:
+go build -o flang ./cmd/flang
+./flang run demo/plano/inicio.fg
 ```
 
-1. Fork o repositorio
-2. Crie sua branch (`git checkout -b feature/nova-feature`)
-3. Commit suas alteracoes (`git commit -m 'Add: nova feature'`)
-4. Push para a branch (`git push origin feature/nova-feature`)
-5. Abra um Pull Request
+Foram preservados o parser/lexer multilíngue, o AST full-stack, o interpretador
+legado, modelos, telas, temas, rotas, banco, autenticação e integrações. `.fg`
+mantém sua semântica anterior; não recebe automaticamente as garantias `.ge`.
+**Não basta renomear um arquivo `.fg` para `.ge`.**
 
----
+Consulte a [documentação histórica](docs/FLANG_LEGACY.md). Os exemplos antigos
+continuam em `examples/` e `demo/`; os novos estão em `examples/germanio/`.
 
-## Licenca
+## Desenvolvimento e validação
 
-MIT License — veja [LICENSE](LICENSE)
+```bash
+go test ./...
+go vet ./...
+go test -race ./compiler/... ./runtime/germanio ./tooling/...
+go test ./compiler/parser -run '^$' -fuzz FuzzGermanioParser -fuzztime 15s
+go build -o ge ./cmd/ge
+```
 
----
+O instalador Windows só é compilado com a tag `installer` e o payload preparado;
+não deve bloquear testes normais. A CI verifica testes, builds, exemplos `.ge`,
+formatter e exemplos `.fg`.
 
-<p align="center">
-  <img src="logo.png" alt="Flang" width="120">
-  <br>
-  <strong>Flang v0.5.0</strong> — Descreva. Programe. Execute.
-  <br>
-  <sub>Feito por <a href="https://github.com/flaviokalleu">@flaviokalleu</a></sub>
-</p>
+## Evolução com honestidade
+
+O próximo foco é aprofundar tipos, opcionais, inferência, escopos e módulos.
+Depois vêm a ponte segura cliente/servidor e a UI natural completa. Otimizações,
+HIR/MIR, backends nativos e recursos avançados só serão marcados como disponíveis
+quando funcionarem e tiverem testes.
+
+Veja [SPEC.md](SPEC.md) e o [relatório da fundação](docs/PHASE1.md).
+
+Licença [MIT](LICENSE).

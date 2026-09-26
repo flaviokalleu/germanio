@@ -1,8 +1,8 @@
 {
   "name": "flang",
-  "displayName": "Flang Language",
-  "description": "Syntax highlighting, snippets and language support for Flang (.fg files)",
-  "version": "0.5.0",
+  "displayName": "Germanio + Flang",
+  "description": "Germanio (.ge) syntax highlighting with legacy Flang (.fg) compatibility; not a language server",
+  "version": "0.7.0",
   "publisher": "flang",
   "engines": {
     "vscode": "^1.75.0"
@@ -22,6 +22,12 @@
   "contributes": {
     "languages": [
       {
+        "id": "germanio",
+        "aliases": ["Germanio", "germanio"],
+        "extensions": [".ge"],
+        "configuration": "./language-configuration.json"
+      },
+      {
         "id": "flang",
         "aliases": [
           "Flang",
@@ -39,6 +45,11 @@
     ],
     "grammars": [
       {
+        "language": "germanio",
+        "scopeName": "source.germanio",
+        "path": "./syntaxes/germanio.tmLanguage.json"
+      },
+      {
         "language": "flang",
         "scopeName": "source.flang",
         "path": "./syntaxes/flang.tmLanguage.json"
@@ -53,7 +64,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/flavio/flang"
+    "url": "https://github.com/flaviokalleu/germanio"
   },
   "license": "MIT"
 }

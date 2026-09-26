@@ -1,0 +1,7 @@
+somar(a: inteiro, b: inteiro) -> inteiro
+  a + b
+
+fatorial(n: inteiro) -> inteiro
+  se n == 0
+    retorne 1
+  retorne n * fatorial(n - 1)

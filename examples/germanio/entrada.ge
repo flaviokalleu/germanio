@@ -1,0 +1,2 @@
+nome = pergunte "Qual seu nome?"
+mostre "Olá {nome}"

@@ -1,0 +1,4 @@
+usa "matematica.ge"
+
+mostre matematica.somar(20, 22)
+mostre matematica.fatorial(5)
