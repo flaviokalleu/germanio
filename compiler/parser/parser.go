@@ -1026,10 +1026,10 @@ func (p *Parser) parseTema() error {
 	return nil
 }
 
-// parseImportar parses: importar "arquivo.fg"
+// parseImportar parses: importar "arquivo.ge"
 //
-//	importar dados de "arquivo.fg"
-//	importar tela de "arquivo.fg"
+//	importar dados de "arquivo.ge"
+//	importar tela de "arquivo.ge"
 func (p *Parser) parseImportar() error {
 	p.advance() // consume 'importar'
 	p.skipIndent()
@@ -1038,7 +1038,7 @@ func (p *Parser) parseImportar() error {
 
 	tok := p.current()
 
-	// importar "file.fg" (import everything)
+	// importar "file.ge" (import everything)
 	if tok.Type == lexer.TokenString {
 		imp.What = "tudo"
 		imp.Path = p.advance().Value
@@ -1046,7 +1046,7 @@ func (p *Parser) parseImportar() error {
 		return nil
 	}
 
-	// importar <what> de "file.fg"
+	// importar <what> de "file.ge"
 	imp.What = p.advance().Value
 	p.skipIndent()
 

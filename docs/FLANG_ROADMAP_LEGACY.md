@@ -69,7 +69,7 @@
 - [x] run, check, new, init, build, docker, ide, version, help
 
 ### IDE Web (Flang IDE)
-- [x] Monaco Editor com syntax highlighting para .fg
+- [x] Monaco Editor com syntax highlighting para .ge
 - [x] File tree, tabs, Ctrl+S, terminal
 - [x] Run/Stop/Check buttons
 - [x] 3 modos: Codigo, Designer, Fluxos
@@ -95,7 +95,7 @@
 - [ ] 12 componentes arrastaveis com resize livre
 - [ ] Snap-to-grid (20px)
 - [ ] Propriedades no painel direito
-- [ ] Geracao automatica de .fg em tempo real
+- [ ] Geracao automatica de .ge em tempo real
 - [ ] Controles de zoom (+, -, Reset)
 - [ ] Delete com tecla Del
 
@@ -140,7 +140,7 @@
 | # | Feature | Descricao | Status |
 |---|---------|-----------|--------|
 | 26 | Templates prontos | `flang new loja`, `clinica`, `escola`, `delivery` | 🔜 |
-| 27 | Wizard de criacao | perguntas guiadas → gera .fg | 🔜 |
+| 27 | Wizard de criacao | perguntas guiadas → gera .ge | 🔜 |
 | 28 | LSP (autocomplete) | sugestoes no editor | 🔜 |
 | 29 | Preview ao vivo na IDE | iframe com o app rodando | 🔜 |
 | 30 | Undo/Redo no canvas | Ctrl+Z / Ctrl+Y | 🔜 |
@@ -165,7 +165,7 @@
 | 45 | Atualizar sem downtime | `flang update` | 🔜 |
 | 46 | Backup na nuvem | `flang backup` | 💡 |
 | 47 | Git integrado na IDE | commit/push dentro da IDE | 🔜 |
-| 48 | AI assistant na IDE | chat que gera .fg | 🔜 |
+| 48 | AI assistant na IDE | chat que gera .ge | 🔜 |
 | 49 | Marketplace de templates | baixar e compartilhar | 💡 |
 | 50 | App Electron da IDE | aplicativo desktop instalavel | 🔜 |
 

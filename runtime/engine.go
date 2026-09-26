@@ -20,7 +20,7 @@ import (
 	wa "github.com/flaviokalleu/germanio/runtime/whatsapp"
 )
 
-// parseFG reads and parses a single .fg file.
+// parseFG reads and parses a single .ge file.
 func parseFG(arquivo string) (*ast.Program, error) {
 	source, err := os.ReadFile(arquivo)
 	if err != nil {
@@ -49,7 +49,7 @@ func resolveImports(program *ast.Program, baseDir string, resolved map[string]bo
 	}
 
 	for _, imp := range program.Imports {
-		// Resolve path relative to the base .fg file
+		// Resolve path relative to the base .ge file
 		importPath := filepath.Join(baseDir, imp.Path)
 		absPath, err := filepath.Abs(importPath)
 		if err != nil {
@@ -98,7 +98,7 @@ func resolveImports(program *ast.Program, baseDir string, resolved map[string]bo
 		case "logica":
 			program.Rules = append(program.Rules, imported.Rules...)
 		default:
-			// Import specific named items (e.g., importar produto de "dados.fg")
+			// Import specific named items (e.g., importar produto de "dados.ge")
 			for _, m := range imported.Models {
 				if m.Name == imp.What {
 					program.Models = append(program.Models, m)
@@ -115,7 +115,7 @@ func resolveImports(program *ast.Program, baseDir string, resolved map[string]bo
 	return nil
 }
 
-// Executar loads a .fg file and runs the application.
+// Executar loads a .ge file and runs the application.
 func Executar(arquivo string, porta string) error {
 	// Load .env
 	envPath := filepath.Join(filepath.Dir(arquivo), ".env")
@@ -242,7 +242,7 @@ func Executar(arquivo string, porta string) error {
 	return srv.Iniciar()
 }
 
-// Verificar loads and parses a .fg file without running.
+// Verificar loads and parses a .ge file without running.
 func Verificar(arquivo string) error {
 	program, err := parseFG(arquivo)
 	if err != nil {

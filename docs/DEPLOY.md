@@ -35,7 +35,7 @@
 
 ### Para produção (compilado)
 
-O binário `flang` é **auto-contido** — não requer instalação de Go no servidor de produção. Apenas o binário compilado e os arquivos `.fg` são necessários.
+O binário `flang` é **auto-contido** — não requer instalação de Go no servidor de produção. Apenas o binário compilado e os arquivos `.ge` são necessários.
 
 ### Compilar o binário
 
@@ -83,13 +83,13 @@ flang new minha-loja
 
 # Estrutura criada:
 # minha-loja/
-#   inicio.fg
+#   inicio.ge
 
 # Navegar para o diretório
 cd minha-loja
 
 # Executar
-flang run inicio.fg
+flang run inicio.ge
 ```
 
 ### 2.3 Inicializar Projeto Completo
@@ -101,30 +101,30 @@ flang init minha-loja
 
 # Estrutura criada:
 # minha-loja/
-#   inicio.fg
+#   inicio.ge
 #   .env
 #   .gitignore
 #   Dockerfile
 
 cd minha-loja
-flang run inicio.fg
+flang run inicio.ge
 ```
 
 ### 2.4 Comandos CLI
 
 ```bash
 # Executar aplicação (porta padrão: 8080)
-flang run inicio.fg
+flang run inicio.ge
 
 # Executar em porta personalizada
-flang run inicio.fg 3000
+flang run inicio.ge 3000
 
 # Atalho — sem subcomando "run"
-flang inicio.fg
-flang inicio.fg 3000
+flang inicio.ge
+flang inicio.ge 3000
 
 # Verificar sintaxe sem executar
-flang check inicio.fg
+flang check inicio.ge
 
 # Criar novo projeto
 flang new nome-do-projeto
@@ -149,30 +149,30 @@ Flang não tem hot-reload nativo. Use ferramentas externas:
 ```bash
 # Usando 'air' (https://github.com/air-verse/air)
 go install github.com/air-verse/air@latest
-air -- run inicio.fg
+air -- run inicio.ge
 
 # Usando 'watchexec'
-watchexec -e fg -- flang run inicio.fg
+watchexec -e fg -- flang run inicio.ge
 
 # Usando 'nodemon' (requer Node.js)
-npx nodemon --watch "*.fg" --exec "flang run inicio.fg"
+npx nodemon --watch "*.ge" --exec "flang run inicio.ge"
 ```
 
 ### 2.6 Verificar Antes de Deploy
 
 ```bash
 # Verifica toda a sintaxe sem iniciar o servidor
-flang check inicio.fg
+flang check inicio.ge
 
 # Saída de sucesso:
-# [flang] Sintaxe OK: inicio.fg
+# [flang] Sintaxe OK: inicio.ge
 ```
 
 ---
 
 ## 3. Variáveis de Ambiente
 
-Crie um arquivo `.env` na mesma pasta do `.fg` para configurar o ambiente.
+Crie um arquivo `.env` na mesma pasta do `.ge` para configurar o ambiente.
 
 ### 3.1 Arquivo `.env` Padrão
 
@@ -233,9 +233,9 @@ uploads/
 *.log
 ```
 
-### 3.3 Configuração via Arquivo `.fg`
+### 3.3 Configuração via Arquivo `.ge`
 
-Alternativamente, configure diretamente no arquivo `.fg`:
+Alternativamente, configure diretamente no arquivo `.ge`:
 
 ```flang
 banco
@@ -287,10 +287,10 @@ curl http://localhost:8080/api/produto/export/json > produto.json
 curl http://localhost:8080/api/cliente/export/json > cliente.json
 # (repetir para cada modelo)
 
-# 2. Atualizar configuração do banco no .fg
+# 2. Atualizar configuração do banco no .ge
 
 # 3. Reiniciar (cria tabelas automaticamente)
-flang run inicio.fg
+flang run inicio.ge
 
 # 4. Importar dados via API
 cat produto.json | jq -c '.[]' | while read item; do
@@ -346,7 +346,7 @@ GRANT ALL PRIVILEGES ON DATABASE minha_loja TO app_user;
 \q
 ```
 
-### 5.3 Configuração no `.fg`
+### 5.3 Configuração no `.ge`
 
 ```flang
 banco
@@ -387,7 +387,7 @@ max_client_conn = 1000
 default_pool_size = 20
 ```
 
-No `.fg`:
+No `.ge`:
 ```flang
 banco
   driver: postgres
@@ -427,7 +427,7 @@ FLUSH PRIVILEGES;
 EXIT;
 ```
 
-### 6.3 Configuração no `.fg`
+### 6.3 Configuração no `.ge`
 
 ```flang
 banco
@@ -482,10 +482,10 @@ FROM alpine:3.20
 RUN apk add --no-cache ca-certificates
 WORKDIR /app
 COPY --from=builder /build/flang /usr/local/bin/flang
-COPY *.fg ./
+COPY *.ge ./
 
 EXPOSE 8080
-CMD ["flang", "run", "inicio.fg"]
+CMD ["flang", "run", "inicio.ge"]
 ```
 
 ### 7.2 Dockerfile Personalizado para Produção
@@ -524,7 +524,7 @@ COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=builder /build/flang /flang
 
 # Arquivos da aplicação
-COPY *.fg /app/
+COPY *.ge /app/
 
 WORKDIR /app
 
@@ -536,7 +536,7 @@ EXPOSE 8080
 ENV FLANG_PORT=8080
 
 ENTRYPOINT ["/flang"]
-CMD ["run", "inicio.fg"]
+CMD ["run", "inicio.ge"]
 ```
 
 ### 7.3 Construir e Executar
@@ -856,7 +856,7 @@ sudo mkdir -p /opt/minha-loja/uploads
 # Copiar binário e arquivos
 sudo cp flang /usr/local/bin/flang
 sudo chmod +x /usr/local/bin/flang
-sudo cp inicio.fg /opt/minha-loja/
+sudo cp inicio.ge /opt/minha-loja/
 sudo cp .env /opt/minha-loja/
 
 # Definir permissões
@@ -886,7 +886,7 @@ Group=flang
 WorkingDirectory=/opt/minha-loja
 
 # Comando de inicialização
-ExecStart=/usr/local/bin/flang run inicio.fg 8080
+ExecStart=/usr/local/bin/flang run inicio.ge 8080
 
 # Reiniciar automaticamente em caso de falha
 Restart=on-failure
@@ -973,9 +973,9 @@ fi
 sudo cp flang /usr/local/bin/flang
 sudo chmod +x /usr/local/bin/flang
 
-# 4. Atualizar arquivos .fg
-sudo cp *.fg "$APP_DIR/"
-sudo chown flang:flang "$APP_DIR/"*.fg
+# 4. Atualizar arquivos .ge
+sudo cp *.ge "$APP_DIR/"
+sudo chown flang:flang "$APP_DIR/"*.ge
 
 # 5. Reiniciar serviço
 sudo systemctl start $SERVICE
@@ -1096,7 +1096,7 @@ export GOMAXPROCS=$(nproc)
 export GOGC=200
 
 # Executar com configurações
-GOMAXPROCS=$(nproc) GOGC=200 flang run inicio.fg
+GOMAXPROCS=$(nproc) GOGC=200 flang run inicio.ge
 ```
 
 ### 11.5 Capacidade Estimada
@@ -1356,7 +1356,7 @@ O Flang usa **bcrypt** (custo 10) para hashing de senhas — padrão da indústr
 
 ### Pré-Deploy
 
-- [ ] `flang check inicio.fg` passou sem erros
+- [ ] `flang check inicio.ge` passou sem erros
 - [ ] Banco de dados configurado e acessível
 - [ ] Variáveis de ambiente definidas no `.env`
 - [ ] JWT Secret definido e seguro
@@ -1366,7 +1366,7 @@ O Flang usa **bcrypt** (custo 10) para hashing de senhas — padrão da indústr
 ### Deploy
 
 - [ ] Binário `flang` compilado para o SO alvo
-- [ ] Arquivos `.fg` transferidos para o servidor
+- [ ] Arquivos `.ge` transferidos para o servidor
 - [ ] Permissões de arquivo corretas
 - [ ] Serviço systemd configurado e ativo
 - [ ] Nginx configurado com SSL
@@ -1388,10 +1388,10 @@ O Flang usa **bcrypt** (custo 10) para hashing de senhas — padrão da indústr
 
 ```bash
 # ===== CLI =====
-flang run inicio.fg          # Executar na porta 8080
-flang run inicio.fg 3000     # Executar na porta 3000
-flang inicio.fg              # Atalho para run
-flang check inicio.fg        # Verificar sintaxe
+flang run inicio.ge          # Executar na porta 8080
+flang run inicio.ge 3000     # Executar na porta 3000
+flang inicio.ge              # Atalho para run
+flang check inicio.ge        # Verificar sintaxe
 flang new meu-app            # Novo projeto básico
 flang init meu-app           # Novo projeto completo
 flang docker                 # Gerar Dockerfile

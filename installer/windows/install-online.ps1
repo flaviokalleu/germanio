@@ -206,19 +206,19 @@ function Adicionar-AoPath {
 }
 
 # ---------------------------------------------------------------------------
-# Associar .fg ao Flang (sem admin)
+# Associar .ge ao Flang (sem admin)
 # ---------------------------------------------------------------------------
 function Criar-AssociacaoFg {
     param([string]$ExeDestino)
 
-    Escrever-Passo "Associando arquivos .fg ao Flang..."
+    Escrever-Passo "Associando arquivos .ge ao Flang..."
     $classe = "FlangFile"
 
-    New-Item -Path "HKCU:\Software\Classes\.fg"          -Force | Out-Null
-    Set-ItemProperty -Path "HKCU:\Software\Classes\.fg" -Name "(Default)" -Value $classe
+    New-Item -Path "HKCU:\Software\Classes\.ge"          -Force | Out-Null
+    Set-ItemProperty -Path "HKCU:\Software\Classes\.ge" -Name "(Default)" -Value $classe
 
     New-Item -Path "HKCU:\Software\Classes\$classe"       -Force | Out-Null
-    Set-ItemProperty -Path "HKCU:\Software\Classes\$classe" -Name "(Default)" -Value "Arquivo Flang (.fg)"
+    Set-ItemProperty -Path "HKCU:\Software\Classes\$classe" -Name "(Default)" -Value "Arquivo Flang (.ge)"
 
     New-Item -Path "HKCU:\Software\Classes\$classe\DefaultIcon" -Force | Out-Null
     Set-ItemProperty -Path "HKCU:\Software\Classes\$classe\DefaultIcon" -Name "(Default)" -Value "$ExeDestino,0"
@@ -232,7 +232,7 @@ function Criar-AssociacaoFg {
         if ($t) { $t::SHChangeNotify(0x08000000, 0, [IntPtr]::Zero, [IntPtr]::Zero) }
     } catch {}
 
-    Escrever-Ok "Arquivos .fg associados ao Flang"
+    Escrever-Ok "Arquivos .ge associados ao Flang"
 }
 
 # ---------------------------------------------------------------------------
@@ -275,7 +275,7 @@ if (Test-Path "$DirInstalacao") { Remove-Item -Path "$DirInstalacao" -Recurse -F
 `$reg = "HKCU:\Environment"
 `$p = (Get-ItemProperty -Path `$reg -Name Path -ErrorAction SilentlyContinue).Path
 if (`$p) { Set-ItemProperty -Path `$reg -Name Path -Value ((`$p -split ';' | Where { `$_ -ne "$DirBin" }) -join ';') -Type ExpandString }
-foreach (`$k in @("HKCU:\Software\Classes\.fg","HKCU:\Software\Classes\FlangFile")) {
+foreach (`$k in @("HKCU:\Software\Classes\.ge","HKCU:\Software\Classes\FlangFile")) {
     if (Test-Path `$k) { Remove-Item -Path `$k -Recurse -Force }
 }
 `$sm = Join-Path `$env:APPDATA "Microsoft\Windows\Start Menu\Programs\Flang"

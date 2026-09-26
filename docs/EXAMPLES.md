@@ -23,7 +23,7 @@ Colecao de exemplos completos e comentados para inspirar e acelerar o desenvolvi
 
 O exemplo mais basico: produtos, clientes e pedidos com CRUD completo.
 
-**Arquivo:** `exemplos/loja/inicio.fg`
+**Arquivo:** `exemplos/loja/inicio.ge`
 
 ```
 sistema loja
@@ -86,7 +86,7 @@ eventos
 **Como rodar:**
 
 ```bash
-./flang run exemplos/loja/inicio.fg
+./flang run exemplos/loja/inicio.ge
 ```
 
 Acesse `http://localhost:8080` para ver o resultado.
@@ -95,33 +95,33 @@ Acesse `http://localhost:8080` para ver o resultado.
 
 ## 2. Restaurante Modular
 
-Demonstra o sistema de **imports** — dividindo um sistema grande em varios arquivos `.fg` separados para melhor organizacao.
+Demonstra o sistema de **imports** — dividindo um sistema grande em varios arquivos `.ge` separados para melhor organizacao.
 
 **Estrutura de arquivos:**
 
 ```
 restaurante-modular/
-  inicio.fg    <- ponto de entrada (so imports)
-  dados.fg     <- modelos
-  telas.fg     <- telas e componentes
-  eventos.fg   <- eventos
-  regras.fg    <- logica e validacoes
-  tema.fg      <- tema visual
+  inicio.ge    <- ponto de entrada (so imports)
+  dados.ge     <- modelos
+  telas.ge     <- telas e componentes
+  eventos.ge   <- eventos
+  regras.ge    <- logica e validacoes
+  tema.ge      <- tema visual
 ```
 
-**inicio.fg**
+**inicio.ge**
 
 ```
 sistema restaurante
 
-importar "tema.fg"
-importar "dados.fg"
-importar "telas.fg"
-importar "eventos.fg"
-importar "regras.fg"
+importar "tema.ge"
+importar "dados.ge"
+importar "telas.ge"
+importar "eventos.ge"
+importar "regras.ge"
 ```
 
-**tema.fg**
+**tema.ge**
 
 ```
 tema
@@ -131,7 +131,7 @@ tema
   cor sidebar "#1e1b4b"
 ```
 
-**dados.fg**
+**dados.ge**
 
 ```
 dados
@@ -164,7 +164,7 @@ dados
     status: status
 ```
 
-**telas.fg**
+**telas.ge**
 
 ```
 telas
@@ -209,7 +209,7 @@ telas
       texto "Novo Funcionário"
 ```
 
-**eventos.fg**
+**eventos.ge**
 
 ```
 eventos
@@ -227,7 +227,7 @@ eventos
     criar funcionario
 ```
 
-**regras.fg**
+**regras.ge**
 
 ```
 logica
@@ -246,7 +246,7 @@ logica
 ```
 
 **O que este exemplo demonstra:**
-- Sistema de imports (`importar "arquivo.fg"`)
+- Sistema de imports (`importar "arquivo.ge"`)
 - Separacao de responsabilidades por arquivo
 - Relacionamentos (`pertence_a`)
 - Modificadores combinados (`obrigatorio unico`)
@@ -259,7 +259,7 @@ logica
 
 Sistema completo de restaurante com notificacoes automaticas via WhatsApp para clientes ao criar e atualizar pedidos.
 
-**Arquivo:** `exemplos/restaurante-whatsapp/inicio.fg`
+**Arquivo:** `exemplos/restaurante-whatsapp/inicio.ge`
 
 ```
 sistema restaurante
@@ -354,7 +354,7 @@ integracoes
 **Como testar:**
 
 ```bash
-./flang run exemplos/restaurante-whatsapp/inicio.fg
+./flang run exemplos/restaurante-whatsapp/inicio.ge
 # Na primeira execucao: escanear QR Code no terminal
 # Crie um pedido com numero de telefone valido
 # A mensagem chega no WhatsApp em segundos
@@ -366,7 +366,7 @@ integracoes
 
 Demonstra que o Flang funciona **100% em ingles**, com todas as palavras-chave traduzidas.
 
-**Arquivo:** `exemplos/english/inicio.fg`
+**Arquivo:** `exemplos/english/inicio.ge`
 
 ```
 system store
@@ -485,7 +485,7 @@ logic
 
 Demonstra que e possivel **misturar** palavras-chave em portugues e ingles no mesmo arquivo. O Flang aceita qualquer combinacao.
 
-**Arquivo:** `exemplos/mixed/inicio.fg`
+**Arquivo:** `exemplos/mixed/inicio.ge`
 
 ```
 system pizzaria
@@ -553,7 +553,7 @@ events
 
 O exemplo mais completo: autenticacao com roles, multiplos modelos, validacoes e tema customizado.
 
-**Arquivo:** `exemplos/loja-completa/inicio.fg`
+**Arquivo:** `exemplos/loja-completa/inicio.ge`
 
 ```
 sistema loja
@@ -656,7 +656,7 @@ logica
 
 ```bash
 # 1. Inicie o servidor
-./flang run exemplos/loja-completa/inicio.fg
+./flang run exemplos/loja-completa/inicio.ge
 
 # 2. Crie um admin
 curl -X POST http://localhost:8080/auth/register \
@@ -1303,10 +1303,10 @@ dados
 
 ```
 // importar dados de arquivo especifico
-importar dados de "modelos-compartilhados.fg"
+importar dados de "modelos-compartilhados.ge"
 
 // importar tudo
-importar "config-base.fg"
+importar "config-base.ge"
 ```
 
 ### Validacao com Logica Condicional
@@ -1330,25 +1330,25 @@ logica
 
 ```bash
 # Loja simples
-./flang run exemplos/loja/inicio.fg
+./flang run exemplos/loja/inicio.ge
 
 # Restaurante completo
-./flang run exemplos/restaurante/inicio.fg
+./flang run exemplos/restaurante/inicio.ge
 
 # Restaurante modular (importa multiplos arquivos)
-./flang run exemplos/restaurante-modular/inicio.fg
+./flang run exemplos/restaurante-modular/inicio.ge
 
 # Restaurante com WhatsApp
-./flang run exemplos/restaurante-whatsapp/inicio.fg
+./flang run exemplos/restaurante-whatsapp/inicio.ge
 
 # Loja em ingles
-./flang run exemplos/english/inicio.fg
+./flang run exemplos/english/inicio.ge
 
 # Pizzaria bilinguie
-./flang run exemplos/mixed/inicio.fg
+./flang run exemplos/mixed/inicio.ge
 
 # Loja com autenticacao
-./flang run exemplos/loja-completa/inicio.fg
+./flang run exemplos/loja-completa/inicio.ge
 ```
 
 Todos os exemplos iniciam o servidor na porta `8080` por padrao. Acesse `http://localhost:8080` no navegador.

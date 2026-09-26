@@ -1,6 +1,6 @@
 # Documentação histórica do Flang
 
-> Referência do modo `.fg`. Os comandos, versões e instaladores abaixo são históricos.
+> Referência do modo `.ge`. Os comandos, versões e instaladores abaixo são históricos.
 > Para Germanio `.ge`, consulte o [README atual](../README.md) e a [SPEC](../SPEC.md).
 
 <p align="center">
@@ -13,7 +13,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Version-0.5.0-6366f1?style=for-the-badge" alt="v0.5.0">
-  <img src="https://img.shields.io/badge/Extension-.fg-6366f1?style=for-the-badge" alt="Flang .fg">
+  <img src="https://img.shields.io/badge/Extension-.ge-6366f1?style=for-the-badge" alt="Flang .ge">
   <img src="https://img.shields.io/badge/Go-1.21+-00ADD8?style=for-the-badge&logo=go&logoColor=white" alt="Go 1.21+">
   <img src="https://img.shields.io/badge/20%20Idiomas-PT%20EN%20ES%20FR%20DE%20...-f59e0b?style=for-the-badge" alt="20 Languages">
   <img src="https://img.shields.io/badge/Tests-59%20passing-brightgreen?style=for-the-badge" alt="59 Tests">
@@ -34,7 +34,7 @@
 
 ## O que e o Flang?
 
-**Flang** e uma linguagem de programacao declarativa escrita em Go que gera aplicacoes web full-stack a partir de arquivos `.fg`. Escreva o que voce quer — dados, telas, eventos, logica — e o Flang gera backend, frontend, banco de dados, API REST, autenticacao e muito mais.
+**Flang** e uma linguagem de programacao declarativa escrita em Go que gera aplicacoes web full-stack a partir de arquivos `.ge`. Escreva o que voce quer — dados, telas, eventos, logica — e o Flang gera backend, frontend, banco de dados, API REST, autenticacao e muito mais.
 
 ```
 sistema loja
@@ -62,7 +62,7 @@ eventos
 ```
 
 ```bash
-flang run loja.fg
+flang run loja.ge
 # App completa rodando em http://localhost:8080
 ```
 
@@ -90,7 +90,7 @@ flang new meu-app
 
 # Rodar
 cd meu-app
-flang run inicio.fg
+flang run inicio.ge
 
 # Abrir no navegador
 # http://localhost:8080
@@ -509,12 +509,12 @@ autenticacao
 
 | Comando | Descricao |
 |---------|-----------|
-| `flang run arquivo.fg` | Executa o arquivo .fg |
-| `flang arquivo.fg` | Atalho para run |
-| `flang check arquivo.fg` | Verifica sintaxe sem executar |
+| `flang run arquivo.ge` | Executa o arquivo .ge |
+| `flang arquivo.ge` | Atalho para run |
+| `flang check arquivo.ge` | Verifica sintaxe sem executar |
 | `flang new nome` | Cria novo projeto com estrutura basica |
 | `flang init nome` | Cria projeto com .env e Docker |
-| `flang build arquivo.fg` | Gera executavel standalone |
+| `flang build arquivo.ge` | Gera executavel standalone |
 | `flang docker` | Gera Dockerfile e docker-compose |
 | `flang version` | Mostra a versao atual |
 | `flang help` | Mostra ajuda |
@@ -562,7 +562,7 @@ Cada modelo gera automaticamente endpoints REST:
 
 A extensao `vscode-flang` oferece:
 
-- **Syntax highlighting** para arquivos `.fg`
+- **Syntax highlighting** para arquivos `.ge`
 - **22 snippets** para produtividade rapida
 - **Reconhecimento de keywords** nos 20 idiomas suportados
 

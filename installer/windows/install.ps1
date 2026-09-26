@@ -159,7 +159,7 @@ function Instalar-Binario {
 }
 
 # ---------------------------------------------------------------------------
-# Copiar exemplos .fg
+# Copiar exemplos .ge
 # ---------------------------------------------------------------------------
 function Instalar-Exemplos {
     Escrever-Passo "Copiando exemplos..."
@@ -215,7 +215,7 @@ logic
 "@
         $exemploDir = Join-Path $DirExemplos "ola-mundo"
         New-Item -ItemType Directory -Path $exemploDir -Force | Out-Null
-        $exemploBasico | Set-Content -Path (Join-Path $exemploDir "inicio.fg") -Encoding UTF8
+        $exemploBasico | Set-Content -Path (Join-Path $exemploDir "inicio.ge") -Encoding UTF8
         Escrever-Ok "Exemplo basico criado em $exemploDir"
     }
 }
@@ -242,7 +242,7 @@ Instalado em: $DiretorioInstalacao
 COMO USAR
 ---------
   flang version
-  flang run meu_app.fg
+  flang run meu_app.ge
   flang new minha_loja
 
 EXEMPLOS
@@ -250,7 +250,7 @@ EXEMPLOS
   Os exemplos estao em: $DirExemplos
 
   Para rodar um exemplo:
-    flang run "$DirExemplos\ola-mundo\inicio.fg"
+    flang run "$DirExemplos\ola-mundo\inicio.ge"
 
 MAIS INFORMACOES
 ----------------
@@ -311,18 +311,18 @@ public static extern IntPtr SendMessageTimeout(
 }
 
 # ---------------------------------------------------------------------------
-# Criar associacao de arquivo .fg (sem admin - HKCU)
+# Criar associacao de arquivo .ge (sem admin - HKCU)
 # ---------------------------------------------------------------------------
 function Criar-AssociacaoArquivo {
-    Escrever-Passo "Criando associacao de arquivo .fg..."
+    Escrever-Passo "Criando associacao de arquivo .ge..."
 
     # Classe do programa
     $classeNome = "FlangFile"
-    $descricao  = "Arquivo Flang (.fg)"
+    $descricao  = "Arquivo Flang (.ge)"
     $icone      = "$ExeDestino,0"
 
-    # 1. Registra a extensao .fg apontando para a classe
-    $extKey = "HKCU:\Software\Classes\.fg"
+    # 1. Registra a extensao .ge apontando para a classe
+    $extKey = "HKCU:\Software\Classes\.ge"
     New-Item -Path $extKey -Force | Out-Null
     Set-ItemProperty -Path $extKey -Name "(Default)" -Value $classeNome
 
@@ -336,7 +336,7 @@ function Criar-AssociacaoArquivo {
     New-Item -Path $iconeKey -Force | Out-Null
     Set-ItemProperty -Path $iconeKey -Name "(Default)" -Value $icone
 
-    # Comando de abertura (flang run "arquivo.fg")
+    # Comando de abertura (flang run "arquivo.ge")
     $cmdKey = "$classeKey\shell\open\command"
     New-Item -Path $cmdKey -Force | Out-Null
     Set-ItemProperty -Path $cmdKey -Name "(Default)" -Value "`"$ExeDestino`" run `"%1`""
@@ -355,7 +355,7 @@ public static extern void SHChangeNotify(int wEventId, int uFlags, IntPtr dwItem
         }
     } catch { }
 
-    Escrever-Ok "Arquivos .fg agora abrem com Flang ao dar duplo clique"
+    Escrever-Ok "Arquivos .ge agora abrem com Flang ao dar duplo clique"
 }
 
 # ---------------------------------------------------------------------------
@@ -403,9 +403,9 @@ if (`$pathAtual) {
     Write-Host "  [OK] Removido do PATH" -ForegroundColor Green
 }
 
-# 3. Remove associacao de arquivo .fg
+# 3. Remove associacao de arquivo .ge
 `$chaves = @(
-    "HKCU:\Software\Classes\.fg",
+    "HKCU:\Software\Classes\.ge",
     "HKCU:\Software\Classes\FlangFile"
 )
 foreach (`$chave in `$chaves) {
@@ -413,7 +413,7 @@ foreach (`$chave in `$chaves) {
         Remove-Item -Path `$chave -Recurse -Force
     }
 }
-Write-Host "  [OK] Associacao de arquivo .fg removida" -ForegroundColor Green
+Write-Host "  [OK] Associacao de arquivo .ge removida" -ForegroundColor Green
 
 # 4. Notifica o Explorer
 try {
@@ -490,7 +490,7 @@ function Mostrar-Resumo {
     Write-Host "    $DirExemplos" -ForegroundColor Gray
     Write-Host ""
     Write-Host "  Para rodar um exemplo:" -ForegroundColor White
-    Write-Host "    flang run `"$DirExemplos\ola-mundo\inicio.fg`"" -ForegroundColor Gray
+    Write-Host "    flang run `"$DirExemplos\ola-mundo\inicio.ge`"" -ForegroundColor Gray
     Write-Host ""
     Write-Host "  Para desinstalar:" -ForegroundColor White
     Write-Host "    powershell -File `"$DiretorioInstalacao\desinstalar.ps1`"" -ForegroundColor Gray

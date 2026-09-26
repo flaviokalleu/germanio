@@ -39,7 +39,7 @@ e pensada para frontend e backend. Código natural continua sendo código:
 
 **Estado atual:** fundação `.ge` executável, com análise estática inicial e
 interpretador AST em Go. A camada full-stack histórica continua disponível em
-`.fg`. A integração full-stack na nova sintaxe `.ge` é uma próxima fase, não uma
+`.ge`. A integração full-stack na nova sintaxe `.ge` é uma próxima fase, não uma
 funcionalidade já concluída. A [SPEC.md](SPEC.md) define o suporte real e os limites.
 O [roadmap](docs/ROADMAP.md) apresenta as fases restantes e os critérios para
 considerá-las concluídas.
@@ -246,18 +246,18 @@ projeto são executados com Go.
 ## Flang continua funcionando
 
 ```bash
-./ge check demo/plano/inicio.fg
-./ge rodar demo/plano/inicio.fg 8080
+./ge check demo/plano/inicio.ge
+./ge rodar demo/plano/inicio.ge 8080
 
 # CLI histórica, com os comandos originais:
 go build -o flang ./cmd/flang
-./flang run demo/plano/inicio.fg
+./flang run demo/plano/inicio.ge
 ```
 
 Foram preservados o parser/lexer multilíngue, o AST full-stack, o interpretador
-legado, modelos, telas, temas, rotas, banco, autenticação e integrações. `.fg`
+legado, modelos, telas, temas, rotas, banco, autenticação e integrações. `.ge`
 mantém sua semântica anterior; não recebe automaticamente as garantias `.ge`.
-**Não basta renomear um arquivo `.fg` para `.ge`.**
+**Não basta renomear um arquivo `.ge` para `.ge`.**
 
 Consulte a [documentação histórica](docs/FLANG_LEGACY.md). Os exemplos antigos
 continuam em `examples/` e `demo/`; os novos estão em `examples/germanio/`.
@@ -274,7 +274,7 @@ go build -o ge ./cmd/ge
 
 O instalador Windows só é compilado com a tag `installer` e o payload preparado;
 não deve bloquear testes normais. A CI verifica testes, builds, exemplos `.ge`,
-formatter e exemplos `.fg`.
+formatter e exemplos `.ge`.
 
 ## Evolução com honestidade
 

@@ -218,7 +218,7 @@ func (ide *IDE) handleRun(w http.ResponseWriter, r *http.Request) {
 	}
 	json.NewDecoder(r.Body).Decode(&req)
 	if req.File == "" {
-		req.File = "inicio.fg"
+		req.File = "inicio.ge"
 	}
 
 	exe, _ := os.Executable()
@@ -262,7 +262,7 @@ func (ide *IDE) handleCheck(w http.ResponseWriter, r *http.Request) {
 	}
 	json.NewDecoder(r.Body).Decode(&req)
 	if req.File == "" {
-		req.File = "inicio.fg"
+		req.File = "inicio.ge"
 	}
 
 	exe, _ := os.Executable()

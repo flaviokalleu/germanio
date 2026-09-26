@@ -125,12 +125,12 @@ public static extern IntPtr SendMessageTimeout(
 }
 
 # ---------------------------------------------------------------------------
-# 3. Remover associacao de arquivo .fg (HKCU - sem admin)
+# 3. Remover associacao de arquivo .ge (HKCU - sem admin)
 # ---------------------------------------------------------------------------
-Write-Host "  Removendo associacao de arquivo .fg..." -ForegroundColor Yellow
+Write-Host "  Removendo associacao de arquivo .ge..." -ForegroundColor Yellow
 
 $chavesRemover = @(
-    "HKCU:\Software\Classes\.fg",
+    "HKCU:\Software\Classes\.ge",
     "HKCU:\Software\Classes\$NomeClasse"
 )
 
@@ -159,7 +159,7 @@ public static extern void SHChangeNotify(int wEventId, int uFlags, IntPtr dwItem
     }
 } catch { }
 
-Escrever-Ok "Associacao de arquivo .fg removida"
+Escrever-Ok "Associacao de arquivo .ge removida"
 
 # ---------------------------------------------------------------------------
 # 4. Remover atalhos do Menu Iniciar
@@ -189,7 +189,7 @@ Write-Host ""
 Write-Host "  O que foi removido:" -ForegroundColor White
 Escrever-Info "  - Arquivos em $DiretorioInstalacao"
 Escrever-Info "  - Entrada no PATH do usuario"
-Escrever-Info "  - Associacao de arquivo .fg"
+Escrever-Info "  - Associacao de arquivo .ge"
 Escrever-Info "  - Atalhos do Menu Iniciar"
 Write-Host ""
 Write-Host "  Reinicie o terminal para o PATH ser atualizado." -ForegroundColor Gray

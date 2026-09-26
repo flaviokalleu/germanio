@@ -11,14 +11,14 @@
   "Importar": {
     "prefix": "importar",
     "body": [
-      "importar \"${1:arquivo}.fg\""
+      "importar \"${1:arquivo}.ge\""
     ],
     "description": "Importar arquivo"
   },
   "Importar de": {
     "prefix": "importar de",
     "body": [
-      "importar ${1:dados} de \"${2:arquivo}.fg\""
+      "importar ${1:dados} de \"${2:arquivo}.ge\""
     ],
     "description": "Importar seção específica"
   },
@@ -248,10 +248,10 @@
     "body": [
       "sistema ${1:meuapp}",
       "",
-      "importar \"tema.fg\"",
-      "importar \"dados/${2:modelo}.fg\"",
-      "importar \"telas/${2:modelo}s.fg\"",
-      "importar \"eventos/acoes.fg\"",
+      "importar \"tema.ge\"",
+      "importar \"dados/${2:modelo}.ge\"",
+      "importar \"telas/${2:modelo}s.ge\"",
+      "importar \"eventos/acoes.ge\"",
       ""
     ],
     "description": "Entry point para projeto organizado"

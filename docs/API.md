@@ -30,7 +30,7 @@
 
 ## 1. Visão Geral
 
-O Flang gera automaticamente uma API REST completa para cada modelo declarado no arquivo `.fg`. O servidor roda por padrão na porta `8080`.
+O Flang gera automaticamente uma API REST completa para cada modelo declarado no arquivo `.ge`. O servidor roda por padrão na porta `8080`.
 
 **Base URL:** `http://localhost:8080`
 
@@ -1201,7 +1201,7 @@ Todas as respostas de erro seguem o padrão:
 
 ## 16. Rotas Customizadas
 
-A partir da v0.5.0, o bloco `rotas` no arquivo `.fg` permite definir endpoints personalizados alem dos CRUD automaticos.
+A partir da v0.5.0, o bloco `rotas` no arquivo `.ge` permite definir endpoints personalizados alem dos CRUD automaticos.
 
 ### 16.1 Rota GET Customizada
 

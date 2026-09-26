@@ -23,7 +23,7 @@ Respostas para as duvidas mais comuns sobre o Flang.
 
 ### Q: O que e o Flang?
 
-O Flang e uma linguagem de programacao declarativa e bilinguie (Portugues/Ingles) que gera aplicacoes full-stack completas a partir de arquivos `.fg`. Voce descreve **o que** o sistema deve fazer, e o Flang cuida de todo o codigo de backend, frontend, banco de dados e APIs REST.
+O Flang e uma linguagem de programacao declarativa e bilinguie (Portugues/Ingles) que gera aplicacoes full-stack completas a partir de arquivos `.ge`. Voce descreve **o que** o sistema deve fazer, e o Flang cuida de todo o codigo de backend, frontend, banco de dados e APIs REST.
 
 ### Q: Preciso saber programar para usar o Flang?
 
@@ -54,7 +54,7 @@ go build -o flang .
 
 ```bash
 # Crie um arquivo
-nano meuapp.fg
+nano meuapp.ge
 ```
 
 Conteudo minimo:
@@ -85,7 +85,7 @@ eventos
 ```
 
 ```bash
-./flang run meuapp.fg
+./flang run meuapp.ge
 # Acesse http://localhost:8080
 ```
 
@@ -99,7 +99,7 @@ Ha um instalador disponivel em `installer/`. Consulte o `README.md` principal pa
 
 ### Q: Existe extensao para editor de texto?
 
-Sim. Ha uma extensao para VS Code em `vscode-flang/` no repositorio. Ela fornece realce de sintaxe e autocomplete para arquivos `.fg`.
+Sim. Ha uma extensao para VS Code em `vscode-flang/` no repositorio. Ela fornece realce de sintaxe e autocomplete para arquivos `.ge`.
 
 ---
 
@@ -221,21 +221,21 @@ dados
     valor: dinheiro
 ```
 
-### Q: Como importo um arquivo .fg dentro de outro?
+### Q: Como importo um arquivo .ge dentro de outro?
 
 ```
 // Importa tudo do arquivo
-importar "dados.fg"
-importar "telas.fg"
+importar "dados.ge"
+importar "telas.ge"
 
 // Ou em ingles
-import "dados.fg"
-from "telas.fg"
+import "dados.ge"
+from "telas.ge"
 ```
 
 O arquivo importado deve conter blocos validos (`dados`, `telas`, etc.). Ver o exemplo `restaurante-modular` para uso completo.
 
-### Q: Posso ter multiplos modelos em um arquivo .fg?
+### Q: Posso ter multiplos modelos em um arquivo .ge?
 
 Sim. Todos os modelos ficam dentro do mesmo bloco `dados`:
 
@@ -277,7 +277,7 @@ SQLite. Nao requer configuracao — o banco e criado automaticamente na pasta do
 
 ### Q: Como uso MySQL ou PostgreSQL?
 
-Adicione o bloco `banco` (ou `database`/`db`) no arquivo `.fg`:
+Adicione o bloco `banco` (ou `database`/`db`) no arquivo `.ge`:
 
 ```
 // MySQL
@@ -377,7 +377,7 @@ Sim. O frontend se conecta automaticamente via WebSocket ao servidor. Qualquer a
 
 ### Q: Posso adicionar JavaScript customizado?
 
-Nao diretamente no `.fg`. Para logica de frontend customizada, adicione via API REST — o Flang expoe toda a logica via endpoints que qualquer cliente pode consumir.
+Nao diretamente no `.ge`. Para logica de frontend customizada, adicione via API REST — o Flang expoe toda a logica via endpoints que qualquer cliente pode consumir.
 
 ### Q: O que e o tipo `status` e como ele aparece no frontend?
 
@@ -549,10 +549,10 @@ GOOS=linux GOARCH=amd64 go build -o flang .
 
 # 2. Copie para o servidor
 scp flang usuario@servidor:/opt/meuapp/
-scp meuapp.fg usuario@servidor:/opt/meuapp/
+scp meuapp.ge usuario@servidor:/opt/meuapp/
 
 # 3. Rode com systemd ou Docker
-./flang run meuapp.fg
+./flang run meuapp.ge
 ```
 
 ### Q: O Flang tem suporte a Docker?
@@ -591,8 +591,8 @@ O header `Upgrade` e necessario para WebSocket funcionar.
 Sim. Cada app Flang roda em uma porta diferente. Configure a porta via variavel de ambiente ou argumento:
 
 ```bash
-./flang run loja.fg --port 8080
-./flang run restaurante.fg --port 8081
+./flang run loja.ge --port 8080
+./flang run restaurante.ge --port 8081
 ```
 
 ### Q: Como configuro variaveis de ambiente em producao?
@@ -602,7 +602,7 @@ Sim. Cada app Flang roda em uma porta diferente. Configure a porta via variavel 
 [Service]
 Environment=JWT_SECRET=minha-chave
 Environment=DB_PASSWORD=senha-db
-ExecStart=/opt/meuapp/flang run meuapp.fg
+ExecStart=/opt/meuapp/flang run meuapp.ge
 ```
 
 ### Q: Que recursos de servidor preciso?
@@ -663,7 +663,7 @@ GET /api/produto?page=1&limit=50
 
 ## Erros Comuns
 
-### Q: "unexpected character" no arquivo .fg
+### Q: "unexpected character" no arquivo .ge
 
 Certifique-se de que:
 - Strings estao entre aspas duplas: `"texto"` (nao aspas simples `'texto'`)

@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// WatchFiles monitors .fg files for changes and restarts the process.
+// WatchFiles monitors .ge files for changes and restarts the process.
 func WatchFiles(dir string, arquivo string, porta string) {
 	stamps := make(map[string]time.Time)
 	scanFG(dir, stamps)
@@ -22,7 +22,7 @@ func WatchFiles(dir string, arquivo string, porta string) {
 				if err != nil || info.IsDir() {
 					return nil
 				}
-				if filepath.Ext(path) != ".fg" {
+				if filepath.Ext(path) != ".ge" {
 					return nil
 				}
 				mod := info.ModTime()
@@ -61,7 +61,7 @@ func scanFG(dir string, stamps map[string]time.Time) {
 		if err != nil || info.IsDir() {
 			return nil
 		}
-		if filepath.Ext(path) == ".fg" {
+		if filepath.Ext(path) == ".ge" {
 			stamps[path] = info.ModTime()
 		}
 		return nil

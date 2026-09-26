@@ -56,10 +56,10 @@ Requisicoes POST e PUT agora tem um limite de tamanho de body de 1MB. Requisicoe
 
 ### 8. JWT Secret via Env Variable
 
-O JWT secret agora pode ser configurado via variavel de ambiente `FLANG_JWT_SECRET`, que tem prioridade sobre o valor definido no arquivo `.fg`. Isso evita que segredos sejam commitados no codigo-fonte.
+O JWT secret agora pode ser configurado via variavel de ambiente `FLANG_JWT_SECRET`, que tem prioridade sobre o valor definido no arquivo `.ge`. Isso evita que segredos sejam commitados no codigo-fonte.
 
 ```bash
-FLANG_JWT_SECRET="minha-chave-secreta-64-chars" flang run app.fg
+FLANG_JWT_SECRET="minha-chave-secreta-64-chars" flang run app.ge
 ```
 
 ### 9. Protecao contra CSV Injection
@@ -575,7 +575,7 @@ Access-Control-Allow-Headers: Content-Type, Authorization
 Configure via variavel de ambiente antes de iniciar o servidor:
 
 ```bash
-FLANG_CORS_ORIGIN=https://meusite.com ./flang run app.fg
+FLANG_CORS_ORIGIN=https://meusite.com ./flang run app.ge
 ```
 
 Ou monte o servidor atras de um reverse proxy (Nginx, Caddy) que gerencie CORS.

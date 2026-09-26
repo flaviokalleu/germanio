@@ -62,7 +62,7 @@ func main() {
 	addToPath(filepath.Join(installDir, "bin"))
 	fmt.Println("   OK")
 
-	fmt.Println("[4/6] Associando arquivos .fg...")
+	fmt.Println("[4/6] Associando arquivos .ge...")
 	associateExtension()
 	fmt.Println("   OK")
 
@@ -88,7 +88,7 @@ func main() {
 	fmt.Println()
 	fmt.Println("    flang version")
 	fmt.Println("    flang new meu-projeto")
-	fmt.Println("    flang run inicio.fg")
+	fmt.Println("    flang run inicio.ge")
 	fmt.Println()
 	fmt.Println("  Para desinstalar:")
 	fmt.Printf("    %s\\uninstall.exe\n", installDir)
@@ -175,12 +175,12 @@ func addToPath(dir string) {
 	broadcastEnvChange()
 }
 
-// associateExtension creates .fg file association in the registry.
+// associateExtension creates .ge file association in the registry.
 func associateExtension() {
 	flangExe := filepath.Join(installDir, "bin", "flang.exe")
 
-	// Create .fg extension key
-	k1, err := createRegKey(`Software\Classes\.fg`)
+	// Create .ge extension key
+	k1, err := createRegKey(`Software\Classes\.ge`)
 	if err != nil {
 		return
 	}
@@ -192,7 +192,7 @@ func associateExtension() {
 	if err != nil {
 		return
 	}
-	writeRegString(k2, "", "Arquivo Flang (.fg)")
+	writeRegString(k2, "", "Arquivo Flang (.ge)")
 	syscall.RegCloseKey(k2)
 
 	// Create open command
@@ -235,8 +235,8 @@ func uninstall() {
 	removeFromPath(filepath.Join(installDir, "bin"))
 	fmt.Println("   OK")
 
-	fmt.Println("[2/4] Removendo associação .fg...")
-	deleteRegKey(`Software\Classes\.fg`)
+	fmt.Println("[2/4] Removendo associação .ge...")
+	deleteRegKey(`Software\Classes\.ge`)
 	deleteRegKey(`Software\Classes\FlangFile`)
 	fmt.Println("   OK")
 

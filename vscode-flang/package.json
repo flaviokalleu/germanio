@@ -1,7 +1,7 @@
 {
   "name": "flang",
   "displayName": "Germanio + Flang",
-  "description": "Germanio (.ge) syntax highlighting with legacy Flang (.fg) compatibility; not a language server",
+  "description": "Germanio (.ge) syntax highlighting with legacy Flang (.ge) compatibility; not a language server",
   "version": "0.7.0",
   "publisher": "flang",
   "engines": {
@@ -34,7 +34,7 @@
           "flang"
         ],
         "extensions": [
-          ".fg"
+          ".ge"
         ],
         "configuration": "./language-configuration.json",
         "icon": {

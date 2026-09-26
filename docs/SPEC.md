@@ -38,7 +38,7 @@
 
 ## 1. Visão Geral
 
-Flang e uma linguagem de programacao declarativa multilingual (20 idiomas) que gera aplicacoes full-stack completas a partir de arquivos `.fg`. Um unico arquivo `.fg` descreve modelos de dados, telas, eventos, autenticacao, integracoes e configuracoes de banco de dados — e o motor Flang (escrito em Go) gera e executa tudo automaticamente.
+Flang e uma linguagem de programacao declarativa multilingual (20 idiomas) que gera aplicacoes full-stack completas a partir de arquivos `.ge`. Um unico arquivo `.ge` descreve modelos de dados, telas, eventos, autenticacao, integracoes e configuracoes de banco de dados — e o motor Flang (escrito em Go) gera e executa tudo automaticamente.
 
 **Caracteristicas principais:**
 - Sintaxe declarativa baseada em indentacao (sem chaves, sem ponto-e-virgula)
@@ -59,7 +59,7 @@ Flang e uma linguagem de programacao declarativa multilingual (20 idiomas) que g
 
 | Atributo | Valor |
 |---|---|
-| Extensão | `.fg` |
+| Extensão | `.ge` |
 | Codificação | UTF-8 |
 | Terminador de linha | `\n` (LF) ou `\r\n` (CRLF, ignorado) |
 | Indentação | Espaços ou tabs (2 espaços por nível recomendado; tab = 2 espaços) |
@@ -1152,21 +1152,21 @@ tema
 
 ## 15. Sistema de Importação
 
-Flang permite dividir o código em múltiplos arquivos `.fg` e importá-los.
+Flang permite dividir o código em múltiplos arquivos `.ge` e importá-los.
 
 ### 15.1 Sintaxe
 
 ```flang
 # Importar tudo de um arquivo
-importar "modelos.fg"
+importar "modelos.ge"
 
 # Importar seleção específica
-importar dados de "modelos.fg"
-importar tela de "telas/clientes.fg"
+importar dados de "modelos.ge"
+importar tela de "telas/clientes.ge"
 
 # Inglês equivalente
-import "models.fg"
-import models from "models.fg"
+import "models.ge"
+import models from "models.ge"
 ```
 
 ### 15.2 Regras de Importação
@@ -1181,29 +1181,29 @@ import models from "models.fg"
 
 ```
 minha-loja/
-  inicio.fg         # arquivo principal
+  inicio.ge         # arquivo principal
   modelos/
-    produto.fg
-    cliente.fg
-    pedido.fg
+    produto.ge
+    cliente.ge
+    pedido.ge
   telas/
-    produtos.fg
-    clientes.fg
-  auth.fg
-  tema.fg
+    produtos.ge
+    clientes.ge
+  auth.ge
+  tema.ge
 ```
 
-**inicio.fg:**
+**inicio.ge:**
 ```flang
 sistema minhaLoja
 
-importar "auth.fg"
-importar "tema.fg"
-importar dados de "modelos/produto.fg"
-importar dados de "modelos/cliente.fg"
-importar dados de "modelos/pedido.fg"
-importar tela de "telas/produtos.fg"
-importar tela de "telas/clientes.fg"
+importar "auth.ge"
+importar "tema.ge"
+importar dados de "modelos/produto.ge"
+importar dados de "modelos/cliente.ge"
+importar dados de "modelos/pedido.ge"
+importar tela de "telas/produtos.ge"
+importar tela de "telas/clientes.ge"
 ```
 
 ---

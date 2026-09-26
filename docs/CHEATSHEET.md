@@ -3,12 +3,12 @@
 ## CLI
 
 ```bash
-flang run arquivo.fg [porta]     # Executa o app (padrao porta 8080)
-flang check arquivo.fg           # Valida sintaxe sem executar
+flang run arquivo.ge [porta]     # Executa o app (padrao porta 8080)
+flang check arquivo.ge           # Valida sintaxe sem executar
 flang new nome                   # Cria novo projeto
 flang init                       # Inicializa projeto no diretorio atual
-flang build arquivo.fg           # Compila em executavel standalone
-flang docker arquivo.fg          # Gera Dockerfile e docker-compose.yml
+flang build arquivo.ge           # Compila em executavel standalone
+flang docker arquivo.ge          # Gera Dockerfile e docker-compose.yml
 flang version                    # Mostra versao
 flang help                       # Ajuda
 ```
@@ -189,8 +189,8 @@ banco / database
 ## Imports
 
 ```
-importar "arquivo.fg" / import "file.fg"
-importar dados de "x.fg" / import models from "x.fg"
+importar "arquivo.ge" / import "file.ge"
+importar dados de "x.ge" / import models from "x.ge"
 ```
 
 ## Logica e Scripting

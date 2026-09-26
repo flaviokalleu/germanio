@@ -311,7 +311,7 @@ func TestIndentationTracking(t *testing.T) {
 }
 
 func TestImportKeywords(t *testing.T) {
-	l := New(`importar dados de "models.fg"`)
+	l := New(`importar dados de "models.ge"`)
 	tokens, err := l.Tokenize()
 	if err != nil {
 		t.Fatal(err)
@@ -326,8 +326,8 @@ func TestImportKeywords(t *testing.T) {
 	if tokens[2].Type != TokenDe {
 		t.Errorf("expected TokenDe, got %d", tokens[2].Type)
 	}
-	if tokens[3].Type != TokenString || tokens[3].Value != "models.fg" {
-		t.Errorf("expected string 'models.fg', got type=%d value=%q", tokens[3].Type, tokens[3].Value)
+	if tokens[3].Type != TokenString || tokens[3].Value != "models.ge" {
+		t.Errorf("expected string 'models.ge', got type=%d value=%q", tokens[3].Type, tokens[3].Value)
 	}
 }
 

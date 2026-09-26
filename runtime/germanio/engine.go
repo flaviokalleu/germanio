@@ -1,5 +1,5 @@
 // Package germanio executes the strict Germanio AST. The legacy full-stack
-// engine remains separate because its coercions are part of .fg compatibility.
+// engine remains separate because its coercions are part of .ge compatibility.
 package germanio
 
 import (

@@ -228,11 +228,11 @@ rota POST /produto -> cria produto
 serve 8080
 '
         if [[ "$PRIVILEGED" == "true" ]]; then
-            echo "$ex_content" | sudo tee "${LIB_DIR}/examples/loja.fg" > /dev/null
+            echo "$ex_content" | sudo tee "${LIB_DIR}/examples/loja.ge" > /dev/null
         else
-            echo "$ex_content" > "${LIB_DIR}/examples/loja.fg"
+            echo "$ex_content" > "${LIB_DIR}/examples/loja.ge"
         fi
-        success "Exemplo basico criado em: ${LIB_DIR}/examples/loja.fg"
+        success "Exemplo basico criado em: ${LIB_DIR}/examples/loja.ge"
     fi
 }
 
@@ -246,14 +246,14 @@ install_man_page() {
 flang \- linguagem de programacao declarativa para aplicacoes full-stack
 .SH SINOPSE
 .B flang
-[\fICOMANDO\fR] [\fIARQUIVO.fg\fR] [\fIOPCOES\fR]
+[\fICOMANDO\fR] [\fIARQUIVO.ge\fR] [\fIOPCOES\fR]
 .SH DESCRICAO
 Flang e uma linguagem declarativa e bilingue (Portugues/English) que gera
 aplicacoes completas (backend, frontend, banco de dados, API REST) a partir
-de arquivos .fg.
+de arquivos .ge.
 .SH COMANDOS
 .TP
-.B run \fIarquivo.fg\fR
+.B run \fIarquivo.ge\fR
 Executa um arquivo Flang
 .TP
 .B version
@@ -263,7 +263,7 @@ Exibe a versao do Flang
 Exibe ajuda
 .SH EXEMPLOS
 .TP
-flang run minha-app.fg
+flang run minha-app.ge
 .TP
 flang version
 .SH ARQUIVOS
@@ -527,7 +527,7 @@ main() {
     printf "  ${BOLD}Proximos passos / Next steps:${RESET}\n"
     printf "  1. Abra um novo terminal ou execute: source ~/.bashrc\n"
     printf "  2. Teste: ${CYAN}flang version${RESET}\n"
-    printf "  3. Crie seu primeiro app: ${CYAN}flang run ${LIB_DIR}/examples/loja.fg${RESET}\n"
+    printf "  3. Crie seu primeiro app: ${CYAN}flang run ${LIB_DIR}/examples/loja.ge${RESET}\n"
     printf "  4. Documentacao: ${CYAN}${FLANG_REPO}${RESET}\n"
     printf "\n"
 }

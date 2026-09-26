@@ -264,7 +264,7 @@ func TestParseWhatsAppConfig(t *testing.T) {
 }
 
 func TestParseImport(t *testing.T) {
-	source := `importar "models.fg"`
+	source := `importar "models.ge"`
 	prog := parse(t, source)
 	if len(prog.Imports) != 1 {
 		t.Fatalf("expected 1 import, got %d", len(prog.Imports))
@@ -273,13 +273,13 @@ func TestParseImport(t *testing.T) {
 	if imp.What != "tudo" {
 		t.Errorf("expected what='tudo', got %q", imp.What)
 	}
-	if imp.Path != "models.fg" {
-		t.Errorf("expected path='models.fg', got %q", imp.Path)
+	if imp.Path != "models.ge" {
+		t.Errorf("expected path='models.ge', got %q", imp.Path)
 	}
 }
 
 func TestParseImportSpecific(t *testing.T) {
-	source := `importar dados de "models.fg"`
+	source := `importar dados de "models.ge"`
 	prog := parse(t, source)
 	if len(prog.Imports) != 1 {
 		t.Fatalf("expected 1 import, got %d", len(prog.Imports))
@@ -288,8 +288,8 @@ func TestParseImportSpecific(t *testing.T) {
 	if imp.What != "dados" {
 		t.Errorf("expected what='dados', got %q", imp.What)
 	}
-	if imp.Path != "models.fg" {
-		t.Errorf("expected path='models.fg', got %q", imp.Path)
+	if imp.Path != "models.ge" {
+		t.Errorf("expected path='models.ge', got %q", imp.Path)
 	}
 }
 

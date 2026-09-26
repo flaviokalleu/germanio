@@ -28,7 +28,7 @@ Uso: ge <comando> [arquivo]
   versao                 Exibe a versão
   ajuda                  Exibe esta ajuda
 
-Compatibilidade: ge rodar app.fg [porta], ge check app.fg.
+Compatibilidade: ge rodar app.ge [porta], ge check app.ge.
 Comandos legados explícitos: ge legado <comando Flang> [argumentos].
 A linguagem .ge é determinística e não utiliza LLM no compilador.
 `
@@ -43,7 +43,7 @@ func Run(args []string, in io.Reader, out, stderr io.Writer) int {
 	}
 	cmd := args[1]
 	rest := args[2:]
-	if strings.HasSuffix(cmd, ".ge") || strings.HasSuffix(cmd, ".fg") {
+	if strings.HasSuffix(cmd, ".ge") || strings.HasSuffix(cmd, ".ge") {
 		rest = append([]string{cmd}, rest...)
 		cmd = "rodar"
 	}
@@ -141,12 +141,12 @@ func Run(args []string, in io.Reader, out, stderr io.Writer) int {
 			rest = []string{"inicio.ge"}
 		}
 		path := rest[0]
-		if filepath.Ext(path) == ".fg" {
+		if filepath.Ext(path) == ".ge" {
 			oldcmd := cmd
 			if cmd == "rodar" {
 				oldcmd = "run"
 			}
-			fmt.Fprintln(stderr, "Germanio: modo de compatibilidade .fg (sem semântica estrita .ge).")
+			fmt.Fprintln(stderr, "Germanio: modo de compatibilidade .ge (sem semântica estrita .ge).")
 			legacy.Run(append([]string{"flang", oldcmd}, rest...))
 			return 0
 		}

@@ -23,7 +23,7 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Charts**: graficos com Chart.js (barra, pizza, doughnut)
 - **Relacionamentos**: `tem_muitos` e `muitos_para_muitos` com join tables automaticas
 - **Auto-migration**: colunas novas adicionadas automaticamente
-- **`flang build`**: compila .fg em executavel standalone distribuivel
+- **`flang build`**: compila .ge em executavel standalone distribuivel
 - **Async**: `paralelo()`, `esperar()`, `timeout()`, `chamar_async()`, `consultar_paralelo()`
 - **15 novos built-in functions**: substituir, cortar, comeca_com, termina_com, substring, adicionar, remover, reverter, chaves, valores, json, formato_data, potencia, raiz, chamar/http
 - **Array indexing**: `arr[0]`, `obj.campo[0]`
@@ -108,10 +108,10 @@ A versao 0.4.0 e a mais completa ate agora, adicionando autenticacao JWT com bcr
 - Documentacao de deploy com Nginx e Let's Encrypt
 
 #### VS Code Extension
-- Extensao `vscode-flang/` com realce de sintaxe para `.fg`
+- Extensao `vscode-flang/` com realce de sintaxe para `.ge`
 - Autocomplete para palavras-chave PT e EN
 - Snippets para blocos comuns
-- Icone de arquivo `.fg` personalizado
+- Icone de arquivo `.ge` personalizado
 
 ### Melhorado
 
@@ -163,8 +163,8 @@ A versao 0.3.0 trouxe o suporte bilinguie completo (Portugues e Ingles), suporte
 
 #### Sistema de Imports
 - Keyword `importar` / `import` para incluir arquivos externos
-- Sintaxe `importar "arquivo.fg"` para importar tudo
-- Sintaxe `importar dados de "arquivo.fg"` para importar bloco especifico
+- Sintaxe `importar "arquivo.ge"` para importar tudo
+- Sintaxe `importar dados de "arquivo.ge"` para importar bloco especifico
 - Merge de programas: modelos, telas, eventos e regras combinados
 - Exemplo modular em `exemplos/restaurante-modular/`
 
@@ -194,16 +194,16 @@ A versao 0.3.0 trouxe o suporte bilinguie completo (Portugues e Ingles), suporte
 
 ### Visao Geral
 
-A versao 0.2.0 foi uma reescrita completa do Flang: de gerador de codigo estatico para um **interpretador com runtime proprio**. O arquivo `.fg` agora e interpretado diretamente pelo binario `flang`, sem necessidade de gerar codigo intermediario.
+A versao 0.2.0 foi uma reescrita completa do Flang: de gerador de codigo estatico para um **interpretador com runtime proprio**. O arquivo `.ge` agora e interpretado diretamente pelo binario `flang`, sem necessidade de gerar codigo intermediario.
 
 ### Adicionado
 
 #### Runtime Proprio
-- Interpretador Go que le `.fg` e serve a aplicacao diretamente
+- Interpretador Go que le `.ge` e serve a aplicacao diretamente
 - Servidor HTTP embutido baseado em `net/http`
 - Banco de dados SQLite embutido via `go-sqlite3`
-- Sem necessidade de gerar codigo — o `.fg` e o codigo-fonte final
-- Comando `flang run arquivo.fg` para iniciar o servidor
+- Sem necessidade de gerar codigo — o `.ge` e o codigo-fonte final
+- Comando `flang run arquivo.ge` para iniciar o servidor
 
 #### API REST Completa
 - Geracao automatica de endpoints CRUD para cada modelo
@@ -243,7 +243,7 @@ A versao 0.2.0 foi uma reescrita completa do Flang: de gerador de codigo estatic
 
 ### Mudancas Incompativeis com 0.1.x
 
-- Arquivo `.fg` nao gera mais codigo em outra linguagem
+- Arquivo `.ge` nao gera mais codigo em outra linguagem
 - Comando mudou de `flang generate` para `flang run`
 - Estrutura de blocos ligeiramente diferente (mais consistente)
 - Tipos de dados renomeados para ser mais intuitivos
@@ -254,7 +254,7 @@ A versao 0.2.0 foi uma reescrita completa do Flang: de gerador de codigo estatic
 
 ### Visao Geral
 
-A versao inicial do Flang como **gerador de codigo**. O arquivo `.fg` era processado para gerar codigo em Python (Django) ou JavaScript (Express + React). Focado em prototipagem rapida.
+A versao inicial do Flang como **gerador de codigo**. O arquivo `.ge` era processado para gerar codigo em Python (Django) ou JavaScript (Express + React). Focado em prototipagem rapida.
 
 ### Adicionado
 
@@ -268,7 +268,7 @@ A versao inicial do Flang como **gerador de codigo**. O arquivo `.fg` era proces
 - Geracao de modelos Django (Python) a partir do bloco `dados`
 - Geracao de views e URLs Django para CRUD
 - Geracao de templates HTML simples
-- Comando `flang generate --target django arquivo.fg`
+- Comando `flang generate --target django arquivo.ge`
 
 #### Frontend Basico
 - Geracao de componentes React simples
@@ -299,7 +299,7 @@ A versao inicial do Flang como **gerador de codigo**. O arquivo `.fg` era proces
 ### [0.6.0] - Visao Futura
 
 - [ ] Editor visual online (Flang Studio)
-- [ ] Marketplace de templates `.fg`
+- [ ] Marketplace de templates `.ge`
 - [ ] CLI interativa: `flang new` com perguntas guiadas
 - [ ] Plugins em Go para estender o runtime
 - [ ] Suporte a GraphQL alem de REST
@@ -332,7 +332,7 @@ Pull requests sao bem-vindos. O projeto usa Go modules e o codigo esta organizad
 compiler/    <- lexer, parser, AST
 runtime/     <- servidor HTTP, banco, integracoes
 cli/         <- comandos da linha de comando
-exemplos/    <- exemplos de .fg
+exemplos/    <- exemplos de .ge
 docs/        <- documentacao
 vscode-flang/ <- extensao VS Code
 ```

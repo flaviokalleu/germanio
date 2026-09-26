@@ -12,7 +12,7 @@ if (-not $branch) {
     $branch = "master"
 }
 
-$description = "Flang is a bilingual declarative programming language for building full-stack web applications from .fg files."
+$description = "Flang is a bilingual declarative programming language for building full-stack web applications from .ge files."
 $homepage = "https://github.com/$Owner/$Repo/tree/$branch/docs"
 $topics = @(
     "flang",
@@ -29,7 +29,7 @@ $releaseNotes = @"
 Flang $Version
 
 Highlights
-- Bilingual declarative programming language with .fg source files
+- Bilingual declarative programming language with .ge source files
 - Compiler pipeline with lexer, parser, and AST in Go
 - Embedded runtime with REST API, dashboard, WebSocket, auth, and database support
 - Example programs in examples/ and larger apps in demo/

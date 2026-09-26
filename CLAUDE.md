@@ -4,18 +4,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What is Flang
 
-Flang is a multilingual (20 languages) declarative programming language written in Go that generates full-stack web applications from `.fg` files. Users describe their app (models, screens, events, logic) and Flang produces a running application with REST API, database, auth, and UI. Keywords can be written in Portuguese, English, Spanish, French, German, Italian, Chinese, Japanese, Korean, Arabic, Hindi, Bengali, Russian, Indonesian, Turkish, Vietnamese, Polish, Dutch, Thai, or Swahili — all interchangeable in the same file.
+Flang is a multilingual (20 languages) declarative programming language written in Go that generates full-stack web applications from `.ge` files. Users describe their app (models, screens, events, logic) and Flang produces a running application with REST API, database, auth, and UI. Keywords can be written in Portuguese, English, Spanish, French, German, Italian, Chinese, Japanese, Korean, Arabic, Hindi, Bengali, Russian, Indonesian, Turkish, Vietnamese, Polish, Dutch, Thai, or Swahili — all interchangeable in the same file.
 
 ## Build & Run
 
 ```bash
 go build -o flang .
 
-./flang run demo/plano/inicio.fg [port]
-./flang check demo/plano/inicio.fg
+./flang run demo/plano/inicio.ge [port]
+./flang check demo/plano/inicio.ge
 ./flang new <name>          # flat mode (single file)
 ./flang init <name>         # organized mode (folders)
-./flang build app.fg -o app # compile to standalone executable
+./flang build app.ge -o app # compile to standalone executable
 ./flang docker              # generate Dockerfile
 ```
 
@@ -35,7 +35,7 @@ go test ./compiler/... ./runtime/interpreter/
 
 ## Architecture
 
-Pipeline: `.fg` file → Lexer → Parser/AST → Runtime Engine.
+Pipeline: `.ge` file → Lexer → Parser/AST → Runtime Engine.
 
 ### Compiler (`compiler/`)
 
@@ -52,13 +52,13 @@ Pipeline: `.fg` file → Lexer → Parser/AST → Runtime Engine.
 - **`servidor/renderizador.go`** — HTML/CSS/JS SPA renderer with 4 style variants (glassmorphism/flat/neumorphism/minimal), theme CSS variables, Chart.js, FK dropdowns, enum selects, textarea for texto_longo, smart sidebar.
 - **`banco/banco.go`** — Database abstraction (SQLite/MySQL/PostgreSQL) with connection pooling, auto-migration, validation rules enforcement, join tables for many-to-many, relationship queries.
 - **`auth/auth.go`** — JWT (HMAC-SHA256) + bcrypt with role checking, login rate limiting (5 attempts = 5min lockout).
-- **`hotreload.go`** — File watcher that re-execs process on .fg changes.
+- **`hotreload.go`** — File watcher that re-execs process on .ge changes.
 
 ### CLI (`cli/cli.go`)
 
 Commands: `run`, `check`, `new`, `init`, `build`, `docker`, `version`, `help`.
 
-`flang build` creates a standalone executable by generating a temp Go project with `go:embed`, compiling the .fg files + runtime into a single binary.
+`flang build` creates a standalone executable by generating a temp Go project with `go:embed`, compiling the .ge files + runtime into a single binary.
 
 ## Key Design Decisions
 

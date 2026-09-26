@@ -49,7 +49,7 @@ jobs:
 
       - name: Check example files
         run: |
-          for fg in $(find demo -name inicio.fg -type f); do
+          for fg in $(find demo -name inicio.ge -type f); do
             echo "Checking $fg ..."
             ./flang check "$fg"
           done

@@ -524,7 +524,7 @@ body { background: var(--base); color: var(--text); }
         class="prop-input" style="margin-bottom:8px" oninput="updateDesignerCode()">
       <div class="flex gap-2">
         <button onclick="clearCanvas()" class="prop-action-btn" style="flex:1">Limpar</button>
-        <button onclick="generateFromDesigner()" class="prop-action-btn primary" style="flex:1">Salvar .fg</button>
+        <button onclick="generateFromDesigner()" class="prop-action-btn primary" style="flex:1">Salvar .ge</button>
       </div>
     </div>
   </div>
@@ -568,7 +568,7 @@ body { background: var(--base); color: var(--text); }
     </div>
 
     <div style="border-top:1px solid var(--surface0);padding:10px 12px">
-      <button onclick="generateFromFlow()" class="prop-action-btn primary" style="width:100%;margin-bottom:6px">Gerar Codigo .fg</button>
+      <button onclick="generateFromFlow()" class="prop-action-btn primary" style="width:100%;margin-bottom:6px">Gerar Codigo .ge</button>
       <button onclick="clearFlow()" class="prop-action-btn" style="width:100%">Limpar Fluxo</button>
     </div>
   </div>
@@ -633,7 +633,7 @@ body { background: var(--base); color: var(--text); }
       </div>
       <div style="border-top:1px solid var(--surface0);max-height:40%;overflow-y:auto">
         <div class="prop-section" style="border:none">
-          <div class="prop-section-title">Codigo .fg Gerado</div>
+          <div class="prop-section-title">Codigo .ge Gerado</div>
           <pre id="d-generated" class="code-output"></pre>
         </div>
       </div>
@@ -705,7 +705,7 @@ body { background: var(--base); color: var(--text); }
     <span id="status-modified" style="display:none;color:var(--yellow);font-size:10px">&#9679; Nao salvo</span>
   </div>
   <div class="status-right">
-    <span id="status-lang">Flang (.fg)</span>
+    <span id="status-lang">Flang (.ge)</span>
     <span id="status-cursor">Ln 1, Col 1</span>
   </div>
 </div>
@@ -756,7 +756,7 @@ require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-edi
 require(['vs/editor/editor.main'], function() {
 
   // Register Flang language
-  monaco.languages.register({ id: 'flang', extensions: ['.fg'] });
+  monaco.languages.register({ id: 'flang', extensions: ['.ge'] });
 
   // Syntax highlighting
   monaco.languages.setMonarchTokensProvider('flang', {
@@ -848,7 +848,7 @@ require(['vs/editor/editor.main'], function() {
 
   // Create editor
   editor = monaco.editor.create(document.getElementById('editor-container'), {
-    value: '# Bem-vindo ao Flang IDE!\\n#\\n# Para comecar:\\n#   1. Abra um arquivo .fg na arvore a esquerda\\n#   2. Ou clique em Designer para montar telas visualmente\\n#   3. Ou clique em Fluxos para criar logica visual\\n#\\n# Atalhos:\\n#   Ctrl+S     Salvar\\n#   Ctrl+Z     Desfazer (no Designer)\\n#   Ctrl+Y     Refazer (no Designer)\\n#   Delete     Remover componente selecionado\\n#\\n# Templates prontos (no terminal):\\n#   flang new loja\\n#   flang new clinica\\n#   flang new escola\\n#   flang new delivery\\n#   flang new crm\\n#   flang new helpdesk\\n#   flang new blog\\n#   flang new financeiro\\n#\\n# 60+ funcoes built-in, 25 tipos de dados, 20 idiomas\\n# Documentacao: docs/TUTORIAL.md\\n',
+    value: '# Bem-vindo ao Flang IDE!\\n#\\n# Para comecar:\\n#   1. Abra um arquivo .ge na arvore a esquerda\\n#   2. Ou clique em Designer para montar telas visualmente\\n#   3. Ou clique em Fluxos para criar logica visual\\n#\\n# Atalhos:\\n#   Ctrl+S     Salvar\\n#   Ctrl+Z     Desfazer (no Designer)\\n#   Ctrl+Y     Refazer (no Designer)\\n#   Delete     Remover componente selecionado\\n#\\n# Templates prontos (no terminal):\\n#   flang new loja\\n#   flang new clinica\\n#   flang new escola\\n#   flang new delivery\\n#   flang new crm\\n#   flang new helpdesk\\n#   flang new blog\\n#   flang new financeiro\\n#\\n# 60+ funcoes built-in, 25 tipos de dados, 20 idiomas\\n# Documentacao: docs/TUTORIAL.md\\n',
     language: 'flang',
     theme: 'flang-dark',
     fontSize: 14,
@@ -912,7 +912,7 @@ function renderTree(files) {
         '<span>'+f.name+'</span></div>';
       html += '<div class="file-children">' + renderTree(f.children) + '</div>';
     } else {
-      var icon = f.name.endsWith('.fg') ?
+      var icon = f.name.endsWith('.ge') ?
         '<svg viewBox="0 0 24 24" fill="none" stroke="#89b4fa" stroke-width="2" style="width:14px;height:14px;flex-shrink:0"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>' :
         '<svg viewBox="0 0 24 24" fill="none" stroke="#6c7086" stroke-width="2" style="width:14px;height:14px;flex-shrink:0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
       html += '<div class="file-item" onclick="openFile(\''+f.path+'\')" data-path="'+f.path+'">'+icon+'<span>'+f.name+'</span></div>';
@@ -943,7 +943,7 @@ function openFile(path) {
 
 function switchToFile(path) {
   activeFile = path;
-  var lang = path.endsWith('.fg') ? 'flang' : (path.endsWith('.json') ? 'json' : (path.endsWith('.go') ? 'go' : (path.endsWith('.js') ? 'javascript' : 'plaintext')));
+  var lang = path.endsWith('.ge') ? 'flang' : (path.endsWith('.json') ? 'json' : (path.endsWith('.go') ? 'go' : (path.endsWith('.js') ? 'javascript' : 'plaintext')));
   editor.setValue(openFiles[path] || '');
   monaco.editor.setModelLanguage(editor.getModel(), lang);
 
@@ -958,7 +958,7 @@ function switchToFile(path) {
   if(el) el.classList.add('active');
 
   document.getElementById('status-file').textContent = path;
-  document.getElementById('status-lang').textContent = lang === 'flang' ? 'Flang (.fg)' : lang;
+  document.getElementById('status-lang').textContent = lang === 'flang' ? 'Flang (.ge)' : lang;
 }
 
 // Tabs
@@ -1025,7 +1025,7 @@ function saveCurrentFile() {
 
 // Create file
 function createFile() {
-  var name = prompt('Nome do arquivo (ex: dados/produto.fg):');
+  var name = prompt('Nome do arquivo (ex: dados/produto.ge):');
   if (!name) return;
   fetch('/api/file/create', {
     method: 'POST',
@@ -1081,8 +1081,8 @@ function checkProject() {
 }
 
 function findMainFile() {
-  if (activeFile && activeFile.endsWith('.fg')) return activeFile;
-  return 'inicio.fg';
+  if (activeFile && activeFile.endsWith('.ge')) return activeFile;
+  return 'inicio.ge';
 }
 
 // Terminal
@@ -1610,7 +1610,7 @@ function generateFromDesigner() {
     termLog('error', 'Canvas vazio - arraste componentes primeiro');
     return;
   }
-  var filename = 'telas_visual.fg';
+  var filename = 'telas_visual.ge';
   fetch('/api/file/save', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -1931,11 +1931,11 @@ function generateFromFlow() {
   fetch('/api/file/save', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({path: 'fluxo_visual.fg', content: code})
+    body: JSON.stringify({path: 'fluxo_visual.ge', content: code})
   }).then(function() {
-    termLog('success', 'Fluxo salvo em fluxo_visual.fg');
+    termLog('success', 'Fluxo salvo em fluxo_visual.ge');
     loadFileTree();
-    openFile('fluxo_visual.fg');
+    openFile('fluxo_visual.ge');
     switchMode('editor');
   });
 }

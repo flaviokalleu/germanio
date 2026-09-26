@@ -744,7 +744,7 @@ EMAIL_SENHA=sua-senha-real
 JWT_SECRET=chave-secreta-longa
 ```
 
-No arquivo `.fg`, use os valores diretamente por enquanto — suporte a `${ENV_VAR}` esta no roadmap. A alternativa atual e configurar via variaveis de ambiente do sistema operacional antes de rodar o Flang.
+No arquivo `.ge`, use os valores diretamente por enquanto — suporte a `${ENV_VAR}` esta no roadmap. A alternativa atual e configurar via variaveis de ambiente do sistema operacional antes de rodar o Flang.
 
 ---
 

@@ -23,7 +23,7 @@ type geParser struct {
 }
 
 // ParseGermanio is a strict entry point. It never skips unknown statements.
-// Legacy Parse remains available for .fg, including its multilingual grammar.
+// Legacy Parse remains available for .ge, including its multilingual grammar.
 func ParseGermanio(filename, source string) (*ast.Program, error) {
 	tokens, err := lexer.NewGermanio(filename, source).Tokenize()
 	if err != nil {

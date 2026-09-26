@@ -1,6 +1,6 @@
 # Flang for VS Code
 
-Suporte completo para a linguagem Flang (`.fg`) no Visual Studio Code.
+Suporte completo para a linguagem Flang (`.ge`) no Visual Studio Code.
 
 ## Recursos
 

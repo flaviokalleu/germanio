@@ -21,4 +21,4 @@ COPY --from=builder /build/exemplos ./exemplos
 
 EXPOSE 8080
 
-CMD ["flang", "run", "exemplos/loja/inicio.fg"]
+CMD ["flang", "run", "exemplos/loja/inicio.ge"]

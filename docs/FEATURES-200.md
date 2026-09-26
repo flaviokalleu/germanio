@@ -9,7 +9,7 @@
 ## 1. COMPONENTES VISUAIS (UI) — 40 features
 
 ### Campos de Entrada
-| # | Feature | Status | Como usar no .fg |
+| # | Feature | Status | Como usar no .ge |
 |---|---------|--------|-----------------|
 | 1 | Campo de texto simples | ✅ | `nome: texto` |
 | 2 | Campo de texto longo (textarea) | ✅ | `descricao: texto_longo` |
@@ -38,7 +38,7 @@
 | 25 | Campo de codigo de barras | 💡 | `codigo: codigo_barras` |
 
 ### Componentes de Tela
-| # | Feature | Status | Como usar no .fg |
+| # | Feature | Status | Como usar no .ge |
 |---|---------|--------|-----------------|
 | 26 | Lista/tabela de registros | ✅ | `lista produto` |
 | 27 | Botao de acao | ✅ | `botao azul texto "Novo"` |
@@ -91,7 +91,7 @@
 | 66 | Quando criar registro | ✅ | `quando criar produto enviar mensagem` |
 | 67 | Quando atualizar registro | ✅ | `quando atualizar ticket enviar email` |
 | 68 | Agendar tarefa | ✅ | `cada 5 minutos chamar api "url"` |
-| 69 | Importar de outro arquivo | ✅ | `importar "dados/produto.fg"` |
+| 69 | Importar de outro arquivo | ✅ | `importar "dados/produto.ge"` |
 | 70 | Calcular soma | 🔜 | `vendas.somar(valor)` |
 
 ---
@@ -233,7 +233,7 @@
 ### Coisas que Leigos Precisam
 | # | Feature | Status | O que faz |
 |---|---------|--------|----------|
-| 171 | Assistente IA no editor | 🔜 | descreve o que quer, IA gera o .fg |
+| 171 | Assistente IA no editor | 🔜 | descreve o que quer, IA gera o .ge |
 | 172 | Templates prontos | 🔜 | `flang new loja`, `flang new clinica`, `flang new escola` |
 | 173 | Wizard de criacao | 🔜 | perguntas guiadas para criar o app |
 | 174 | Preview ao vivo no editor | 🔜 | veja o resultado enquanto escreve |

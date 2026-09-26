@@ -21,7 +21,7 @@ const banner = `
   ██╔══╝  ██║     ██╔══██╗██║╚██╗██║██║   ██║
   ██║     ███████╗██║  ██║██║ ╚████║╚██████╔╝
   ╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝
-  v%s - Tudo roda direto do .fg
+  v%s - Tudo roda direto do .ge
 `
 
 // Run executes the CLI.
@@ -34,7 +34,7 @@ func Run(args []string) {
 	switch args[1] {
 	case "run":
 		if len(args) < 3 {
-			fmt.Println("Uso: flang run <arquivo.fg>")
+			fmt.Println("Uso: flang run <arquivo.ge>")
 			os.Exit(1)
 		}
 		porta := "8080"
@@ -48,7 +48,7 @@ func Run(args []string) {
 
 	case "check":
 		if len(args) < 3 {
-			fmt.Println("Uso: flang check <arquivo.fg>")
+			fmt.Println("Uso: flang check <arquivo.ge>")
 			os.Exit(1)
 		}
 		if err := runtime.Verificar(args[2]); err != nil {
@@ -78,7 +78,7 @@ func Run(args []string) {
 
 	case "build":
 		if len(args) < 3 {
-			fmt.Println("Uso: flang build <arquivo.fg> [--output nome]")
+			fmt.Println("Uso: flang build <arquivo.ge> [--output nome]")
 			os.Exit(1)
 		}
 		output := ""
@@ -106,8 +106,8 @@ func Run(args []string) {
 		printUsage()
 
 	default:
-		// If arg ends in .fg, treat it as "run"
-		if strings.HasSuffix(args[1], ".fg") {
+		// If arg ends in .ge, treat it as "run"
+		if strings.HasSuffix(args[1], ".ge") {
 			porta := "8080"
 			if len(args) >= 3 {
 				porta = args[2]
@@ -130,11 +130,11 @@ func printUsage() {
 Uso: flang <comando> [argumentos]
 
 Comandos:
-  run <arquivo.fg> [porta]  Executa o arquivo .fg (porta padrao: 8080)
-  check <arquivo.fg>        Verifica sintaxe sem executar
+  run <arquivo.ge> [porta]  Executa o arquivo .ge (porta padrao: 8080)
+  check <arquivo.ge>        Verifica sintaxe sem executar
   new <nome>                Cria projeto plano (tudo num arquivo so)
   init <nome>               Cria projeto organizado (pastas por responsabilidade)
-  build <arquivo.fg> [-o nome]  Compila em executavel standalone
+  build <arquivo.ge> [-o nome]  Compila em executavel standalone
   ide [diretorio] [-p porta]  Abre a IDE web do Flang
   docker                    Gera Dockerfile para o projeto atual
   version                   Mostra a versao
@@ -146,12 +146,12 @@ Modos de projeto:
           Comece com 'new' e migre para 'init' quando crescer.
 
 Atalho:
-  flang inicio.fg           Mesmo que "flang run inicio.fg"
+  flang inicio.ge           Mesmo que "flang run inicio.ge"
 
 Exemplo:
   flang new meuapp          Cria projeto plano
   flang init meuapp         Cria projeto organizado
-  flang run meuapp/inicio.fg
+  flang run meuapp/inicio.ge
 `)
 }
 
@@ -226,7 +226,7 @@ eventos
 `
 	}
 
-	fgPath := filepath.Join(dir, "inicio.fg")
+	fgPath := filepath.Join(dir, "inicio.ge")
 	if err := os.WriteFile(fgPath, []byte(fg), 0644); err != nil {
 		fmt.Printf("Erro: %s\n", err)
 		os.Exit(1)
@@ -943,12 +943,12 @@ eventos
 }
 
 func cmdDocker() {
-	// Find .fg files in the current directory
-	fgFile := "inicio.fg"
+	// Find .ge files in the current directory
+	fgFile := "inicio.ge"
 	entries, err := os.ReadDir(".")
 	if err == nil {
 		for _, e := range entries {
-			if strings.HasSuffix(e.Name(), ".fg") {
+			if strings.HasSuffix(e.Name(), ".ge") {
 				fgFile = e.Name()
 				break
 			}
@@ -968,7 +968,7 @@ FROM alpine:3.20
 RUN apk add --no-cache ca-certificates
 WORKDIR /app
 COPY --from=builder /build/flang /usr/local/bin/flang
-COPY *.fg ./
+COPY *.ge ./
 
 EXPOSE 8080
 CMD ["flang", "run", "%s"]
@@ -1002,24 +1002,24 @@ func cmdInit(name string) {
 		}
 	}
 
-	// ── inicio.fg ── entry point (como App.js no React)
+	// ── inicio.ge ── entry point (como App.js no React)
 	inicio := `sistema ` + baseName + `
 
-importar "tema.fg"
-importar "dados/produto.fg"
-importar "dados/cliente.fg"
-importar "telas/produtos.fg"
-importar "telas/clientes.fg"
-importar "eventos/acoes.fg"
+importar "tema.ge"
+importar "dados/produto.ge"
+importar "dados/cliente.ge"
+importar "telas/produtos.ge"
+importar "telas/clientes.ge"
+importar "eventos/acoes.ge"
 `
-	// ── tema.fg ── visual (como theme.js)
+	// ── tema.ge ── visual (como theme.js)
 	tema := `tema
   cor primaria "#6366f1"
   cor secundaria "#8b5cf6"
   cor destaque "#f59e0b"
 `
 
-	// ── dados/produto.fg ── um modelo por arquivo (como um component)
+	// ── dados/produto.ge ── um modelo por arquivo (como um component)
 	produto := `dados
 
   produto
@@ -1031,7 +1031,7 @@ importar "eventos/acoes.fg"
     status: status
 `
 
-	// ── dados/cliente.fg
+	// ── dados/cliente.ge
 	cliente := `dados
 
   cliente
@@ -1042,7 +1042,7 @@ importar "eventos/acoes.fg"
     status: status
 `
 
-	// ── telas/produtos.fg
+	// ── telas/produtos.ge
 	telaProdutos := `telas
 
   tela produtos
@@ -1057,7 +1057,7 @@ importar "eventos/acoes.fg"
       texto "Novo Produto"
 `
 
-	// ── telas/clientes.fg
+	// ── telas/clientes.ge
 	telaClientes := `telas
 
   tela clientes
@@ -1072,7 +1072,7 @@ importar "eventos/acoes.fg"
       texto "Novo Cliente"
 `
 
-	// ── eventos/acoes.fg
+	// ── eventos/acoes.ge
 	acoes := `eventos
 
   quando clicar "Novo Produto"
@@ -1084,13 +1084,13 @@ importar "eventos/acoes.fg"
 
 	// Mapa de arquivos a criar
 	files := map[string]string{
-		filepath.Join(dir, "inicio.fg"):           inicio,
-		filepath.Join(dir, "tema.fg"):              tema,
-		filepath.Join(dir, "dados", "produto.fg"):  produto,
-		filepath.Join(dir, "dados", "cliente.fg"):  cliente,
-		filepath.Join(dir, "telas", "produtos.fg"): telaProdutos,
-		filepath.Join(dir, "telas", "clientes.fg"): telaClientes,
-		filepath.Join(dir, "eventos", "acoes.fg"):  acoes,
+		filepath.Join(dir, "inicio.ge"):           inicio,
+		filepath.Join(dir, "tema.ge"):              tema,
+		filepath.Join(dir, "dados", "produto.ge"):  produto,
+		filepath.Join(dir, "dados", "cliente.ge"):  cliente,
+		filepath.Join(dir, "telas", "produtos.ge"): telaProdutos,
+		filepath.Join(dir, "telas", "clientes.ge"): telaClientes,
+		filepath.Join(dir, "eventos", "acoes.ge"):  acoes,
 	}
 	for path, content := range files {
 		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
@@ -1138,13 +1138,13 @@ FROM alpine:3.20
 RUN apk add --no-cache ca-certificates
 WORKDIR /app
 COPY --from=builder /build/flang /usr/local/bin/flang
-COPY *.fg ./
+COPY *.ge ./
 COPY dados/ ./dados/
 COPY telas/ ./telas/
 COPY eventos/ ./eventos/
 
 EXPOSE 8080
-CMD ["flang", "run", "inicio.fg"]
+CMD ["flang", "run", "inicio.ge"]
 `
 	dfPath := filepath.Join(dir, "Dockerfile")
 	if err := os.WriteFile(dfPath, []byte(dockerfileContent), 0644); err != nil {
@@ -1155,34 +1155,34 @@ CMD ["flang", "run", "inicio.fg"]
 	fmt.Printf("[flang] Projeto '%s' criado! (modo organizado)\n", title)
 	fmt.Println()
 	fmt.Printf("  %s/\n", name)
-	fmt.Printf("  ├── inicio.fg          (entry point)\n")
-	fmt.Printf("  ├── tema.fg            (visual)\n")
+	fmt.Printf("  ├── inicio.ge          (entry point)\n")
+	fmt.Printf("  ├── tema.ge            (visual)\n")
 	fmt.Printf("  ├── dados/\n")
-	fmt.Printf("  │   ├── produto.fg     (modelo)\n")
-	fmt.Printf("  │   └── cliente.fg     (modelo)\n")
+	fmt.Printf("  │   ├── produto.ge     (modelo)\n")
+	fmt.Printf("  │   └── cliente.ge     (modelo)\n")
 	fmt.Printf("  ├── telas/\n")
-	fmt.Printf("  │   ├── produtos.fg    (interface)\n")
-	fmt.Printf("  │   └── clientes.fg    (interface)\n")
+	fmt.Printf("  │   ├── produtos.ge    (interface)\n")
+	fmt.Printf("  │   └── clientes.ge    (interface)\n")
 	fmt.Printf("  ├── eventos/\n")
-	fmt.Printf("  │   └── acoes.fg       (interacoes)\n")
+	fmt.Printf("  │   └── acoes.ge       (interacoes)\n")
 	fmt.Printf("  ├── .env\n")
 	fmt.Printf("  ├── .gitignore\n")
 	fmt.Printf("  └── Dockerfile\n")
 	fmt.Println()
-	fmt.Printf("[flang] Execute: flang run %s\n", filepath.Join(name, "inicio.fg"))
+	fmt.Printf("[flang] Execute: flang run %s\n", filepath.Join(name, "inicio.ge"))
 	fmt.Println()
 	fmt.Println("[flang] Adicione novos modelos em dados/, telas em telas/,")
-	fmt.Println("        e importe no inicio.fg. Cada arquivo cuida de uma coisa.")
+	fmt.Println("        e importe no inicio.ge. Cada arquivo cuida de uma coisa.")
 }
 
 func cmdBuild(arquivo string, output string) {
-	// Verify the .fg file exists
+	// Verify the .ge file exists
 	if _, err := os.Stat(arquivo); os.IsNotExist(err) {
 		fmt.Printf("[flang] Erro: arquivo '%s' nao encontrado\n", arquivo)
 		os.Exit(1)
 	}
 
-	// First, verify the .fg file is valid
+	// First, verify the .ge file is valid
 	if err := runtime.Verificar(arquivo); err != nil {
 		fmt.Printf("[flang] Erro: %s\n", err)
 		os.Exit(1)
@@ -1197,7 +1197,7 @@ func cmdBuild(arquivo string, output string) {
 		}
 	}
 
-	// Collect all .fg files in the directory
+	// Collect all .ge files in the directory
 	dir := filepath.Dir(arquivo)
 	if dir == "" || dir == "." {
 		dir, _ = os.Getwd()
@@ -1214,13 +1214,13 @@ func cmdBuild(arquivo string, output string) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	// Copy all .fg files to temp dir preserving structure
+	// Copy all .ge files to temp dir preserving structure
 	fgFiles := []string{}
 	filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil || info.IsDir() {
 			return nil
 		}
-		if filepath.Ext(path) == ".fg" {
+		if filepath.Ext(path) == ".ge" {
 			rel, _ := filepath.Rel(dir, path)
 			destPath := filepath.Join(tmpDir, "app", rel)
 			os.MkdirAll(filepath.Dir(destPath), 0755)

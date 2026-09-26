@@ -261,14 +261,14 @@ Flang v${FLANG_VERSION} - Quick Start
 Linux/macOS:
   chmod +x flang
   ./flang version
-  ./flang run examples/loja/loja.fg
+  ./flang run examples/loja/loja.ge
 
   Ou instale globalmente / Or install globally:
   bash install.sh
 
 Windows:
   flang.exe version
-  flang.exe run examples\loja\loja.fg
+  flang.exe run examples\loja\loja.ge
 
 Documentacao / Documentation:
   https://github.com/flaviokalleu/flang

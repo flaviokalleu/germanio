@@ -61,14 +61,14 @@ Voce vera:
   ██╔══╝  ██║     ██╔══██╗██║╚██╗██║██║   ██║
   ██║     ███████╗██║  ██║██║ ╚████║╚██████╔╝
   ╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝
-  v0.5.0 - Tudo roda direto do .fg
+  v0.5.0 - Tudo roda direto do .ge
 ```
 
 ---
 
 ## 2. Seu Primeiro App
 
-Crie um arquivo chamado `inicio.fg`:
+Crie um arquivo chamado `inicio.ge`:
 
 ```
 sistema meu_app
@@ -103,7 +103,7 @@ eventos
 Rode:
 
 ```bash
-./flang run inicio.fg
+./flang run inicio.ge
 ```
 
 Abra `http://localhost:8080` no navegador.
@@ -121,7 +121,7 @@ Abra `http://localhost:8080` no navegador.
 
 ## 3. Entendendo os Blocos
 
-Um arquivo `.fg` e composto por **blocos**. Cada bloco define uma parte da aplicacao:
+Um arquivo `.ge` e composto por **blocos**. Cada bloco define uma parte da aplicacao:
 
 ```
 sistema nome_do_app       # Obrigatorio - define o nome
@@ -380,33 +380,33 @@ Divida projetos grandes em multiplos arquivos:
 
 ```
 meu-projeto/
-  inicio.fg          # arquivo principal
-  dados.fg           # modelos
-  telas.fg           # telas
-  eventos.fg         # eventos
-  tema.fg            # visual
-  regras.fg          # logica
+  inicio.ge          # arquivo principal
+  dados.ge           # modelos
+  telas.ge           # telas
+  eventos.ge         # eventos
+  tema.ge            # visual
+  regras.ge          # logica
 ```
 
-### inicio.fg
+### inicio.ge
 
 ```
 sistema meu_projeto
 
-importar "tema.fg"
-importar "dados.fg"
-importar "telas.fg"
-importar "eventos.fg"
-importar "regras.fg"
+importar "tema.ge"
+importar "dados.ge"
+importar "telas.ge"
+importar "eventos.ge"
+importar "regras.ge"
 ```
 
 ### Tipos de import
 
 ```
-importar "arquivo.fg"              # importa tudo
-importar dados de "modelos.fg"     # so os modelos
-importar telas de "paginas.fg"     # so as telas
-importar produto de "dados.fg"     # um modelo especifico
+importar "arquivo.ge"              # importa tudo
+importar dados de "modelos.ge"     # so os modelos
+importar telas de "paginas.ge"     # so as telas
+importar produto de "dados.ge"     # um modelo especifico
 ```
 
 ---
@@ -501,7 +501,7 @@ integracoes
 
 ### Primeiro uso
 
-1. Rode `flang run inicio.fg`
+1. Rode `flang run inicio.ge`
 2. Um QR Code aparece no terminal
 3. No celular: WhatsApp > Dispositivos Conectados > Conectar Dispositivo
 4. Escaneie o QR Code
@@ -684,15 +684,15 @@ screens
 
 Aqui esta um projeto real de restaurante com todas as features:
 
-### inicio.fg
+### inicio.ge
 
 ```
 sistema restaurante
 
-importar "tema.fg"
-importar "dados.fg"
-importar "telas.fg"
-importar "eventos.fg"
+importar "tema.ge"
+importar "dados.ge"
+importar "telas.ge"
+importar "eventos.ge"
 
 integracoes
 
@@ -703,7 +703,7 @@ integracoes
         texto "Pedido recebido! {prato} x{quantidade}"
 ```
 
-### tema.fg
+### tema.ge
 
 ```
 tema
@@ -712,7 +712,7 @@ tema
   cor destaque "#f59e0b"
 ```
 
-### dados.fg
+### dados.ge
 
 ```
 dados
@@ -743,7 +743,7 @@ dados
     status: status
 ```
 
-### telas.fg
+### telas.ge
 
 ```
 telas
@@ -787,7 +787,7 @@ telas
       texto "Novo Funcionario"
 ```
 
-### eventos.fg
+### eventos.ge
 
 ```
 eventos
@@ -815,18 +815,18 @@ eventos
 # Compile o Flang
 go build -o flang .
 
-# Copie flang + seus .fg para o servidor
-scp flang inicio.fg user@server:~/app/
+# Copie flang + seus .ge para o servidor
+scp flang inicio.ge user@server:~/app/
 
 # No servidor
 cd ~/app
-./flang run inicio.fg 80
+./flang run inicio.ge 80
 ```
 
 ### Opcao 2: Com PostgreSQL em producao
 
 ```
-# inicio.fg
+# inicio.ge
 sistema meu_app
 
 banco
@@ -837,15 +837,15 @@ banco
   usuario: "app_user"
   senha: "senha_segura"
 
-importar "dados.fg"
-importar "telas.fg"
-importar "eventos.fg"
+importar "dados.ge"
+importar "telas.ge"
+importar "eventos.ge"
 ```
 
 ### Opcao 3: Porta customizada
 
 ```bash
-./flang run inicio.fg 3000
+./flang run inicio.ge 3000
 ```
 
 ---
@@ -1047,15 +1047,15 @@ resultados = consultar_paralelo(
 
 ## 21. flang build
 
-O comando `flang build` compila seu arquivo `.fg` em um executavel standalone:
+O comando `flang build` compila seu arquivo `.ge` em um executavel standalone:
 
 ```bash
-flang build meuapp.fg
+flang build meuapp.ge
 ```
 
 Isso gera um binario `meuapp` (ou `meuapp.exe` no Windows) que inclui:
 - O interpretador Flang
-- Seu arquivo `.fg` embutido
+- Seu arquivo `.ge` embutido
 - Todas as dependencias
 
 ### Distribuicao
@@ -1064,7 +1064,7 @@ O executavel gerado nao requer Go instalado na maquina de destino:
 
 ```bash
 # Compilar
-flang build meuapp.fg
+flang build meuapp.ge
 
 # Copiar para o servidor
 scp meuapp user@server:~/
@@ -1077,20 +1077,20 @@ ssh user@server "./meuapp"
 
 ```bash
 # Linux
-GOOS=linux flang build meuapp.fg
+GOOS=linux flang build meuapp.ge
 
 # Windows
-GOOS=windows flang build meuapp.fg
+GOOS=windows flang build meuapp.ge
 
 # macOS
-GOOS=darwin flang build meuapp.fg
+GOOS=darwin flang build meuapp.ge
 ```
 
 ---
 
 ## 22. Multilingual
 
-O Flang v0.5.0 suporta 20 idiomas. Voce pode escrever seu `.fg` no idioma que preferir.
+O Flang v0.5.0 suporta 20 idiomas. Voce pode escrever seu `.ge` no idioma que preferir.
 
 ### Exemplo em Espanhol
 

@@ -13,7 +13,7 @@ ausente e `fmt.Println` com newline redundante detectado pelo vet. Ambos foram
 corrigidos sem mudar a semântica Flang.
 
 O parser Flang tolerava tokens desconhecidos e o runtime fazia coerções. Para não
-quebrar programas existentes, o modo `.fg` foi mantido; `.ge` usa entrada estrita,
+quebrar programas existentes, o modo `.ge` foi mantido; `.ge` usa entrada estrita,
 análise de tipos e execução separada, compartilhando os nós do AST e a estrutura
 de varredura léxica. Nenhum recurso web foi reescrito por aparência.
 
@@ -39,7 +39,7 @@ de varredura léxica. Nenhum recurso web foi reescrito por aparência.
   arredondamento com unidades verificadas. Não conecta ações nem inicia servidor.
 - Sete exemplos `.ge`, documentação atual, logo fornecida pelo usuário e referência
   histórica Flang preservada em `docs/FLANG_LEGACY.md`.
-- Highlighting `.ge` na extensão existente, mantendo `.fg`. Sem alegar suporte LSP.
+- Highlighting `.ge` na extensão existente, mantendo `.ge`. Sem alegar suporte LSP.
 - CI com testes, vet, race checks, builds e exemplos de ambos os modos.
 
 ## Validação
@@ -48,7 +48,7 @@ de varredura léxica. Nenhum recurso web foi reescrito por aparência.
 - `go vet ./...` e `go test -race ./compiler/... ./runtime/germanio ./tooling/...`.
 - Builds da CLI Germanio e da CLI Flang.
 - Execução real de entrada pelo terminal, exemplos de fundamentos e imports.
-- `ge check` nos exemplos `.ge` e nos demos plano/organizado `.fg`.
+- `ge check` nos exemplos `.ge` e nos demos plano/organizado `.ge`.
 - `ge fmt examples/germanio --check`.
 - Fuzzing do parser por 15 segundos: 670.904 entradas, sem falha naquela execução.
 - JSON de metadados e gramática da extensão validado sintaticamente. A extensão
@@ -59,7 +59,7 @@ Não houve deploy, publicação de pacote, criação de release ou alteração d
 
 ## Reaproveitamento e limites
 
-Foram preservados lexer/parser `.fg`, AST web, interpretador legado, servidor,
+Foram preservados lexer/parser `.ge`, AST web, interpretador legado, servidor,
 modelos, CRUD, auth, banco, templates e integrações. Distribuições antigas em
 `dist/` e o backup binário histórico foram identificados e mantidos nesta entrega;
 não foram apresentados como releases Germanio. A logo original também permanece

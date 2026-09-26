@@ -1,0 +1,14 @@
+sistema loja
+
+importar "tema.ge"
+importar "auth.ge"
+importar "dados/usuario.ge"
+importar "dados/produto.ge"
+importar "dados/cliente.ge"
+importar "dados/venda.ge"
+importar "telas/produtos.ge"
+importar "telas/clientes.ge"
+importar "telas/vendas.ge"
+importar "telas/equipe.ge"
+importar "eventos/acoes.ge"
+importar "logica.ge"

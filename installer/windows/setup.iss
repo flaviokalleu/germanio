@@ -111,7 +111,7 @@ VersionInfoProductVersion={#AppVersao}
 ; Binario principal
 Source: "{#BinFonte}"; DestDir: "{app}\bin"; Flags: ignoreversion
 
-; Exemplos .fg
+; Exemplos .ge
 Source: "{#ExemplosFonte}"; DestDir: "{app}\exemplos"; \
     Flags: ignoreversion recursesubdirs createallsubdirs
 
@@ -144,7 +144,7 @@ Name: "{group}\Flang"; \
 ; Atalho para a pasta de exemplos
 Name: "{group}\Exemplos Flang"; \
     Filename: "{app}\exemplos"; \
-    Comment: "Exemplos de programas .fg"
+    Comment: "Exemplos de programas .ge"
 
 ; Atalho para o README
 Name: "{group}\Documentacao Flang"; \
@@ -176,9 +176,9 @@ Name: "addtopath"; \
     GroupDescription: "Opcoes adicionais:"; \
     Flags: checked
 
-; Criar associacao de arquivo .fg
+; Criar associacao de arquivo .ge
 Name: "assocfg"; \
-    Description: "Associar arquivos .fg ao Flang (duplo clique abre com flang)"; \
+    Description: "Associar arquivos .ge ao Flang (duplo clique abre com flang)"; \
     GroupDescription: "Opcoes adicionais:"; \
     Flags: checked
 
@@ -194,11 +194,11 @@ Name: "desktopicon"; \
 ; =============================================================================
 [Registry]
 
-; ----- Associacao de arquivo .fg -----
-; Registra a extensao .fg (nivel usuario - sem precisar de admin)
+; ----- Associacao de arquivo .ge -----
+; Registra a extensao .ge (nivel usuario - sem precisar de admin)
 
-; Associa .fg a classe FlangFile
-Root: HKCU; Subkey: "Software\Classes\.fg"; \
+; Associa .ge a classe FlangFile
+Root: HKCU; Subkey: "Software\Classes\.ge"; \
     ValueType: string; ValueName: ""; ValueData: "FlangFile"; \
     Flags: uninsdeletekey; Tasks: assocfg
 
@@ -207,12 +207,12 @@ Root: HKCU; Subkey: "Software\Classes\FlangFile"; \
     ValueType: string; ValueName: ""; ValueData: "Arquivo Flang"; \
     Flags: uninsdeletekey; Tasks: assocfg
 
-; Icone do arquivo .fg (usa o icone do flang.exe)
+; Icone do arquivo .ge (usa o icone do flang.exe)
 Root: HKCU; Subkey: "Software\Classes\FlangFile\DefaultIcon"; \
     ValueType: string; ValueName: ""; ValueData: "{app}\bin\{#AppExe},0"; \
     Flags: uninsdeletekey; Tasks: assocfg
 
-; Comando para abrir o arquivo (flang run "arquivo.fg")
+; Comando para abrir o arquivo (flang run "arquivo.ge")
 Root: HKCU; Subkey: "Software\Classes\FlangFile\shell\open\command"; \
     ValueType: string; ValueName: ""; \
     ValueData: """{app}\bin\{#AppExe}"" run ""%1"""; \
@@ -349,7 +349,7 @@ begin
     #13#10 +
     'O que sera instalado:' + #13#10 +
     '  * flang.exe — o compilador/interpretador' + #13#10 +
-    '  * Exemplos de sistemas prontos (.fg)' + #13#10 +
+    '  * Exemplos de sistemas prontos (.ge)' + #13#10 +
     '  * Atalhos no Menu Iniciar' + #13#10 +
     #13#10 +
     'Nao e necessario ser administrador do sistema.' + #13#10 +
@@ -377,7 +377,7 @@ begin
     '  1. Reinicie o terminal (cmd ou PowerShell)' + #13#10 +
     '  2. Digite: flang version' + #13#10 +
     '  3. Para rodar um exemplo:' + #13#10 +
-    '     flang run "' + ExpandConstant('{app}') + '\exemplos\ola-mundo\inicio.fg"' + #13#10 +
+    '     flang run "' + ExpandConstant('{app}') + '\exemplos\ola-mundo\inicio.ge"' + #13#10 +
     #13#10 +
     'Flang instalado! Reinicie o terminal e digite: flang version';
 end;
