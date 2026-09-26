@@ -19,6 +19,7 @@ func TestFormatterIdempotentAndPreservesBehavior(t *testing.T) {
 		"nome=\"Flavio\"\nmostre \"Olá {nome}\"\n",
 		"crie botão azul\n  borda arredondada 16px\n",
 		"mut i=0\n# teste\nenquanto i<2\n  i+=1\n  mostre i\n",
+		"variavel i=0\n# teste\nenquanto i<2\n  i+=1\n  mostre i\n",
 	} {
 		t.Run(source, func(t *testing.T) {
 			a, err := Format("x.ge", source)

@@ -37,8 +37,19 @@ func TestGermanioAST(t *testing.T) {
 		t.Fatal("non deterministic parse")
 	}
 }
+func TestMutableSpellingPreservesAST(t *testing.T) {
+	for _, keyword := range []string{"mut", "variavel"} {
+		program, err := ParseGermanio("a.ge", keyword+" contador = 0\ncontador += 1\nmostre contador")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(program.Scripts) != 3 || !program.Scripts[0].VarDecl.Mutable {
+			t.Fatalf("%s: expected mutable declaration", keyword)
+		}
+	}
+}
 func TestGermanioParserInvalid(t *testing.T) {
-	for _, src := range []string{"se verdadeiro\nmostre 1", "  mostre 1", "se verdadeiro\n\tmostre 1", "mostre (1 + 2", "mostre [1 2]", "mostre [1,]", "somar(a,) = a", "mostre 1 lixo", "idade: banana = 1", "mut", "senao\n  mostre 1", `mostre "Olá {nome"`, "mostre 9223372036854775808"} {
+	for _, src := range []string{"se verdadeiro\nmostre 1", "  mostre 1", "se verdadeiro\n\tmostre 1", "mostre (1 + 2", "mostre [1 2]", "mostre [1,]", "somar(a,) = a", "mostre 1 lixo", "idade: banana = 1", "mut", "variavel", "senao\n  mostre 1", `mostre "Olá {nome"`, "mostre 9223372036854775808"} {
 		t.Run(src, func(t *testing.T) {
 			if _, err := ParseGermanio("bad.ge", src); err == nil {
 				t.Fatal("invalid source accepted")

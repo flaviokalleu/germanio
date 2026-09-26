@@ -31,7 +31,7 @@ func (c *checker) mismatch(pos diagnostics.Position, want, got *Type) error {
 	return c.err(pos, "GE2004", "Tipos incompatíveis", fmt.Sprintf("Esperado %s, recebido %s. Não há coerção implícita.", want, got), "Use valores do mesmo tipo ou uma conversão explícita.")
 }
 
-var reserved = map[string]bool{"mostre": true, "pergunte": true, "mut": true, "const": true, "se": true, "senao": true, "enquanto": true, "para": true, "em": true, "e": true, "ou": true, "nao": true, "usa": true, "retorne": true, "pare": true, "continue": true, "crie": true, "verdadeiro": true, "falso": true, "nulo": true, "numero": true, "inteiro": true, "decimal": true, "texto": true, "quantidade": true}
+var reserved = map[string]bool{"mostre": true, "pergunte": true, "mut": true, "variavel": true, "const": true, "se": true, "senao": true, "enquanto": true, "para": true, "em": true, "e": true, "ou": true, "nao": true, "usa": true, "retorne": true, "pare": true, "continue": true, "crie": true, "verdadeiro": true, "falso": true, "nulo": true, "numero": true, "inteiro": true, "decimal": true, "texto": true, "quantidade": true}
 
 func Check(m *Module) error {
 	if m.checked {
@@ -235,7 +235,7 @@ func (c *checker) block(stmts []*ast.Statement, s *Scope) (bool, error) {
 					return false, c.err(st.Pos, "GE2001", "Redeclaração ou shadowing", d.Name+" já foi declarado.", "Use outro nome ou atribua a uma variável mutável existente.")
 				}
 				if !b.Mutable {
-					return false, c.err(st.Pos, "GE2002", "Valor imutável", d.Name+" foi declarado sem mut.", "Declare mut "+d.Name+" = valor para permitir alterações.")
+					return false, c.err(st.Pos, "GE2002", "Valor imutável", d.Name+" foi declarado como imutável.", "Declare variavel "+d.Name+" = valor para permitir alterações.")
 				}
 				if !assignable(b.Type, t) {
 					return false, c.mismatch(st.Pos, b.Type, t)
@@ -256,7 +256,7 @@ func (c *checker) block(stmts []*ast.Statement, s *Scope) (bool, error) {
 				return false, c.unknown(st.Pos, st.Assign.Target)
 			}
 			if !b.Mutable {
-				return false, c.err(st.Pos, "GE2002", "Valor imutável", st.Assign.Target+" não foi declarado com mut.", "Use mut na declaração inicial.")
+				return false, c.err(st.Pos, "GE2002", "Valor imutável", st.Assign.Target+" foi declarado como imutável.", "Use variavel na declaração inicial.")
 			}
 			t, e := c.expr(&st.Assign.Value, s)
 			if e != nil {

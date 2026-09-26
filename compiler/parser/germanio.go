@@ -264,8 +264,8 @@ func (g *geParser) statement(l geLine, top bool) (*ast.Statement, error) {
 		}
 	}
 	mutable, constant := false, false
-	if first.Value == "mut" || first.Value == "const" {
-		mutable = first.Value == "mut"
+	if first.Value == "mut" || first.Value == "variavel" || first.Value == "const" {
+		mutable = first.Value == "mut" || first.Value == "variavel"
 		constant = first.Value == "const"
 		t = t[1:]
 		if len(t) == 0 {
@@ -313,7 +313,7 @@ func (g *geParser) statement(l geLine, top bool) (*ast.Statement, error) {
 		return s, nil
 	}
 	if mutable || constant {
-		return nil, g.syntax(first, "Use mut nome = valor ou const NOME = valor")
+		return nil, g.syntax(first, "Use variavel nome = valor ou const NOME = valor")
 	}
 	if len(t) > 1 && first.Type == lexer.TokenIdentifier && t[1].Type == lexer.TokenString && (first.Value == "moste" || first.Value == "mostra" || first.Value == "mostr" || first.Value == "mostrar") {
 		return nil, g.fail(first, "GE1001", "Você quis dizer mostre?", first.Value+" não é o comando de saída Germanio.", `Use mostre "Olá". O compilador não altera seu código silenciosamente.`)

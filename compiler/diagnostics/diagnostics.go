@@ -34,7 +34,7 @@ var Explanations = map[string]string{
 	"GE1001": "Sintaxe inválida. Confira a palavra, os delimitadores e a expressão indicada. Exemplo: mostre \"Olá\".",
 	"GE1002": "Indentação inválida. Use dois espaços por bloco e alinhe comandos do mesmo bloco.",
 	"GE2001": "Nome desconhecido. Declare a variável ou função antes de utilizá-la.",
-	"GE2002": "Valor imutável. Declare mut contador = 0 antes de modificar contador.",
+	"GE2002": "Valor imutável. Declare variavel contador = 0 antes de modificar contador. mut continua aceito.",
 	"GE2003": "Nome não utilizado. Use o valor ou remova a declaração. Para descarte intencional, use _ = valor.",
 	"GE2004": "Tipos incompatíveis. Germanio não converte texto em número implicitamente. Exemplo: numero(\"5\") + 2.",
 	"GE2005": "Operação numérica inválida, divisão por zero ou overflow. Verifique os operandos e limites.",

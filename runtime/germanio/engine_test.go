@@ -27,6 +27,7 @@ func TestExecution(t *testing.T) {
 		{"dobro(x) = x * 2\nmostre dobro(21)", "", "42\n"},
 		{"somar(a, b)\n  a + b\nmostre somar(2, 3)", "", "5\n"},
 		{"mut total = 0\npara item em [1, 2, 3]\n  total += item\nmostre total", "", "6\n"},
+		{"variavel total = 0\npara item em [1, 2, 3]\n  total += item\nmostre total", "", "6\n"},
 		{"mut i = 0\nenquanto i < 3\n  i += 1\n  se i == 2\n    continue\n  mostre i", "", "1\n3\n"},
 		{"mut i = 0\nenquanto verdadeiro\n  i += 1\n  se i == 2\n    pare\nmostre i", "", "2\n"},
 		{"f(n: inteiro) -> inteiro\n  se n == 0\n    retorne 1\n  retorne n * f(n - 1)\nmostre f(5)", "", "120\n"},
