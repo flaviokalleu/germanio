@@ -1,16 +1,16 @@
-# Flang v0.5.0 - Cheatsheet / Referencia Rapida
+# Germanio v0.5.0 - Cheatsheet / Referencia Rapida
 
 ## CLI
 
 ```bash
-flang run arquivo.ge [porta]     # Executa o app (padrao porta 8080)
-flang check arquivo.ge           # Valida sintaxe sem executar
-flang new nome                   # Cria novo projeto
-flang init                       # Inicializa projeto no diretorio atual
-flang build arquivo.ge           # Compila em executavel standalone
-flang docker arquivo.ge          # Gera Dockerfile e docker-compose.yml
-flang version                    # Mostra versao
-flang help                       # Ajuda
+germanio run arquivo.ge [porta]     # Executa o app (padrao porta 8080)
+germanio check arquivo.ge           # Valida sintaxe sem executar
+germanio new nome                   # Cria novo projeto
+germanio init                       # Inicializa projeto no diretorio atual
+germanio build arquivo.ge           # Compila em executavel standalone
+germanio docker arquivo.ge          # Gera Dockerfile e docker-compose.yml
+germanio version                    # Mostra versao
+germanio help                       # Ajuda
 ```
 
 ## Estrutura Minima

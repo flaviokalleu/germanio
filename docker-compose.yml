@@ -6,11 +6,11 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - FLANG_DB_HOST=postgres
-      - FLANG_DB_PORT=5432
-      - FLANG_DB_USER=flang
-      - FLANG_DB_PASS=flang
-      - FLANG_DB_NAME=flang
+      - GERMANIO_DB_HOST=postgres
+      - GERMANIO_DB_PORT=5432
+      - GERMANIO_DB_USER=germanio
+      - GERMANIO_DB_PASS=germanio
+      - GERMANIO_DB_NAME=germanio
     depends_on:
       postgres:
         condition: service_healthy
@@ -19,15 +19,15 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: flang
-      POSTGRES_PASSWORD: flang
-      POSTGRES_DB: flang
+      POSTGRES_USER: germanio
+      POSTGRES_PASSWORD: germanio
+      POSTGRES_DB: germanio
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U flang"]
+      test: ["CMD-SHELL", "pg_isready -U germanio"]
       interval: 5s
       timeout: 3s
       retries: 5

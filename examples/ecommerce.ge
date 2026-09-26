@@ -264,4 +264,4 @@ logica
   funcao calcular_lucro(preco, custo)
     retornar preco - custo
 
-  mostrar "E-commerce Flang v" + versao + " online!"
+  mostrar "E-commerce Germanio v" + versao + " online!"

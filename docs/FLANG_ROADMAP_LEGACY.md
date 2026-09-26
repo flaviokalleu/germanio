@@ -1,4 +1,4 @@
-# Flang — Documento de Atualizacao e Roadmap Completo
+# Germanio — Documento de Atualizacao e Roadmap Completo
 
 **Versao atual: v0.5.1** | **Atualizado: Abril 2026**
 
@@ -12,7 +12,7 @@
 - [x] 20 idiomas suportados (PT, EN, ES, FR, DE, IT, ZH, JA, KO, AR, HI, BN, RU, ID, TR, VI, PL, NL, TH, SW)
 - [x] Sistema de imports com deteccao circular
 - [x] Hot reload (re-exec on file change)
-- [x] Comando `flang build` para gerar executavel standalone
+- [x] Comando `germanio build` para gerar executavel standalone
 - [x] Modo plano (1 arquivo) e organizado (pastas)
 
 ### Tipos de Dados (15 tipos)
@@ -68,7 +68,7 @@
 ### CLI
 - [x] run, check, new, init, build, docker, ide, version, help
 
-### IDE Web (Flang IDE)
+### IDE Web (Germanio IDE)
 - [x] Monaco Editor com syntax highlighting para .ge
 - [x] File tree, tabs, Ctrl+S, terminal
 - [x] Run/Stop/Check buttons
@@ -139,7 +139,7 @@
 ### Onda 4 — UX para Leigos (15 features)
 | # | Feature | Descricao | Status |
 |---|---------|-----------|--------|
-| 26 | Templates prontos | `flang new loja`, `clinica`, `escola`, `delivery` | 🔜 |
+| 26 | Templates prontos | `germanio new loja`, `clinica`, `escola`, `delivery` | 🔜 |
 | 27 | Wizard de criacao | perguntas guiadas → gera .ge | 🔜 |
 | 28 | LSP (autocomplete) | sugestoes no editor | 🔜 |
 | 29 | Preview ao vivo na IDE | iframe com o app rodando | 🔜 |
@@ -158,12 +158,12 @@
 ### Onda 5 — Deploy e Distribuicao (10 features)
 | # | Feature | Descricao | Status |
 |---|---------|-----------|--------|
-| 41 | Deploy 1 comando | `flang deploy` publica online | 🔜 |
-| 42 | Dominio customizado | `flang deploy --dominio meuapp.com` | 🔜 |
+| 41 | Deploy 1 comando | `germanio deploy` publica online | 🔜 |
+| 42 | Dominio customizado | `germanio deploy --dominio meuapp.com` | 🔜 |
 | 43 | HTTPS automatico | Let's Encrypt integrado | 🔜 |
-| 44 | Compartilhar projeto | `flang share` gera link | 🔜 |
-| 45 | Atualizar sem downtime | `flang update` | 🔜 |
-| 46 | Backup na nuvem | `flang backup` | 💡 |
+| 44 | Compartilhar projeto | `germanio share` gera link | 🔜 |
+| 45 | Atualizar sem downtime | `germanio update` | 🔜 |
+| 46 | Backup na nuvem | `germanio backup` | 💡 |
 | 47 | Git integrado na IDE | commit/push dentro da IDE | 🔜 |
 | 48 | AI assistant na IDE | chat que gera .ge | 🔜 |
 | 49 | Marketplace de templates | baixar e compartilhar | 💡 |
@@ -189,8 +189,8 @@
 
 ### v0.8.0 — Developer Experience
 - [ ] LSP (Language Server Protocol) com autocomplete
-- [ ] REPL interativo (`flang repl`)
-- [ ] Formatter (`flang fmt`)
+- [ ] REPL interativo (`germanio repl`)
+- [ ] Formatter (`germanio fmt`)
 - [ ] Testing framework built-in
 - [ ] Erro com sugestao de correcao
 
@@ -214,7 +214,7 @@
 
 ## PARTE 5: COMPARACAO COM CONCORRENTES
 
-| Feature | Flang | Bubble | Retool | Wasp | Adalo |
+| Feature | Germanio | Bubble | Retool | Wasp | Adalo |
 |---------|:-----:|:------:|:------:|:----:|:-----:|
 | Open source | ✅ | ❌ | ❌ | ✅ | ❌ |
 | 20 idiomas | ✅ | ❌ | ❌ | ❌ | ❌ |
@@ -230,7 +230,7 @@
 | Mobile | 🔜 | ✅ | ✅ | ❌ | ✅ |
 | Preco | **Gratis** | $29-599/mes | $10-50/user | Gratis | $36-200/mes |
 
-### Diferenciais unicos do Flang
+### Diferenciais unicos do Germanio
 1. **Unica linguagem em 20 idiomas** — escreva em portugues, chines, arabe, etc
 2. **Gera executavel standalone** — um .exe que roda sem instalar nada
 3. **WhatsApp integrado** — nenhum concorrente tem

@@ -12,4 +12,4 @@ logica
   funcao pode_aceitar_ticket(nao_lidas, limite)
     retornar nao_lidas < limite
 
-  mostrar "WhaTicket Flang v" + versao + " iniciado!"
+  mostrar "WhaTicket Germanio v" + versao + " iniciado!"

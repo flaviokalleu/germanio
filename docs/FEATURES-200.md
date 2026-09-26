@@ -1,6 +1,6 @@
-# Flang — 200 Features Para Leigos
+# Germanio — 200 Features Para Leigos
 
-**Objetivo:** Tornar o Flang a plataforma mais acessivel do mundo para qualquer pessoa criar aplicacoes completas, sem precisar saber programar.
+**Objetivo:** Tornar o Germanio a plataforma mais acessivel do mundo para qualquer pessoa criar aplicacoes completas, sem precisar saber programar.
 
 **Legenda:** ✅ Ja implementado | 🔜 Planejado | 💡 Ideia nova
 
@@ -86,7 +86,7 @@
 | 61 | Matematica | ✅ | `arredondar(3.7)` → `4` |
 | 62 | Trabalhar com datas | ✅ | `formato_data(agora(), "DD/MM/YYYY")` |
 | 63 | Parse JSON | ✅ | `json('{"a":1}')` → objeto |
-| 64 | Substituir texto | ✅ | `substituir("ola mundo", "mundo", "flang")` |
+| 64 | Substituir texto | ✅ | `substituir("ola mundo", "mundo", "germanio")` |
 | 65 | Quando clicar botao | ✅ | `quando clicar "Novo" criar produto` |
 | 66 | Quando criar registro | ✅ | `quando criar produto enviar mensagem` |
 | 67 | Quando atualizar registro | ✅ | `quando atualizar ticket enviar email` |
@@ -222,8 +222,8 @@
 | 161 | Tema com uma palavra | ✅ | `tema moderno` — pronto, bonito |
 | 162 | Cor por nome | ✅ | `cor primaria azul` — sem hex |
 | 163 | 20 idiomas | ✅ | escreva em qualquer lingua |
-| 164 | Modo plano (1 arquivo) | ✅ | `flang new meuapp` |
-| 165 | Modo organizado (pastas) | ✅ | `flang init meuapp` |
+| 164 | Modo plano (1 arquivo) | ✅ | `germanio new meuapp` |
+| 165 | Modo organizado (pastas) | ✅ | `germanio init meuapp` |
 | 166 | Hot reload | ✅ | muda o arquivo, atualiza sozinho |
 | 167 | Exemplos prontos | ✅ | loja, evoticket inclusos |
 | 168 | Snippets no VS Code | ✅ | digita `dados` + Tab = pronto |
@@ -234,7 +234,7 @@
 | # | Feature | Status | O que faz |
 |---|---------|--------|----------|
 | 171 | Assistente IA no editor | 🔜 | descreve o que quer, IA gera o .ge |
-| 172 | Templates prontos | 🔜 | `flang new loja`, `flang new clinica`, `flang new escola` |
+| 172 | Templates prontos | 🔜 | `germanio new loja`, `germanio new clinica`, `germanio new escola` |
 | 173 | Wizard de criacao | 🔜 | perguntas guiadas para criar o app |
 | 174 | Preview ao vivo no editor | 🔜 | veja o resultado enquanto escreve |
 | 175 | Documentacao interativa | 🔜 | exemplos clicaveis no browser |
@@ -242,21 +242,21 @@
 | 177 | Modo tutorial (passo a passo) | 💡 | guia interativo no primeiro uso |
 | 178 | Sugestao de erro com correcao | 🔜 | "voce quis dizer 'texto'?" |
 | 179 | Auto-completar inteligente | 🔜 | LSP sugere campos e tipos |
-| 180 | Validacao ao salvar | ✅ | `flang check` valida antes de rodar |
+| 180 | Validacao ao salvar | ✅ | `germanio check` valida antes de rodar |
 
 ### Publicar sem Dor de Cabeca
 | # | Feature | Status | O que faz |
 |---|---------|--------|----------|
-| 181 | Gerar executavel | ✅ | `flang build` — um .exe |
-| 182 | Gerar Docker | ✅ | `flang docker` |
-| 183 | Instalar com 1 clique (Windows) | ✅ | FlangSetup.exe |
+| 181 | Gerar executavel | ✅ | `germanio build` — um .exe |
+| 182 | Gerar Docker | ✅ | `germanio docker` |
+| 183 | Instalar com 1 clique (Windows) | ✅ | GermanioSetup.exe |
 | 184 | Instalar com 1 linha (Linux) | ✅ | `curl ... \| sh` |
-| 185 | Deploy em 1 comando | 🔜 | `flang deploy` |
-| 186 | Dominio customizado | 🔜 | `flang deploy --dominio meuapp.com` |
+| 185 | Deploy em 1 comando | 🔜 | `germanio deploy` |
+| 186 | Dominio customizado | 🔜 | `germanio deploy --dominio meuapp.com` |
 | 187 | HTTPS automatico | 🔜 | Let's Encrypt integrado |
-| 188 | Backup na nuvem | 💡 | `flang backup` |
-| 189 | Atualizar app rodando | 🔜 | `flang update` sem downtime |
-| 190 | Compartilhar projeto | 🔜 | `flang share` gera link |
+| 188 | Backup na nuvem | 💡 | `germanio backup` |
+| 189 | Atualizar app rodando | 🔜 | `germanio update` sem downtime |
+| 190 | Compartilhar projeto | 🔜 | `germanio share` gera link |
 
 ---
 
@@ -265,10 +265,10 @@
 | # | Feature | Status | Como usar |
 |---|---------|--------|----------|
 | 191 | Dados iniciais (seeds) | 🔜 | `sementes usuario nome "Admin"` |
-| 192 | Importar de planilha | 🔜 | `flang import dados.xlsx` |
+| 192 | Importar de planilha | 🔜 | `germanio import dados.xlsx` |
 | 193 | Exportar para planilha | ✅ | `/api/modelo/export/csv` |
 | 194 | Exportar para JSON | ✅ | `/api/modelo/export/json` |
-| 195 | Importar de outro banco | 💡 | `flang import --de mysql://...` |
+| 195 | Importar de outro banco | 💡 | `germanio import --de mysql://...` |
 | 196 | Relatorio PDF | 🔜 | `relatorio vendas formato pdf` |
 | 197 | Grafico exportavel | 🔜 | botao "Baixar grafico" |
 | 198 | Notificacao por email de relatorio | 🔜 | `cada semana enviar relatorio` |

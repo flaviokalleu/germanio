@@ -1,19 +1,19 @@
 #Requires -Version 5.0
 # =============================================================================
-# Flang Programming Language - Instalador para Windows
+# Germanio Programming Language - Instalador para Windows
 # Versao 0.2.0
 #
 # Uso:
 #   .\install.ps1
-#   .\install.ps1 -DiretorioInstalacao "D:\Flang"
+#   .\install.ps1 -DiretorioInstalacao "D:\Germanio"
 #   .\install.ps1 -Silencioso
 #
 # Nao requer privilégios de administrador (instala por usuario).
 # =============================================================================
 
 param(
-    # Diretório de instalação (padrão: C:\Flang)
-    [string]$DiretorioInstalacao = "C:\Flang",
+    # Diretório de instalação (padrão: C:\Germanio)
+    [string]$DiretorioInstalacao = "C:\Germanio",
 
     # Instala sem perguntas interativas
     [switch]$Silencioso
@@ -25,9 +25,9 @@ $ErrorActionPreference = "Stop"
 # ---------------------------------------------------------------------------
 # Variaveis globais
 # ---------------------------------------------------------------------------
-$VersaoFlang    = "0.2.0"
-$NomeApp        = "Flang Programming Language"
-$ExeNome        = "flang.exe"
+$VersaoGermanio    = "0.2.0"
+$NomeApp        = "Germanio Programming Language"
+$ExeNome        = "germanio.exe"
 $DirBin         = Join-Path $DiretorioInstalacao "bin"
 $DirExemplos    = Join-Path $DiretorioInstalacao "exemplos"
 $DirDocs        = Join-Path $DiretorioInstalacao "docs"
@@ -82,7 +82,7 @@ function Mostrar-Banner {
     Write-Host "  ██║     ███████╗██║  ██║██║ ╚████║╚██████╔╝" -ForegroundColor Cyan
     Write-Host "  ╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝ " -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "  $NomeApp v$VersaoFlang" -ForegroundColor White
+    Write-Host "  $NomeApp v$VersaoGermanio" -ForegroundColor White
     Write-Host "  Instalador para Windows" -ForegroundColor DarkGray
     Write-Host ""
 }
@@ -108,7 +108,7 @@ function Confirmar-Instalacao {
 # Verificar se o binario fonte existe
 # ---------------------------------------------------------------------------
 function Verificar-BinarioFonte {
-    Escrever-Passo "Procurando flang.exe..."
+    Escrever-Passo "Procurando germanio.exe..."
 
     # Tenta encontrar o exe em varios locais possiveis
     $candidatos = @(
@@ -126,8 +126,8 @@ function Verificar-BinarioFonte {
         }
     }
 
-    Escrever-Erro "flang.exe nao encontrado. Compile primeiro com:"
-    Escrever-Info "  go build -o flang.exe ."
+    Escrever-Erro "germanio.exe nao encontrado. Compile primeiro com:"
+    Escrever-Info "  go build -o germanio.exe ."
     Escrever-Erro "ou execute build-installer.bat"
     exit 1
 }
@@ -152,10 +152,10 @@ function Criar-Diretorios {
 # Copiar o binario principal
 # ---------------------------------------------------------------------------
 function Instalar-Binario {
-    Escrever-Passo "Instalando flang.exe em $DirBin..."
+    Escrever-Passo "Instalando germanio.exe em $DirBin..."
 
     Copy-Item -Path $ExeFonte -Destination $ExeDestino -Force
-    Escrever-Ok "flang.exe instalado"
+    Escrever-Ok "germanio.exe instalado"
 }
 
 # ---------------------------------------------------------------------------
@@ -178,7 +178,7 @@ function Instalar-Exemplos {
     } else {
         # Cria um exemplo basico inline caso nao haja pasta de exemplos
         $exemploBasico = @"
-# Exemplo basico - sistema de loja Flang
+# Exemplo basico - sistema de loja Germanio
 system loja
 
 theme
@@ -234,27 +234,27 @@ function Instalar-Docs {
 
     # Cria README rapido
     $readme = @"
-Flang Programming Language v$VersaoFlang
+Germanio Programming Language v$VersaoGermanio
 ========================================
 
 Instalado em: $DiretorioInstalacao
 
 COMO USAR
 ---------
-  flang version
-  flang run meu_app.ge
-  flang new minha_loja
+  germanio version
+  germanio run meu_app.ge
+  germanio new minha_loja
 
 EXEMPLOS
 --------
   Os exemplos estao em: $DirExemplos
 
   Para rodar um exemplo:
-    flang run "$DirExemplos\ola-mundo\inicio.ge"
+    germanio run "$DirExemplos\ola-mundo\inicio.ge"
 
 MAIS INFORMACOES
 ----------------
-  GitHub: https://github.com/flaviokalleu/flang
+  GitHub: https://github.com/flaviokalleu/germanio
   Data de instalacao: $(Get-Date -Format "dd/MM/yyyy HH:mm")
 "@
     $readme | Set-Content -Path (Join-Path $DiretorioInstalacao "LEIA-ME.txt") -Encoding UTF8
@@ -317,8 +317,8 @@ function Criar-AssociacaoArquivo {
     Escrever-Passo "Criando associacao de arquivo .ge..."
 
     # Classe do programa
-    $classeNome = "FlangFile"
-    $descricao  = "Arquivo Flang (.ge)"
+    $classeNome = "GermanioFile"
+    $descricao  = "Arquivo Germanio (.ge)"
     $icone      = "$ExeDestino,0"
 
     # 1. Registra a extensao .ge apontando para a classe
@@ -336,7 +336,7 @@ function Criar-AssociacaoArquivo {
     New-Item -Path $iconeKey -Force | Out-Null
     Set-ItemProperty -Path $iconeKey -Name "(Default)" -Value $icone
 
-    # Comando de abertura (flang run "arquivo.ge")
+    # Comando de abertura (germanio run "arquivo.ge")
     $cmdKey = "$classeKey\shell\open\command"
     New-Item -Path $cmdKey -Force | Out-Null
     Set-ItemProperty -Path $cmdKey -Name "(Default)" -Value "`"$ExeDestino`" run `"%1`""
@@ -355,7 +355,7 @@ public static extern void SHChangeNotify(int wEventId, int uFlags, IntPtr dwItem
         }
     } catch { }
 
-    Escrever-Ok "Arquivos .ge agora abrem com Flang ao dar duplo clique"
+    Escrever-Ok "Arquivos .ge agora abrem com Germanio ao dar duplo clique"
 }
 
 # ---------------------------------------------------------------------------
@@ -367,7 +367,7 @@ function Criar-Desinstalador {
     $conteudo = @"
 #Requires -Version 5.0
 # =============================================================================
-# Flang Programming Language - Desinstalador
+# Germanio Programming Language - Desinstalador
 # Gerado automaticamente em $(Get-Date -Format "dd/MM/yyyy HH:mm")
 # =============================================================================
 
@@ -375,11 +375,11 @@ function Criar-Desinstalador {
 `$DirBin              = "$DirBin"
 
 Write-Host ""
-Write-Host "  Desinstalando Flang Programming Language..." -ForegroundColor Yellow
+Write-Host "  Desinstalando Germanio Programming Language..." -ForegroundColor Yellow
 Write-Host ""
 
 # Confirmacao
-`$resposta = Read-Host "  Tem certeza que deseja remover o Flang? [s/N]"
+`$resposta = Read-Host "  Tem certeza que deseja remover o Germanio? [s/N]"
 if (`$resposta -notmatch "^[Ss]") {
     Write-Host "  Desinstalacao cancelada." -ForegroundColor Gray
     exit 0
@@ -406,7 +406,7 @@ if (`$pathAtual) {
 # 3. Remove associacao de arquivo .ge
 `$chaves = @(
     "HKCU:\Software\Classes\.ge",
-    "HKCU:\Software\Classes\FlangFile"
+    "HKCU:\Software\Classes\GermanioFile"
 )
 foreach (`$chave in `$chaves) {
     if (Test-Path `$chave) {
@@ -428,7 +428,7 @@ public static extern void SHChangeNotify(int wEventId, int uFlags, IntPtr dwItem
 } catch { }
 
 Write-Host ""
-Write-Host "  Flang foi desinstalado com sucesso." -ForegroundColor Cyan
+Write-Host "  Germanio foi desinstalado com sucesso." -ForegroundColor Cyan
 Write-Host "  Reinicie o terminal para o PATH ser atualizado." -ForegroundColor Gray
 Write-Host ""
 "@
@@ -443,35 +443,35 @@ Write-Host ""
 function Criar-AtalhoMenuIniciar {
     Escrever-Passo "Criando atalhos no Menu Iniciar..."
 
-    $startMenuDir = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Flang"
+    $startMenuDir = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Germanio"
     if (-not (Test-Path $startMenuDir)) {
         New-Item -ItemType Directory -Path $startMenuDir -Force | Out-Null
     }
 
     $wsh = New-Object -ComObject WScript.Shell
 
-    # Atalho principal - terminal Flang
-    $atalho = $wsh.CreateShortcut("$startMenuDir\Flang.lnk")
+    # Atalho principal - terminal Germanio
+    $atalho = $wsh.CreateShortcut("$startMenuDir\Germanio.lnk")
     $atalho.TargetPath      = "cmd.exe"
     $atalho.Arguments       = "/K `"$ExeDestino`" version"
     $atalho.WorkingDirectory = $DiretorioInstalacao
-    $atalho.Description     = "Flang Programming Language v$VersaoFlang"
+    $atalho.Description     = "Germanio Programming Language v$VersaoGermanio"
     $atalho.IconLocation    = "$ExeDestino,0"
     $atalho.Save()
 
     # Atalho para a pasta de exemplos
-    $atalhoEx = $wsh.CreateShortcut("$startMenuDir\Exemplos Flang.lnk")
+    $atalhoEx = $wsh.CreateShortcut("$startMenuDir\Exemplos Germanio.lnk")
     $atalhoEx.TargetPath = $DirExemplos
     $atalhoEx.Save()
 
     # Atalho para o desinstalador
-    $atalhoDesins = $wsh.CreateShortcut("$startMenuDir\Desinstalar Flang.lnk")
+    $atalhoDesins = $wsh.CreateShortcut("$startMenuDir\Desinstalar Germanio.lnk")
     $atalhoDesins.TargetPath  = "powershell.exe"
     $atalhoDesins.Arguments   = "-ExecutionPolicy Bypass -File `"$DiretorioInstalacao\desinstalar.ps1`""
-    $atalhoDesins.Description = "Remover o Flang do sistema"
+    $atalhoDesins.Description = "Remover o Germanio do sistema"
     $atalhoDesins.Save()
 
-    Escrever-Ok "Atalhos criados no Menu Iniciar > Flang"
+    Escrever-Ok "Atalhos criados no Menu Iniciar > Germanio"
 }
 
 # ---------------------------------------------------------------------------
@@ -483,19 +483,19 @@ function Mostrar-Resumo {
     Write-Host "   Instalacao concluida com sucesso!" -ForegroundColor Green
     Write-Host "  =============================================" -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "  Flang $VersaoFlang instalado em:" -ForegroundColor White
+    Write-Host "  Germanio $VersaoGermanio instalado em:" -ForegroundColor White
     Write-Host "    $DiretorioInstalacao" -ForegroundColor Gray
     Write-Host ""
     Write-Host "  Exemplos disponiveis em:" -ForegroundColor White
     Write-Host "    $DirExemplos" -ForegroundColor Gray
     Write-Host ""
     Write-Host "  Para rodar um exemplo:" -ForegroundColor White
-    Write-Host "    flang run `"$DirExemplos\ola-mundo\inicio.ge`"" -ForegroundColor Gray
+    Write-Host "    germanio run `"$DirExemplos\ola-mundo\inicio.ge`"" -ForegroundColor Gray
     Write-Host ""
     Write-Host "  Para desinstalar:" -ForegroundColor White
     Write-Host "    powershell -File `"$DiretorioInstalacao\desinstalar.ps1`"" -ForegroundColor Gray
     Write-Host ""
-    Write-Host "  Flang instalado! Reinicie o terminal e digite: flang version" -ForegroundColor Cyan
+    Write-Host "  Germanio instalado! Reinicie o terminal e digite: germanio version" -ForegroundColor Cyan
     Write-Host ""
 }
 
@@ -504,7 +504,7 @@ function Mostrar-Resumo {
 # ---------------------------------------------------------------------------
 Mostrar-Banner
 Confirmar-Instalacao
-Escrever-Titulo "Iniciando instalacao do Flang v$VersaoFlang"
+Escrever-Titulo "Iniciando instalacao do Germanio v$VersaoGermanio"
 
 Verificar-BinarioFonte
 Criar-Diretorios

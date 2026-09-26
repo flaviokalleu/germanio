@@ -1,17 +1,17 @@
 #Requires -Version 5.0
 # =============================================================================
-# Flang Programming Language - Desinstalador para Windows
+# Germanio Programming Language - Desinstalador para Windows
 # Versao 0.4.0
 #
 # Uso:
 #   .\uninstall.ps1
-#   .\uninstall.ps1 -DiretorioInstalacao "D:\Flang"
+#   .\uninstall.ps1 -DiretorioInstalacao "D:\Germanio"
 #   .\uninstall.ps1 -Silencioso
 # =============================================================================
 
 param(
-    # Diretório onde o Flang foi instalado
-    [string]$DiretorioInstalacao = "C:\Flang",
+    # Diretório onde o Germanio foi instalado
+    [string]$DiretorioInstalacao = "C:\Germanio",
 
     # Remove sem perguntas interativas
     [switch]$Silencioso
@@ -21,7 +21,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $DirBin     = Join-Path $DiretorioInstalacao "bin"
-$NomeClasse = "FlangFile"
+$NomeClasse = "GermanioFile"
 
 # ---------------------------------------------------------------------------
 # Funcoes de saida formatada
@@ -35,7 +35,7 @@ function Escrever-Info  { param([string]$t) Write-Host "  $t"        -Foreground
 # Banner
 # ---------------------------------------------------------------------------
 Write-Host ""
-Write-Host "  Flang Programming Language v0.4.0 - Desinstalador" -ForegroundColor Cyan
+Write-Host "  Germanio Programming Language v0.4.0 - Desinstalador" -ForegroundColor Cyan
 Write-Host "  ==================================================" -ForegroundColor DarkCyan
 Write-Host ""
 Write-Host "  Diretorio de instalacao: " -NoNewline
@@ -46,7 +46,7 @@ Write-Host ""
 # Confirmacao
 # ---------------------------------------------------------------------------
 if (-not $Silencioso) {
-    $resposta = Read-Host "  Deseja realmente remover o Flang do sistema? [s/N]"
+    $resposta = Read-Host "  Deseja realmente remover o Germanio do sistema? [s/N]"
     if ($resposta -notmatch "^[Ss]") {
         Write-Host ""
         Write-Host "  Desinstalacao cancelada." -ForegroundColor Gray
@@ -63,15 +63,15 @@ Write-Host "  Removendo arquivos..." -ForegroundColor Yellow
 
 if (Test-Path $DiretorioInstalacao) {
     try {
-        # Tenta encerrar o processo flang.exe caso esteja rodando
-        Get-Process -Name "flang" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+        # Tenta encerrar o processo germanio.exe caso esteja rodando
+        Get-Process -Name "germanio" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
         Start-Sleep -Milliseconds 500
 
         Remove-Item -Path $DiretorioInstalacao -Recurse -Force
         Escrever-Ok "Diretorio removido: $DiretorioInstalacao"
     } catch {
         Escrever-Erro "Nao foi possivel remover $DiretorioInstalacao"
-        Escrever-Info "Feche todos os programas que usam o Flang e tente novamente."
+        Escrever-Info "Feche todos os programas que usam o Germanio e tente novamente."
         Escrever-Info "Ou remova manualmente: $DiretorioInstalacao"
     }
 } else {
@@ -166,13 +166,13 @@ Escrever-Ok "Associacao de arquivo .ge removida"
 # ---------------------------------------------------------------------------
 Write-Host "  Removendo atalhos do Menu Iniciar..." -ForegroundColor Yellow
 
-$startMenuFlang = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Flang"
-if (Test-Path $startMenuFlang) {
+$startMenuGermanio = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Germanio"
+if (Test-Path $startMenuGermanio) {
     try {
-        Remove-Item -Path $startMenuFlang -Recurse -Force
+        Remove-Item -Path $startMenuGermanio -Recurse -Force
         Escrever-Ok "Atalhos do Menu Iniciar removidos"
     } catch {
-        Escrever-Aviso "Nao foi possivel remover atalhos: $startMenuFlang"
+        Escrever-Aviso "Nao foi possivel remover atalhos: $startMenuGermanio"
     }
 } else {
     Escrever-Info "Sem atalhos no Menu Iniciar para remover"
@@ -183,7 +183,7 @@ if (Test-Path $startMenuFlang) {
 # ---------------------------------------------------------------------------
 Write-Host ""
 Write-Host "  =============================================" -ForegroundColor Cyan
-Write-Host "   Flang removido com sucesso!" -ForegroundColor Green
+Write-Host "   Germanio removido com sucesso!" -ForegroundColor Green
 Write-Host "  =============================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "  O que foi removido:" -ForegroundColor White

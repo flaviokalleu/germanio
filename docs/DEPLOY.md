@@ -1,4 +1,4 @@
-# Flang — Guia de Deploy (Deployment Guide)
+# Germanio — Guia de Deploy (Deployment Guide)
 
 > Versão 0.2.0 | Última atualização: 2026-04-09
 
@@ -35,51 +35,51 @@
 
 ### Para produção (compilado)
 
-O binário `flang` é **auto-contido** — não requer instalação de Go no servidor de produção. Apenas o binário compilado e os arquivos `.ge` são necessários.
+O binário `germanio` é **auto-contido** — não requer instalação de Go no servidor de produção. Apenas o binário compilado e os arquivos `.ge` são necessários.
 
 ### Compilar o binário
 
 ```bash
 # Clonar o repositório
-git clone https://github.com/flavio/flang
-cd flang
+git clone https://github.com/flavio/germanio
+cd germanio
 
 # Compilar (sem CGO — binário estático)
-CGO_ENABLED=0 go build -o flang .
+CGO_ENABLED=0 go build -o germanio .
 
 # Linux/Mac — também pode usar
-go build -ldflags="-s -w" -o flang .
+go build -ldflags="-s -w" -o germanio .
 
 # Windows
-go build -o flang.exe .
+go build -o germanio.exe .
 ```
 
 **Cross-compilation (compilar para Linux a partir de qualquer OS):**
 ```bash
-GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o flang-linux .
-GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -o flang-mac .
-GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -o flang.exe .
+GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o germanio-linux .
+GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -o germanio-mac .
+GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -o germanio.exe .
 ```
 
 ---
 
 ## 2. Desenvolvimento Local
 
-### 2.1 Instalar o Flang CLI
+### 2.1 Instalar o Germanio CLI
 
 ```bash
 # Via go install (instala em $GOPATH/bin)
-go install github.com/flavio/flang@latest
+go install github.com/flavio/germanio@latest
 
 # Verificar instalação
-flang version
+germanio version
 ```
 
 ### 2.2 Criar Novo Projeto
 
 ```bash
 # Cria estrutura básica do projeto
-flang new minha-loja
+germanio new minha-loja
 
 # Estrutura criada:
 # minha-loja/
@@ -89,7 +89,7 @@ flang new minha-loja
 cd minha-loja
 
 # Executar
-flang run inicio.ge
+germanio run inicio.ge
 ```
 
 ### 2.3 Inicializar Projeto Completo
@@ -97,7 +97,7 @@ flang run inicio.ge
 O comando `init` cria um projeto com `.env`, `.gitignore` e `Dockerfile` prontos:
 
 ```bash
-flang init minha-loja
+germanio init minha-loja
 
 # Estrutura criada:
 # minha-loja/
@@ -107,44 +107,44 @@ flang init minha-loja
 #   Dockerfile
 
 cd minha-loja
-flang run inicio.ge
+germanio run inicio.ge
 ```
 
 ### 2.4 Comandos CLI
 
 ```bash
 # Executar aplicação (porta padrão: 8080)
-flang run inicio.ge
+germanio run inicio.ge
 
 # Executar em porta personalizada
-flang run inicio.ge 3000
+germanio run inicio.ge 3000
 
 # Atalho — sem subcomando "run"
-flang inicio.ge
-flang inicio.ge 3000
+germanio inicio.ge
+germanio inicio.ge 3000
 
 # Verificar sintaxe sem executar
-flang check inicio.ge
+germanio check inicio.ge
 
 # Criar novo projeto
-flang new nome-do-projeto
+germanio new nome-do-projeto
 
 # Inicializar projeto com arquivos extras
-flang init nome-do-projeto
+germanio init nome-do-projeto
 
 # Gerar Dockerfile no diretório atual
-flang docker
+germanio docker
 
 # Ver versão
-flang version
+germanio version
 
 # Ajuda
-flang help
+germanio help
 ```
 
 ### 2.5 Desenvolvimento com Auto-reload
 
-Flang não tem hot-reload nativo. Use ferramentas externas:
+Germanio não tem hot-reload nativo. Use ferramentas externas:
 
 ```bash
 # Usando 'air' (https://github.com/air-verse/air)
@@ -152,20 +152,20 @@ go install github.com/air-verse/air@latest
 air -- run inicio.ge
 
 # Usando 'watchexec'
-watchexec -e fg -- flang run inicio.ge
+watchexec -e fg -- germanio run inicio.ge
 
 # Usando 'nodemon' (requer Node.js)
-npx nodemon --watch "*.ge" --exec "flang run inicio.ge"
+npx nodemon --watch "*.ge" --exec "germanio run inicio.ge"
 ```
 
 ### 2.6 Verificar Antes de Deploy
 
 ```bash
 # Verifica toda a sintaxe sem iniciar o servidor
-flang check inicio.ge
+germanio check inicio.ge
 
 # Saída de sucesso:
-# [flang] Sintaxe OK: inicio.ge
+# [germanio] Sintaxe OK: inicio.ge
 ```
 
 ---
@@ -178,37 +178,37 @@ Crie um arquivo `.env` na mesma pasta do `.ge` para configurar o ambiente.
 
 ```env
 # Porta do servidor
-FLANG_PORT=8080
+GERMANIO_PORT=8080
 
 # Banco de dados
-FLANG_DB_TYPE=sqlite
-FLANG_DB_NAME=minha_loja.db
+GERMANIO_DB_TYPE=sqlite
+GERMANIO_DB_NAME=minha_loja.db
 
 # Para PostgreSQL:
-# FLANG_DB_TYPE=postgres
-# FLANG_DB_HOST=localhost
-# FLANG_DB_PORT=5432
-# FLANG_DB_NAME=minha_loja
-# FLANG_DB_USER=postgres
-# FLANG_DB_PASS=senha_secreta
+# GERMANIO_DB_TYPE=postgres
+# GERMANIO_DB_HOST=localhost
+# GERMANIO_DB_PORT=5432
+# GERMANIO_DB_NAME=minha_loja
+# GERMANIO_DB_USER=postgres
+# GERMANIO_DB_PASS=senha_secreta
 
 # Para MySQL:
-# FLANG_DB_TYPE=mysql
-# FLANG_DB_HOST=localhost
-# FLANG_DB_PORT=3306
-# FLANG_DB_NAME=minha_loja
-# FLANG_DB_USER=root
-# FLANG_DB_PASS=senha_secreta
+# GERMANIO_DB_TYPE=mysql
+# GERMANIO_DB_HOST=localhost
+# GERMANIO_DB_PORT=3306
+# GERMANIO_DB_NAME=minha_loja
+# GERMANIO_DB_USER=root
+# GERMANIO_DB_PASS=senha_secreta
 
 # Autenticação JWT (gere um valor aleatório longo!)
-FLANG_JWT_SECRET=mude-isso-para-um-segredo-muito-longo-e-aleatorio
+GERMANIO_JWT_SECRET=mude-isso-para-um-segredo-muito-longo-e-aleatorio
 
 # E-mail (SMTP)
-FLANG_SMTP_HOST=smtp.gmail.com
-FLANG_SMTP_PORT=587
-FLANG_SMTP_USER=sistema@empresa.com
-FLANG_SMTP_PASS=app_password_aqui
-FLANG_SMTP_FROM=Sistema <sistema@empresa.com>
+GERMANIO_SMTP_HOST=smtp.gmail.com
+GERMANIO_SMTP_PORT=587
+GERMANIO_SMTP_USER=sistema@empresa.com
+GERMANIO_SMTP_PASS=app_password_aqui
+GERMANIO_SMTP_FROM=Sistema <sistema@empresa.com>
 ```
 
 ### 3.2 `.gitignore` Recomendado
@@ -223,8 +223,8 @@ FLANG_SMTP_FROM=Sistema <sistema@empresa.com>
 .env
 
 # Binários
-flang
-flang.exe
+germanio
+germanio.exe
 
 # Uploads
 uploads/
@@ -237,7 +237,7 @@ uploads/
 
 Alternativamente, configure diretamente no arquivo `.ge`:
 
-```flang
+```germanio
 banco
   driver: postgres
   host: "db.exemplo.com"
@@ -257,7 +257,7 @@ SQLite é o banco padrão e requer **zero configuração** para começar.
 
 ### 4.1 Configuração Mínima
 
-```flang
+```germanio
 sistema minha-loja
 # sem bloco 'banco' = SQLite automático
 ```
@@ -266,13 +266,13 @@ O arquivo de banco é criado como `<nome-sistema>.db` no diretório de trabalho.
 
 ### 4.2 Configuração Explícita
 
-```flang
+```germanio
 banco
   driver: sqlite
   nome: "dados/minha_loja.db"
 ```
 
-### 4.3 Características do SQLite no Flang
+### 4.3 Características do SQLite no Germanio
 
 - **WAL Mode** habilitado automaticamente (`journal_mode=WAL`) para melhor concorrência de leitura
 - **Foreign Keys** habilitadas automaticamente (`foreign_keys=ON`)
@@ -290,7 +290,7 @@ curl http://localhost:8080/api/cliente/export/json > cliente.json
 # 2. Atualizar configuração do banco no .ge
 
 # 3. Reiniciar (cria tabelas automaticamente)
-flang run inicio.ge
+germanio run inicio.ge
 
 # 4. Importar dados via API
 cat produto.json | jq -c '.[]' | while read item; do
@@ -319,9 +319,9 @@ sudo systemctl enable postgresql
 **Docker (desenvolvimento rápido):**
 ```bash
 docker run -d \
-  --name postgres-flang \
-  -e POSTGRES_USER=flang \
-  -e POSTGRES_PASSWORD=flangpass \
+  --name postgres-germanio \
+  -e POSTGRES_USER=germanio \
+  -e POSTGRES_PASSWORD=germaniopass \
   -e POSTGRES_DB=minha_loja \
   -p 5432:5432 \
   postgres:16-alpine
@@ -348,7 +348,7 @@ GRANT ALL PRIVILEGES ON DATABASE minha_loja TO app_user;
 
 ### 5.3 Configuração no `.ge`
 
-```flang
+```germanio
 banco
   driver: postgres
   host: "localhost"
@@ -360,7 +360,7 @@ banco
 
 ### 5.4 String de Conexão (DSN)
 
-O Flang monta internamente:
+O Germanio monta internamente:
 ```
 host=localhost port=5432 user=app_user password=senha_super_segura dbname=minha_loja sslmode=disable
 ```
@@ -371,7 +371,7 @@ Para habilitar SSL, configure no PostgreSQL e ajuste a DSN manualmente (ou use u
 
 ### 5.6 Connection Pooling com PgBouncer
 
-Para alta carga, use PgBouncer entre o Flang e o PostgreSQL:
+Para alta carga, use PgBouncer entre o Germanio e o PostgreSQL:
 
 ```ini
 # /etc/pgbouncer/pgbouncer.ini
@@ -388,7 +388,7 @@ default_pool_size = 20
 ```
 
 No `.ge`:
-```flang
+```germanio
 banco
   driver: postgres
   host: "127.0.0.1"
@@ -429,7 +429,7 @@ EXIT;
 
 ### 6.3 Configuração no `.ge`
 
-```flang
+```germanio
 banco
   driver: mysql
   host: "localhost"
@@ -441,12 +441,12 @@ banco
 
 ### 6.4 String de Conexão (DSN)
 
-O Flang monta internamente:
+O Germanio monta internamente:
 ```
 app_user:senha_super_segura@tcp(localhost:3306)/minha_loja?parseTime=true&charset=utf8mb4
 ```
 
-### 6.5 Diferenças MySQL no Flang
+### 6.5 Diferenças MySQL no Germanio
 
 | Comportamento | SQLite | MySQL |
 |---|---|---|
@@ -463,29 +463,29 @@ app_user:senha_super_segura@tcp(localhost:3306)/minha_loja?parseTime=true&charse
 
 ```bash
 # No diretório do projeto
-flang docker
+germanio docker
 
 # Conteúdo gerado:
 ```
 
 ```dockerfile
-# Generated by flang docker
+# Generated by germanio docker
 FROM golang:1.26-alpine AS builder
 
 WORKDIR /build
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o flang .
+RUN CGO_ENABLED=0 GOOS=linux go build -o germanio .
 
 FROM alpine:3.20
 RUN apk add --no-cache ca-certificates
 WORKDIR /app
-COPY --from=builder /build/flang /usr/local/bin/flang
+COPY --from=builder /build/germanio /usr/local/bin/germanio
 COPY *.ge ./
 
 EXPOSE 8080
-CMD ["flang", "run", "inicio.ge"]
+CMD ["germanio", "run", "inicio.ge"]
 ```
 
 ### 7.2 Dockerfile Personalizado para Produção
@@ -510,7 +510,7 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
     go build \
     -ldflags="-s -w -extldflags=-static" \
-    -o flang .
+    -o germanio .
 
 # ===== Stage 2: Runtime =====
 FROM scratch
@@ -521,7 +521,7 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
 
 # Binário compilado
-COPY --from=builder /build/flang /flang
+COPY --from=builder /build/germanio /germanio
 
 # Arquivos da aplicação
 COPY *.ge /app/
@@ -533,9 +533,9 @@ VOLUME ["/app/data", "/app/uploads"]
 
 EXPOSE 8080
 
-ENV FLANG_PORT=8080
+ENV GERMANIO_PORT=8080
 
-ENTRYPOINT ["/flang"]
+ENTRYPOINT ["/germanio"]
 CMD ["run", "inicio.ge"]
 ```
 
@@ -568,11 +568,11 @@ docker rm minha-loja
 docker run -d \
   --name minha-loja \
   -p 8080:8080 \
-  -e FLANG_DB_TYPE=postgres \
-  -e FLANG_DB_HOST=postgres.exemplo.com \
-  -e FLANG_DB_NAME=minha_loja \
-  -e FLANG_DB_USER=app_user \
-  -e FLANG_DB_PASS=senha_segura \
+  -e GERMANIO_DB_TYPE=postgres \
+  -e GERMANIO_DB_HOST=postgres.exemplo.com \
+  -e GERMANIO_DB_NAME=minha_loja \
+  -e GERMANIO_DB_USER=app_user \
+  -e GERMANIO_DB_PASS=senha_segura \
   -v $(pwd)/uploads:/app/uploads \
   minha-loja:latest
 ```
@@ -595,7 +595,7 @@ services:
       - app_data:/app/data
       - app_uploads:/app/uploads
     environment:
-      - FLANG_PORT=8080
+      - GERMANIO_PORT=8080
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
@@ -622,14 +622,14 @@ services:
     volumes:
       - app_uploads:/app/uploads
     environment:
-      - FLANG_PORT=8080
-      - FLANG_DB_TYPE=postgres
-      - FLANG_DB_HOST=db
-      - FLANG_DB_PORT=5432
-      - FLANG_DB_NAME=minha_loja
-      - FLANG_DB_USER=flang_user
-      - FLANG_DB_PASS=${DB_PASSWORD}
-      - FLANG_JWT_SECRET=${JWT_SECRET}
+      - GERMANIO_PORT=8080
+      - GERMANIO_DB_TYPE=postgres
+      - GERMANIO_DB_HOST=db
+      - GERMANIO_DB_PORT=5432
+      - GERMANIO_DB_NAME=minha_loja
+      - GERMANIO_DB_USER=germanio_user
+      - GERMANIO_DB_PASS=${DB_PASSWORD}
+      - GERMANIO_JWT_SECRET=${JWT_SECRET}
     depends_on:
       db:
         condition: service_healthy
@@ -649,13 +649,13 @@ services:
       - postgres_data:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=minha_loja
-      - POSTGRES_USER=flang_user
+      - POSTGRES_USER=germanio_user
       - POSTGRES_PASSWORD=${DB_PASSWORD}
     restart: unless-stopped
     networks:
       - app_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U flang_user -d minha_loja"]
+      test: ["CMD-SHELL", "pg_isready -U germanio_user -d minha_loja"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -766,14 +766,14 @@ server {
     add_header X-Content-Type-Options nosniff;
     add_header X-Frame-Options DENY;
 
-    # Limite de upload (deve ser >= limite do Flang: 32MB)
+    # Limite de upload (deve ser >= limite do Germanio: 32MB)
     client_max_body_size 35M;
 
     # Logs
     access_log /var/log/nginx/minha-loja.access.log;
     error_log /var/log/nginx/minha-loja.error.log;
 
-    # Proxy para o Flang
+    # Proxy para o Germanio
     location / {
         proxy_pass http://127.0.0.1:8080;
         proxy_http_version 1.1;
@@ -841,26 +841,26 @@ sudo certbot renew --dry-run
 
 ## 10. Systemd — Serviço Linux
 
-Configure o Flang como um serviço do sistema para reinicialização automática.
+Configure o Germanio como um serviço do sistema para reinicialização automática.
 
 ### 10.1 Preparar Estrutura de Diretórios
 
 ```bash
 # Criar usuário dedicado (sem shell, sem home login)
-sudo useradd -r -s /bin/false -d /opt/minha-loja flang
+sudo useradd -r -s /bin/false -d /opt/minha-loja germanio
 
 # Criar diretório da aplicação
 sudo mkdir -p /opt/minha-loja
 sudo mkdir -p /opt/minha-loja/uploads
 
 # Copiar binário e arquivos
-sudo cp flang /usr/local/bin/flang
-sudo chmod +x /usr/local/bin/flang
+sudo cp germanio /usr/local/bin/germanio
+sudo chmod +x /usr/local/bin/germanio
 sudo cp inicio.ge /opt/minha-loja/
 sudo cp .env /opt/minha-loja/
 
 # Definir permissões
-sudo chown -R flang:flang /opt/minha-loja
+sudo chown -R germanio:germanio /opt/minha-loja
 sudo chmod 750 /opt/minha-loja
 ```
 
@@ -870,8 +870,8 @@ sudo chmod 750 /opt/minha-loja
 # /etc/systemd/system/minha-loja.service
 
 [Unit]
-Description=Minha Loja — Flang Application
-Documentation=https://github.com/flavio/flang
+Description=Minha Loja — Germanio Application
+Documentation=https://github.com/flavio/germanio
 After=network.target
 Wants=network-online.target
 
@@ -881,12 +881,12 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=flang
-Group=flang
+User=germanio
+Group=germanio
 WorkingDirectory=/opt/minha-loja
 
 # Comando de inicialização
-ExecStart=/usr/local/bin/flang run inicio.ge 8080
+ExecStart=/usr/local/bin/germanio run inicio.ge 8080
 
 # Reiniciar automaticamente em caso de falha
 Restart=on-failure
@@ -970,12 +970,12 @@ if [ -f "$APP_DIR/minha_loja.db" ]; then
 fi
 
 # 3. Atualizar binário
-sudo cp flang /usr/local/bin/flang
-sudo chmod +x /usr/local/bin/flang
+sudo cp germanio /usr/local/bin/germanio
+sudo chmod +x /usr/local/bin/germanio
 
 # 4. Atualizar arquivos .ge
 sudo cp *.ge "$APP_DIR/"
-sudo chown flang:flang "$APP_DIR/"*.ge
+sudo chown germanio:germanio "$APP_DIR/"*.ge
 
 # 5. Reiniciar serviço
 sudo systemctl start $SERVICE
@@ -997,15 +997,15 @@ fi
 
 ### 11.1 SQLite — Otimizações
 
-O Flang já habilita WAL mode automaticamente. Configurações adicionais para alta carga:
+O Germanio já habilita WAL mode automaticamente. Configurações adicionais para alta carga:
 
-```flang
+```germanio
 banco
   driver: sqlite
   nome: "dados/app.db"
 ```
 
-**Configurações WAL já aplicadas pelo Flang:**
+**Configurações WAL já aplicadas pelo Germanio:**
 ```sql
 PRAGMA journal_mode=WAL;
 PRAGMA foreign_keys=ON;
@@ -1096,7 +1096,7 @@ export GOMAXPROCS=$(nproc)
 export GOGC=200
 
 # Executar com configurações
-GOMAXPROCS=$(nproc) GOGC=200 flang run inicio.ge
+GOMAXPROCS=$(nproc) GOGC=200 germanio run inicio.ge
 ```
 
 ### 11.5 Capacidade Estimada
@@ -1146,7 +1146,7 @@ echo "Backup concluído: $BACKUP_DIR/backup_$DATE.db.gz"
 ```bash
 # crontab -e
 # Backup diário às 2h da manhã
-0 2 * * * /usr/local/bin/backup-sqlite.sh >> /var/log/backup-flang.log 2>&1
+0 2 * * * /usr/local/bin/backup-sqlite.sh >> /var/log/backup-germanio.log 2>&1
 ```
 
 ### 12.2 Backup de PostgreSQL
@@ -1156,7 +1156,7 @@ echo "Backup concluído: $BACKUP_DIR/backup_$DATE.db.gz"
 # /usr/local/bin/backup-postgres.sh
 
 DB_NAME="minha_loja"
-DB_USER="flang_user"
+DB_USER="germanio_user"
 BACKUP_DIR="/var/backups/minha-loja"
 DATE=$(date +%Y%m%d_%H%M%S)
 
@@ -1188,7 +1188,7 @@ echo "Backup PostgreSQL concluído: $BACKUP_DIR/backup_$DATE.dump"
 ```bash
 pg_restore \
   -h localhost \
-  -U flang_user \
+  -U germanio_user \
   -d minha_loja \
   --clean \
   backup_20260409_020000.dump
@@ -1230,9 +1230,9 @@ tar -czf /var/backups/uploads_$(date +%Y%m%d).tar.gz /opt/minha-loja/uploads/
 #!/bin/bash
 RESPONSE=$(curl -sf http://localhost:8080/health)
 if [ "$RESPONSE" = '{"status":"ok"}' ]; then
-    echo "OK: Flang está respondendo"
+    echo "OK: Germanio está respondendo"
 else
-    echo "ERRO: Flang não está respondendo!"
+    echo "ERRO: Germanio não está respondendo!"
     # Enviar alerta (email, Slack, PagerDuty, etc.)
     systemctl restart minha-loja
 fi
@@ -1276,9 +1276,9 @@ journalctl -u minha-loja --since "2026-04-01" > logs_abril.txt
 # Configurar um cron que expõe métricas para Prometheus
 #!/bin/bash
 STATS=$(curl -s http://localhost:8080/api/_stats)
-echo "# HELP flang_model_count Total de registros por modelo"
-echo "# TYPE flang_model_count gauge"
-echo "$STATS" | jq -r 'to_entries[] | "flang_model_count{model=\"\(.key)\"} \(.value.count)"'
+echo "# HELP germanio_model_count Total de registros por modelo"
+echo "# TYPE germanio_model_count gauge"
+echo "$STATS" | jq -r 'to_entries[] | "germanio_model_count{model=\"\(.key)\"} \(.value.count)"'
 ```
 
 ---
@@ -1322,7 +1322,7 @@ sudo ufw allow ssh
 sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
 
-# Bloquear porta do Flang diretamente (só via Nginx)
+# Bloquear porta do Germanio diretamente (só via Nginx)
 sudo ufw deny 8080/tcp
 
 # Ativar
@@ -1348,7 +1348,7 @@ sudo systemctl restart fail2ban
 
 ### 14.5 Senhas Seguras por Padrão
 
-O Flang usa **bcrypt** (custo 10) para hashing de senhas — padrão da indústria. Não é necessária nenhuma configuração adicional.
+O Germanio usa **bcrypt** (custo 10) para hashing de senhas — padrão da indústria. Não é necessária nenhuma configuração adicional.
 
 ---
 
@@ -1356,7 +1356,7 @@ O Flang usa **bcrypt** (custo 10) para hashing de senhas — padrão da indústr
 
 ### Pré-Deploy
 
-- [ ] `flang check inicio.ge` passou sem erros
+- [ ] `germanio check inicio.ge` passou sem erros
 - [ ] Banco de dados configurado e acessível
 - [ ] Variáveis de ambiente definidas no `.env`
 - [ ] JWT Secret definido e seguro
@@ -1365,7 +1365,7 @@ O Flang usa **bcrypt** (custo 10) para hashing de senhas — padrão da indústr
 
 ### Deploy
 
-- [ ] Binário `flang` compilado para o SO alvo
+- [ ] Binário `germanio` compilado para o SO alvo
 - [ ] Arquivos `.ge` transferidos para o servidor
 - [ ] Permissões de arquivo corretas
 - [ ] Serviço systemd configurado e ativo
@@ -1388,14 +1388,14 @@ O Flang usa **bcrypt** (custo 10) para hashing de senhas — padrão da indústr
 
 ```bash
 # ===== CLI =====
-flang run inicio.ge          # Executar na porta 8080
-flang run inicio.ge 3000     # Executar na porta 3000
-flang inicio.ge              # Atalho para run
-flang check inicio.ge        # Verificar sintaxe
-flang new meu-app            # Novo projeto básico
-flang init meu-app           # Novo projeto completo
-flang docker                 # Gerar Dockerfile
-flang version                # Ver versão
+germanio run inicio.ge          # Executar na porta 8080
+germanio run inicio.ge 3000     # Executar na porta 3000
+germanio inicio.ge              # Atalho para run
+germanio check inicio.ge        # Verificar sintaxe
+germanio new meu-app            # Novo projeto básico
+germanio init meu-app           # Novo projeto completo
+germanio docker                 # Gerar Dockerfile
+germanio version                # Ver versão
 
 # ===== Docker =====
 docker build -t app .                    # Construir imagem

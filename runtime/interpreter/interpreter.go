@@ -74,7 +74,7 @@ func (s *Scope) SetLocal(name string, value interface{}) {
 	s.vars[name] = value
 }
 
-// Interpreter executes Flang AST scripts.
+// Interpreter executes Germanio AST scripts.
 type Interpreter struct {
 	Global     *Scope
 	Functions  map[string]*ast.FuncDecl
@@ -186,7 +186,7 @@ func (interp *Interpreter) ExecStatement(stmt *ast.Statement, scope *Scope) {
 	case "print":
 		val := interp.EvalExpr(stmt.Print, scope)
 		msg := toString(val)
-		fmt.Println("[flang]", msg)
+		fmt.Println("[germanio]", msg)
 		interp.AppendLog(msg)
 
 	case "call":
@@ -1312,7 +1312,7 @@ func (interp *Interpreter) callBuiltin(name string, args []interface{}) (interfa
 		}
 		valor := toNumber(args[0])
 		chave := toString(args[1])
-		nome := "Flang App"
+		nome := "Germanio App"
 		if len(args) >= 3 {
 			nome = toString(args[2])
 		}
@@ -1522,7 +1522,7 @@ func (interp *Interpreter) callBuiltin(name string, args []interface{}) (interfa
 		}
 		titulo := toString(args[0])
 		conteudo := toString(args[1])
-		html := fmt.Sprintf(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>%s</title><style>body{font-family:system-ui;padding:40px;max-width:800px;margin:0 auto}h1{color:#333;border-bottom:2px solid #6366f1;padding-bottom:10px}@media print{body{padding:20px}}</style></head><body><h1>%s</h1>%s<footer style="margin-top:40px;text-align:center;color:#999;font-size:12px">Gerado por Flang</footer></body></html>`, titulo, titulo, conteudo)
+		html := fmt.Sprintf(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>%s</title><style>body{font-family:system-ui;padding:40px;max-width:800px;margin:0 auto}h1{color:#333;border-bottom:2px solid #6366f1;padding-bottom:10px}@media print{body{padding:20px}}</style></head><body><h1>%s</h1>%s<footer style="margin-top:40px;text-align:center;color:#999;font-size:12px">Gerado por Germanio</footer></body></html>`, titulo, titulo, conteudo)
 		return html, true
 
 	case "gerar_csv", "generate_csv", "csv":
@@ -1571,7 +1571,7 @@ func (interp *Interpreter) callBuiltin(name string, args []interface{}) (interfa
 		}
 		msg := toString(args[0])
 		interp.AppendLog("NOTIFICACAO: " + msg)
-		fmt.Printf("[flang] NOTIFICACAO: %s\n", msg)
+		fmt.Printf("[germanio] NOTIFICACAO: %s\n", msg)
 		return true, true
 
 	case "data_formatada", "formatted_date":
@@ -1788,7 +1788,7 @@ func (interp *Interpreter) Run(program *ast.Program) {
 					return // top-level return is fine
 				}
 				interp.AppendLog(fmt.Sprintf("ERRO runtime: %v", r))
-				fmt.Printf("[flang] ERRO runtime: %v\n", r)
+				fmt.Printf("[germanio] ERRO runtime: %v\n", r)
 			}
 		}()
 		interp.ExecStatements(program.Scripts, interp.Global)

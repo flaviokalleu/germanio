@@ -1,5 +1,5 @@
 logica
 
-  definir nome = "Flang"
+  definir nome = "Germanio"
 
   mostrar "Olá " + nome

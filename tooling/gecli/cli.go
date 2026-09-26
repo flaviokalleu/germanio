@@ -29,7 +29,7 @@ Uso: ge <comando> [arquivo]
   ajuda                  Exibe esta ajuda
 
 Compatibilidade: ge rodar app.ge [porta], ge check app.ge.
-Comandos legados explícitos: ge legado <comando Flang> [argumentos].
+Comandos legados explícitos: ge legado <comando Germanio> [argumentos].
 A linguagem .ge é determinística e não utiliza LLM no compilador.
 `
 
@@ -57,9 +57,9 @@ func Run(args []string, in io.Reader, out, stderr io.Writer) int {
 		return 0
 	case "legado":
 		if len(rest) == 0 {
-			return fail(fmt.Errorf("Use ge legado ajuda (help no Flang)"))
+			return fail(fmt.Errorf("Use ge legado ajuda (help no Germanio)"))
 		}
-		legacy.Run(append([]string{"flang"}, rest...))
+		legacy.Run(append([]string{"germanio"}, rest...))
 		return 0
 	case "testar":
 		path := "."
@@ -141,17 +141,22 @@ func Run(args []string, in io.Reader, out, stderr io.Writer) int {
 			rest = []string{"inicio.ge"}
 		}
 		path := rest[0]
-		if len(rest) != 1 || filepath.Ext(path) != ".ge" {
-			return fail(fmt.Errorf("Uso: ge %s arquivo.ge; flags futuras não são aceitas silenciosamente", cmd))
+		if filepath.Ext(path) != ".ge" {
+			return fail(fmt.Errorf("Uso: ge %s arquivo.ge", cmd))
+		}
+		for _, arg := range rest[1:] {
+			if strings.HasPrefix(arg, "-") {
+				return fail(fmt.Errorf("Flags futuras não são aceitas silenciosamente: %s", arg))
+			}
 		}
 		m, err := semantic.Load(path)
 		if err != nil {
-			// Fallback: se não for modo semântico estrito, tentar com o engine Flang
+			// Fallback: se não for modo semântico estrito, tentar com o engine Germanio
 			oldcmd := cmd
 			if cmd == "rodar" {
 				oldcmd = "run"
 			}
-			legacy.Run(append([]string{"flang", oldcmd}, rest...))
+			legacy.Run(append([]string{"germanio", oldcmd}, rest...))
 			return 0
 		}
 		if err != nil {

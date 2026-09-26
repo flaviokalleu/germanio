@@ -325,7 +325,7 @@ func TestBuiltinStringFunctions(t *testing.T) {
 		{"minusculo", "minusculo", []interface{}{"HELLO"}, "hello"},
 		{"contem true", "contem", []interface{}{"hello world", "world"}, true},
 		{"contem false", "contem", []interface{}{"hello", "xyz"}, false},
-		{"substituir", "substituir", []interface{}{"hello world", "world", "flang"}, "hello flang"},
+		{"substituir", "substituir", []interface{}{"hello world", "world", "germanio"}, "hello germanio"},
 		{"cortar", "cortar", []interface{}{"  hello  "}, "hello"},
 		{"comeca_com", "comeca_com", []interface{}{"hello", "hel"}, true},
 		{"termina_com", "termina_com", []interface{}{"hello", "llo"}, true},
@@ -569,7 +569,7 @@ func TestPrintStatement(t *testing.T) {
 	interp := newInterp()
 	stmt := &ast.Statement{
 		Type:  "print",
-		Print: &ast.Expression{Type: "literal", Value: "hello from flang"},
+		Print: &ast.Expression{Type: "literal", Value: "hello from germanio"},
 	}
 	interp.ExecStatement(stmt, interp.Global)
 
@@ -577,8 +577,8 @@ func TestPrintStatement(t *testing.T) {
 	if len(logs) != 1 {
 		t.Fatalf("expected 1 log entry, got %d", len(logs))
 	}
-	if logs[0] != "hello from flang" {
-		t.Errorf("expected log 'hello from flang', got %q", logs[0])
+	if logs[0] != "hello from germanio" {
+		t.Errorf("expected log 'hello from germanio', got %q", logs[0])
 	}
 }
 

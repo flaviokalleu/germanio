@@ -41,7 +41,7 @@ func (ide *IDE) Iniciar() error {
 
 	fmt.Printf("\n")
 	fmt.Printf("  ╔══════════════════════════════════════════╗\n")
-	fmt.Printf("  ║         Flang IDE v0.6.0                 ║\n")
+	fmt.Printf("  ║         Germanio IDE v0.6.0                 ║\n")
 	fmt.Printf("  ║  http://localhost:%-23s║\n", ide.Porta)
 	fmt.Printf("  ╚══════════════════════════════════════════╝\n")
 	fmt.Printf("\n")

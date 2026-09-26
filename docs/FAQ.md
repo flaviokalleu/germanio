@@ -1,6 +1,6 @@
-# FAQ - Perguntas Frequentes sobre Flang
+# FAQ - Perguntas Frequentes sobre Germanio
 
-Respostas para as duvidas mais comuns sobre o Flang.
+Respostas para as duvidas mais comuns sobre o Germanio.
 
 ---
 
@@ -21,13 +21,13 @@ Respostas para as duvidas mais comuns sobre o Flang.
 
 ## Primeiros Passos
 
-### Q: O que e o Flang?
+### Q: O que e o Germanio?
 
-O Flang e uma linguagem de programacao declarativa e bilinguie (Portugues/Ingles) que gera aplicacoes full-stack completas a partir de arquivos `.ge`. Voce descreve **o que** o sistema deve fazer, e o Flang cuida de todo o codigo de backend, frontend, banco de dados e APIs REST.
+O Germanio e uma linguagem de programacao declarativa e bilinguie (Portugues/Ingles) que gera aplicacoes full-stack completas a partir de arquivos `.ge`. Voce descreve **o que** o sistema deve fazer, e o Germanio cuida de todo o codigo de backend, frontend, banco de dados e APIs REST.
 
-### Q: Preciso saber programar para usar o Flang?
+### Q: Preciso saber programar para usar o Germanio?
 
-Nao e necessario conhecimento de programacao tradicional. Se voce consegue descrever o que seu sistema precisa fazer em frases simples, consegue usar o Flang. Para integracoes avancadas (WebSocket, APIs externas), um conhecimento basico ajuda.
+Nao e necessario conhecimento de programacao tradicional. Se voce consegue descrever o que seu sistema precisa fazer em frases simples, consegue usar o Germanio. Para integracoes avancadas (WebSocket, APIs externas), um conhecimento basico ajuda.
 
 ### Q: Quais sao os requisitos para instalar?
 
@@ -41,13 +41,13 @@ go version
 # go version go1.21.0 linux/amd64
 ```
 
-### Q: Como instalo o Flang?
+### Q: Como instalo o Germanio?
 
 ```bash
-git clone https://github.com/flaviokalleu/flang.git
-cd flang
-go build -o flang .
-./flang version
+git clone https://github.com/flaviokalleu/germanio.git
+cd germanio
+go build -o germanio .
+./germanio version
 ```
 
 ### Q: Como crio meu primeiro app?
@@ -85,13 +85,13 @@ eventos
 ```
 
 ```bash
-./flang run meuapp.ge
+./germanio run meuapp.ge
 # Acesse http://localhost:8080
 ```
 
-### Q: Posso usar o Flang em Windows?
+### Q: Posso usar o Germanio em Windows?
 
-Sim. O Flang compila e roda normalmente no Windows. Use `go build -o flang.exe .` para gerar o executavel.
+Sim. O Germanio compila e roda normalmente no Windows. Use `go build -o germanio.exe .` para gerar o executavel.
 
 ### Q: Existe um instalador ou pacote?
 
@@ -99,7 +99,7 @@ Ha um instalador disponivel em `installer/`. Consulte o `README.md` principal pa
 
 ### Q: Existe extensao para editor de texto?
 
-Sim. Ha uma extensao para VS Code em `vscode-flang/` no repositorio. Ela fornece realce de sintaxe e autocomplete para arquivos `.ge`.
+Sim. Ha uma extensao para VS Code em `vscode-germanio/` no repositorio. Ela fornece realce de sintaxe e autocomplete para arquivos `.ge`.
 
 ---
 
@@ -107,7 +107,7 @@ Sim. Ha uma extensao para VS Code em `vscode-flang/` no repositorio. Ela fornece
 
 ### Q: Posso usar Portugues e Ingles no mesmo arquivo?
 
-Sim! O Flang e totalmente bilinguie. Voce pode misturar palavras-chave em qualquer idioma:
+Sim! O Germanio e totalmente bilinguie. Voce pode misturar palavras-chave em qualquer idioma:
 
 ```
 system pizzaria
@@ -134,7 +134,7 @@ Nao. `Sistema`, `SISTEMA` e `sistema` sao equivalentes. O lexer converte tudo pa
 
 ### Q: Como funciona a indentacao?
 
-O Flang usa indentacao para estruturar o codigo. Use **2 ou 4 espacos** (ou tabs). O importante e ser consistente dentro de cada bloco. Tabs e espacos podem ser misturados — um tab equivale a 2 espacos no contador interno.
+O Germanio usa indentacao para estruturar o codigo. Use **2 ou 4 espacos** (ou tabs). O importante e ser consistente dentro de cada bloco. Tabs e espacos podem ser misturados — um tab equivale a 2 espacos no contador interno.
 
 ### Q: Posso usar comentarios?
 
@@ -271,7 +271,7 @@ dados
 
 ## Banco de Dados
 
-### Q: Qual banco de dados o Flang usa por padrao?
+### Q: Qual banco de dados o Germanio usa por padrao?
 
 SQLite. Nao requer configuracao — o banco e criado automaticamente na pasta do projeto com o nome `<sistema>.db`.
 
@@ -300,7 +300,7 @@ banco postgres
 
 ### Q: As tabelas sao criadas automaticamente?
 
-Sim. O Flang roda `CREATE TABLE IF NOT EXISTS` ao iniciar. Se um modelo ja existir, as colunas novas sao adicionadas via `ALTER TABLE`. Colunas removidas NAO sao deletadas automaticamente (seguranca dos dados).
+Sim. O Germanio roda `CREATE TABLE IF NOT EXISTS` ao iniciar. Se um modelo ja existir, as colunas novas sao adicionadas via `ALTER TABLE`. Colunas removidas NAO sao deletadas automaticamente (seguranca dos dados).
 
 ### Q: Posso criar indices para performance?
 
@@ -323,13 +323,13 @@ cp meuapp.db backup/meuapp.db.$(date +%Y%m%d)
 sqlite3 meuapp.db ".backup backup.db"
 ```
 
-### Q: O Flang suporta migracoes de banco?
+### Q: O Germanio suporta migracoes de banco?
 
 Migracoes automaticas basicas estao incluídas — novos campos sao adicionados ao ALTER TABLE. Para migracoes complexas (renomear colunas, mudar tipos), e necessario fazer manualmente no banco.
 
-### Q: Posso usar o banco de dados existente com o Flang?
+### Q: Posso usar o banco de dados existente com o Germanio?
 
-Sim, para MySQL e PostgreSQL. Aponte para o banco existente no bloco `banco`. O Flang criara apenas as tabelas que nao existem. Tabelas existentes com campos correspondentes serao usadas normalmente.
+Sim, para MySQL e PostgreSQL. Aponte para o banco existente no bloco `banco`. O Germanio criara apenas as tabelas que nao existem. Tabelas existentes com campos correspondentes serao usadas normalmente.
 
 ---
 
@@ -371,17 +371,17 @@ botao "#6366f1"
 
 Sim. O layout gerado usa CSS flexbox/grid e e adaptado para diferentes tamanhos de tela.
 
-### Q: O Flang suporta tempo real (WebSocket)?
+### Q: O Germanio suporta tempo real (WebSocket)?
 
 Sim. O frontend se conecta automaticamente via WebSocket ao servidor. Qualquer alteracao no banco de dados e transmitida em tempo real para todos os clientes conectados — as listas atualizam automaticamente sem refresh.
 
 ### Q: Posso adicionar JavaScript customizado?
 
-Nao diretamente no `.ge`. Para logica de frontend customizada, adicione via API REST — o Flang expoe toda a logica via endpoints que qualquer cliente pode consumir.
+Nao diretamente no `.ge`. Para logica de frontend customizada, adicione via API REST — o Germanio expoe toda a logica via endpoints que qualquer cliente pode consumir.
 
 ### Q: O que e o tipo `status` e como ele aparece no frontend?
 
-O tipo `status` e exibido com badges coloridas no frontend. O Flang detecta valores comuns e aplica cores:
+O tipo `status` e exibido com badges coloridas no frontend. O Germanio detecta valores comuns e aplica cores:
 
 | Valor       | Cor exibida  |
 |-------------|--------------|
@@ -503,7 +503,7 @@ O logout e feito no cliente removendo o token JWT do `localStorage`. O servidor 
 
 ### Q: Preciso de conta especial para WhatsApp?
 
-Nao. O Flang usa o **WhatsApp comum** (nao Business API pago). Voce precisa apenas de um numero com WhatsApp ativo para escanear o QR Code. A sessao e mantida localmente.
+Nao. O Germanio usa o **WhatsApp comum** (nao Business API pago). Voce precisa apenas de um numero com WhatsApp ativo para escanear o QR Code. A sessao e mantida localmente.
 
 ### Q: O WhatsApp desconecta com frequencia?
 
@@ -512,7 +512,7 @@ Depende do seu celular. O WhatsApp pode desconectar dispositivos secundarios se:
 - A conta for acessada em muitos dispositivos (limite de ~4)
 - A sessao expirar por inatividade
 
-O Flang reconecta automaticamente quando possivel.
+O Germanio reconecta automaticamente quando possivel.
 
 ### Q: Posso enviar imagens ou arquivos pelo WhatsApp?
 
@@ -523,7 +523,7 @@ A versao atual suporta apenas mensagens de texto. Suporte a midia (imagens, PDFs
 1. Ative a verificacao em duas etapas na conta Google
 2. Va em Seguranca > Senhas de app
 3. Crie uma senha para "Outro aplicativo"
-4. Use essa senha (nao a senha do Gmail) no campo `senha` do Flang
+4. Use essa senha (nao a senha do Gmail) no campo `senha` do Germanio
 
 ### Q: Os cron jobs param quando o servidor reinicia?
 
@@ -531,31 +531,31 @@ Sim. Os cron jobs rodam na memoria do processo. Ao reiniciar o servidor, eles re
 
 ### Q: Posso chamar APIs com autenticacao (Bearer token, etc.)?
 
-O cliente HTTP atual suporta apenas GET sem headers customizados. Para APIs que exigem autenticacao, crie um endpoint proxy no seu proprio servidor que o Flang pode chamar via cron.
+O cliente HTTP atual suporta apenas GET sem headers customizados. Para APIs que exigem autenticacao, crie um endpoint proxy no seu proprio servidor que o Germanio pode chamar via cron.
 
-### Q: Posso receber webhooks externos no Flang?
+### Q: Posso receber webhooks externos no Germanio?
 
-Sim. A API REST do Flang aceita qualquer POST. Configure o sistema externo (gateway de pagamento, etc.) para enviar para `POST /api/<modelo>` com os dados no formato JSON.
+Sim. A API REST do Germanio aceita qualquer POST. Configure o sistema externo (gateway de pagamento, etc.) para enviar para `POST /api/<modelo>` com os dados no formato JSON.
 
 ---
 
 ## Deploy e Producao
 
-### Q: Como faco deploy do app Flang?
+### Q: Como faco deploy do app Germanio?
 
 ```bash
 # 1. Compile para producao
-GOOS=linux GOARCH=amd64 go build -o flang .
+GOOS=linux GOARCH=amd64 go build -o germanio .
 
 # 2. Copie para o servidor
-scp flang usuario@servidor:/opt/meuapp/
+scp germanio usuario@servidor:/opt/meuapp/
 scp meuapp.ge usuario@servidor:/opt/meuapp/
 
 # 3. Rode com systemd ou Docker
-./flang run meuapp.ge
+./germanio run meuapp.ge
 ```
 
-### Q: O Flang tem suporte a Docker?
+### Q: O Germanio tem suporte a Docker?
 
 Sim. Ha um `Dockerfile` e `docker-compose.yml` no repositorio:
 
@@ -588,11 +588,11 @@ O header `Upgrade` e necessario para WebSocket funcionar.
 
 ### Q: Posso rodar multiplos apps na mesma maquina?
 
-Sim. Cada app Flang roda em uma porta diferente. Configure a porta via variavel de ambiente ou argumento:
+Sim. Cada app Germanio roda em uma porta diferente. Configure a porta via variavel de ambiente ou argumento:
 
 ```bash
-./flang run loja.ge --port 8080
-./flang run restaurante.ge --port 8081
+./germanio run loja.ge --port 8080
+./germanio run restaurante.ge --port 8081
 ```
 
 ### Q: Como configuro variaveis de ambiente em producao?
@@ -602,7 +602,7 @@ Sim. Cada app Flang roda em uma porta diferente. Configure a porta via variavel 
 [Service]
 Environment=JWT_SECRET=minha-chave
 Environment=DB_PASSWORD=senha-db
-ExecStart=/opt/meuapp/flang run meuapp.ge
+ExecStart=/opt/meuapp/germanio run meuapp.ge
 ```
 
 ### Q: Que recursos de servidor preciso?
@@ -618,9 +618,9 @@ Para cargas maiores, use MySQL/PostgreSQL e escale horizontalmente.
 
 ## Performance
 
-### Q: O Flang e rapido o suficiente para producao?
+### Q: O Germanio e rapido o suficiente para producao?
 
-O runtime do Flang e escrito em Go, uma das linguagens mais eficientes. Para a maioria dos casos de uso de CRUD (lojas, restaurantes, sistemas internos), o Flang e mais que suficiente.
+O runtime do Germanio e escrito em Go, uma das linguagens mais eficientes. Para a maioria dos casos de uso de CRUD (lojas, restaurantes, sistemas internos), o Germanio e mais que suficiente.
 
 Benchmarks aproximados numa VPS basica (1 vCore, 1 GB RAM):
 - GET listagem: ~5000 req/s
@@ -731,9 +731,9 @@ titulo "Produção"    // ok - dentro de string
 
 ## Comparacao com Outras Ferramentas
 
-### Q: Qual a diferenca entre Flang e Bubble/AppMaster?
+### Q: Qual a diferenca entre Germanio e Bubble/AppMaster?
 
-| Caracteristica     | Flang              | Bubble/AppMaster   |
+| Caracteristica     | Germanio              | Bubble/AppMaster   |
 |--------------------|--------------------|--------------------|
 | Interface          | Codigo (texto)     | Visual (arrastar)  |
 | Idioma             | PT/EN              | Ingles             |
@@ -743,9 +743,9 @@ titulo "Produção"    // ok - dentro de string
 | Curva de aprendizado | Baixa            | Media              |
 | Versionamento Git  | Sim (texto)        | Dificil            |
 
-### Q: Qual a diferenca entre Flang e Django/Rails/Laravel?
+### Q: Qual a diferenca entre Germanio e Django/Rails/Laravel?
 
-| Caracteristica     | Flang              | Django/Rails/Laravel |
+| Caracteristica     | Germanio              | Django/Rails/Laravel |
 |--------------------|--------------------|-----------------------|
 | Conhecimento necessario | Minimo       | Alto (Python/Ruby/PHP)|
 | Velocidade para MVP | Horas             | Dias/Semanas          |
@@ -754,13 +754,13 @@ titulo "Produção"    // ok - dentro de string
 | Frontend           | Gerado automaticamente | Manual ou outro framework |
 | Bilinguie          | Sim                | Nao                   |
 
-### Q: Qual a diferenca entre Flang e Retool/Appsmith?
+### Q: Qual a diferenca entre Germanio e Retool/Appsmith?
 
-Retool e Appsmith sao ferramentas de construcao de paineis internos. O Flang gera aplicacoes completas com frontend publico/privado e integracoes nativas (WhatsApp, Email). Alem disso, o Flang e open source e self-hosted sem custo de licenca.
+Retool e Appsmith sao ferramentas de construcao de paineis internos. O Germanio gera aplicacoes completas com frontend publico/privado e integracoes nativas (WhatsApp, Email). Alem disso, o Germanio e open source e self-hosted sem custo de licenca.
 
-### Q: Quando devo usar Flang vs um framework tradicional?
+### Q: Quando devo usar Germanio vs um framework tradicional?
 
-**Use Flang quando:**
+**Use Germanio quando:**
 - Precisa de um MVP ou sistema interno rapidamente
 - A equipe nao tem muitos desenvolvedores
 - As funcionalidades sao principalmente CRUD
@@ -773,12 +773,12 @@ Retool e Appsmith sao ferramentas de construcao de paineis internos. O Flang ger
 - O time ja tem expertise no framework
 - Precisa de customizacao total do frontend
 
-### Q: O Flang substitui um desenvolvedor?
+### Q: O Germanio substitui um desenvolvedor?
 
-Nao completamente. O Flang acelera drasticamente o desenvolvimento de sistemas CRUD, integracoes e dashboards. Para logicas de negocio complexas, algoritmos customizados ou interfaces muito especificas, a intervencao de um desenvolvedor ainda e necessaria.
+Nao completamente. O Germanio acelera drasticamente o desenvolvimento de sistemas CRUD, integracoes e dashboards. Para logicas de negocio complexas, algoritmos customizados ou interfaces muito especificas, a intervencao de um desenvolvedor ainda e necessaria.
 
-O Flang e ideal para: sistemas internos, MVPs, automacoes de negocio, dashboards, e-commerce simples e apps de gerenciamento.
+O Germanio e ideal para: sistemas internos, MVPs, automacoes de negocio, dashboards, e-commerce simples e apps de gerenciamento.
 
-### Q: O Flang tem comunidade ou suporte?
+### Q: O Germanio tem comunidade ou suporte?
 
 O projeto esta em desenvolvimento ativo. Contribuicoes, issues e pull requests sao bem-vindos no repositorio GitHub. Para suporte comercial, entre em contato com os mantenedores do projeto.

@@ -16,7 +16,7 @@ type Config struct {
 	From     string
 }
 
-// Client wraps Go's net/smtp for Flang.
+// Client wraps Go's net/smtp for Germanio.
 type Client struct {
 	mu     sync.Mutex
 	config Config

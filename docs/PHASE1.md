@@ -10,9 +10,9 @@ O ambiente exigiu instalar Go 1.26.1, conforme `go.mod`.
 Os testes originais do compilador e interpretador passaram. A suíte `go test ./...`
 falhava por dois problemas anteriores: instalador Windows dependente de payload
 ausente e `fmt.Println` com newline redundante detectado pelo vet. Ambos foram
-corrigidos sem mudar a semântica Flang.
+corrigidos sem mudar a semântica Germanio.
 
-O parser Flang tolerava tokens desconhecidos e o runtime fazia coerções. Para não
+O parser Germanio tolerava tokens desconhecidos e o runtime fazia coerções. Para não
 quebrar programas existentes, o modo `.ge` foi mantido; `.ge` usa entrada estrita,
 análise de tipos e execução separada, compartilhando os nós do AST e a estrutura
 de varredura léxica. Nenhum recurso web foi reescrito por aparência.
@@ -21,7 +21,7 @@ de varredura léxica. Nenhum recurso web foi reescrito por aparência.
 
 - Módulo Go corrigido para `github.com/flaviokalleu/germanio`.
 - CLI `ge`: rodar, check, fmt/--check, novo, explicar, ajuda e versão.
-- Entry point Flang preservado, inclusive build da raiz com nome `flang`.
+- Entry point Germanio preservado, inclusive build da raiz com nome `germanio`.
 - Lexer `.ge` sem tradução de keywords, com operadores, tipos opcionais e posições.
 - Parser determinístico, blocos de dois espaços, funções e rejeição de lixo sintático.
 - AST ampliado sem remover estruturas legadas; origem em arquivo/linha/coluna.
@@ -38,7 +38,7 @@ de varredura léxica. Nenhum recurso web foi reescrito por aparência.
 - UI natural mínima executável: navbar e botão estáticos, escape de texto,
   arredondamento com unidades verificadas. Não conecta ações nem inicia servidor.
 - Sete exemplos `.ge`, documentação atual, logo fornecida pelo usuário e referência
-  histórica Flang preservada em `docs/FLANG_LEGACY.md`.
+  histórica Germanio preservada em `docs/GERMANIO_LEGACY.md`.
 - Highlighting `.ge` na extensão existente, mantendo `.ge`. Sem alegar suporte LSP.
 - CI com testes, vet, race checks, builds e exemplos de ambos os modos.
 
@@ -46,7 +46,7 @@ de varredura léxica. Nenhum recurso web foi reescrito por aparência.
 
 - `go test ./...`: testes originais e novos, incluindo casos válidos e inválidos.
 - `go vet ./...` e `go test -race ./compiler/... ./runtime/germanio ./tooling/...`.
-- Builds da CLI Germanio e da CLI Flang.
+- Builds da CLI Germanio e da CLI Germanio.
 - Execução real de entrada pelo terminal, exemplos de fundamentos e imports.
 - `ge check` nos exemplos `.ge` e nos demos plano/organizado `.ge`.
 - `ge fmt examples/germanio --check`.

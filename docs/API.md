@@ -1,4 +1,4 @@
-# Flang — Referência da API REST (API Reference)
+# Germanio — Referência da API REST (API Reference)
 
 > Versao 0.5.0 | Ultima atualizacao: 2026-04-10
 
@@ -30,7 +30,7 @@
 
 ## 1. Visão Geral
 
-O Flang gera automaticamente uma API REST completa para cada modelo declarado no arquivo `.ge`. O servidor roda por padrão na porta `8080`.
+O Germanio gera automaticamente uma API REST completa para cada modelo declarado no arquivo `.ge`. O servidor roda por padrão na porta `8080`.
 
 **Base URL:** `http://localhost:8080`
 
@@ -41,7 +41,7 @@ O Flang gera automaticamente uma API REST completa para cada modelo declarado no
 - IDs são inteiros positivos sequenciais
 
 **Dado um modelo:**
-```flang
+```germanio
 dados
   produto
     nome: texto obrigatorio
@@ -453,7 +453,7 @@ Todo registro retornado pela API inclui:
 
 ### 5.4 Mapeamento de Tipos
 
-| Tipo Flang | Tipo JSON | Exemplo |
+| Tipo Germanio | Tipo JSON | Exemplo |
 |---|---|---|
 | `texto` | string | `"Notebook Pro"` |
 | `numero` | number | `42` ou `3.14` |
@@ -749,7 +749,7 @@ Content-Disposition: attachment; filename="produto_2026-04-09.json"
 
 Quando um modelo é declarado com `soft_delete`:
 
-```flang
+```germanio
 dados
   pedido soft_delete
     numero: texto
@@ -884,7 +884,7 @@ Upgrade: websocket
 const ws = new WebSocket('ws://localhost:8080/ws');
 
 ws.onopen = () => {
-  console.log('Conectado ao Flang WebSocket');
+  console.log('Conectado ao Germanio WebSocket');
 };
 
 ws.onmessage = (event) => {
@@ -998,7 +998,7 @@ ws.onmessage = (event) => {
 
 ## 12. Proxy de API
 
-O endpoint `/api/_proxy` permite que o frontend faça requisições a APIs externas através do servidor Flang, contornando restrições de CORS.
+O endpoint `/api/_proxy` permite que o frontend faça requisições a APIs externas através do servidor Germanio, contornando restrições de CORS.
 
 ### 12.1 Fazer Requisição Proxy
 
@@ -1295,7 +1295,7 @@ curl http://localhost:8080/api/cliente/1/pedidos
 
 ## 18. Rate Limiting
 
-A partir da v0.5.0, o Flang inclui rate limiting nativo.
+A partir da v0.5.0, o Germanio inclui rate limiting nativo.
 
 ### Limites
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Flang Uninstaller - Linux / macOS
-# Desinstalador do Flang - Linux / macOS
+# Germanio Uninstaller - Linux / macOS
+# Desinstalador do Germanio - Linux / macOS
 #
 # Uso / Usage:
 #   bash uninstall.sh
@@ -23,8 +23,8 @@ CYAN='\033[0;36m'
 BOLD='\033[1m'
 RESET='\033[0m'
 
-info()    { printf "${CYAN}[flang]${RESET} %s\n" "$*"; }
-success() { printf "${GREEN}[flang]${RESET} ${BOLD}%s${RESET}\n" "$*"; }
+info()    { printf "${CYAN}[germanio]${RESET} %s\n" "$*"; }
+success() { printf "${GREEN}[germanio]${RESET} ${BOLD}%s${RESET}\n" "$*"; }
 warn()    { printf "${YELLOW}[aviso]${RESET} %s\n" "$*" >&2; }
 error()   { printf "${RED}[erro]${RESET}  %s\n" "$*" >&2; exit 1; }
 
@@ -32,11 +32,11 @@ error()   { printf "${RED}[erro]${RESET}  %s\n" "$*" >&2; exit 1; }
 # Confirma a desinstalacao / Confirm uninstall
 # ---------------------------------------------------------------------------
 confirm() {
-    printf "\n${BOLD}Desinstalar o Flang do sistema?${RESET}\n"
+    printf "\n${BOLD}Desinstalar o Germanio do sistema?${RESET}\n"
     printf "Isso removerá:\n"
-    printf "  - Binário em /usr/local/bin/flang e/ou ~/.local/bin/flang\n"
-    printf "  - Bibliotecas em /usr/local/lib/flang e/ou ~/.local/lib/flang\n"
-    printf "  - Man page flang(1)\n"
+    printf "  - Binário em /usr/local/bin/germanio e/ou ~/.local/bin/germanio\n"
+    printf "  - Bibliotecas em /usr/local/lib/germanio e/ou ~/.local/lib/germanio\n"
+    printf "  - Man page germanio(1)\n"
     printf "  - Arquivo .desktop\n"
     printf "  - Entradas de PATH nos arquivos de shell\n"
     printf "\n${YELLOW}Continuar? [s/N]${RESET} "
@@ -89,23 +89,23 @@ clean_shell_configs() {
     for rc in "${files[@]}"; do
         [[ ! -f "$rc" ]] && continue
 
-        if grep -q "flang\|\.local/bin" "$rc" 2>/dev/null; then
+        if grep -q "germanio\|\.local/bin" "$rc" 2>/dev/null; then
             # Cria backup antes de modificar / Create backup before modifying
-            cp "$rc" "${rc}.flang-backup" 2>/dev/null || true
+            cp "$rc" "${rc}.germanio-backup" 2>/dev/null || true
 
-            # Remove linhas relacionadas ao Flang / Remove Flang-related lines
+            # Remove linhas relacionadas ao Germanio / Remove Germanio-related lines
             local tmp
             tmp="$(mktemp)"
-            grep -v "# Flang\|flang\|\.local/bin.*flang\|flang.*\.local/bin" "$rc" > "$tmp" 2>/dev/null || cp "$rc" "$tmp"
+            grep -v "# Germanio\|germanio\|\.local/bin.*germanio\|germanio.*\.local/bin" "$rc" > "$tmp" 2>/dev/null || cp "$rc" "$tmp"
             mv "$tmp" "$rc"
 
             info "Configuracao de shell limpa: $rc"
-            info "Backup salvo em: ${rc}.flang-backup"
+            info "Backup salvo em: ${rc}.germanio-backup"
             cleaned=true
         fi
     done
 
-    $cleaned || info "Nenhuma entrada do Flang encontrada nos arquivos de shell."
+    $cleaned || info "Nenhuma entrada do Germanio encontrada nos arquivos de shell."
 }
 
 # ---------------------------------------------------------------------------
@@ -114,7 +114,7 @@ clean_shell_configs() {
 main() {
     printf "\n${BOLD}${RED}"
     printf "  ╔═══════════════════════════════════╗\n"
-    printf "  ║   Flang Uninstaller / v1.0.0     ║\n"
+    printf "  ║   Germanio Uninstaller / v1.0.0     ║\n"
     printf "  ╚═══════════════════════════════════╝\n"
     printf "${RESET}\n"
 
@@ -141,31 +141,31 @@ main() {
     # 1. Remove binarios / Remove binaries
     # -------------------------------------------------------------------------
     info "Removendo binarios / Removing binaries..."
-    safe_remove "/usr/local/bin/flang"      && ((total_removed++)) || true
-    safe_remove "${HOME}/.local/bin/flang"  && ((total_removed++)) || true
+    safe_remove "/usr/local/bin/germanio"      && ((total_removed++)) || true
+    safe_remove "${HOME}/.local/bin/germanio"  && ((total_removed++)) || true
 
     # -------------------------------------------------------------------------
     # 2. Remove bibliotecas e exemplos / Remove libraries and examples
     # -------------------------------------------------------------------------
     info "Removendo bibliotecas / Removing libraries..."
-    safe_remove "/usr/local/lib/flang" "true"      && ((total_removed++)) || true
-    safe_remove "${HOME}/.local/lib/flang" "true"  && ((total_removed++)) || true
+    safe_remove "/usr/local/lib/germanio" "true"      && ((total_removed++)) || true
+    safe_remove "${HOME}/.local/lib/germanio" "true"  && ((total_removed++)) || true
 
     # -------------------------------------------------------------------------
     # 3. Remove man pages / Remove man pages
     # -------------------------------------------------------------------------
     info "Removendo man pages / Removing man pages..."
-    safe_remove "/usr/local/share/man/man1/flang.1"    && ((total_removed++)) || true
-    safe_remove "/usr/local/share/man/man1/flang.1.gz" && ((total_removed++)) || true
-    safe_remove "${HOME}/.local/share/man/man1/flang.1"    && ((total_removed++)) || true
-    safe_remove "${HOME}/.local/share/man/man1/flang.1.gz" && ((total_removed++)) || true
+    safe_remove "/usr/local/share/man/man1/germanio.1"    && ((total_removed++)) || true
+    safe_remove "/usr/local/share/man/man1/germanio.1.gz" && ((total_removed++)) || true
+    safe_remove "${HOME}/.local/share/man/man1/germanio.1"    && ((total_removed++)) || true
+    safe_remove "${HOME}/.local/share/man/man1/germanio.1.gz" && ((total_removed++)) || true
 
     # -------------------------------------------------------------------------
     # 4. Remove arquivo .desktop / Remove .desktop file
     # -------------------------------------------------------------------------
     info "Removendo arquivo .desktop / Removing .desktop file..."
-    safe_remove "/usr/share/applications/flang.desktop"               && ((total_removed++)) || true
-    safe_remove "${HOME}/.local/share/applications/flang.desktop"     && ((total_removed++)) || true
+    safe_remove "/usr/share/applications/germanio.desktop"               && ((total_removed++)) || true
+    safe_remove "${HOME}/.local/share/applications/germanio.desktop"     && ((total_removed++)) || true
 
     # Atualiza cache de aplicativos / Update application cache
     command -v update-desktop-database &>/dev/null && {
@@ -184,12 +184,12 @@ main() {
     # -------------------------------------------------------------------------
     printf "\n"
     if [[ $total_removed -gt 0 ]]; then
-        success "Flang desinstalado com sucesso! / Flang uninstalled successfully!"
+        success "Germanio desinstalado com sucesso! / Germanio uninstalled successfully!"
         printf "\n"
-        printf "  Obrigado por usar o Flang! / Thank you for using Flang!\n"
-        printf "  ${CYAN}${BOLD}github.com/flaviokalleu/flang${RESET}\n\n"
+        printf "  Obrigado por usar o Germanio! / Thank you for using Germanio!\n"
+        printf "  ${CYAN}${BOLD}github.com/flaviokalleu/germanio${RESET}\n\n"
     else
-        warn "Flang nao encontrado no sistema. Nada foi removido."
+        warn "Germanio nao encontrado no sistema. Nada foi removido."
     fi
 }
 

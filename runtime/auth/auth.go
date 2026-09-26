@@ -15,7 +15,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// Auth handles authentication for Flang apps.
+// Auth handles authentication for Germanio apps.
 type Auth struct {
 	DB            *sql.DB
 	Table         string // user table name

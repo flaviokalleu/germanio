@@ -34,9 +34,9 @@ fi
 echo -e "➔ Compilando o compilador Germanio..."
 cd "${INSTALL_DIR}"
 go build -o "${BIN_DIR}/ge" ./cmd/ge
-go build -o "${BIN_DIR}/flang" .
+go build -o "${BIN_DIR}/germanio" .
 
-echo -e "${GREEN}${BOLD}✓ Germanio instalado com sucesso em ${BIN_DIR}/ge e ${BIN_DIR}/flang!${RESET}\n"
+echo -e "${GREEN}${BOLD}✓ Germanio instalado com sucesso em ${BIN_DIR}/ge e ${BIN_DIR}/germanio!${RESET}\n"
 
 # Adicionar ao PATH se não existir
 SHELL_RC=""
@@ -55,4 +55,4 @@ fi
 
 echo -e "Para começar a usar agora mesmo:"
 echo -e "  ${CYAN}ge novo meu_app${RESET}"
-echo -e "  ${CYAN}flang run examples/prompt-saas.ge${RESET}\n"
+echo -e "  ${CYAN}germanio run examples/prompt-saas.ge${RESET}\n"

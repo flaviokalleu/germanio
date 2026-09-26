@@ -47,7 +47,7 @@ func Abrir(config *ast.DatabaseConfig, appName string, models []*ast.Model) (*Ba
 	db.SetConnMaxLifetime(5 * time.Minute)
 	db.SetConnMaxIdleTime(1 * time.Minute)
 
-	fmt.Printf("[flang] Banco: %s\n", config.Driver)
+	fmt.Printf("[germanio] Banco: %s\n", config.Driver)
 
 	b := &Banco{
 		DB:     db,
@@ -60,7 +60,7 @@ func Abrir(config *ast.DatabaseConfig, appName string, models []*ast.Model) (*Ba
 		if err := b.criarTabela(m); err != nil {
 			return nil, fmt.Errorf("erro ao criar tabela '%s': %w", m.Name, err)
 		}
-		fmt.Printf("[flang] Tabela: %s (%d campos)\n", m.Name, len(m.Fields))
+		fmt.Printf("[germanio] Tabela: %s (%d campos)\n", m.Name, len(m.Fields))
 	}
 
 	// Create join tables for many-to-many relationships
@@ -87,9 +87,9 @@ func Abrir(config *ast.DatabaseConfig, appName string, models []*ast.Model) (*Ba
 				q(relLower+"_id"), q(relLower), q("id"),
 				q(mLower+"_id"), q(relLower+"_id"))
 			if _, err := b.DB.Exec(joinSQL); err != nil {
-				fmt.Printf("[flang] AVISO: erro ao criar tabela join '%s': %s\n", joinTable, err)
+				fmt.Printf("[germanio] AVISO: erro ao criar tabela join '%s': %s\n", joinTable, err)
 			} else {
-				fmt.Printf("[flang] Tabela join: %s\n", joinTable)
+				fmt.Printf("[germanio] Tabela join: %s\n", joinTable)
 			}
 		}
 	}

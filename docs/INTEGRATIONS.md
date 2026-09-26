@@ -1,6 +1,6 @@
-# Guia de Integracoes - Flang
+# Guia de Integracoes - Germanio
 
-Este documento cobre todas as integracoes disponíveis no Flang: WhatsApp, Email SMTP, Cron Jobs, HTTP Client e Webhooks.
+Este documento cobre todas as integracoes disponíveis no Germanio: WhatsApp, Email SMTP, Cron Jobs, HTTP Client e Webhooks.
 
 ---
 
@@ -40,11 +40,11 @@ O bloco `integracoes` pode conter quantas integracoes forem necessarias. A ordem
 
 ## WhatsApp
 
-O Flang usa a biblioteca **whatsmeow** para enviar mensagens pelo WhatsApp Business. A autenticacao e feita via QR Code no terminal, e a sessao e persistida em um arquivo `.db` local para que futuras execucoes nao exijam nova autenticacao.
+O Germanio usa a biblioteca **whatsmeow** para enviar mensagens pelo WhatsApp Business. A autenticacao e feita via QR Code no terminal, e a sessao e persistida em um arquivo `.db` local para que futuras execucoes nao exijam nova autenticacao.
 
 ### Como Funciona
 
-1. Na primeira execucao, o Flang exibe um QR Code no terminal
+1. Na primeira execucao, o Germanio exibe um QR Code no terminal
 2. Voce abre o WhatsApp no celular > Dispositivos Conectados > Conectar Dispositivo
 3. Escaneia o QR Code
 4. A sessao e salva em `whatsapp.db` (ou o caminho configurado)
@@ -95,7 +95,7 @@ Variaveis disponiveis: qualquer campo do modelo que disparou o gatilho.
 
 ### Normalizacao de Telefone
 
-O Flang normaliza automaticamente os numeros:
+O Germanio normaliza automaticamente os numeros:
 - Remove caracteres nao numericos (`(`, `)`, `-`, espacos)
 - Adiciona o codigo do Brasil `55` se nao estiver presente
 - Numeros com menos de 10 digitos sao ignorados com aviso
@@ -175,7 +175,7 @@ Por padrao, a sessao WhatsApp e salva em `whatsapp.db` na pasta do projeto. Voce
 
 ## Email SMTP
 
-O Flang envia emails via **net/smtp** padrao do Go. Compativel com Gmail, Outlook, SendGrid, Mailgun, e qualquer servidor SMTP.
+O Germanio envia emails via **net/smtp** padrao do Go. Compativel com Gmail, Outlook, SendGrid, Mailgun, e qualquer servidor SMTP.
 
 ### Configuracao do Servidor
 
@@ -371,7 +371,7 @@ cada 10 minutos
 
 O cliente HTTP usa:
 - Timeout: 30 segundos
-- User-Agent: `Flang/1.0`
+- User-Agent: `Germanio/1.0`
 - Header `Accept: application/json`
 
 ### Acoes Genericas
@@ -453,11 +453,11 @@ Durante a execucao:
 
 ## HTTP Client
 
-O Flang expoe uma API REST automaticamente para todos os modelos. Alem disso, o runtime inclui um cliente HTTP interno usado pelos cron jobs e que pode ser acionado via endpoints proxy.
+O Germanio expoe uma API REST automaticamente para todos os modelos. Alem disso, o runtime inclui um cliente HTTP interno usado pelos cron jobs e que pode ser acionado via endpoints proxy.
 
 ### API REST Automatica
 
-Para cada modelo, o Flang gera automaticamente:
+Para cada modelo, o Germanio gera automaticamente:
 
 | Metodo   | Endpoint               | Descricao               |
 |----------|------------------------|-------------------------|
@@ -545,10 +545,10 @@ integracoes
 
 ### Headers Automaticos
 
-O cliente HTTP do Flang envia automaticamente:
+O cliente HTTP do Germanio envia automaticamente:
 
 ```
-User-Agent: Flang/1.0
+User-Agent: Germanio/1.0
 Accept: application/json
 Content-Type: application/json  (apenas em POST/PUT)
 ```
@@ -557,11 +557,11 @@ Content-Type: application/json  (apenas em POST/PUT)
 
 ## Webhooks
 
-Webhooks permitem que sistemas externos notifiquem seu app Flang de eventos.
+Webhooks permitem que sistemas externos notifiquem seu app Germanio de eventos.
 
 ### Recebendo Webhooks
 
-O Flang aceita requisicoes POST em qualquer endpoint da API. Para receber um webhook de um sistema externo (ex: gateway de pagamento), configure o sistema externo para enviar POST para:
+O Germanio aceita requisicoes POST em qualquer endpoint da API. Para receber um webhook de um sistema externo (ex: gateway de pagamento), configure o sistema externo para enviar POST para:
 
 ```
 POST http://seuapp.com/api/pedido
@@ -578,7 +578,7 @@ Com payload JSON:
 }
 ```
 
-O Flang ira criar automaticamente o registro no banco de dados e disparar os eventos configurados (WhatsApp, Email, etc.).
+O Germanio ira criar automaticamente o registro no banco de dados e disparar os eventos configurados (WhatsApp, Email, etc.).
 
 ### Exemplo: Webhook de Pagamento
 
@@ -615,7 +615,7 @@ integracoes
         texto "Ola {cliente}! Recebemos seu pagamento de R${valor}. Obrigado!"
 ```
 
-Ao receber o POST do gateway de pagamento em `/api/pagamento`, o Flang:
+Ao receber o POST do gateway de pagamento em `/api/pagamento`, o Germanio:
 1. Salva o registro no banco
 2. Envia WhatsApp para o cliente
 3. Envia email de confirmacao
@@ -652,7 +652,7 @@ integracoes
 
 ### Alternativa Atual
 
-Enquanto o suporte nativo nao esta disponivel, use webhooks do seu gateway de pagamento apontando para a API REST do Flang. O gateway chama seu endpoint e o Flang persiste o registro e dispara notificacoes.
+Enquanto o suporte nativo nao esta disponivel, use webhooks do seu gateway de pagamento apontando para a API REST do Germanio. O gateway chama seu endpoint e o Germanio persiste o registro e dispara notificacoes.
 
 ---
 
@@ -744,7 +744,7 @@ EMAIL_SENHA=sua-senha-real
 JWT_SECRET=chave-secreta-longa
 ```
 
-No arquivo `.ge`, use os valores diretamente por enquanto — suporte a `${ENV_VAR}` esta no roadmap. A alternativa atual e configurar via variaveis de ambiente do sistema operacional antes de rodar o Flang.
+No arquivo `.ge`, use os valores diretamente por enquanto — suporte a `${ENV_VAR}` esta no roadmap. A alternativa atual e configurar via variaveis de ambiente do sistema operacional antes de rodar o Germanio.
 
 ---
 

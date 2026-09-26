@@ -2,21 +2,21 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## What is Flang
+## What is Germanio
 
-Flang is a multilingual (20 languages) declarative programming language written in Go that generates full-stack web applications from `.ge` files. Users describe their app (models, screens, events, logic) and Flang produces a running application with REST API, database, auth, and UI. Keywords can be written in Portuguese, English, Spanish, French, German, Italian, Chinese, Japanese, Korean, Arabic, Hindi, Bengali, Russian, Indonesian, Turkish, Vietnamese, Polish, Dutch, Thai, or Swahili — all interchangeable in the same file.
+Germanio is a multilingual (20 languages) declarative programming language written in Go that generates full-stack web applications from `.ge` files. Users describe their app (models, screens, events, logic) and Germanio produces a running application with REST API, database, auth, and UI. Keywords can be written in Portuguese, English, Spanish, French, German, Italian, Chinese, Japanese, Korean, Arabic, Hindi, Bengali, Russian, Indonesian, Turkish, Vietnamese, Polish, Dutch, Thai, or Swahili — all interchangeable in the same file.
 
 ## Build & Run
 
 ```bash
-go build -o flang .
+go build -o germanio .
 
-./flang run demo/plano/inicio.ge [port]
-./flang check demo/plano/inicio.ge
-./flang new <name>          # flat mode (single file)
-./flang init <name>         # organized mode (folders)
-./flang build app.ge -o app # compile to standalone executable
-./flang docker              # generate Dockerfile
+./germanio run demo/plano/inicio.ge [port]
+./germanio check demo/plano/inicio.ge
+./germanio new <name>          # flat mode (single file)
+./germanio init <name>         # organized mode (folders)
+./germanio build app.ge -o app # compile to standalone executable
+./germanio docker              # generate Dockerfile
 ```
 
 CGO is disabled — uses pure-Go SQLite (`modernc.org/sqlite`).
@@ -58,7 +58,7 @@ Pipeline: `.ge` file → Lexer → Parser/AST → Runtime Engine.
 
 Commands: `run`, `check`, `new`, `init`, `build`, `docker`, `version`, `help`.
 
-`flang build` creates a standalone executable by generating a temp Go project with `go:embed`, compiling the .ge files + runtime into a single binary.
+`germanio build` creates a standalone executable by generating a temp Go project with `go:embed`, compiling the .ge files + runtime into a single binary.
 
 ## Key Design Decisions
 

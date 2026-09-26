@@ -5,7 +5,7 @@ var ideHTML = `<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Flang IDE</title>
+<title>Germanio IDE</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/6.6.1/fabric.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -398,7 +398,7 @@ body { background: var(--base); color: var(--text); }
       <div class="logo-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="#89b4fa" stroke-width="2.5" style="width:16px;height:16px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
       </div>
-      <span class="logo-text">Flang IDE</span>
+      <span class="logo-text">Germanio IDE</span>
       <span class="logo-version">v0.5.1</span>
     </div>
     <div class="segmented-control">
@@ -699,13 +699,13 @@ body { background: var(--base); color: var(--text); }
   <div class="status-left">
     <div class="flex items-center gap-1.5">
       <svg viewBox="0 0 24 24" fill="none" stroke="#89b4fa" stroke-width="2" style="width:10px;height:10px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-      <span style="font-weight:500;color:var(--blue)">Flang</span>
+      <span style="font-weight:500;color:var(--blue)">Germanio</span>
     </div>
     <span id="status-file" style="color:var(--overlay0)">Nenhum arquivo</span>
     <span id="status-modified" style="display:none;color:var(--yellow);font-size:10px">&#9679; Nao salvo</span>
   </div>
   <div class="status-right">
-    <span id="status-lang">Flang (.ge)</span>
+    <span id="status-lang">Germanio (.ge)</span>
     <span id="status-cursor">Ln 1, Col 1</span>
   </div>
 </div>
@@ -755,11 +755,11 @@ function switchMode(mode) {
 require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs' }});
 require(['vs/editor/editor.main'], function() {
 
-  // Register Flang language
-  monaco.languages.register({ id: 'flang', extensions: ['.ge'] });
+  // Register Germanio language
+  monaco.languages.register({ id: 'germanio', extensions: ['.ge'] });
 
   // Syntax highlighting
-  monaco.languages.setMonarchTokensProvider('flang', {
+  monaco.languages.setMonarchTokensProvider('germanio', {
     keywords: ['sistema','dados','telas','tela','eventos','tema','logica','banco','autenticacao','integracoes',
       'importar','de','system','models','screens','screen','events','theme','logic','database','auth','import','from',
       'rotas','rota','paginas','pagina','sidebar','item'],
@@ -803,7 +803,7 @@ require(['vs/editor/editor.main'], function() {
   });
 
   // Catppuccin Mocha theme
-  monaco.editor.defineTheme('flang-dark', {
+  monaco.editor.defineTheme('germanio-dark', {
     base: 'vs-dark',
     inherit: true,
     rules: [
@@ -848,9 +848,9 @@ require(['vs/editor/editor.main'], function() {
 
   // Create editor
   editor = monaco.editor.create(document.getElementById('editor-container'), {
-    value: '# Bem-vindo ao Flang IDE!\\n#\\n# Para comecar:\\n#   1. Abra um arquivo .ge na arvore a esquerda\\n#   2. Ou clique em Designer para montar telas visualmente\\n#   3. Ou clique em Fluxos para criar logica visual\\n#\\n# Atalhos:\\n#   Ctrl+S     Salvar\\n#   Ctrl+Z     Desfazer (no Designer)\\n#   Ctrl+Y     Refazer (no Designer)\\n#   Delete     Remover componente selecionado\\n#\\n# Templates prontos (no terminal):\\n#   flang new loja\\n#   flang new clinica\\n#   flang new escola\\n#   flang new delivery\\n#   flang new crm\\n#   flang new helpdesk\\n#   flang new blog\\n#   flang new financeiro\\n#\\n# 60+ funcoes built-in, 25 tipos de dados, 20 idiomas\\n# Documentacao: docs/TUTORIAL.md\\n',
-    language: 'flang',
-    theme: 'flang-dark',
+    value: '# Bem-vindo ao Germanio IDE!\\n#\\n# Para comecar:\\n#   1. Abra um arquivo .ge na arvore a esquerda\\n#   2. Ou clique em Designer para montar telas visualmente\\n#   3. Ou clique em Fluxos para criar logica visual\\n#\\n# Atalhos:\\n#   Ctrl+S     Salvar\\n#   Ctrl+Z     Desfazer (no Designer)\\n#   Ctrl+Y     Refazer (no Designer)\\n#   Delete     Remover componente selecionado\\n#\\n# Templates prontos (no terminal):\\n#   germanio new loja\\n#   germanio new clinica\\n#   germanio new escola\\n#   germanio new delivery\\n#   germanio new crm\\n#   germanio new helpdesk\\n#   germanio new blog\\n#   germanio new financeiro\\n#\\n# 60+ funcoes built-in, 25 tipos de dados, 20 idiomas\\n# Documentacao: docs/TUTORIAL.md\\n',
+    language: 'germanio',
+    theme: 'germanio-dark',
     fontSize: 14,
     fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
     minimap: { enabled: true, scale: 1 },
@@ -892,7 +892,7 @@ require(['vs/editor/editor.main'], function() {
   // Load file tree
   loadFileTree();
 
-  termLog('info', 'Flang IDE iniciado. Pronto para editar!');
+  termLog('info', 'Germanio IDE iniciado. Pronto para editar!');
 });
 
 // File tree
@@ -943,7 +943,7 @@ function openFile(path) {
 
 function switchToFile(path) {
   activeFile = path;
-  var lang = path.endsWith('.ge') ? 'flang' : (path.endsWith('.json') ? 'json' : (path.endsWith('.go') ? 'go' : (path.endsWith('.js') ? 'javascript' : 'plaintext')));
+  var lang = path.endsWith('.ge') ? 'germanio' : (path.endsWith('.json') ? 'json' : (path.endsWith('.go') ? 'go' : (path.endsWith('.js') ? 'javascript' : 'plaintext')));
   editor.setValue(openFiles[path] || '');
   monaco.editor.setModelLanguage(editor.getModel(), lang);
 
@@ -958,7 +958,7 @@ function switchToFile(path) {
   if(el) el.classList.add('active');
 
   document.getElementById('status-file').textContent = path;
-  document.getElementById('status-lang').textContent = lang === 'flang' ? 'Flang (.ge)' : lang;
+  document.getElementById('status-lang').textContent = lang === 'germanio' ? 'Germanio (.ge)' : lang;
 }
 
 // Tabs

@@ -254,7 +254,7 @@ func (s *Servidor) renderSidebar(theme *ast.Theme) string {
 	// Footer
 	b.WriteString(`<div class="p-3 border-t border-gray-200 dark:border-gray-800">`)
 	b.WriteString(`<button class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-all cursor-pointer text-sm w-full" onclick="toggleDark()"><span class="w-5 h-5 flex-shrink-0">` + svgIcon("moon") + `</span><span>Tema</span></button>`)
-	b.WriteString(`<div class="text-xs text-gray-400 dark:text-gray-600 text-center mt-2">Flang v0.5</div>`)
+	b.WriteString(`<div class="text-xs text-gray-400 dark:text-gray-600 text-center mt-2">Germanio v0.5</div>`)
 	b.WriteString(`</div></aside>`)
 	return b.String()
 }
@@ -377,7 +377,7 @@ func (s *Servidor) renderDashboard(theme *ast.Theme) string {
 	b.WriteString(fmt.Sprintf(`<div class="flex justify-between px-5 py-3 text-sm"><span class="text-gray-500 dark:text-gray-400">Sistema</span><span class="font-medium">%s</span></div>`, html.EscapeString(cap(s.Program.System.Name))))
 	b.WriteString(fmt.Sprintf(`<div class="flex justify-between px-5 py-3 text-sm"><span class="text-gray-500 dark:text-gray-400">Modelos</span><span class="font-medium">%d</span></div>`, len(s.Program.Models)))
 	b.WriteString(fmt.Sprintf(`<div class="flex justify-between px-5 py-3 text-sm"><span class="text-gray-500 dark:text-gray-400">Telas</span><span class="font-medium">%d</span></div>`, len(s.Program.Screens)))
-	b.WriteString(`<div class="flex justify-between px-5 py-3 text-sm"><span class="text-gray-500 dark:text-gray-400">Engine</span><span class="font-medium">Flang v0.5</span></div>`)
+	b.WriteString(`<div class="flex justify-between px-5 py-3 text-sm"><span class="text-gray-500 dark:text-gray-400">Engine</span><span class="font-medium">Germanio v0.5</span></div>`)
 	b.WriteString(`</div></div>`)
 
 	b.WriteString(`</div>`) // grid
@@ -1552,7 +1552,7 @@ document.addEventListener('DOMContentLoaded',function(){
 		}
 		b.WriteString(fmt.Sprintf(`
 // ===== Auth =====
-var authToken=localStorage.getItem('flang_token')||'';
+var authToken=localStorage.getItem('germanio_token')||'';
 var authMode='login';
 var AUTH_LOGIN='%s',AUTH_PASS='%s';
 
@@ -1628,7 +1628,7 @@ function authSubmit(e){
         return;
       }
       authToken=res.data.token;
-      localStorage.setItem('flang_token',authToken);
+      localStorage.setItem('germanio_token',authToken);
       fecharAuth();
       updateAuthUI(res.data.login||login,res.data.role||'usuario');
       toast(authMode==='login'?'Bem-vindo!':'Conta criada!');
@@ -1640,7 +1640,7 @@ function authSubmit(e){
 }
 function sair(){
   authToken='';
-  localStorage.removeItem('flang_token');
+  localStorage.removeItem('germanio_token');
   $('btn-login').style.display='';
   $('btn-login').classList.remove('hidden');
   $('user-info').classList.add('hidden');

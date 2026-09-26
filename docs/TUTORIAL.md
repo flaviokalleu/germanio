@@ -1,6 +1,6 @@
-# Tutorial Completo - Flang
+# Tutorial Completo - Germanio
 
-Aprenda a criar aplicacoes completas com Flang em menos de 30 minutos.
+Aprenda a criar aplicacoes completas com Germanio em menos de 30 minutos.
 
 ---
 
@@ -26,7 +26,7 @@ Aprenda a criar aplicacoes completas com Flang em menos de 30 minutos.
 18. [Rotas e Paginas Customizadas](#18-rotas-e-paginas-customizadas)
 19. [Sidebar Personalizada](#19-sidebar-personalizada)
 20. [Async e Paralelismo](#20-async-e-paralelismo)
-21. [flang build](#21-flang-build)
+21. [germanio build](#21-germanio-build)
 22. [Multilingual](#22-multilingual)
 
 ---
@@ -41,16 +41,16 @@ Aprenda a criar aplicacoes completas com Flang em menos de 30 minutos.
 
 ```bash
 # Clone o repositorio
-git clone https://github.com/flaviokalleu/flang.git
+git clone https://github.com/flaviokalleu/germanio.git
 
 # Entre na pasta
-cd flang
+cd germanio
 
 # Compile
-go build -o flang .
+go build -o germanio .
 
 # Teste
-./flang version
+./germanio version
 ```
 
 Voce vera:
@@ -103,7 +103,7 @@ eventos
 Rode:
 
 ```bash
-./flang run inicio.ge
+./germanio run inicio.ge
 ```
 
 Abra `http://localhost:8080` no navegador.
@@ -501,7 +501,7 @@ integracoes
 
 ### Primeiro uso
 
-1. Rode `flang run inicio.ge`
+1. Rode `germanio run inicio.ge`
 2. Um QR Code aparece no terminal
 3. No celular: WhatsApp > Dispositivos Conectados > Conectar Dispositivo
 4. Escaneie o QR Code
@@ -579,7 +579,7 @@ Exemplo de erro:
 
 ## 14. English Mode
 
-Flang e totalmente bilingue. Todas as keywords tem equivalente em ingles:
+Germanio e totalmente bilingue. Todas as keywords tem equivalente em ingles:
 
 ```
 system my_store
@@ -812,15 +812,15 @@ eventos
 ### Opcao 1: Binario direto
 
 ```bash
-# Compile o Flang
-go build -o flang .
+# Compile o Germanio
+go build -o germanio .
 
-# Copie flang + seus .ge para o servidor
-scp flang inicio.ge user@server:~/app/
+# Copie germanio + seus .ge para o servidor
+scp germanio inicio.ge user@server:~/app/
 
 # No servidor
 cd ~/app
-./flang run inicio.ge 80
+./germanio run inicio.ge 80
 ```
 
 ### Opcao 2: Com PostgreSQL em producao
@@ -845,14 +845,14 @@ importar "eventos.ge"
 ### Opcao 3: Porta customizada
 
 ```bash
-./flang run inicio.ge 3000
+./germanio run inicio.ge 3000
 ```
 
 ---
 
 ## 17. Tema e Customizacao
 
-A partir da v0.5.0, o Flang oferece presets de tema, cores por nome e estilos visuais.
+A partir da v0.5.0, o Germanio oferece presets de tema, cores por nome e estilos visuais.
 
 ### Presets de Tema
 
@@ -1045,16 +1045,16 @@ resultados = consultar_paralelo(
 
 ---
 
-## 21. flang build
+## 21. germanio build
 
-O comando `flang build` compila seu arquivo `.ge` em um executavel standalone:
+O comando `germanio build` compila seu arquivo `.ge` em um executavel standalone:
 
 ```bash
-flang build meuapp.ge
+germanio build meuapp.ge
 ```
 
 Isso gera um binario `meuapp` (ou `meuapp.exe` no Windows) que inclui:
-- O interpretador Flang
+- O interpretador Germanio
 - Seu arquivo `.ge` embutido
 - Todas as dependencias
 
@@ -1064,7 +1064,7 @@ O executavel gerado nao requer Go instalado na maquina de destino:
 
 ```bash
 # Compilar
-flang build meuapp.ge
+germanio build meuapp.ge
 
 # Copiar para o servidor
 scp meuapp user@server:~/
@@ -1077,20 +1077,20 @@ ssh user@server "./meuapp"
 
 ```bash
 # Linux
-GOOS=linux flang build meuapp.ge
+GOOS=linux germanio build meuapp.ge
 
 # Windows
-GOOS=windows flang build meuapp.ge
+GOOS=windows germanio build meuapp.ge
 
 # macOS
-GOOS=darwin flang build meuapp.ge
+GOOS=darwin germanio build meuapp.ge
 ```
 
 ---
 
 ## 22. Multilingual
 
-O Flang v0.5.0 suporta 20 idiomas. Voce pode escrever seu `.ge` no idioma que preferir.
+O Germanio v0.5.0 suporta 20 idiomas. Voce pode escrever seu `.ge` no idioma que preferir.
 
 ### Exemplo em Espanhol
 
@@ -1149,12 +1149,12 @@ dados
 ## Proximos Passos
 
 - Explore os exemplos em `exemplos/`
-- Crie seu proprio projeto com `./flang new meu-projeto`
-- Use `flang build` para gerar executaveis
-- Contribua no [GitHub](https://github.com/flaviokalleu/flang)
+- Crie seu proprio projeto com `./germanio new meu-projeto`
+- Use `germanio build` para gerar executaveis
+- Contribua no [GitHub](https://github.com/flaviokalleu/germanio)
 
 ---
 
 <p align="center">
-  <strong>Flang v0.5.0</strong> - Descreva. Execute. Pronto.
+  <strong>Germanio v0.5.0</strong> - Descreva. Execute. Pronto.
 </p>

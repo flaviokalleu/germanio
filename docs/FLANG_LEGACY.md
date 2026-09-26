@@ -1,10 +1,10 @@
-# Documentação histórica do Flang
+# Documentação histórica do Germanio
 
 > Referência do modo `.ge`. Os comandos, versões e instaladores abaixo são históricos.
 > Para Germanio `.ge`, consulte o [README atual](../README.md) e a [SPEC](../SPEC.md).
 
 <p align="center">
-  <img src="../logo.png" alt="Flang" width="400">
+  <img src="../logo.png" alt="Germanio" width="400">
 </p>
 
 <p align="center">
@@ -13,7 +13,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Version-0.5.0-6366f1?style=for-the-badge" alt="v0.5.0">
-  <img src="https://img.shields.io/badge/Extension-.ge-6366f1?style=for-the-badge" alt="Flang .ge">
+  <img src="https://img.shields.io/badge/Extension-.ge-6366f1?style=for-the-badge" alt="Germanio .ge">
   <img src="https://img.shields.io/badge/Go-1.21+-00ADD8?style=for-the-badge&logo=go&logoColor=white" alt="Go 1.21+">
   <img src="https://img.shields.io/badge/20%20Idiomas-PT%20EN%20ES%20FR%20DE%20...-f59e0b?style=for-the-badge" alt="20 Languages">
   <img src="https://img.shields.io/badge/Tests-59%20passing-brightgreen?style=for-the-badge" alt="59 Tests">
@@ -21,7 +21,7 @@
 </p>
 
 <p align="center">
-  <a href="#o-que-e-o-flang">O que e</a> ·
+  <a href="#o-que-e-o-germanio">O que e</a> ·
   <a href="#quick-start">Quick Start</a> ·
   <a href="#exemplo-completo">Exemplo</a> ·
   <a href="#20-idiomas">20 Idiomas</a> ·
@@ -32,9 +32,9 @@
 
 ---
 
-## O que e o Flang?
+## O que e o Germanio?
 
-**Flang** e uma linguagem de programacao declarativa escrita em Go que gera aplicacoes web full-stack a partir de arquivos `.ge`. Escreva o que voce quer — dados, telas, eventos, logica — e o Flang gera backend, frontend, banco de dados, API REST, autenticacao e muito mais.
+**Germanio** e uma linguagem de programacao declarativa escrita em Go que gera aplicacoes web full-stack a partir de arquivos `.ge`. Escreva o que voce quer — dados, telas, eventos, logica — e o Germanio gera backend, frontend, banco de dados, API REST, autenticacao e muito mais.
 
 ```
 sistema loja
@@ -62,7 +62,7 @@ eventos
 ```
 
 ```bash
-flang run loja.ge
+germanio run loja.ge
 # App completa rodando em http://localhost:8080
 ```
 
@@ -74,23 +74,23 @@ flang run loja.ge
 
 ```bash
 # Build do fonte
-git clone https://github.com/flaviokalleu/flang.git
-cd flang
-go build -o flang .
+git clone https://github.com/flaviokalleu/germanio.git
+cd germanio
+go build -o germanio .
 
 # Ou via instalador (Linux/macOS)
-curl -fsSL https://github.com/flaviokalleu/flang/releases/latest/download/install.sh | sh
+curl -fsSL https://github.com/flaviokalleu/germanio/releases/latest/download/install.sh | sh
 ```
 
 ### Criar e rodar
 
 ```bash
 # Criar novo projeto
-flang new meu-app
+germanio new meu-app
 
 # Rodar
 cd meu-app
-flang run inicio.ge
+germanio run inicio.ge
 
 # Abrir no navegador
 # http://localhost:8080
@@ -232,7 +232,7 @@ integracoes
 
 ## 20 Idiomas
 
-Flang suporta keywords em **20 idiomas**. Voce pode misturar idiomas livremente no mesmo arquivo.
+Germanio suporta keywords em **20 idiomas**. Voce pode misturar idiomas livremente no mesmo arquivo.
 
 ### Portugues
 
@@ -445,7 +445,7 @@ sidebar_personalizada
 
 ## Funcoes Async
 
-Flang inclui funcoes async para operacoes paralelas e assincronas:
+Germanio inclui funcoes async para operacoes paralelas e assincronas:
 
 ```
 logica
@@ -509,15 +509,15 @@ autenticacao
 
 | Comando | Descricao |
 |---------|-----------|
-| `flang run arquivo.ge` | Executa o arquivo .ge |
-| `flang arquivo.ge` | Atalho para run |
-| `flang check arquivo.ge` | Verifica sintaxe sem executar |
-| `flang new nome` | Cria novo projeto com estrutura basica |
-| `flang init nome` | Cria projeto com .env e Docker |
-| `flang build arquivo.ge` | Gera executavel standalone |
-| `flang docker` | Gera Dockerfile e docker-compose |
-| `flang version` | Mostra a versao atual |
-| `flang help` | Mostra ajuda |
+| `germanio run arquivo.ge` | Executa o arquivo .ge |
+| `germanio arquivo.ge` | Atalho para run |
+| `germanio check arquivo.ge` | Verifica sintaxe sem executar |
+| `germanio new nome` | Cria novo projeto com estrutura basica |
+| `germanio init nome` | Cria projeto com .env e Docker |
+| `germanio build arquivo.ge` | Gera executavel standalone |
+| `germanio docker` | Gera Dockerfile e docker-compose |
+| `germanio version` | Mostra a versao atual |
+| `germanio help` | Mostra ajuda |
 
 ---
 
@@ -560,7 +560,7 @@ Cada modelo gera automaticamente endpoints REST:
 
 ## Extensao VS Code
 
-A extensao `vscode-flang` oferece:
+A extensao `vscode-germanio` oferece:
 
 - **Syntax highlighting** para arquivos `.ge`
 - **22 snippets** para produtividade rapida
@@ -570,9 +570,9 @@ A extensao `vscode-flang` oferece:
 
 ```bash
 # Na pasta do projeto
-cd vscode-flang
+cd vscode-germanio
 # Copie para extensoes do VS Code
-cp -r . ~/.vscode/extensions/vscode-flang
+cp -r . ~/.vscode/extensions/vscode-germanio
 ```
 
 ---
@@ -580,7 +580,7 @@ cp -r . ~/.vscode/extensions/vscode-flang
 ## Estrutura do Projeto
 
 ```
-flang/
+germanio/
 ├── main.go                  # Ponto de entrada
 ├── cli/                     # Comandos CLI
 ├── compiler/
@@ -596,7 +596,7 @@ flang/
 │   ├── email/               # SMTP com templates HTML
 │   ├── cron/                # Agendamentos
 │   └── httpclient/          # HTTP client
-├── vscode-flang/            # Extensao VS Code
+├── vscode-germanio/            # Extensao VS Code
 ├── examples/                # Programas de exemplo
 ├── demo/                    # Aplicacoes completas
 ├── docs/                    # Documentacao
@@ -608,9 +608,9 @@ flang/
 ## Contribuir
 
 ```bash
-git clone https://github.com/flaviokalleu/flang.git
-cd flang
-go build -o flang .
+git clone https://github.com/flaviokalleu/germanio.git
+cd germanio
+go build -o germanio .
 go test ./... -v
 ```
 
@@ -629,9 +629,9 @@ MIT License — veja [LICENSE](LICENSE)
 ---
 
 <p align="center">
-  <img src="logo.png" alt="Flang" width="120">
+  <img src="logo.png" alt="Germanio" width="120">
   <br>
-  <strong>Flang v0.5.0</strong> — Descreva. Programe. Execute.
+  <strong>Germanio v0.5.0</strong> — Descreva. Programe. Execute.
   <br>
   <sub>Feito por <a href="https://github.com/flaviokalleu">@flaviokalleu</a></sub>
 </p>

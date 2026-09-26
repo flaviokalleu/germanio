@@ -1,6 +1,6 @@
-# Guia de Seguranca - Flang
+# Guia de Seguranca - Germanio
 
-Este documento descreve todos os mecanismos de seguranca do Flang: autenticacao, autorizacao, protecao de dados e boas praticas.
+Este documento descreve todos os mecanismos de seguranca do Germanio: autenticacao, autorizacao, protecao de dados e boas praticas.
 
 ---
 
@@ -8,7 +8,7 @@ Este documento descreve todos os mecanismos de seguranca do Flang: autenticacao,
 
 1. [Correcoes de Seguranca v0.5.0](#correcoes-de-seguranca-v050)
 2. [Sistema de Autenticacao](#sistema-de-autenticacao)
-3. [Como o JWT Funciona no Flang](#como-o-jwt-funciona-no-flang)
+3. [Como o JWT Funciona no Germanio](#como-o-jwt-funciona-no-germanio)
 4. [Rotas Protegidas vs Publicas](#rotas-protegidas-vs-publicas)
 5. [Roles e Permissoes](#roles-e-permissoes)
 6. [Validacao de Entrada](#validacao-de-entrada)
@@ -56,10 +56,10 @@ Requisicoes POST e PUT agora tem um limite de tamanho de body de 1MB. Requisicoe
 
 ### 8. JWT Secret via Env Variable
 
-O JWT secret agora pode ser configurado via variavel de ambiente `FLANG_JWT_SECRET`, que tem prioridade sobre o valor definido no arquivo `.ge`. Isso evita que segredos sejam commitados no codigo-fonte.
+O JWT secret agora pode ser configurado via variavel de ambiente `GERMANIO_JWT_SECRET`, que tem prioridade sobre o valor definido no arquivo `.ge`. Isso evita que segredos sejam commitados no codigo-fonte.
 
 ```bash
-FLANG_JWT_SECRET="minha-chave-secreta-64-chars" flang run app.ge
+GERMANIO_JWT_SECRET="minha-chave-secreta-64-chars" germanio run app.ge
 ```
 
 ### 9. Protecao contra CSV Injection
@@ -70,7 +70,7 @@ A exportacao CSV agora sanitiza valores que comecam com `=`, `+`, `-`, `@`, `|` 
 
 ## Sistema de Autenticacao
 
-O Flang implementa autenticacao baseada em **JWT** (JSON Web Tokens) com hashing de senhas via **bcrypt**. O sistema e declarado com o bloco `autenticacao` (ou `auth` em ingles).
+O Germanio implementa autenticacao baseada em **JWT** (JSON Web Tokens) com hashing de senhas via **bcrypt**. O sistema e declarado com o bloco `autenticacao` (ou `auth` em ingles).
 
 ### Configuracao Minima
 
@@ -110,11 +110,11 @@ dados
 O tipo `senha` e tratado especialmente:
 - **Armazenamento**: a senha e sempre hasheada com bcrypt antes de ser salva
 - **Leitura**: a senha nunca aparece em respostas da API
-- **Comparacao**: o Flang compara via bcrypt.CompareHashAndPassword
+- **Comparacao**: o Germanio compara via bcrypt.CompareHashAndPassword
 
 ### Endpoints de Autenticacao Gerados
 
-Quando `autenticacao` esta habilitada, o Flang gera automaticamente:
+Quando `autenticacao` esta habilitada, o Germanio gera automaticamente:
 
 | Metodo | Endpoint            | Descricao                         |
 |--------|---------------------|-----------------------------------|
@@ -178,11 +178,11 @@ curl http://localhost:8080/auth/me \
 
 ---
 
-## Como o JWT Funciona no Flang
+## Como o JWT Funciona no Germanio
 
 ### Estrutura do Token
 
-O JWT gerado pelo Flang contem:
+O JWT gerado pelo Germanio contem:
 
 ```json
 {
@@ -205,7 +205,7 @@ Por padrao, os tokens expiram em **24 horas**. Apos a expiracao, o usuario preci
 
 ### Chave Secreta
 
-A chave padrao e `flang-secret-change-me`. **Sempre mude em producao:**
+A chave padrao e `germanio-secret-change-me`. **Sempre mude em producao:**
 
 ```
 autenticacao
@@ -216,7 +216,7 @@ Ou via variavel de ambiente antes de iniciar o servidor.
 
 ### Validacao do Token
 
-Em cada requisicao a uma rota protegida, o Flang:
+Em cada requisicao a uma rota protegida, o Germanio:
 
 1. Le o header `Authorization: Bearer <token>`
 2. Verifica a assinatura do JWT com a chave secreta
@@ -235,12 +235,12 @@ Se o token for invalido ou expirado, a API retorna:
 
 ### Usando o Token no Frontend
 
-O frontend gerado pelo Flang armazena o token no `localStorage` e o envia automaticamente em todas as requisicoes:
+O frontend gerado pelo Germanio armazena o token no `localStorage` e o envia automaticamente em todas as requisicoes:
 
 ```javascript
-// Automaticamente gerenciado pelo Flang
+// Automaticamente gerenciado pelo Germanio
 headers: {
-  'Authorization': `Bearer ${localStorage.getItem('flang_token')}`
+  'Authorization': `Bearer ${localStorage.getItem('germanio_token')}`
 }
 ```
 
@@ -309,7 +309,7 @@ autenticacao
 
 ### Hierarquia de Roles
 
-O Flang usa um sistema simples de roles sem hierarquia implicita. Cada role e independente. Voce pode controlar o acesso por tela:
+O Germanio usa um sistema simples de roles sem hierarquia implicita. Cada role e independente. Voce pode controlar o acesso por tela:
 
 ```
 telas
@@ -401,7 +401,7 @@ telas
 
 ## Validacao de Entrada
 
-O Flang valida os dados antes de salva-los no banco de dados.
+O Germanio valida os dados antes de salva-los no banco de dados.
 
 ### Modificadores de Validacao
 
@@ -469,7 +469,7 @@ Quando uma validacao falha, a API retorna HTTP 422:
 
 ## Protecao contra XSS
 
-O Flang aplica escaping automatico de HTML em todas as saidas do frontend gerado.
+O Germanio aplica escaping automatico de HTML em todas as saidas do frontend gerado.
 
 ### Como Funciona
 
@@ -482,14 +482,14 @@ O frontend e gerado em HTML/JavaScript com as seguintes protecoes:
 ### Valores Seguros no Frontend
 
 ```javascript
-// Automaticamente gerado pelo Flang - forma segura
+// Automaticamente gerado pelo Germanio - forma segura
 element.textContent = data.nome;     // seguro
-element.innerHTML = data.nome;       // NUNCA feito pelo Flang
+element.innerHTML = data.nome;       // NUNCA feito pelo Germanio
 ```
 
 ### Headers Anti-XSS
 
-O servidor do Flang envia automaticamente:
+O servidor do Germanio envia automaticamente:
 
 ```
 X-Content-Type-Options: nosniff
@@ -500,14 +500,14 @@ X-XSS-Protection: 1; mode=block
 
 ## Prevencao de SQL Injection
 
-O Flang usa **queries parametrizadas** em toda interacao com o banco de dados. Nunca ha concatenacao de strings SQL com dados do usuario.
+O Germanio usa **queries parametrizadas** em toda interacao com o banco de dados. Nunca ha concatenacao de strings SQL com dados do usuario.
 
 ### Como e Gerado
 
 Para cada operacao CRUD, o runtime usa placeholders do driver:
 
 ```go
-// O runtime do Flang gera internamente:
+// O runtime do Germanio gera internamente:
 db.Query("SELECT * FROM produto WHERE id = ?", userInput)
 db.Exec("INSERT INTO usuario (nome, email) VALUES (?, ?)", nome, email)
 ```
@@ -538,7 +538,7 @@ Sera armazenado literalmente como o texto `'; DROP TABLE usuario; --` sem execut
 
 ## Headers de Seguranca
 
-O servidor Flang adiciona automaticamente os seguintes headers HTTP em todas as respostas:
+O servidor Germanio adiciona automaticamente os seguintes headers HTTP em todas as respostas:
 
 | Header                        | Valor                                    | Protecao                        |
 |-------------------------------|------------------------------------------|---------------------------------|
@@ -560,7 +560,7 @@ Impede que o navegador tente adivinhar o tipo MIME de respostas, prevenindo exec
 
 ## Configuracao de CORS
 
-Por padrao, o Flang permite requisicoes de qualquer origem em desenvolvimento. Para producao, configure o CORS de forma restritiva.
+Por padrao, o Germanio permite requisicoes de qualquer origem em desenvolvimento. Para producao, configure o CORS de forma restritiva.
 
 ### Comportamento Padrao (Desenvolvimento)
 
@@ -575,7 +575,7 @@ Access-Control-Allow-Headers: Content-Type, Authorization
 Configure via variavel de ambiente antes de iniciar o servidor:
 
 ```bash
-FLANG_CORS_ORIGIN=https://meusite.com ./flang run app.ge
+GERMANIO_CORS_ORIGIN=https://meusite.com ./germanio run app.ge
 ```
 
 Ou monte o servidor atras de um reverse proxy (Nginx, Caddy) que gerencie CORS.
@@ -590,7 +590,7 @@ Quando o JWT e enviado pelo frontend, a requisicao usa `credentials: include`. N
 
 ### Como as Senhas sao Armazenadas
 
-O Flang usa **bcrypt** com cost factor 12 (padrao seguro). Nunca armazena senhas em texto puro.
+O Germanio usa **bcrypt** com cost factor 12 (padrao seguro). Nunca armazena senhas em texto puro.
 
 Fluxo de cadastro:
 ```
@@ -672,7 +672,7 @@ go run -e 'import "crypto/rand"; import "encoding/base64"; b := make([]byte, 48)
 
 ### 1. Mude o JWT Secret em Producao
 
-O secret padrao `flang-secret-change-me` e publico. Use:
+O secret padrao `germanio-secret-change-me` e publico. Use:
 
 ```
 autenticacao
@@ -734,13 +734,13 @@ Para MySQL/PostgreSQL em producao, crie um usuario dedicado com permissoes minim
 
 ```sql
 -- MySQL
-CREATE USER 'flang_app'@'localhost' IDENTIFIED BY 'senha-forte';
-GRANT SELECT, INSERT, UPDATE, DELETE ON minha_loja.* TO 'flang_app'@'localhost';
+CREATE USER 'germanio_app'@'localhost' IDENTIFIED BY 'senha-forte';
+GRANT SELECT, INSERT, UPDATE, DELETE ON minha_loja.* TO 'germanio_app'@'localhost';
 ```
 
 ### 6. Rate Limiting Nativo
 
-A partir da v0.5.0, o Flang inclui rate limiting nativo: 100 requisicoes POST por minuto por IP. Nao e mais necessario configurar no reverse proxy, mas voce pode adicionar limites extras:
+A partir da v0.5.0, o Germanio inclui rate limiting nativo: 100 requisicoes POST por minuto por IP. Nao e mais necessario configurar no reverse proxy, mas voce pode adicionar limites extras:
 
 ```nginx
 # Nginx (opcional, para protecao adicional)
@@ -759,7 +759,7 @@ location /auth/ {
 
 ### 7. Monitore Logs de Autenticacao
 
-O Flang registra tentativas de login no stdout:
+O Germanio registra tentativas de login no stdout:
 
 ```
 [auth] Login bem-sucedido: joao@exemplo.com
@@ -771,7 +771,7 @@ Direcione para um sistema de logs centralizado em producao.
 
 ### 8. Use Soft Delete para Dados Importantes
 
-O Flang suporta soft delete — registros sao marcados como deletados, nao removidos:
+O Germanio suporta soft delete — registros sao marcados como deletados, nao removidos:
 
 ```
 dados

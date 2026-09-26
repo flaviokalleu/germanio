@@ -1,0 +1,54 @@
+{
+  "name": "germanio",
+  "displayName": "Germanio",
+  "description": "Suporte e syntax highlighting oficial para a linguagem Germanio (.ge)",
+  "version": "1.0.0",
+  "publisher": "flaviokalleu",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Snippets"
+  ],
+  "keywords": [
+    "germanio",
+    "ge",
+    "declarative",
+    "prompt",
+    "fullstack"
+  ],
+  "icon": "icon.png",
+  "contributes": {
+    "languages": [
+      {
+        "id": "germanio",
+        "aliases": ["Germanio", "germanio"],
+        "extensions": [".ge"],
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./icon.png",
+          "dark": "./icon.png"
+        }
+      }
+    ],
+    "grammars": [
+      {
+        "language": "germanio",
+        "scopeName": "source.germanio",
+        "path": "./syntaxes/germanio.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "germanio",
+        "path": "./snippets/germanio.json"
+      }
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/flaviokalleu/germanio"
+  },
+  "license": "MIT"
+}

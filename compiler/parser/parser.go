@@ -1599,7 +1599,7 @@ func (p *Parser) parseAuth() error {
 		UserModel:  "usuario",
 		LoginField: "email",
 		PassField:  "senha",
-		JWTSecret:  "flang-secret-change-me",
+		JWTSecret:  "germanio-secret-change-me",
 	}
 
 	for !p.isAtEnd() && !p.isBlockKeyword() {

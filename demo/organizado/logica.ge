@@ -5,4 +5,4 @@ logica
   funcao calcular_total(preco, quantidade)
     retornar preco * quantidade
 
-  mostrar "Loja Flang v" + versao
+  mostrar "Loja Germanio v" + versao

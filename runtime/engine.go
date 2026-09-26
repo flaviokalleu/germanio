@@ -68,7 +68,7 @@ func resolveImports(program *ast.Program, baseDir string, resolved map[string]bo
 		}
 		resolved[absPath] = true
 
-		fmt.Printf("[flang] Importando: %s\n", imp.Path)
+		fmt.Printf("[germanio] Importando: %s\n", imp.Path)
 
 		imported, err := parseFG(absPath)
 		if err != nil {
@@ -126,7 +126,7 @@ func Executar(arquivo string, porta string) error {
 		porta = envPort
 	}
 
-	fmt.Printf("[flang] Carregando: %s\n", arquivo)
+	fmt.Printf("[germanio] Carregando: %s\n", arquivo)
 
 	program, err := parseFG(arquivo)
 	if err != nil {
@@ -143,8 +143,8 @@ func Executar(arquivo string, porta string) error {
 		return fmt.Errorf("declaração 'sistema' não encontrada")
 	}
 
-	fmt.Printf("[flang] Sistema: %s\n", program.System.Name)
-	fmt.Printf("[flang] Modelos: %d | Telas: %d | Eventos: %d | Regras: %d\n",
+	fmt.Printf("[germanio] Sistema: %s\n", program.System.Name)
+	fmt.Printf("[germanio] Modelos: %d | Telas: %d | Eventos: %d | Regras: %d\n",
 		len(program.Models), len(program.Screens), len(program.Events), len(program.Rules))
 
 	// Database
@@ -162,10 +162,10 @@ func Executar(arquivo string, porta string) error {
 		if envSecret := GetEnv("JWT_SECRET", ""); envSecret != "" {
 			jwtSecret = envSecret
 		}
-		if jwtSecret == "flang-secret-change-me" {
+		if jwtSecret == "germanio-secret-change-me" {
 			// Generate a random secret if default
-			jwtSecret = fmt.Sprintf("flang-%d-%s", time.Now().UnixNano(), program.System.Name)
-			fmt.Println("[flang] AVISO: JWT secret gerado automaticamente. Defina JWT_SECRET no .env para produção.")
+			jwtSecret = fmt.Sprintf("germanio-%d-%s", time.Now().UnixNano(), program.System.Name)
+			fmt.Println("[germanio] AVISO: JWT secret gerado automaticamente. Defina JWT_SECRET no .env para produção.")
 		}
 		authHandler = authpkg.Novo(
 			db.DB, program.Auth.UserModel, program.Auth.LoginField,
@@ -175,7 +175,7 @@ func Executar(arquivo string, porta string) error {
 		if len(program.Auth.Roles) > 0 {
 			authHandler.Roles = program.Auth.Roles
 		}
-		fmt.Println("[flang] Auth: ativado")
+		fmt.Println("[germanio] Auth: ativado")
 	}
 
 	// WhatsApp
@@ -185,7 +185,7 @@ func Executar(arquivo string, porta string) error {
 		if waClient != nil {
 			go func() {
 				if err := waClient.Conectar(); err != nil {
-					fmt.Printf("[flang] AVISO WhatsApp: %s (continuando sem WhatsApp)\n", err)
+					fmt.Printf("[germanio] AVISO WhatsApp: %s (continuando sem WhatsApp)\n", err)
 				}
 			}()
 			defer waClient.Desconectar()
@@ -202,7 +202,7 @@ func Executar(arquivo string, porta string) error {
 			Password: program.Email.Password,
 			From:     program.Email.From,
 		})
-		fmt.Println("[flang] Email SMTP: ativado")
+		fmt.Println("[germanio] Email SMTP: ativado")
 	}
 
 	// HTTP Client
@@ -226,7 +226,7 @@ func Executar(arquivo string, porta string) error {
 	// Register functions and execute top-level scripts
 	if len(program.Functions) > 0 || len(program.Scripts) > 0 {
 		interpreter.Run(program)
-		fmt.Printf("[flang] Logica: %d funcao(es), %d script(s)\n", len(program.Functions), len(program.Scripts))
+		fmt.Printf("[germanio] Logica: %d funcao(es), %d script(s)\n", len(program.Functions), len(program.Scripts))
 	}
 
 	// Cron Jobs
@@ -234,10 +234,10 @@ func Executar(arquivo string, porta string) error {
 		scheduler := cronpkg.Novo(program.Crons)
 		scheduler.Iniciar()
 		defer scheduler.Parar()
-		fmt.Printf("[flang] Cron: %d job(s) agendado(s)\n", len(program.Crons))
+		fmt.Printf("[germanio] Cron: %d job(s) agendado(s)\n", len(program.Crons))
 	}
 
-	fmt.Printf("\n[flang] %s rodando em http://localhost:%s\n\n", program.System.Name, porta)
+	fmt.Printf("\n[germanio] %s rodando em http://localhost:%s\n\n", program.System.Name, porta)
 
 	// Hot reload
 	WatchFiles(baseDir, arquivo, porta)
@@ -261,7 +261,7 @@ func Verificar(arquivo string) error {
 		return fmt.Errorf("declaração 'sistema' não encontrada")
 	}
 
-	fmt.Printf("[flang] ✓ %s - válido\n", arquivo)
+	fmt.Printf("[germanio] ✓ %s - válido\n", arquivo)
 	fmt.Printf("  sistema:  %s\n", program.System.Name)
 	fmt.Printf("  imports:  %d\n", len(program.Imports))
 	fmt.Printf("  modelos:  %d\n", len(program.Models))

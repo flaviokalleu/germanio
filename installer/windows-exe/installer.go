@@ -18,7 +18,7 @@ import (
 var payload embed.FS
 
 const (
-	installDir = `C:\Flang`
+	installDir = `C:\Germanio`
 	version    = "0.6.0"
 )
 
@@ -54,7 +54,7 @@ func main() {
 	}
 	fmt.Println("   OK")
 
-	fmt.Println("[2/6] Instalando Flang...")
+	fmt.Println("[2/6] Instalando Germanio...")
 	extractAll("payload", installDir)
 	fmt.Println("   OK")
 
@@ -71,7 +71,7 @@ func main() {
 	fmt.Println("   OK")
 
 	fmt.Println("[6/6] Verificando instalação...")
-	out, err := exec.Command(filepath.Join(installDir, "bin", "flang.exe"), "version").CombinedOutput()
+	out, err := exec.Command(filepath.Join(installDir, "bin", "germanio.exe"), "version").CombinedOutput()
 	if err != nil {
 		fmt.Println("   AVISO: não foi possível verificar (reinicie o terminal)")
 	} else {
@@ -80,15 +80,15 @@ func main() {
 
 	fmt.Println()
 	fmt.Println("═══════════════════════════════════════════════════")
-	fmt.Println("  Flang instalado com sucesso!")
+	fmt.Println("  Germanio instalado com sucesso!")
 	fmt.Println()
 	fmt.Printf("  Localização: %s\n", installDir)
 	fmt.Println()
 	fmt.Println("  Reinicie o terminal e digite:")
 	fmt.Println()
-	fmt.Println("    flang version")
-	fmt.Println("    flang new meu-projeto")
-	fmt.Println("    flang run inicio.ge")
+	fmt.Println("    germanio version")
+	fmt.Println("    germanio new meu-projeto")
+	fmt.Println("    germanio run inicio.ge")
 	fmt.Println()
 	fmt.Println("  Para desinstalar:")
 	fmt.Printf("    %s\\uninstall.exe\n", installDir)
@@ -177,50 +177,50 @@ func addToPath(dir string) {
 
 // associateExtension creates .ge file association in the registry.
 func associateExtension() {
-	flangExe := filepath.Join(installDir, "bin", "flang.exe")
+	germanioExe := filepath.Join(installDir, "bin", "germanio.exe")
 
 	// Create .ge extension key
 	k1, err := createRegKey(`Software\Classes\.ge`)
 	if err != nil {
 		return
 	}
-	writeRegString(k1, "", "FlangFile")
+	writeRegString(k1, "", "GermanioFile")
 	syscall.RegCloseKey(k1)
 
-	// Create FlangFile key
-	k2, err := createRegKey(`Software\Classes\FlangFile`)
+	// Create GermanioFile key
+	k2, err := createRegKey(`Software\Classes\GermanioFile`)
 	if err != nil {
 		return
 	}
-	writeRegString(k2, "", "Arquivo Flang (.ge)")
+	writeRegString(k2, "", "Arquivo Germanio (.ge)")
 	syscall.RegCloseKey(k2)
 
 	// Create open command
-	k3, err := createRegKey(`Software\Classes\FlangFile\shell\open\command`)
+	k3, err := createRegKey(`Software\Classes\GermanioFile\shell\open\command`)
 	if err != nil {
 		return
 	}
-	writeRegString(k3, "", fmt.Sprintf(`"%s" run "%%1"`, flangExe))
+	writeRegString(k3, "", fmt.Sprintf(`"%s" run "%%1"`, germanioExe))
 	syscall.RegCloseKey(k3)
 }
 
 func createShortcuts() {
 	// Create start menu folder
-	startMenu := filepath.Join(os.Getenv("APPDATA"), "Microsoft", "Windows", "Start Menu", "Programs", "Flang")
+	startMenu := filepath.Join(os.Getenv("APPDATA"), "Microsoft", "Windows", "Start Menu", "Programs", "Germanio")
 	os.MkdirAll(startMenu, 0755)
 
 	// Create a simple .cmd shortcut to open terminal in examples
 	cmdContent := fmt.Sprintf("@echo off\ncd /d \"%s\\exemplos\"\ncmd\n", installDir)
-	os.WriteFile(filepath.Join(startMenu, "Flang Terminal.cmd"), []byte(cmdContent), 0755)
+	os.WriteFile(filepath.Join(startMenu, "Germanio Terminal.cmd"), []byte(cmdContent), 0755)
 
 	// Create uninstaller shortcut
 	uninstContent := fmt.Sprintf("@echo off\n\"%s\\uninstall.exe\"\n", installDir)
-	os.WriteFile(filepath.Join(startMenu, "Desinstalar Flang.cmd"), []byte(uninstContent), 0755)
+	os.WriteFile(filepath.Join(startMenu, "Desinstalar Germanio.cmd"), []byte(uninstContent), 0755)
 }
 
 func uninstall() {
 	fmt.Println()
-	fmt.Println("  Desinstalar Flang?")
+	fmt.Println("  Desinstalar Germanio?")
 	fmt.Println()
 	fmt.Print("  Digite S para confirmar: ")
 	var input string
@@ -237,24 +237,24 @@ func uninstall() {
 
 	fmt.Println("[2/4] Removendo associação .ge...")
 	deleteRegKey(`Software\Classes\.ge`)
-	deleteRegKey(`Software\Classes\FlangFile`)
+	deleteRegKey(`Software\Classes\GermanioFile`)
 	fmt.Println("   OK")
 
 	fmt.Println("[3/4] Removendo atalhos...")
-	startMenu := filepath.Join(os.Getenv("APPDATA"), "Microsoft", "Windows", "Start Menu", "Programs", "Flang")
+	startMenu := filepath.Join(os.Getenv("APPDATA"), "Microsoft", "Windows", "Start Menu", "Programs", "Germanio")
 	os.RemoveAll(startMenu)
 	fmt.Println("   OK")
 
 	fmt.Println("[4/4] Removendo arquivos...")
 	// Can't delete ourselves while running, so create a delayed delete
-	bat := filepath.Join(os.TempDir(), "flang-uninstall.bat")
-	batContent := fmt.Sprintf("@echo off\nping -n 2 127.0.0.1 > nul\nrd /s /q \"%s\"\necho Flang desinstalado!\ndel \"%%~f0\"\n", installDir)
+	bat := filepath.Join(os.TempDir(), "germanio-uninstall.bat")
+	batContent := fmt.Sprintf("@echo off\nping -n 2 127.0.0.1 > nul\nrd /s /q \"%s\"\necho Germanio desinstalado!\ndel \"%%~f0\"\n", installDir)
 	os.WriteFile(bat, []byte(batContent), 0755)
 	exec.Command("cmd", "/c", "start", "/min", bat).Start()
 	fmt.Println("   OK")
 
 	fmt.Println()
-	fmt.Println("  Flang desinstalado com sucesso!")
+	fmt.Println("  Germanio desinstalado com sucesso!")
 	fmt.Println()
 	fmt.Print("Pressione ENTER para sair...")
 	fmt.Scanln()

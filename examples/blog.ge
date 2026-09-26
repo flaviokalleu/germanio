@@ -132,4 +132,4 @@ logica
   funcao gerar_slug(titulo)
     retornar titulo
 
-  mostrar "Blog Flang v" + versao + " iniciado!"
+  mostrar "Blog Germanio v" + versao + " iniciado!"

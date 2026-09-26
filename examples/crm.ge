@@ -177,4 +177,4 @@ logica
   funcao dias_para_fechar(data_fechamento, hoje)
     retornar data_fechamento - hoje
 
-  mostrar "CRM Flang v" + versao + " pronto!"
+  mostrar "CRM Germanio v" + versao + " pronto!"

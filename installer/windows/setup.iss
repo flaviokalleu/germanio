@@ -1,5 +1,5 @@
 ; =============================================================================
-; Flang Programming Language - Script Inno Setup
+; Germanio Programming Language - Script Inno Setup
 ; Versao 0.4.0
 ;
 ; Cria um instalador .exe profissional para Windows, similar ao do Python.
@@ -9,23 +9,23 @@
 ;   2. Abra este arquivo no Inno Setup Compiler
 ;   3. Pressione F9 (Build) ou use o menu Build > Compile
 ;
-; O instalador gerado estara em: Output\FlangSetup-0.4.0.exe
+; O instalador gerado estara em: Output\GermanioSetup-0.4.0.exe
 ; =============================================================================
 
 
 ; -----------------------------------------------
 ; Metadados da aplicacao
 ; -----------------------------------------------
-#define AppNome        "Flang Programming Language"
+#define AppNome        "Germanio Programming Language"
 #define AppVersao      "0.4.0"
 #define AppEditora     "Flavio Kalleu"
-#define AppURL         "https://github.com/flavio/flang"
-#define AppExe         "flang.exe"
+#define AppURL         "https://github.com/flavio/germanio"
+#define AppExe         "germanio.exe"
 #define AppDescricao   "Linguagem de programacao brasileira para criar sistemas web"
-#define DirPadrao      "C:\Flang"
+#define DirPadrao      "C:\Germanio"
 
 ; Caminho do binario compilado (relativo a este .iss)
-#define BinFonte       "..\..\flang.exe"
+#define BinFonte       "..\..\germanio.exe"
 
 ; Pasta de exemplos do projeto
 #define ExemplosFonte  "..\..\exemplos\*"
@@ -54,12 +54,12 @@ PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 
 ; ----- Grupo no Menu Iniciar -----
-DefaultGroupName=Flang
+DefaultGroupName=Germanio
 AllowNoIcons=yes
 
 ; ----- Arquivo de saida -----
 OutputDir=Output
-OutputBaseFilename=FlangSetup-{#AppVersao}
+OutputBaseFilename=GermanioSetup-{#AppVersao}
 SetupIconFile=
 
 ; ----- Compressao -----
@@ -134,34 +134,34 @@ Source: "..\..\README.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedo
 ; =============================================================================
 [Icons]
 
-; Atalho principal - abre cmd com flang
-Name: "{group}\Flang"; \
+; Atalho principal - abre cmd com germanio
+Name: "{group}\Germanio"; \
     Filename: "{cmd}"; \
-    Parameters: "/K ""{app}\bin\flang.exe"" version"; \
+    Parameters: "/K ""{app}\bin\germanio.exe"" version"; \
     WorkingDir: "{app}"; \
-    Comment: "Abre o terminal com Flang {#AppVersao}"
+    Comment: "Abre o terminal com Germanio {#AppVersao}"
 
 ; Atalho para a pasta de exemplos
-Name: "{group}\Exemplos Flang"; \
+Name: "{group}\Exemplos Germanio"; \
     Filename: "{app}\exemplos"; \
     Comment: "Exemplos de programas .ge"
 
 ; Atalho para o README
-Name: "{group}\Documentacao Flang"; \
+Name: "{group}\Documentacao Germanio"; \
     Filename: "{app}\docs"; \
-    Comment: "Documentacao do Flang"
+    Comment: "Documentacao do Germanio"
 
 ; Atalho para desinstalar
-Name: "{group}\Desinstalar Flang"; \
+Name: "{group}\Desinstalar Germanio"; \
     Filename: "{uninstallexe}"; \
-    Comment: "Remove o Flang do sistema"
+    Comment: "Remove o Germanio do sistema"
 
 ; Atalho na area de trabalho (opcional - o usuario pode desmarcar)
-Name: "{userdesktop}\Flang"; \
+Name: "{userdesktop}\Germanio"; \
     Filename: "{cmd}"; \
-    Parameters: "/K ""{app}\bin\flang.exe"" version"; \
+    Parameters: "/K ""{app}\bin\germanio.exe"" version"; \
     WorkingDir: "{app}"; \
-    Comment: "Flang {#AppVersao}"; \
+    Comment: "Germanio {#AppVersao}"; \
     Tasks: desktopicon
 
 
@@ -172,13 +172,13 @@ Name: "{userdesktop}\Flang"; \
 
 ; Adicionar ao PATH (marcado por padrao, igual ao instalador do Python)
 Name: "addtopath"; \
-    Description: "Adicionar Flang ao PATH do sistema (recomendado)"; \
+    Description: "Adicionar Germanio ao PATH do sistema (recomendado)"; \
     GroupDescription: "Opcoes adicionais:"; \
     Flags: checked
 
 ; Criar associacao de arquivo .ge
 Name: "assocfg"; \
-    Description: "Associar arquivos .ge ao Flang (duplo clique abre com flang)"; \
+    Description: "Associar arquivos .ge ao Germanio (duplo clique abre com germanio)"; \
     GroupDescription: "Opcoes adicionais:"; \
     Flags: checked
 
@@ -197,29 +197,29 @@ Name: "desktopicon"; \
 ; ----- Associacao de arquivo .ge -----
 ; Registra a extensao .ge (nivel usuario - sem precisar de admin)
 
-; Associa .ge a classe FlangFile
+; Associa .ge a classe GermanioFile
 Root: HKCU; Subkey: "Software\Classes\.ge"; \
-    ValueType: string; ValueName: ""; ValueData: "FlangFile"; \
+    ValueType: string; ValueName: ""; ValueData: "GermanioFile"; \
     Flags: uninsdeletekey; Tasks: assocfg
 
 ; Define descricao da classe
-Root: HKCU; Subkey: "Software\Classes\FlangFile"; \
-    ValueType: string; ValueName: ""; ValueData: "Arquivo Flang"; \
+Root: HKCU; Subkey: "Software\Classes\GermanioFile"; \
+    ValueType: string; ValueName: ""; ValueData: "Arquivo Germanio"; \
     Flags: uninsdeletekey; Tasks: assocfg
 
-; Icone do arquivo .ge (usa o icone do flang.exe)
-Root: HKCU; Subkey: "Software\Classes\FlangFile\DefaultIcon"; \
+; Icone do arquivo .ge (usa o icone do germanio.exe)
+Root: HKCU; Subkey: "Software\Classes\GermanioFile\DefaultIcon"; \
     ValueType: string; ValueName: ""; ValueData: "{app}\bin\{#AppExe},0"; \
     Flags: uninsdeletekey; Tasks: assocfg
 
-; Comando para abrir o arquivo (flang run "arquivo.ge")
-Root: HKCU; Subkey: "Software\Classes\FlangFile\shell\open\command"; \
+; Comando para abrir o arquivo (germanio run "arquivo.ge")
+Root: HKCU; Subkey: "Software\Classes\GermanioFile\shell\open\command"; \
     ValueType: string; ValueName: ""; \
     ValueData: """{app}\bin\{#AppExe}"" run ""%1"""; \
     Flags: uninsdeletekey; Tasks: assocfg
 
 ; Descricao amigavel na caixa de dialogo "Abrir com"
-Root: HKCU; Subkey: "Software\Classes\FlangFile\shell\open"; \
+Root: HKCU; Subkey: "Software\Classes\GermanioFile\shell\open"; \
     ValueType: string; ValueName: "FriendlyAppName"; \
     ValueData: "{#AppNome}"; \
     Flags: uninsdeletekey; Tasks: assocfg
@@ -240,7 +240,7 @@ Root: HKCU; Subkey: "Software\{#AppEditora}\{#AppNome}"; \
 [Code]
 
 // ---------------------------------------------------------------------------
-// Adiciona C:\Flang\bin ao PATH do usuario (nivel HKCU, sem admin)
+// Adiciona C:\Germanio\bin ao PATH do usuario (nivel HKCU, sem admin)
 // Logica identica a do instalador oficial do Go.
 // ---------------------------------------------------------------------------
 procedure AdicionarAoPath(DirBin: string);
@@ -273,7 +273,7 @@ begin
 end;
 
 // ---------------------------------------------------------------------------
-// Remove C:\Flang\bin do PATH do usuario durante desinstalacao
+// Remove C:\Germanio\bin do PATH do usuario durante desinstalacao
 // ---------------------------------------------------------------------------
 procedure RemoverDoPath(DirBin: string);
 var
@@ -285,7 +285,7 @@ begin
   if not RegQueryStringValue(HKEY_CURRENT_USER, 'Environment', 'Path', PathAtual) then
     Exit;
 
-  // Reconstroi o PATH sem a entrada do Flang
+  // Reconstroi o PATH sem a entrada do Germanio
   Entradas := SplitString(PathAtual, ';');
   NovoPath := '';
   for i := 0 to GetArrayLength(Entradas) - 1 do
@@ -336,19 +336,19 @@ end;
 
 // ---------------------------------------------------------------------------
 // Pagina de boas-vindas personalizada
-// Exibe descricao do Flang antes de comecar a instalacao.
+// Exibe descricao do Germanio antes de comecar a instalacao.
 // ---------------------------------------------------------------------------
 function GetWelcomeLabel2Text(def: string): string;
 begin
   Result :=
-    'Bem-vindo ao instalador do Flang Programming Language v{#AppVersao}!' + #13#10 +
+    'Bem-vindo ao instalador do Germanio Programming Language v{#AppVersao}!' + #13#10 +
     #13#10 +
-    'Flang e uma linguagem de programacao brasileira para criar sistemas ' +
+    'Germanio e uma linguagem de programacao brasileira para criar sistemas ' +
     'de gestao completos com banco de dados, telas e logica de negocio — ' +
     'usando uma sintaxe simples em portugues.' + #13#10 +
     #13#10 +
     'O que sera instalado:' + #13#10 +
-    '  * flang.exe — o compilador/interpretador' + #13#10 +
+    '  * germanio.exe — o compilador/interpretador' + #13#10 +
     '  * Exemplos de sistemas prontos (.ge)' + #13#10 +
     '  * Atalhos no Menu Iniciar' + #13#10 +
     #13#10 +
@@ -362,7 +362,7 @@ end;
 // ---------------------------------------------------------------------------
 function GetFinishedHeadingLabel(def: string): string;
 begin
-  Result := 'Flang instalado com sucesso!';
+  Result := 'Germanio instalado com sucesso!';
 end;
 
 function GetFinishedLabel(def: string): string;
@@ -371,13 +371,13 @@ var
 begin
   DirBin := ExpandConstant('{app}\bin');
   Result :=
-    'O Flang Programming Language foi instalado no seu computador.' + #13#10 +
+    'O Germanio Programming Language foi instalado no seu computador.' + #13#10 +
     #13#10 +
     'Para comecar a usar:' + #13#10 +
     '  1. Reinicie o terminal (cmd ou PowerShell)' + #13#10 +
-    '  2. Digite: flang version' + #13#10 +
+    '  2. Digite: germanio version' + #13#10 +
     '  3. Para rodar um exemplo:' + #13#10 +
-    '     flang run "' + ExpandConstant('{app}') + '\exemplos\ola-mundo\inicio.ge"' + #13#10 +
+    '     germanio run "' + ExpandConstant('{app}') + '\exemplos\ola-mundo\inicio.ge"' + #13#10 +
     #13#10 +
-    'Flang instalado! Reinicie o terminal e digite: flang version';
+    'Germanio instalado! Reinicie o terminal e digite: germanio version';
 end;

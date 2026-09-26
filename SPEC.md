@@ -2,7 +2,7 @@
 
 Status: 0.7.0-dev. Este documento distingue o subconjunto implementado da visão
 de longo prazo. Arquivos `.ge` usam a gramática estrita abaixo; arquivos `.ge`
-continuam no compilador/runtime Flang. Trocar apenas a extensão não migra código.
+continuam no compilador/runtime Germanio. Trocar apenas a extensão não migra código.
 
 ## Princípios
 
@@ -101,7 +101,7 @@ inclusive composições `[texto?]`. Listas vazias podem usar anotação explíci
 Uma lista que mistura `nulo` e texto infere `[texto?]`; uma lista de `texto`
 pode ser atribuída a `[texto?]`, mas a conversão inversa é rejeitada.
 Mapas, dinheiro exato, byte, datas, horas e larguras numéricas adicionais ainda
-não fazem parte do núcleo `.ge` (tipos Flang não foram removidos do modo `.ge`).
+não fazem parte do núcleo `.ge` (tipos Germanio não foram removidos do modo `.ge`).
 
 Só `T?` aceita `nulo`. Não há truthy/falsy. Comparações `==` e `!=` são estritas;
 listas comparam estruturalmente. Opcionais podem ser mostrados, atribuídos,
@@ -184,7 +184,7 @@ crie botão escrito "Comprar" azul
 
 Este subconjunto gera HTML estático no stdout em `ge rodar`, que pode ser
 redirecionado para um arquivo. Não abre servidor nem conecta um botão a uma ação.
-Texto é escapado; cores vêm da tabela existente do Flang; bordas aceitam `px` ou
+Texto é escapado; cores vêm da tabela existente do Germanio; bordas aceitam `px` ou
 `rem`. Unidade como `45deg` produz GE4102. Propriedades desconhecidas são erros,
 não ignoradas. Hover, menus compostos, eventos, responsividade e RPC são Fase 3.
 

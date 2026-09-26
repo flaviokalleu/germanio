@@ -45,7 +45,7 @@ type sessionState struct {
 	phone     string
 }
 
-// Client wraps multiple whatsmeow sessions for Flang.
+// Client wraps multiple whatsmeow sessions for Germanio.
 type Client struct {
 	mu             sync.RWMutex
 	sessions       map[string]*sessionState

@@ -1,6 +1,6 @@
-# Galeria de Exemplos - Flang
+# Galeria de Exemplos - Germanio
 
-Colecao de exemplos completos e comentados para inspirar e acelerar o desenvolvimento com Flang.
+Colecao de exemplos completos e comentados para inspirar e acelerar o desenvolvimento com Germanio.
 
 ---
 
@@ -77,7 +77,7 @@ eventos
 ```
 
 **O que este exemplo demonstra:**
-- Estrutura minima de um sistema Flang
+- Estrutura minima de um sistema Germanio
 - Tres modelos de dados independentes
 - Duas telas com listagens e botoes de acao
 - Eventos de clique vinculados a criacao de registros
@@ -86,7 +86,7 @@ eventos
 **Como rodar:**
 
 ```bash
-./flang run exemplos/loja/inicio.ge
+./germanio run exemplos/loja/inicio.ge
 ```
 
 Acesse `http://localhost:8080` para ver o resultado.
@@ -354,7 +354,7 @@ integracoes
 **Como testar:**
 
 ```bash
-./flang run exemplos/restaurante-whatsapp/inicio.ge
+./germanio run exemplos/restaurante-whatsapp/inicio.ge
 # Na primeira execucao: escanear QR Code no terminal
 # Crie um pedido com numero de telefone valido
 # A mensagem chega no WhatsApp em segundos
@@ -364,7 +364,7 @@ integracoes
 
 ## 4. Loja em Ingles (English Mode)
 
-Demonstra que o Flang funciona **100% em ingles**, com todas as palavras-chave traduzidas.
+Demonstra que o Germanio funciona **100% em ingles**, com todas as palavras-chave traduzidas.
 
 **Arquivo:** `exemplos/english/inicio.ge`
 
@@ -483,7 +483,7 @@ logic
 
 ## 5. Pizzaria Bilinguie (Mixed)
 
-Demonstra que e possivel **misturar** palavras-chave em portugues e ingles no mesmo arquivo. O Flang aceita qualquer combinacao.
+Demonstra que e possivel **misturar** palavras-chave em portugues e ingles no mesmo arquivo. O Germanio aceita qualquer combinacao.
 
 **Arquivo:** `exemplos/mixed/inicio.ge`
 
@@ -656,7 +656,7 @@ logica
 
 ```bash
 # 1. Inicie o servidor
-./flang run exemplos/loja-completa/inicio.ge
+./germanio run exemplos/loja-completa/inicio.ge
 
 # 2. Crie um admin
 curl -X POST http://localhost:8080/auth/register \
@@ -1330,25 +1330,25 @@ logica
 
 ```bash
 # Loja simples
-./flang run exemplos/loja/inicio.ge
+./germanio run exemplos/loja/inicio.ge
 
 # Restaurante completo
-./flang run exemplos/restaurante/inicio.ge
+./germanio run exemplos/restaurante/inicio.ge
 
 # Restaurante modular (importa multiplos arquivos)
-./flang run exemplos/restaurante-modular/inicio.ge
+./germanio run exemplos/restaurante-modular/inicio.ge
 
 # Restaurante com WhatsApp
-./flang run exemplos/restaurante-whatsapp/inicio.ge
+./germanio run exemplos/restaurante-whatsapp/inicio.ge
 
 # Loja em ingles
-./flang run exemplos/english/inicio.ge
+./germanio run exemplos/english/inicio.ge
 
 # Pizzaria bilinguie
-./flang run exemplos/mixed/inicio.ge
+./germanio run exemplos/mixed/inicio.ge
 
 # Loja com autenticacao
-./flang run exemplos/loja-completa/inicio.ge
+./germanio run exemplos/loja-completa/inicio.ge
 ```
 
 Todos os exemplos iniciam o servidor na porta `8080` por padrao. Acesse `http://localhost:8080` no navegador.

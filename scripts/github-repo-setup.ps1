@@ -1,6 +1,6 @@
 param(
     [string]$Owner = "flaviokalleu",
-    [string]$Repo = "flang",
+    [string]$Repo = "germanio",
     [string]$Version = "v0.2.0",
     [switch]$CreateRelease
 )
@@ -12,10 +12,10 @@ if (-not $branch) {
     $branch = "master"
 }
 
-$description = "Flang is a bilingual declarative programming language for building full-stack web applications from .ge files."
+$description = "Germanio is a bilingual declarative programming language for building full-stack web applications from .ge files."
 $homepage = "https://github.com/$Owner/$Repo/tree/$branch/docs"
 $topics = @(
-    "flang",
+    "germanio",
     "programming-language",
     "declarative-language",
     "dsl",
@@ -26,7 +26,7 @@ $topics = @(
 )
 
 $releaseNotes = @"
-Flang $Version
+Germanio $Version
 
 Highlights
 - Bilingual declarative programming language with .ge source files
@@ -73,7 +73,7 @@ if ($CreateRelease) {
     git push origin $Version
 
     Write-Host "Creating GitHub release $Version..."
-    gh release create $Version --repo $repoRef --title "Flang $Version" --notes $releaseNotes
+    gh release create $Version --repo $repoRef --title "Germanio $Version" --notes $releaseNotes
     Write-Host "Release created."
 }
 else {

@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// Client is a simple HTTP client wrapper for Flang.
+// Client is a simple HTTP client wrapper for Germanio.
 type Client struct {
 	http *http.Client
 }
@@ -38,7 +38,7 @@ func (c *Client) Chamar(method, url string, body []byte) ([]byte, error) {
 		req.Header.Set("Content-Type", "application/json")
 	}
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", "Flang/1.0")
+	req.Header.Set("User-Agent", "Germanio/1.0")
 
 	resp, err := c.http.Do(req)
 	if err != nil {

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Flang Cross-Platform Build Script
-# Script de Build Multi-Plataforma do Flang
+# Germanio Cross-Platform Build Script
+# Script de Build Multi-Plataforma do Germanio
 #
 # Uso / Usage:
 #   bash installer/build-all.sh
@@ -22,8 +22,8 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 # Configuracao / Configuration
 # ---------------------------------------------------------------------------
-FLANG_VERSION="${FLANG_VERSION:-0.5.0}"
-BINARY_NAME="flang"
+GERMANIO_VERSION="${GERMANIO_VERSION:-0.5.0}"
+BINARY_NAME="germanio"
 
 # Diretorio raiz do projeto / Project root directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -63,7 +63,7 @@ ALL_PLATFORMS=(
 # Flags de build Go / Go build flags
 # -s -w: remove debug info (reduz tamanho) / removes debug info (reduces size)
 # ---------------------------------------------------------------------------
-BASE_LDFLAGS="-s -w -X main.Version=${FLANG_VERSION} -X main.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+BASE_LDFLAGS="-s -w -X main.Version=${GERMANIO_VERSION} -X main.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 # ---------------------------------------------------------------------------
 # Parse de argumentos / Argument parsing
@@ -76,8 +76,8 @@ parse_args() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --version|-v)
-                FLANG_VERSION="$2"
-                BASE_LDFLAGS="-s -w -X main.Version=${FLANG_VERSION} -X main.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+                GERMANIO_VERSION="$2"
+                BASE_LDFLAGS="-s -w -X main.Version=${GERMANIO_VERSION} -X main.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
                 shift 2
                 ;;
             --platform|-p)
@@ -95,7 +95,7 @@ parse_args() {
             --help|-h)
                 printf "Uso: %s [opcoes]\n\n" "$0"
                 printf "Opcoes / Options:\n"
-                printf "  --version VER      Versao a compilar (padrao: %s)\n" "$FLANG_VERSION"
+                printf "  --version VER      Versao a compilar (padrao: %s)\n" "$GERMANIO_VERSION"
                 printf "  --platform OS/ARCH Compila apenas uma plataforma\n"
                 printf "  --skip-archive     Nao cria arquivos de distribuicao\n"
                 printf "  --dry-run          Mostra o que seria feito\n"
@@ -159,7 +159,7 @@ build_platform() {
     local arch="$2"
 
     local binary_name="${BINARY_NAME}"
-    local archive_name="flang-v${FLANG_VERSION}-${os}-${arch}"
+    local archive_name="germanio-v${GERMANIO_VERSION}-${os}-${arch}"
     local output_dir="${DIST_DIR}/${archive_name}"
 
     # Windows usa .exe / Windows uses .exe
@@ -255,23 +255,23 @@ populate_package() {
 
     # Cria QUICKSTART.txt / Create QUICKSTART.txt
     cat > "${pkg_dir}/QUICKSTART.txt" << EOF
-Flang v${FLANG_VERSION} - Quick Start
+Germanio v${GERMANIO_VERSION} - Quick Start
 ======================================
 
 Linux/macOS:
-  chmod +x flang
-  ./flang version
-  ./flang run examples/loja/loja.ge
+  chmod +x germanio
+  ./germanio version
+  ./germanio run examples/loja/loja.ge
 
   Ou instale globalmente / Or install globally:
   bash install.sh
 
 Windows:
-  flang.exe version
-  flang.exe run examples\loja\loja.ge
+  germanio.exe version
+  germanio.exe run examples\loja\loja.ge
 
 Documentacao / Documentation:
-  https://github.com/flaviokalleu/flang
+  https://github.com/flaviokalleu/germanio
 
 EOF
 }
@@ -358,9 +358,9 @@ print_summary() {
     fi
 
     printf "\n${BOLD}Para fazer o release no GitHub / To release on GitHub:${RESET}\n"
-    printf "  git tag v${FLANG_VERSION}\n"
-    printf "  git push origin v${FLANG_VERSION}\n"
-    printf "  gh release create v${FLANG_VERSION} dist/*.tar.gz dist/*.zip dist/checksums.sha256 --generate-notes\n"
+    printf "  git tag v${GERMANIO_VERSION}\n"
+    printf "  git push origin v${GERMANIO_VERSION}\n"
+    printf "  gh release create v${GERMANIO_VERSION} dist/*.tar.gz dist/*.zip dist/checksums.sha256 --generate-notes\n"
     printf "\n"
     success "Build completo! Arquivos em: ${DIST_DIR}/"
 }
@@ -373,10 +373,10 @@ main() {
 
     printf "\n${BOLD}${CYAN}"
     printf "╔══════════════════════════════════════════════╗\n"
-    printf "║   Flang Build System v1.0 - Cross Platform  ║\n"
+    printf "║   Germanio Build System v1.0 - Cross Platform  ║\n"
     printf "╚══════════════════════════════════════════════╝\n"
     printf "${RESET}\n"
-    info "Versao / Version: v${FLANG_VERSION}"
+    info "Versao / Version: v${GERMANIO_VERSION}"
     info "Projeto / Project: ${PROJECT_ROOT}"
 
     check_prerequisites

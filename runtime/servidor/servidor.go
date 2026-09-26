@@ -27,7 +27,7 @@ import (
 	wa "github.com/flaviokalleu/germanio/runtime/whatsapp"
 )
 
-// Servidor is the embedded Flang web server.
+// Servidor is the embedded Germanio web server.
 type Servidor struct {
 	Program     *ast.Program
 	DB          *banco.Banco

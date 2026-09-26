@@ -1,4 +1,4 @@
-# Flang — Especificação da Linguagem (Language Specification)
+# Germanio — Especificação da Linguagem (Language Specification)
 
 > Versao 0.5.0 | Ultima atualizacao: 2026-04-10
 
@@ -38,7 +38,7 @@
 
 ## 1. Visão Geral
 
-Flang e uma linguagem de programacao declarativa multilingual (20 idiomas) que gera aplicacoes full-stack completas a partir de arquivos `.ge`. Um unico arquivo `.ge` descreve modelos de dados, telas, eventos, autenticacao, integracoes e configuracoes de banco de dados — e o motor Flang (escrito em Go) gera e executa tudo automaticamente.
+Germanio e uma linguagem de programacao declarativa multilingual (20 idiomas) que gera aplicacoes full-stack completas a partir de arquivos `.ge`. Um unico arquivo `.ge` descreve modelos de dados, telas, eventos, autenticacao, integracoes e configuracoes de banco de dados — e o motor Germanio (escrito em Go) gera e executa tudo automaticamente.
 
 **Caracteristicas principais:**
 - Sintaxe declarativa baseada em indentacao (sem chaves, sem ponto-e-virgula)
@@ -51,7 +51,7 @@ Flang e uma linguagem de programacao declarativa multilingual (20 idiomas) que g
 - Tema presets, cores por nome, 4 estilos visuais
 - Rotas e paginas customizadas
 - Funcoes async e paralelismo
-- Compilacao para executavel standalone (`flang build`)
+- Compilacao para executavel standalone (`germanio build`)
 
 ---
 
@@ -67,13 +67,13 @@ Flang e uma linguagem de programacao declarativa multilingual (20 idiomas) que g
 
 **Arquivo mínimo válido:**
 
-```flang
+```germanio
 sistema meuapp
 ```
 
 **Arquivo de exemplo completo:**
 
-```flang
+```germanio
 sistema loja
 
 dados
@@ -106,14 +106,14 @@ eventos
 
 ### 3.1 Indentação
 
-Flang usa indentação para delimitar blocos — **não** usa chaves `{}` nem palavras `begin/end`.
+Germanio usa indentação para delimitar blocos — **não** usa chaves `{}` nem palavras `begin/end`.
 
 - O nível de indentação é detectado automaticamente por contagem de espaços
 - Tabs são convertidos internamente: 1 tab = 2 espaços
 - Inconsistências de indentação podem causar erros de parsing
 - O parser usa tokens `INDENT` para rastrear a hierarquia
 
-```flang
+```germanio
 dados          # bloco de nível superior (indentação 0)
 
   produto      # modelo (indentação 2)
@@ -122,9 +122,9 @@ dados          # bloco de nível superior (indentação 0)
 
 ### 3.2 Comentários
 
-Flang suporta dois estilos de comentário — ambos comentam até o fim da linha:
+Germanio suporta dois estilos de comentário — ambos comentam até o fim da linha:
 
-```flang
+```germanio
 // Comentário estilo C/Go
 # Comentário estilo Python/Shell
 
@@ -144,7 +144,7 @@ sistema minhaApp  // comentário inline
 | `\n` | Nova linha |
 | `\t` | Tab |
 
-```flang
+```germanio
 titulo "Minha Aplicação"
 mensagem "Olá, {nome}!\nBem-vindo ao sistema."
 ```
@@ -165,7 +165,7 @@ mensagem "Olá, {nome}!\nBem-vindo ao sistema."
 
 Blocos são seções de nível superior identificadas por palavras-chave reservadas. Cada bloco começa na coluna 0 e seu conteúdo é indentado:
 
-```flang
+```germanio
 dados          # início do bloco 'dados'
 
   modelo       # conteúdo do bloco
@@ -342,10 +342,10 @@ sistema_block = "sistema" IDENTIFIER
 ```
 
 **Exemplo:**
-```flang
+```germanio
 sistema minhaLoja
 ```
-```flang
+```germanio
 system "My Store"
 ```
 
@@ -366,7 +366,7 @@ relationship  = "pertence_a" IDENTIFIER
 ```
 
 **Exemplo:**
-```flang
+```germanio
 dados
 
   cliente
@@ -403,7 +403,7 @@ screen_item = titulo | lista | botao | formulario | mostrar | busca
 ```
 
 **Exemplo:**
-```flang
+```germanio
 telas
 
   tela produtos
@@ -428,7 +428,7 @@ action_ref    = IDENTIFIER (IDENTIFIER)*
 ```
 
 **Exemplo:**
-```flang
+```germanio
 eventos
 
   quando clicar "Novo Produto"
@@ -451,7 +451,7 @@ action        = "mudar" | "validar" | "calcular" | "definir" | "retornar"
 ```
 
 **Exemplo:**
-```flang
+```germanio
 logica
 
   se status igual "aprovado"
@@ -477,7 +477,7 @@ auth_item    = "usuario" IDENTIFIER
 ```
 
 **Exemplo:**
-```flang
+```germanio
 autenticacao
 
   usuario cliente
@@ -496,14 +496,14 @@ banco_item  = IDENTIFIER ":" (STRING | IDENTIFIER)
 ```
 
 **Exemplo — SQLite (padrão):**
-```flang
+```germanio
 banco
   driver: sqlite
   nome: minha_loja.db
 ```
 
 **Exemplo — PostgreSQL:**
-```flang
+```germanio
 banco
   driver: postgres
   host: "localhost"
@@ -514,7 +514,7 @@ banco
 ```
 
 **Exemplo — MySQL:**
-```flang
+```germanio
 banco
   driver: mysql
   host: "localhost"
@@ -529,7 +529,7 @@ banco
 Configura integrações externas (WhatsApp, e-mail, cron, webhooks).
 
 **Exemplo:**
-```flang
+```germanio
 integracoes
 
   email
@@ -563,12 +563,12 @@ tema_item  = "cor" COLOR_NAME (STRING | COLOR_WORD)
 **Presets disponiveis:** `moderno`, `simples`, `elegante`, `corporativo`, `claro`
 
 **Exemplo com preset:**
-```flang
+```germanio
 tema moderno
 ```
 
 **Exemplo com cores hex:**
-```flang
+```germanio
 tema
   cor primaria "#6366f1"
   cor secundaria "#8b5cf6"
@@ -579,7 +579,7 @@ tema
 ```
 
 **Exemplo com cores por nome:**
-```flang
+```germanio
 tema
   cor primaria azul
   cor destaque laranja
@@ -627,7 +627,7 @@ tema
 
 A partir da v0.5.0, enums suportam lista de valores entre parenteses:
 
-```flang
+```germanio
 dados
   pedido
     status: enum(pendente, aprovado, enviado, entregue, cancelado)
@@ -654,7 +654,7 @@ O formulario gerado renderiza um `<select>` com as opcoes definidas.
 
 Modificadores são aplicados após o tipo do campo na mesma linha:
 
-```flang
+```germanio
 campo: tipo modificador1 modificador2 ...
 ```
 
@@ -668,7 +668,7 @@ campo: tipo modificador1 modificador2 ...
 
 **Exemplos:**
 
-```flang
+```germanio
 dados
 
   produto
@@ -691,7 +691,7 @@ dados
 
 Cria uma chave estrangeira no modelo atual apontando para outro modelo.
 
-```flang
+```germanio
 dados
 
   categoria
@@ -709,9 +709,9 @@ Isso gera:
 
 ### 8.2 `tem_muitos` / `has_many` — Um para Muitos (1→N)
 
-Declaracao semantica no modelo pai. Nao cria coluna extra — a FK fica no filho. O Flang gera automaticamente o endpoint de expansao `GET /api/{modelo}/{id}/{relacao}`.
+Declaracao semantica no modelo pai. Nao cria coluna extra — a FK fica no filho. O Germanio gera automaticamente o endpoint de expansao `GET /api/{modelo}/{id}/{relacao}`.
 
-```flang
+```germanio
 dados
 
   cliente
@@ -733,7 +733,7 @@ GET /api/cliente/1/pedidos
 
 Cria automaticamente uma join table intermediaria. Por exemplo, `produto_categoria` com colunas `produto_id` e `categoria_id`.
 
-```flang
+```germanio
 dados
 
   produto
@@ -762,14 +762,14 @@ CREATE TABLE IF NOT EXISTS "produto_categoria" (
 
 Exibe registros de um modelo em forma de lista ou tabela.
 
-```flang
+```germanio
 lista <modelo>
   mostrar <campo>
   mostrar <campo>
 ```
 
 **Exemplo:**
-```flang
+```germanio
 lista produto
   mostrar nome
   mostrar preco
@@ -780,7 +780,7 @@ lista produto
 
 Exibe um campo específico dentro de um componente `lista` ou na tela.
 
-```flang
+```germanio
 mostrar nome
 mostrar email
 mostrar criado_em
@@ -790,7 +790,7 @@ mostrar criado_em
 
 Componente clicável com cor e texto opcionais.
 
-```flang
+```germanio
 botao <cor>
   texto "Rótulo do Botão"
 ```
@@ -798,7 +798,7 @@ botao <cor>
 **Cores predefinidas:** `azul` (blue), `verde` (green), `vermelho` (red) — e qualquer outro identificador de cor.
 
 **Exemplo:**
-```flang
+```germanio
 botao azul
   texto "Novo Produto"
 
@@ -813,12 +813,12 @@ botao verde
 
 Gera um formulário para criação/edição de um modelo.
 
-```flang
+```germanio
 formulario <modelo>
 ```
 
 **Exemplo:**
-```flang
+```germanio
 formulario produto
 ```
 
@@ -826,7 +826,7 @@ formulario produto
 
 Campo de busca em tempo real.
 
-```flang
+```germanio
 busca <modelo>
 ```
 
@@ -834,7 +834,7 @@ busca <modelo>
 
 Define o título visível da tela.
 
-```flang
+```germanio
 titulo "Gerenciamento de Produtos"
 ```
 
@@ -842,7 +842,7 @@ titulo "Gerenciamento de Produtos"
 
 Campo de entrada individual dentro de um formulário.
 
-```flang
+```germanio
 entrada nome
 entrada email obrigatorio
 ```
@@ -851,7 +851,7 @@ entrada email obrigatorio
 
 Dropdown de seleção.
 
-```flang
+```germanio
 selecionar status
   opcao "ativo"
   opcao "inativo"
@@ -861,7 +861,7 @@ selecionar status
 
 Área de texto para conteúdo longo.
 
-```flang
+```germanio
 area_texto descricao
 ```
 
@@ -869,7 +869,7 @@ area_texto descricao
 
 Componente de visualização gráfica.
 
-```flang
+```germanio
 grafico vendas
 ```
 
@@ -877,7 +877,7 @@ grafico vendas
 
 Painel de controle com métricas agregadas.
 
-```flang
+```germanio
 dashboard
   titulo "Painel Administrativo"
 ```
@@ -889,7 +889,7 @@ dashboard
 Eventos associam gatilhos de interface a ações.
 
 **Sintaxe:**
-```flang
+```germanio
 quando <gatilho> [<alvo>]
   <acao> [<argumento>]
 ```
@@ -906,7 +906,7 @@ quando <gatilho> [<alvo>]
 
 ### Exemplos
 
-```flang
+```germanio
 eventos
 
   quando clicar "Novo Produto"
@@ -933,7 +933,7 @@ O bloco `logica` permite definir regras de negócio condicionais.
 
 ### 11.1 Regras Condicionais
 
-```flang
+```germanio
 logica
 
   se <campo> <operador> <valor>
@@ -941,7 +941,7 @@ logica
 ```
 
 **Exemplo:**
-```flang
+```germanio
 logica
 
   se status igual "aprovado"
@@ -956,7 +956,7 @@ logica
 
 ### 11.2 Validações
 
-```flang
+```germanio
 logica
 
   validar email obrigatorio
@@ -980,7 +980,7 @@ logica
 
 ### 12.1 Configuração
 
-```flang
+```germanio
 autenticacao
 
   usuario cliente        # modelo que representa os usuários
@@ -1023,7 +1023,7 @@ Após validação do token, o middleware injeta:
 - **Rotas sempre públicas:** `/api/login`, `/api/registro`, `/api/register`, `/ws`, `/`
 - **Tela pública:** Use `publico` na definição da tela
 
-```flang
+```germanio
 telas
 
   tela home
@@ -1041,7 +1041,7 @@ telas
 
 ### 13.1 WhatsApp
 
-```flang
+```germanio
 integracoes
 
   whatsapp
@@ -1052,7 +1052,7 @@ integracoes
 
 ### 13.2 E-mail
 
-```flang
+```germanio
 integracoes
 
   email
@@ -1064,7 +1064,7 @@ integracoes
 ```
 
 **Notificação por e-mail:**
-```flang
+```germanio
 integracoes
 
   notificar quando criar usuario
@@ -1078,7 +1078,7 @@ integracoes
 
 Cron jobs executam em goroutines em background e suportam chamadas HTTP a URLs externas.
 
-```flang
+```germanio
 integracoes
 
   cron
@@ -1105,7 +1105,7 @@ integracoes
 
 ### 13.4 Webhook
 
-```flang
+```germanio
 integracoes
 
   webhook quando criar pedido
@@ -1127,7 +1127,7 @@ Campos do registro podem ser interpolados em mensagens usando `{nome_do_campo}`:
 
 O tema define a aparência visual da interface gerada.
 
-```flang
+```germanio
 tema
   cor primaria "#6366f1"      # cor principal (botões, links)
   cor secundaria "#8b5cf6"   # cor secundária
@@ -1152,11 +1152,11 @@ tema
 
 ## 15. Sistema de Importação
 
-Flang permite dividir o código em múltiplos arquivos `.ge` e importá-los.
+Germanio permite dividir o código em múltiplos arquivos `.ge` e importá-los.
 
 ### 15.1 Sintaxe
 
-```flang
+```germanio
 # Importar tudo de um arquivo
 importar "modelos.ge"
 
@@ -1194,7 +1194,7 @@ minha-loja/
 ```
 
 **inicio.ge:**
-```flang
+```germanio
 sistema minhaLoja
 
 importar "auth.ge"
@@ -1221,7 +1221,7 @@ importar tela de "telas/clientes.ge"
 ### 16.2 Configurações por Driver
 
 **SQLite:**
-```flang
+```germanio
 banco
   driver: sqlite
   nome: "app.db"       # opcional, padrão: <sistema>.db
@@ -1231,7 +1231,7 @@ banco
 - Arquivo criado automaticamente no diretório corrente
 
 **PostgreSQL:**
-```flang
+```germanio
 banco
   driver: postgres
   host: "localhost"    # padrão: localhost
@@ -1242,7 +1242,7 @@ banco
 ```
 
 **MySQL:**
-```flang
+```germanio
 banco
   driver: mysql
   host: "localhost"    # padrão: localhost
@@ -1442,7 +1442,7 @@ sidebar_item    = "item" STRING ("icone" STRING)? ("link" STRING)? NEWLINE
 
 ## 20. Idiomas Suportados
 
-O Flang v0.5.0 suporta 20 idiomas. Cada idioma tem seu proprio conjunto de palavras-chave que mapeiam para os mesmos tokens internos.
+O Germanio v0.5.0 suporta 20 idiomas. Cada idioma tem seu proprio conjunto de palavras-chave que mapeiam para os mesmos tokens internos.
 
 | # | Idioma | Exemplo `sistema` | Exemplo `dados` |
 |---|--------|-------------------|-----------------|
@@ -1477,7 +1477,7 @@ Todos os idiomas podem ser misturados livremente no mesmo arquivo.
 
 Presets sao configuracoes de tema pre-definidas que podem ser aplicadas com uma unica linha:
 
-```flang
+```germanio
 tema moderno
 ```
 
@@ -1493,7 +1493,7 @@ tema moderno
 
 Alem de valores hex, cores podem ser definidas por nome:
 
-```flang
+```germanio
 tema
   cor primaria azul
 ```
@@ -1512,7 +1512,7 @@ tema
 
 ### Estilos Visuais
 
-```flang
+```germanio
 tema
   estilo glassmorphism
 ```
@@ -1530,7 +1530,7 @@ tema
 
 Enums podem ser declarados com uma lista de valores entre parenteses:
 
-```flang
+```germanio
 dados
   tarefa
     status: enum(aberta, em_progresso, concluida, cancelada)
@@ -1551,7 +1551,7 @@ O formulario HTML gerado renderiza um `<select>` com cada valor como `<option>`.
 
 O bloco `rotas` permite definir endpoints de API personalizados alem dos CRUD automaticos.
 
-```flang
+```germanio
 rotas
 
   GET /api/relatorio/vendas-mensais
@@ -1572,9 +1572,9 @@ rotas
 
 ## 24. Paginas Customizadas
 
-O bloco `paginas` permite criar paginas HTML servidas pelo Flang.
+O bloco `paginas` permite criar paginas HTML servidas pelo Germanio.
 
-```flang
+```germanio
 paginas
 
   pagina sobre
@@ -1598,7 +1598,7 @@ As paginas utilizam o layout e tema da aplicacao automaticamente.
 
 O bloco `sidebar` permite definir a estrutura da barra lateral do frontend.
 
-```flang
+```germanio
 sidebar
   item "Dashboard" icone "home" link "/"
   item "Produtos" icone "box" link "/produtos"
@@ -1616,7 +1616,7 @@ Quando o bloco `sidebar` nao esta presente, a sidebar e gerada automaticamente a
 
 ## 26. Funcoes Async
 
-O Flang v0.5.0 adiciona funcoes built-in para operacoes assincronas:
+O Germanio v0.5.0 adiciona funcoes built-in para operacoes assincronas:
 
 | Funcao | Descricao | Exemplo |
 |--------|-----------|---------|
@@ -1628,7 +1628,7 @@ O Flang v0.5.0 adiciona funcoes built-in para operacoes assincronas:
 
 Exemplo de uso:
 
-```flang
+```germanio
 logica
   resultados = consultar_paralelo(
     "SELECT COUNT(*) FROM cliente",
@@ -1640,9 +1640,9 @@ logica
 
 ## 27. Array Indexing
 
-O Flang v0.5.0 suporta acesso a elementos de arrays e campos aninhados por indice:
+O Germanio v0.5.0 suporta acesso a elementos de arrays e campos aninhados por indice:
 
-```flang
+```germanio
 arr = [10, 20, 30]
 primeiro = arr[0]           // 10
 ultimo = arr[2]             // 30

@@ -352,7 +352,7 @@ var keywords = map[string]TokenType{
 	"blue": TokenIdentifier, "green": TokenIdentifier, "red": TokenIdentifier,
 }
 
-// Lexer tokenizes Flang source code.
+// Lexer tokenizes Germanio source code.
 type Lexer struct {
 	germanio bool
 	filename string

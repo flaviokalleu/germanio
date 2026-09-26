@@ -22,7 +22,7 @@ jobs:
       - name: Build
         run: |
           CGO_ENABLED=0 go build -o ge ./cmd/ge
-          CGO_ENABLED=0 go build -o flang ./cmd/flang
+          CGO_ENABLED=0 go build -o germanio ./cmd/germanio
 
       - name: Test and vet
         run: |
@@ -51,5 +51,5 @@ jobs:
         run: |
           for fg in $(find demo -name inicio.ge -type f); do
             echo "Checking $fg ..."
-            ./flang check "$fg"
+            ./germanio check "$fg"
           done

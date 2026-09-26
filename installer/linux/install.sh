@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Flang Installer - Linux / macOS
-# Instalador do Flang - Linux / macOS
+# Germanio Installer - Linux / macOS
+# Instalador do Germanio - Linux / macOS
 #
 # Uso / Usage:
-#   curl -fsSL https://raw.githubusercontent.com/flaviokalleu/flang/master/installer/linux/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/flaviokalleu/germanio/master/installer/linux/install.sh | bash
 #   ou / or:
 #   bash install.sh
 #   bash install.sh --uninstall
@@ -25,18 +25,18 @@ BOLD='\033[1m'
 RESET='\033[0m'
 
 # ---------------------------------------------------------------------------
-# Versao do Flang / Flang version
+# Versao do Germanio / Germanio version
 # ---------------------------------------------------------------------------
-FLANG_VERSION="${FLANG_VERSION:-0.5.0}"
-FLANG_REPO="https://github.com/flaviokalleu/flang"
-RELEASES_URL="${FLANG_REPO}/releases/download/v${FLANG_VERSION}"
+GERMANIO_VERSION="${GERMANIO_VERSION:-0.5.0}"
+GERMANIO_REPO="https://github.com/flaviokalleu/germanio"
+RELEASES_URL="${GERMANIO_REPO}/releases/download/v${GERMANIO_VERSION}"
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-info()    { printf "${CYAN}[flang]${RESET} %s\n" "$*"; }
-success() { printf "${GREEN}[flang]${RESET} ${BOLD}%s${RESET}\n" "$*"; }
-warn()    { printf "${YELLOW}[flang]${RESET} %s\n" "$*" >&2; }
+info()    { printf "${CYAN}[germanio]${RESET} %s\n" "$*"; }
+success() { printf "${GREEN}[germanio]${RESET} ${BOLD}%s${RESET}\n" "$*"; }
+warn()    { printf "${YELLOW}[germanio]${RESET} %s\n" "$*" >&2; }
 error()   { printf "${RED}[erro]${RESET}  %s\n" "$*" >&2; exit 1; }
 
 # ---------------------------------------------------------------------------
@@ -84,13 +84,13 @@ determine_install_dirs() {
     if [[ $EUID -eq 0 ]] || sudo -n true 2>/dev/null; then
         # Com privilegios de root / With root privileges
         BIN_DIR="/usr/local/bin"
-        LIB_DIR="/usr/local/lib/flang"
+        LIB_DIR="/usr/local/lib/germanio"
         MAN_DIR="/usr/local/share/man/man1"
         PRIVILEGED=true
     else
         # Sem sudo / Without sudo - instala para usuario atual / install for current user
         BIN_DIR="${HOME}/.local/bin"
-        LIB_DIR="${HOME}/.local/lib/flang"
+        LIB_DIR="${HOME}/.local/lib/germanio"
         MAN_DIR="${HOME}/.local/share/man/man1"
         PRIVILEGED=false
         warn "Sem privilegios root. Instalando em ${BIN_DIR}."
@@ -98,9 +98,9 @@ determine_install_dirs() {
 }
 
 # ---------------------------------------------------------------------------
-# Baixa o binario do Flang / Download the Flang binary
+# Baixa o binario do Germanio / Download the Germanio binary
 # ---------------------------------------------------------------------------
-download_flang() {
+download_germanio() {
     local platform="$1"
     local archive ext
 
@@ -111,7 +111,7 @@ download_flang() {
         ext="tar.gz"
     fi
 
-    archive="flang-v${FLANG_VERSION}-${platform}.${ext}"
+    archive="germanio-v${GERMANIO_VERSION}-${platform}.${ext}"
     local url="${RELEASES_URL}/${archive}"
     local tmpdir
     tmpdir="$(mktemp -d)"
@@ -121,7 +121,7 @@ download_flang() {
         # Fallback: tenta compilar do codigo fonte / Fallback: try to build from source
         warn "Download falhou. Tentando compilar do codigo fonte..."
         build_from_source "$tmpdir"
-        echo "${tmpdir}/flang"
+        echo "${tmpdir}/germanio"
         return
     fi
 
@@ -135,7 +135,7 @@ download_flang() {
 
     # Localiza o binario extraido / Locate extracted binary
     local binary
-    binary="$(find "$tmpdir" -name "flang" -not -name "*.tar.gz" -type f | head -1)"
+    binary="$(find "$tmpdir" -name "germanio" -not -name "*.tar.gz" -type f | head -1)"
     [[ -z "$binary" ]] && error "Binario nao encontrado no arquivo. Verifique o download."
 
     echo "$binary"
@@ -148,17 +148,17 @@ build_from_source() {
     local outdir="$1"
     command -v go &>/dev/null || error "Go nao encontrado. Instale em https://go.dev/dl/ ou baixe o binario pre-compilado."
 
-    info "Compilando Flang do codigo fonte com Go..."
+    info "Compilando Germanio do codigo fonte com Go..."
     local tmpgit
     tmpgit="$(mktemp -d)"
 
     if command -v git &>/dev/null; then
-        git clone --depth=1 "${FLANG_REPO}.git" "$tmpgit" 2>&1 | tail -1
+        git clone --depth=1 "${GERMANIO_REPO}.git" "$tmpgit" 2>&1 | tail -1
     else
         error "git nao encontrado. Instale git ou baixe o codigo-fonte manualmente."
     fi
 
-    (cd "$tmpgit" && go build -ldflags="-s -w -X main.Version=${FLANG_VERSION}" -o "${outdir}/flang" .)
+    (cd "$tmpgit" && go build -ldflags="-s -w -X main.Version=${GERMANIO_VERSION}" -o "${outdir}/germanio" .)
     rm -rf "$tmpgit"
     success "Compilacao concluida!"
 }
@@ -186,14 +186,14 @@ install_binary() {
     chmod +x "$binary"
 
     if [[ "$run_as_root" == "true" ]]; then
-        sudo cp "$binary" "${BIN_DIR}/flang"
-        sudo chmod 755 "${BIN_DIR}/flang"
+        sudo cp "$binary" "${BIN_DIR}/germanio"
+        sudo chmod 755 "${BIN_DIR}/germanio"
     else
-        cp "$binary" "${BIN_DIR}/flang"
-        chmod 755 "${BIN_DIR}/flang"
+        cp "$binary" "${BIN_DIR}/germanio"
+        chmod 755 "${BIN_DIR}/germanio"
     fi
 
-    success "Binario instalado em: ${BIN_DIR}/flang"
+    success "Binario instalado em: ${BIN_DIR}/germanio"
 }
 
 # ---------------------------------------------------------------------------
@@ -214,7 +214,7 @@ install_examples() {
         success "Exemplos instalados em: ${LIB_DIR}/examples/"
     else
         # Cria exemplos basicos / Create basic examples
-        local ex_content='# Exemplo Flang / Flang Example
+        local ex_content='# Exemplo Germanio / Germanio Example
 sistema loja
 
 tabela produto
@@ -241,48 +241,48 @@ serve 8080
 # ---------------------------------------------------------------------------
 install_man_page() {
     local man_content
-    man_content='.TH FLANG 1 "'$(date +%Y-%m-%d)'" "Flang v'"${FLANG_VERSION}"'" "Flang Manual"
+    man_content='.TH GERMANIO 1 "'$(date +%Y-%m-%d)'" "Germanio v'"${GERMANIO_VERSION}"'" "Germanio Manual"
 .SH NOME
-flang \- linguagem de programacao declarativa para aplicacoes full-stack
+germanio \- linguagem de programacao declarativa para aplicacoes full-stack
 .SH SINOPSE
-.B flang
+.B germanio
 [\fICOMANDO\fR] [\fIARQUIVO.ge\fR] [\fIOPCOES\fR]
 .SH DESCRICAO
-Flang e uma linguagem declarativa e bilingue (Portugues/English) que gera
+Germanio e uma linguagem declarativa e bilingue (Portugues/English) que gera
 aplicacoes completas (backend, frontend, banco de dados, API REST) a partir
 de arquivos .ge.
 .SH COMANDOS
 .TP
 .B run \fIarquivo.ge\fR
-Executa um arquivo Flang
+Executa um arquivo Germanio
 .TP
 .B version
-Exibe a versao do Flang
+Exibe a versao do Germanio
 .TP
 .B help
 Exibe ajuda
 .SH EXEMPLOS
 .TP
-flang run minha-app.ge
+germanio run minha-app.ge
 .TP
-flang version
+germanio version
 .SH ARQUIVOS
 .TP
-.I ~/.local/lib/flang/examples/
-Exemplos de programas Flang
+.I ~/.local/lib/germanio/examples/
+Exemplos de programas Germanio
 .SH AUTOR
-Flavio <github.com/flaviokalleu/flang>
+Flavio <github.com/flaviokalleu/germanio>
 .SH LICENCA
 MIT License
 '
     if [[ "$PRIVILEGED" == "true" ]]; then
-        echo "$man_content" | sudo tee "${MAN_DIR}/flang.1" > /dev/null
-        sudo gzip -f "${MAN_DIR}/flang.1" 2>/dev/null || true
+        echo "$man_content" | sudo tee "${MAN_DIR}/germanio.1" > /dev/null
+        sudo gzip -f "${MAN_DIR}/germanio.1" 2>/dev/null || true
     else
-        echo "$man_content" > "${MAN_DIR}/flang.1"
-        gzip -f "${MAN_DIR}/flang.1" 2>/dev/null || true
+        echo "$man_content" > "${MAN_DIR}/germanio.1"
+        gzip -f "${MAN_DIR}/germanio.1" 2>/dev/null || true
     fi
-    success "Man page instalada em: ${MAN_DIR}/flang.1.gz"
+    success "Man page instalada em: ${MAN_DIR}/germanio.1.gz"
 }
 
 # ---------------------------------------------------------------------------
@@ -305,7 +305,7 @@ configure_path() {
     # Adiciona ao bashrc / Add to bashrc
     if [[ -f "${HOME}/.bashrc" ]]; then
         if ! grep -qF "$BIN_DIR" "${HOME}/.bashrc"; then
-            printf '\n# Flang - adicionado pelo instalador / added by installer\n%s\n' "$path_line" >> "${HOME}/.bashrc"
+            printf '\n# Germanio - adicionado pelo instalador / added by installer\n%s\n' "$path_line" >> "${HOME}/.bashrc"
             success "PATH adicionado ao ~/.bashrc"
         fi
     fi
@@ -313,7 +313,7 @@ configure_path() {
     # Adiciona ao zshrc / Add to zshrc
     if [[ -f "${HOME}/.zshrc" ]]; then
         if ! grep -qF "$BIN_DIR" "${HOME}/.zshrc"; then
-            printf '\n# Flang - adicionado pelo instalador / added by installer\n%s\n' "$path_line" >> "${HOME}/.zshrc"
+            printf '\n# Germanio - adicionado pelo instalador / added by installer\n%s\n' "$path_line" >> "${HOME}/.zshrc"
             success "PATH adicionado ao ~/.zshrc"
         fi
     fi
@@ -321,7 +321,7 @@ configure_path() {
     # Adiciona ao profile para outros shells / Add to profile for other shells
     if [[ -f "${HOME}/.profile" ]]; then
         if ! grep -qF "$BIN_DIR" "${HOME}/.profile"; then
-            printf '\n# Flang\n%s\n' "$path_line" >> "${HOME}/.profile"
+            printf '\n# Germanio\n%s\n' "$path_line" >> "${HOME}/.profile"
         fi
     fi
 
@@ -344,13 +344,13 @@ install_desktop_file() {
 
     local script_dir
     script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    local desktop_src="${script_dir}/flang.desktop"
+    local desktop_src="${script_dir}/germanio.desktop"
 
     if [[ -f "$desktop_src" ]]; then
         if [[ "$PRIVILEGED" == "true" ]]; then
-            sudo cp "$desktop_src" "${desktop_dir}/flang.desktop"
+            sudo cp "$desktop_src" "${desktop_dir}/germanio.desktop"
         else
-            cp "$desktop_src" "${desktop_dir}/flang.desktop"
+            cp "$desktop_src" "${desktop_dir}/germanio.desktop"
         fi
 
         # Atualiza cache de aplicativos / Update application cache
@@ -360,15 +360,15 @@ install_desktop_file() {
 }
 
 # ---------------------------------------------------------------------------
-# Desinstala o Flang / Uninstall Flang
+# Desinstala o Germanio / Uninstall Germanio
 # ---------------------------------------------------------------------------
 uninstall() {
-    info "Iniciando desinstalacao do Flang / Starting Flang uninstall..."
+    info "Iniciando desinstalacao do Germanio / Starting Germanio uninstall..."
 
     local removed=0
 
     # Remove binarios / Remove binaries
-    for bin in "/usr/local/bin/flang" "${HOME}/.local/bin/flang"; do
+    for bin in "/usr/local/bin/germanio" "${HOME}/.local/bin/germanio"; do
         if [[ -f "$bin" ]]; then
             if [[ "$bin" == /usr/* ]]; then
                 sudo rm -f "$bin" && info "Removido: $bin" && ((removed++)) || true
@@ -379,7 +379,7 @@ uninstall() {
     done
 
     # Remove diretorios de biblioteca / Remove library directories
-    for lib in "/usr/local/lib/flang" "${HOME}/.local/lib/flang"; do
+    for lib in "/usr/local/lib/germanio" "${HOME}/.local/lib/germanio"; do
         if [[ -d "$lib" ]]; then
             if [[ "$lib" == /usr/* ]]; then
                 sudo rm -rf "$lib" && info "Removido: $lib" && ((removed++)) || true
@@ -390,7 +390,7 @@ uninstall() {
     done
 
     # Remove man pages / Remove man pages
-    for man in "/usr/local/share/man/man1/flang.1.gz" "${HOME}/.local/share/man/man1/flang.1.gz"; do
+    for man in "/usr/local/share/man/man1/germanio.1.gz" "${HOME}/.local/share/man/man1/germanio.1.gz"; do
         if [[ -f "$man" ]]; then
             if [[ "$man" == /usr/* ]]; then
                 sudo rm -f "$man" && ((removed++)) || true
@@ -401,7 +401,7 @@ uninstall() {
     done
 
     # Remove arquivo .desktop / Remove .desktop file
-    for desktop in "/usr/share/applications/flang.desktop" "${HOME}/.local/share/applications/flang.desktop"; do
+    for desktop in "/usr/share/applications/germanio.desktop" "${HOME}/.local/share/applications/germanio.desktop"; do
         if [[ -f "$desktop" ]]; then
             if [[ "$desktop" == /usr/* ]]; then
                 sudo rm -f "$desktop" && ((removed++)) || true
@@ -414,17 +414,17 @@ uninstall() {
     # Remove entradas do PATH dos arquivos de configuracao de shell
     # Remove PATH entries from shell config files
     for rc in "${HOME}/.bashrc" "${HOME}/.zshrc" "${HOME}/.profile"; do
-        if [[ -f "$rc" ]] && grep -q "flang" "$rc"; then
-            # Remove linhas relacionadas ao Flang / Remove Flang-related lines
-            sed -i '/# Flang/d; /flang/d' "$rc" 2>/dev/null || true
-            info "Entradas do Flang removidas de: $rc"
+        if [[ -f "$rc" ]] && grep -q "germanio" "$rc"; then
+            # Remove linhas relacionadas ao Germanio / Remove Germanio-related lines
+            sed -i '/# Germanio/d; /germanio/d' "$rc" 2>/dev/null || true
+            info "Entradas do Germanio removidas de: $rc"
         fi
     done
 
     if [[ $removed -gt 0 ]]; then
-        success "Flang desinstalado com sucesso! / Flang uninstalled successfully!"
+        success "Germanio desinstalado com sucesso! / Germanio uninstalled successfully!"
     else
-        warn "Flang nao encontrado. Nada a desinstalar."
+        warn "Germanio nao encontrado. Nada a desinstalar."
     fi
 }
 
@@ -432,16 +432,16 @@ uninstall() {
 # Verifica instalacao / Verify installation
 # ---------------------------------------------------------------------------
 verify_install() {
-    local flang_bin
-    flang_bin="${BIN_DIR}/flang"
+    local germanio_bin
+    germanio_bin="${BIN_DIR}/germanio"
 
-    if [[ -x "$flang_bin" ]]; then
+    if [[ -x "$germanio_bin" ]]; then
         local version_output
-        version_output=$("$flang_bin" version 2>/dev/null || echo "v${FLANG_VERSION}")
+        version_output=$("$germanio_bin" version 2>/dev/null || echo "v${GERMANIO_VERSION}")
         success "Verificacao concluida: $version_output"
         return 0
     else
-        warn "Binario nao encontrado em ${flang_bin}. Verifique a instalacao."
+        warn "Binario nao encontrado em ${germanio_bin}. Verifique a instalacao."
         return 1
     fi
 }
@@ -459,7 +459,7 @@ print_banner() {
     printf "  ██║     ███████╗██║  ██║██║ ╚████║╚██████╔╝\n"
     printf "  ╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝ \n"
     printf "${RESET}"
-    printf "  ${BOLD}v${FLANG_VERSION}${RESET} - Linguagem full-stack declarativa\n"
+    printf "  ${BOLD}v${GERMANIO_VERSION}${RESET} - Linguagem full-stack declarativa\n"
     printf "\n"
 }
 
@@ -472,10 +472,10 @@ main() {
     for arg in "$@"; do
         case "$arg" in
             --uninstall|-u) uninstall_mode=true ;;
-            --version|-v)   echo "Flang Installer v1.0.0"; exit 0 ;;
+            --version|-v)   echo "Germanio Installer v1.0.0"; exit 0 ;;
             --help|-h)
                 printf "Uso: %s [--uninstall] [--help] [--version]\n" "$0"
-                printf "  --uninstall  Remove o Flang do sistema\n"
+                printf "  --uninstall  Remove o Germanio do sistema\n"
                 printf "  --help       Exibe esta ajuda\n"
                 printf "  --version    Exibe versao do instalador\n"
                 exit 0
@@ -490,7 +490,7 @@ main() {
         exit 0
     fi
 
-    info "Iniciando instalacao do Flang v${FLANG_VERSION}..."
+    info "Iniciando instalacao do Germanio v${GERMANIO_VERSION}..."
 
     # Verificacoes / Checks
     check_deps
@@ -505,7 +505,7 @@ main() {
 
     # Baixa ou compila o binario / Download or build the binary
     local binary
-    binary="$(download_flang "$platform")"
+    binary="$(download_germanio "$platform")"
 
     # Instala / Install
     install_binary "$binary" "$PRIVILEGED"
@@ -521,14 +521,14 @@ main() {
     # Mensagem final / Final message
     printf "\n"
     printf "${GREEN}${BOLD}╔══════════════════════════════════════════════╗${RESET}\n"
-    printf "${GREEN}${BOLD}║  Flang instalado! Digite: flang version      ║${RESET}\n"
+    printf "${GREEN}${BOLD}║  Germanio instalado! Digite: germanio version      ║${RESET}\n"
     printf "${GREEN}${BOLD}╚══════════════════════════════════════════════╝${RESET}\n"
     printf "\n"
     printf "  ${BOLD}Proximos passos / Next steps:${RESET}\n"
     printf "  1. Abra um novo terminal ou execute: source ~/.bashrc\n"
-    printf "  2. Teste: ${CYAN}flang version${RESET}\n"
-    printf "  3. Crie seu primeiro app: ${CYAN}flang run ${LIB_DIR}/examples/loja.ge${RESET}\n"
-    printf "  4. Documentacao: ${CYAN}${FLANG_REPO}${RESET}\n"
+    printf "  2. Teste: ${CYAN}germanio version${RESET}\n"
+    printf "  3. Crie seu primeiro app: ${CYAN}germanio run ${LIB_DIR}/examples/loja.ge${RESET}\n"
+    printf "  4. Documentacao: ${CYAN}${GERMANIO_REPO}${RESET}\n"
     printf "\n"
 }
 

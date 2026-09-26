@@ -23,7 +23,7 @@
   <a href="SPEC.md">Especificação</a> ·
   <a href="docs/PHASE1.md">Entrega da fundação</a> ·
   <a href="docs/ROADMAP.md">Roadmap Germanio</a> ·
-  <a href="#flang-continua-funcionando">Compatibilidade</a>
+  <a href="#germanio-continua-funcionando">Compatibilidade</a>
 </p>
 
 ## Uma linguagem que começa com uma conversa
@@ -33,7 +33,7 @@ nome = pergunte "Qual seu nome?"
 mostre "Olá {nome}"
 ```
 
-Germanio é a evolução gradual do Flang para uma linguagem simples, determinística
+Germanio é a evolução gradual do Germanio para uma linguagem simples, determinística
 e pensada para frontend e backend. Código natural continua sendo código:
 **não existe LLM dentro do compilador**.
 
@@ -59,7 +59,7 @@ go build -o ge ./cmd/ge
 
 No Windows, compile com `go build -o ge.exe ./cmd/ge` e execute `.\ge.exe`.
 Para instalar a CLI a partir deste checkout: `go install ./cmd/ge`.
-Os antigos binários e instaladores Flang **não são releases Germanio**.
+Os antigos binários e instaladores Germanio **não são releases Germanio**.
 
 Experimente os exemplos reais:
 
@@ -237,21 +237,21 @@ produz GE4102, com orientação para usar comprimento, como `45px`.
 | `ge novo pasta` | Cria um programa; não sobrescreve pasta existente |
 | `ge explicar GE2004` | Explica um diagnóstico conhecido |
 | `ge versao` / `ge ajuda` | Versão e ajuda |
-| `ge legado ...` | Acesso explícito à CLI Flang |
+| `ge legado ...` | Acesso explícito à CLI Germanio |
 
 `ge build`, package manager, LSP, JIT, WASM, GPU e SIMD **não estão
 implementados**. Não há comandos vazios simulando esses recursos. Os testes do
 projeto são executados com Go.
 
-## Flang continua funcionando
+## Germanio continua funcionando
 
 ```bash
 ./ge check demo/plano/inicio.ge
 ./ge rodar demo/plano/inicio.ge 8080
 
 # CLI histórica, com os comandos originais:
-go build -o flang ./cmd/flang
-./flang run demo/plano/inicio.ge
+go build -o germanio ./cmd/germanio
+./germanio run demo/plano/inicio.ge
 ```
 
 Foram preservados o parser/lexer multilíngue, o AST full-stack, o interpretador
@@ -259,7 +259,7 @@ legado, modelos, telas, temas, rotas, banco, autenticação e integrações. `.g
 mantém sua semântica anterior; não recebe automaticamente as garantias `.ge`.
 **Não basta renomear um arquivo `.ge` para `.ge`.**
 
-Consulte a [documentação histórica](docs/FLANG_LEGACY.md). Os exemplos antigos
+Consulte a [documentação histórica](docs/GERMANIO_LEGACY.md). Os exemplos antigos
 continuam em `examples/` e `demo/`; os novos estão em `examples/germanio/`.
 
 ## Desenvolvimento e validação

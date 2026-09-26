@@ -1,6 +1,6 @@
 # =============================================================================
-# GoReleaser Configuration for Flang
-# Configuracao do GoReleaser para o Flang
+# GoReleaser Configuration for Germanio
+# Configuracao do GoReleaser para o Germanio
 #
 # Documentacao / Documentation: https://goreleaser.com
 #
@@ -20,7 +20,7 @@ version: 2
 # ---------------------------------------------------------------------------
 # Informacoes do projeto / Project information
 # ---------------------------------------------------------------------------
-project_name: flang
+project_name: germanio
 
 # ---------------------------------------------------------------------------
 # Configuracoes de ambiente / Environment settings
@@ -44,9 +44,9 @@ before:
 # Configuracao de build / Build configuration
 # ---------------------------------------------------------------------------
 builds:
-  - id: flang
+  - id: germanio
     main: ./main.go
-    binary: flang
+    binary: germanio
 
     # Flags de compilacao / Build flags
     flags:
@@ -103,19 +103,19 @@ builds:
 # Combina amd64 + arm64 em um unico binario / Combines amd64 + arm64 in one binary
 # ---------------------------------------------------------------------------
 universal_binaries:
-  - id: flang-darwin-universal
+  - id: germanio-darwin-universal
     ids:
-      - flang
+      - germanio
     replace: false
-    name_template: "flang-universal"
+    name_template: "germanio-universal"
 
 # ---------------------------------------------------------------------------
 # Configuracao de archives / Archive configuration
 # ---------------------------------------------------------------------------
 archives:
-  - id: flang-archive
+  - id: germanio-archive
     ids:
-      - flang
+      - germanio
 
     # Formato por plataforma / Format per platform
     format: tar.gz
@@ -125,7 +125,7 @@ archives:
 
     # Template do nome do arquivo / Filename template
     name_template: >-
-      flang-
+      germanio-
       {{- .Version }}-
       {{- .Os }}-
       {{- .Arch }}
@@ -218,35 +218,35 @@ release:
   # Repositorio GitHub / GitHub repository
   github:
     owner: flavio
-    name: flang
+    name: germanio
 
   # Nome do release / Release name
-  name_template: "Flang v{{.Version}}"
+  name_template: "Germanio v{{.Version}}"
 
   # Corpo do release / Release body (abaixo do changelog automatico)
   # Body of the release (below the automatic changelog)
   header: |
-    ## Flang v{{.Version}}
+    ## Germanio v{{.Version}}
 
-    Bem-vindo a mais uma versao do Flang! / Welcome to another Flang release!
+    Bem-vindo a mais uma versao do Germanio! / Welcome to another Germanio release!
 
     ### Instalacao rapida / Quick Install
 
     **Linux/macOS:**
     ```bash
-    curl -fsSL https://raw.githubusercontent.com/flavio/flang/main/installer/linux/install.sh | bash
+    curl -fsSL https://raw.githubusercontent.com/flavio/germanio/main/installer/linux/install.sh | bash
     ```
 
     **Windows (PowerShell):**
     ```powershell
-    irm https://raw.githubusercontent.com/flavio/flang/main/installer/windows/install.ps1 | iex
+    irm https://raw.githubusercontent.com/flavio/germanio/main/installer/windows/install.ps1 | iex
     ```
 
   footer: |
     ---
     **Checksums:** Verifique `checksums.sha256` / Verify `checksums.sha256`
 
-    **Documentacao:** https://github.com/flavio/flang/blob/main/README.md
+    **Documentacao:** https://github.com/flavio/germanio/blob/main/README.md
 
     Obrigado a todos os contribuidores! / Thank you to all contributors!
 
@@ -268,27 +268,27 @@ release:
 # Homebrew (macOS/Linux) - descomente quando tiver um tap proprio
 # Homebrew (macOS/Linux) - uncomment when you have your own tap
 # brews:
-#   - name: flang
+#   - name: germanio
 #     repository:
 #       owner: flavio
 #       name: homebrew-tap
 #     directory: Formula
-#     homepage: https://github.com/flavio/flang
+#     homepage: https://github.com/flavio/germanio
 #     description: "Linguagem de programacao declarativa full-stack"
 #     license: MIT
 #     install: |
-#       bin.install "flang"
+#       bin.install "germanio"
 #     test: |
-#       system "#{bin}/flang", "version"
+#       system "#{bin}/germanio", "version"
 
 # Scoop (Windows) - descomente quando tiver um bucket proprio
 # Scoop (Windows) - uncomment when you have your own bucket
 # scoops:
-#   - name: flang
+#   - name: germanio
 #     repository:
 #       owner: flavio
 #       name: scoop-bucket
-#     homepage: https://github.com/flavio/flang
+#     homepage: https://github.com/flavio/germanio
 #     description: "Linguagem de programacao declarativa full-stack"
 #     license: MIT
 
@@ -297,8 +297,8 @@ release:
 # ---------------------------------------------------------------------------
 # dockers:
 #   - image_templates:
-#       - "ghcr.io/flavio/flang:{{ .Version }}-amd64"
-#       - "ghcr.io/flavio/flang:latest-amd64"
+#       - "ghcr.io/flavio/germanio:{{ .Version }}-amd64"
+#       - "ghcr.io/flavio/germanio:latest-amd64"
 #     dockerfile: Dockerfile
 #     use: buildx
 #     build_flag_templates:

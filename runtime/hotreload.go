@@ -28,7 +28,7 @@ func WatchFiles(dir string, arquivo string, porta string) {
 				mod := info.ModTime()
 				if prev, ok := stamps[path]; ok {
 					if mod.After(prev) {
-						fmt.Printf("[flang] Arquivo modificado: %s\n", filepath.Base(path))
+						fmt.Printf("[germanio] Arquivo modificado: %s\n", filepath.Base(path))
 						changed = true
 					}
 				} else {
@@ -39,14 +39,14 @@ func WatchFiles(dir string, arquivo string, porta string) {
 			})
 
 			if changed {
-				fmt.Println("[flang] Recarregando...")
+				fmt.Println("[germanio] Recarregando...")
 				// Re-exec the process
 				cmd := exec.Command(os.Args[0], "run", arquivo, porta)
 				cmd.Stdout = os.Stdout
 				cmd.Stderr = os.Stderr
 				cmd.Stdin = os.Stdin
 				if err := cmd.Start(); err != nil {
-					fmt.Printf("[flang] Erro ao recarregar: %s\n", err)
+					fmt.Printf("[germanio] Erro ao recarregar: %s\n", err)
 					continue
 				}
 				// Exit the current process

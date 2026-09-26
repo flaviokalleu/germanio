@@ -1,6 +1,6 @@
-# CHANGELOG - Flang
+# CHANGELOG - Germanio
 
-Historico completo de versoes e mudancas do Flang.
+Historico completo de versoes e mudancas do Germanio.
 
 O formato segue [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
@@ -23,7 +23,7 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Charts**: graficos com Chart.js (barra, pizza, doughnut)
 - **Relacionamentos**: `tem_muitos` e `muitos_para_muitos` com join tables automaticas
 - **Auto-migration**: colunas novas adicionadas automaticamente
-- **`flang build`**: compila .ge em executavel standalone distribuivel
+- **`germanio build`**: compila .ge em executavel standalone distribuivel
 - **Async**: `paralelo()`, `esperar()`, `timeout()`, `chamar_async()`, `consultar_paralelo()`
 - **15 novos built-in functions**: substituir, cortar, comeca_com, termina_com, substring, adicionar, remover, reverter, chaves, valores, json, formato_data, potencia, raiz, chamar/http
 - **Array indexing**: `arr[0]`, `obj.campo[0]`
@@ -108,7 +108,7 @@ A versao 0.4.0 e a mais completa ate agora, adicionando autenticacao JWT com bcr
 - Documentacao de deploy com Nginx e Let's Encrypt
 
 #### VS Code Extension
-- Extensao `vscode-flang/` com realce de sintaxe para `.ge`
+- Extensao `vscode-germanio/` com realce de sintaxe para `.ge`
 - Autocomplete para palavras-chave PT e EN
 - Snippets para blocos comuns
 - Icone de arquivo `.ge` personalizado
@@ -194,7 +194,7 @@ A versao 0.3.0 trouxe o suporte bilinguie completo (Portugues e Ingles), suporte
 
 ### Visao Geral
 
-A versao 0.2.0 foi uma reescrita completa do Flang: de gerador de codigo estatico para um **interpretador com runtime proprio**. O arquivo `.ge` agora e interpretado diretamente pelo binario `flang`, sem necessidade de gerar codigo intermediario.
+A versao 0.2.0 foi uma reescrita completa do Germanio: de gerador de codigo estatico para um **interpretador com runtime proprio**. O arquivo `.ge` agora e interpretado diretamente pelo binario `germanio`, sem necessidade de gerar codigo intermediario.
 
 ### Adicionado
 
@@ -203,7 +203,7 @@ A versao 0.2.0 foi uma reescrita completa do Flang: de gerador de codigo estatic
 - Servidor HTTP embutido baseado em `net/http`
 - Banco de dados SQLite embutido via `go-sqlite3`
 - Sem necessidade de gerar codigo — o `.ge` e o codigo-fonte final
-- Comando `flang run arquivo.ge` para iniciar o servidor
+- Comando `germanio run arquivo.ge` para iniciar o servidor
 
 #### API REST Completa
 - Geracao automatica de endpoints CRUD para cada modelo
@@ -244,7 +244,7 @@ A versao 0.2.0 foi uma reescrita completa do Flang: de gerador de codigo estatic
 ### Mudancas Incompativeis com 0.1.x
 
 - Arquivo `.ge` nao gera mais codigo em outra linguagem
-- Comando mudou de `flang generate` para `flang run`
+- Comando mudou de `germanio generate` para `germanio run`
 - Estrutura de blocos ligeiramente diferente (mais consistente)
 - Tipos de dados renomeados para ser mais intuitivos
 
@@ -254,7 +254,7 @@ A versao 0.2.0 foi uma reescrita completa do Flang: de gerador de codigo estatic
 
 ### Visao Geral
 
-A versao inicial do Flang como **gerador de codigo**. O arquivo `.ge` era processado para gerar codigo em Python (Django) ou JavaScript (Express + React). Focado em prototipagem rapida.
+A versao inicial do Germanio como **gerador de codigo**. O arquivo `.ge` era processado para gerar codigo em Python (Django) ou JavaScript (Express + React). Focado em prototipagem rapida.
 
 ### Adicionado
 
@@ -268,7 +268,7 @@ A versao inicial do Flang como **gerador de codigo**. O arquivo `.ge` era proces
 - Geracao de modelos Django (Python) a partir do bloco `dados`
 - Geracao de views e URLs Django para CRUD
 - Geracao de templates HTML simples
-- Comando `flang generate --target django arquivo.ge`
+- Comando `germanio generate --target django arquivo.ge`
 
 #### Frontend Basico
 - Geracao de componentes React simples
@@ -280,7 +280,7 @@ A versao inicial do Flang como **gerador de codigo**. O arquivo `.ge` era proces
 - Migrations Django geradas automaticamente
 
 #### Ferramentas
-- CLI inicial: `flang generate`, `flang validate`
+- CLI inicial: `germanio generate`, `germanio validate`
 - Validacao de sintaxe sem executar
 
 ### Limitacoes Conhecidas
@@ -298,9 +298,9 @@ A versao inicial do Flang como **gerador de codigo**. O arquivo `.ge` era proces
 
 ### [0.6.0] - Visao Futura
 
-- [ ] Editor visual online (Flang Studio)
+- [ ] Editor visual online (Germanio Studio)
 - [ ] Marketplace de templates `.ge`
-- [ ] CLI interativa: `flang new` com perguntas guiadas
+- [ ] CLI interativa: `germanio new` com perguntas guiadas
 - [ ] Plugins em Go para estender o runtime
 - [ ] Suporte a GraphQL alem de REST
 - [ ] Modo offline / PWA para o frontend gerado
@@ -309,7 +309,7 @@ A versao inicial do Flang como **gerador de codigo**. O arquivo `.ge` era proces
 
 ## Convencoes de Versao
 
-O Flang segue [Semantic Versioning](https://semver.org/):
+O Germanio segue [Semantic Versioning](https://semver.org/):
 
 - **MAJOR** (`1.x.x`): mudancas incompativeis com versoes anteriores
 - **MINOR** (`x.1.x`): novas funcionalidades sem quebrar compatibilidade
@@ -334,5 +334,5 @@ runtime/     <- servidor HTTP, banco, integracoes
 cli/         <- comandos da linha de comando
 exemplos/    <- exemplos de .ge
 docs/        <- documentacao
-vscode-flang/ <- extensao VS Code
+vscode-germanio/ <- extensao VS Code
 ```

@@ -1,22 +1,22 @@
 #Requires -Version 5.0
 # =============================================================================
-# Flang Programming Language - Instalador Online para Windows
+# Germanio Programming Language - Instalador Online para Windows
 #
 # Uso (one-liner / one-liner usage):
-#   irm https://raw.githubusercontent.com/flaviokalleu/flang/master/installer/windows/install-online.ps1 | iex
+#   irm https://raw.githubusercontent.com/flaviokalleu/germanio/master/installer/windows/install-online.ps1 | iex
 #
 #   ou / or:
-#   Invoke-WebRequest -Uri https://raw.githubusercontent.com/flaviokalleu/flang/master/installer/windows/install-online.ps1 -OutFile install.ps1; .\install.ps1
+#   Invoke-WebRequest -Uri https://raw.githubusercontent.com/flaviokalleu/germanio/master/installer/windows/install-online.ps1 -OutFile install.ps1; .\install.ps1
 #
 # Parametros:
 #   -Versao          Versao especifica (padrao: ultima)
-#   -DiretorioAlvo   Diretorio de instalacao (padrao: C:\Flang)
+#   -DiretorioAlvo   Diretorio de instalacao (padrao: C:\Germanio)
 #   -Silencioso      Sem perguntas interativas
 # =============================================================================
 
 param(
     [string]$Versao          = "",
-    [string]$DiretorioAlvo   = "C:\Flang",
+    [string]$DiretorioAlvo   = "C:\Germanio",
     [switch]$Silencioso
 )
 
@@ -27,11 +27,11 @@ $ErrorActionPreference = "Stop"
 # ---------------------------------------------------------------------------
 # Constantes
 # ---------------------------------------------------------------------------
-$REPO       = "flaviokalleu/flang"
+$REPO       = "flaviokalleu/germanio"
 $REPO_URL   = "https://github.com/$REPO"
 $API_URL    = "https://api.github.com/repos/$REPO/releases"
-$NOME_APP   = "Flang Programming Language"
-$EXE_NOME   = "flang.exe"
+$NOME_APP   = "Germanio Programming Language"
+$EXE_NOME   = "germanio.exe"
 
 # ---------------------------------------------------------------------------
 # Cores no terminal
@@ -89,7 +89,7 @@ function Get-UltimaVersao {
 function Download-Binario {
     param([string]$VersaoAlvo, [string]$Arch, [string]$TempDir)
 
-    $arquivo   = "flang-v${VersaoAlvo}-windows-${Arch}.zip"
+    $arquivo   = "germanio-v${VersaoAlvo}-windows-${Arch}.zip"
     $urlDownload = "$REPO_URL/releases/download/v${VersaoAlvo}/${arquivo}"
     $destZip    = Join-Path $TempDir $arquivo
 
@@ -131,7 +131,7 @@ function Build-DoFonte {
         Escrever-Erro "Go nao encontrado. Instale em https://go.dev/dl/ e tente novamente."
     }
 
-    $repoClone = Join-Path $TempDir "flang-src"
+    $repoClone = Join-Path $TempDir "germanio-src"
     $git = Get-Command git -ErrorAction SilentlyContinue
     if (-not $git) {
         Escrever-Erro "git nao encontrado. Instale em https://git-scm.com/download/win"
@@ -168,7 +168,7 @@ function Instalar-Binario {
 
     $dest = Join-Path $DirBin $EXE_NOME
     Copy-Item -Path $ExeFonte -Destination $dest -Force
-    Escrever-Ok "flang.exe instalado"
+    Escrever-Ok "germanio.exe instalado"
     return $dest
 }
 
@@ -206,19 +206,19 @@ function Adicionar-AoPath {
 }
 
 # ---------------------------------------------------------------------------
-# Associar .ge ao Flang (sem admin)
+# Associar .ge ao Germanio (sem admin)
 # ---------------------------------------------------------------------------
 function Criar-AssociacaoFg {
     param([string]$ExeDestino)
 
-    Escrever-Passo "Associando arquivos .ge ao Flang..."
-    $classe = "FlangFile"
+    Escrever-Passo "Associando arquivos .ge ao Germanio..."
+    $classe = "GermanioFile"
 
     New-Item -Path "HKCU:\Software\Classes\.ge"          -Force | Out-Null
     Set-ItemProperty -Path "HKCU:\Software\Classes\.ge" -Name "(Default)" -Value $classe
 
     New-Item -Path "HKCU:\Software\Classes\$classe"       -Force | Out-Null
-    Set-ItemProperty -Path "HKCU:\Software\Classes\$classe" -Name "(Default)" -Value "Arquivo Flang (.ge)"
+    Set-ItemProperty -Path "HKCU:\Software\Classes\$classe" -Name "(Default)" -Value "Arquivo Germanio (.ge)"
 
     New-Item -Path "HKCU:\Software\Classes\$classe\DefaultIcon" -Force | Out-Null
     Set-ItemProperty -Path "HKCU:\Software\Classes\$classe\DefaultIcon" -Name "(Default)" -Value "$ExeDestino,0"
@@ -232,7 +232,7 @@ function Criar-AssociacaoFg {
         if ($t) { $t::SHChangeNotify(0x08000000, 0, [IntPtr]::Zero, [IntPtr]::Zero) }
     } catch {}
 
-    Escrever-Ok "Arquivos .ge associados ao Flang"
+    Escrever-Ok "Arquivos .ge associados ao Germanio"
 }
 
 # ---------------------------------------------------------------------------
@@ -242,20 +242,20 @@ function Criar-AtalhoMenuIniciar {
     param([string]$ExeDestino, [string]$DirInstalacao, [string]$VersaoInstalada)
 
     Escrever-Passo "Criando atalho no Menu Iniciar..."
-    $startDir = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Flang"
+    $startDir = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Germanio"
     if (-not (Test-Path $startDir)) { New-Item -ItemType Directory -Path $startDir -Force | Out-Null }
 
     $wsh = New-Object -ComObject WScript.Shell
 
-    $a = $wsh.CreateShortcut("$startDir\Flang Terminal.lnk")
+    $a = $wsh.CreateShortcut("$startDir\Germanio Terminal.lnk")
     $a.TargetPath       = "cmd.exe"
     $a.Arguments        = "/K `"$ExeDestino`" version"
     $a.WorkingDirectory = $DirInstalacao
-    $a.Description      = "Flang Programming Language v$VersaoInstalada"
+    $a.Description      = "Germanio Programming Language v$VersaoInstalada"
     $a.IconLocation     = "$ExeDestino,0"
     $a.Save()
 
-    Escrever-Ok "Atalho criado no Menu Iniciar > Flang"
+    Escrever-Ok "Atalho criado no Menu Iniciar > Germanio"
 }
 
 # ---------------------------------------------------------------------------
@@ -266,8 +266,8 @@ function Criar-Desinstalador {
 
     $script = @"
 #Requires -Version 5.0
-# Desinstalador do Flang — gerado em $(Get-Date -Format 'dd/MM/yyyy')
-Write-Host "`n  Desinstalando Flang..." -ForegroundColor Yellow
+# Desinstalador do Germanio — gerado em $(Get-Date -Format 'dd/MM/yyyy')
+Write-Host "`n  Desinstalando Germanio..." -ForegroundColor Yellow
 `$r = Read-Host "  Confirma remocao? [s/N]"
 if (`$r -notmatch '^[Ss]') { Write-Host "  Cancelado." -ForegroundColor Gray; exit 0 }
 
@@ -275,12 +275,12 @@ if (Test-Path "$DirInstalacao") { Remove-Item -Path "$DirInstalacao" -Recurse -F
 `$reg = "HKCU:\Environment"
 `$p = (Get-ItemProperty -Path `$reg -Name Path -ErrorAction SilentlyContinue).Path
 if (`$p) { Set-ItemProperty -Path `$reg -Name Path -Value ((`$p -split ';' | Where { `$_ -ne "$DirBin" }) -join ';') -Type ExpandString }
-foreach (`$k in @("HKCU:\Software\Classes\.ge","HKCU:\Software\Classes\FlangFile")) {
+foreach (`$k in @("HKCU:\Software\Classes\.ge","HKCU:\Software\Classes\GermanioFile")) {
     if (Test-Path `$k) { Remove-Item -Path `$k -Recurse -Force }
 }
-`$sm = Join-Path `$env:APPDATA "Microsoft\Windows\Start Menu\Programs\Flang"
+`$sm = Join-Path `$env:APPDATA "Microsoft\Windows\Start Menu\Programs\Germanio"
 if (Test-Path `$sm) { Remove-Item -Path `$sm -Recurse -Force }
-Write-Host "  Flang removido com sucesso. Reinicie o terminal." -ForegroundColor Cyan
+Write-Host "  Germanio removido com sucesso. Reinicie o terminal." -ForegroundColor Cyan
 "@
     $script | Set-Content -Path (Join-Path $DirInstalacao "desinstalar.ps1") -Encoding UTF8
     Escrever-Ok "Desinstalador criado em $DirInstalacao\desinstalar.ps1"
@@ -294,15 +294,15 @@ function Mostrar-Resumo {
 
     Write-Host ""
     Write-Host "  =============================================" -ForegroundColor Cyan
-    Write-Host "   Flang v$VersaoInstalada instalado com sucesso!" -ForegroundColor Green
+    Write-Host "   Germanio v$VersaoInstalada instalado com sucesso!" -ForegroundColor Green
     Write-Host "  =============================================" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "  Local de instalacao: $DirInstalacao" -ForegroundColor Gray
     Write-Host ""
     Write-Host "  Proximos passos:" -ForegroundColor White
     Write-Host "    1. Reinicie o terminal (ou PowerShell)" -ForegroundColor Gray
-    Write-Host "    2. Digite: flang version" -ForegroundColor Gray
-    Write-Host "    3. Crie um app: flang new meu-app" -ForegroundColor Gray
+    Write-Host "    2. Digite: germanio version" -ForegroundColor Gray
+    Write-Host "    3. Crie um app: germanio new meu-app" -ForegroundColor Gray
     Write-Host ""
     Write-Host "  Documentacao: $REPO_URL/tree/master/docs" -ForegroundColor DarkGray
     Write-Host "  Para desinstalar: powershell -File `"$DirInstalacao\desinstalar.ps1`"" -ForegroundColor DarkGray
@@ -330,7 +330,7 @@ if (-not $Silencioso) {
 }
 
 $arch    = Get-Arch
-$tempDir = Join-Path $env:TEMP "flang-install-$(Get-Date -Format 'yyyyMMddHHmmss')"
+$tempDir = Join-Path $env:TEMP "germanio-install-$(Get-Date -Format 'yyyyMMddHHmmss')"
 New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
 
 try {
