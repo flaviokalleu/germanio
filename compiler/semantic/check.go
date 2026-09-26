@@ -60,11 +60,11 @@ func Check(m *Module) error {
 			return c.err(d.Pos, "GE2001", "Nome de módulo em uso", d.Name+" já identifica um import.", "Renomeie a função.")
 		}
 		typeParams := map[string]*Type{}
-		for _, name := range d.TypeParams {
+		for i, name := range d.TypeParams {
 			if reserved[name] || name == "_" || name == d.Name {
 				return c.err(d.Pos, "GE2001", "Parâmetro de tipo inválido", name+" não pode ser usado como parâmetro de tipo.", "Escolha um nome como T ou Elemento.")
 			}
-			typeParams[name] = &Type{Kind: "param", Name: name}
+			typeParams[name] = &Type{Kind: "param", Name: name, Constraint: d.TypeParamConstraints[i]}
 		}
 		f := &Function{Decl: d, Result: parseTypeParams(d.ResultType, typeParams), Module: m}
 		for _, t := range d.ParamTypes {
@@ -683,8 +683,14 @@ func (c *checker) expr(x *ast.Expression, s *Scope) (*Type, error) {
 		}
 		result := a
 		if numeric(a) && numeric(b) {
+			ar, br := resolve(a), resolve(b)
+			if ar.Kind == "param" && br.Kind == "param" && ar.Name != br.Name {
+				return nil, c.err(x.Pos, "GE2004", "Operação entre tipos genéricos distintos", "Os parâmetros "+ar.Name+" e "+br.Name+" podem representar inteiro e decimal em qualquer combinação.", "Use operandos do mesmo parâmetro de tipo ou converta ambos explicitamente para decimal.")
+			}
 			if resolve(a).Kind == "decimal" || resolve(b).Kind == "decimal" {
 				result = typ("decimal")
+			} else if br.Kind == "param" {
+				result = b
 			}
 		} else if !unify(a, b) {
 			return nil, c.mismatch(x.Pos, a, b)
@@ -768,8 +774,8 @@ func (c *checker) expr(x *ast.Expression, s *Scope) (*Type, error) {
 		params, result := f.Params, f.Result
 		if len(f.Decl.TypeParams) != 0 && f != c.fn {
 			freshParams := map[string]*Type{}
-			for _, name := range f.Decl.TypeParams {
-				freshParams[name] = fresh()
+			for i, name := range f.Decl.TypeParams {
+				freshParams[name] = &Type{Constraint: f.Decl.TypeParamConstraints[i]}
 			}
 			params = make([]*Type, len(f.Params))
 			for i, param := range f.Params {

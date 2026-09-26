@@ -483,14 +483,15 @@ func (a *Assignment) NodeType() string { return "Assignment" }
 
 // FuncDecl represents: funcao name(params) ... body
 type FuncDecl struct {
-	Pos        diagnostics.Position
-	Private    bool // Accessible only inside the declaring module in .ge.
-	TypeParams []string
-	ParamTypes []string
-	ResultType string
-	Name       string
-	Params     []string
-	Body       []*Statement
+	Pos                  diagnostics.Position
+	Private              bool // Accessible only inside the declaring module in .ge.
+	TypeParams           []string
+	TypeParamConstraints []string // Parallel to TypeParams; "numeric" means numero.
+	ParamTypes           []string
+	ResultType           string
+	Name                 string
+	Params               []string
+	Body                 []*Statement
 }
 
 func (f *FuncDecl) NodeType() string { return "FuncDecl" }

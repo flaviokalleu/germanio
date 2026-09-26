@@ -243,6 +243,28 @@ func TestGenericCalls(t *testing.T) {
 		}
 	}
 }
+func TestNumericGenericConstraint(t *testing.T) {
+	for _, source := range []string{
+		"somar<T: numero>(a: T, b: T) -> T\n  a + b\nmostre somar(1, 2)\nmostre somar(1.5, 2.5)",
+		"sucessor<T: numero>(x: T) -> T\n  x + 1\nmostre sucessor(2.5)",
+		"subtrair<T: numero>(x: T) -> T\n  1 - x\nmostre subtrair(0.5)",
+	} {
+		if _, err := CheckSource("num.ge", source); err != nil {
+			t.Errorf("valid numeric generic: %v", err)
+		}
+	}
+	for _, source := range []string{
+		"somar<T: numero>(a: T, b: T) = a + b\nmostre somar(\"a\", \"b\")",
+		"somar<T: numero>(a: T, b: T) = a + b\nmostre somar(1, 2.5)",
+		"f<T>(x: T) = x + 1\nmostre f(2)",
+		"f<T: numero, U: numero>(a: T, b: U) = a + b\nmostre f(1, 2)",
+		"f<T: numero>(x: T) = x % 2\nmostre f(2)",
+	} {
+		if _, err := CheckSource("num.ge", source); err == nil || !strings.Contains(err.Error(), "GE2004") {
+			t.Errorf("expected numeric constraint diagnostic: %v for %q", err, source)
+		}
+	}
+}
 func TestTestConditionsAreChecked(t *testing.T) {
 	for _, source := range []string{
 		"dobro(x: inteiro) = x * 2\nteste \"dobro\"\n  espera dobro(2) == 4",

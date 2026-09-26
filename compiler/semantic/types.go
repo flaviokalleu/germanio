@@ -54,7 +54,10 @@ func parseTypeParams(s string, params map[string]*Type) *Type {
 	}
 	return typ(s)
 }
-func numeric(t *Type) bool { t = resolve(t); return t.Kind == "inteiro" || t.Kind == "decimal" }
+func numeric(t *Type) bool {
+	t = resolve(t)
+	return t.Kind == "inteiro" || t.Kind == "decimal" || t.Kind == "param" && t.Constraint == "numeric"
+}
 func unresolvedOptional(t *Type) bool {
 	t = resolve(t)
 	if t.Kind == "optional" && resolve(t.Elem).Kind == "" {
@@ -66,6 +69,9 @@ func permits(c string, t *Type) bool {
 	t = resolve(t)
 	if c == "" || t.Kind == "" {
 		return true
+	}
+	if t.Kind == "param" {
+		return t.Constraint == "numeric" && (c == "numeric" || c == "addable")
 	}
 	if numeric(t) {
 		return true

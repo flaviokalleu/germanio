@@ -40,10 +40,11 @@ parte desta versão. Decimais em execução são IEEE-754 de 64 bits, sempre fin
 ```ebnf
 programa    = { import | funcao | teste | instrucao } ;
 import      = "usa" string ;
-funcao      = ["privado"] nome ["<" nome {"," nome} ">"]
+funcao      = ["privado"] nome ["<" tipo_param {"," tipo_param} ">"]
               "(" [param {"," param}] ")" ["->" tipo]
               ("=" expressao | NOVALINHA bloco) ;
 param       = nome [":" tipo] ;
+tipo_param  = nome [":" "numero"] ;
 tipo        = ("texto" | "inteiro" | "decimal" | "bool" | parametro_tipo | "[" tipo "]") ["?"] ;
 declaracao  = ["variavel" | "mut" | "const"] nome [":" tipo] "=" expressao ;
 atribuicao  = nome ("=" | "+=" | "-=") expressao ;
@@ -85,9 +86,16 @@ com parâmetros de tipo explícitos, como `identidade<T>(valor: T) -> T`,
 instanciam `T` independentemente em cada chamada. A inferência vem dos
 argumentos: `identidade(1)` e `identidade("A")` podem coexistir, mas
 `identidade(nulo)` e `identidade([])` não definem `T` e são rejeitados.
-Parâmetros genéricos são rígidos no corpo: `T + 1` é inválido porque nem todo
-`T` suporta soma. Não existem restrições de tipo nem especialização explícita
-nesta etapa; genéricos não tornam as demais inferências polimórficas.
+Parâmetros genéricos são rígidos no corpo: `T + 1` é inválido sem restrição
+porque nem todo `T` suporta soma. `T: numero` permite valores `inteiro` ou
+`decimal`, com inferência separada por chamada. A função
+`somar<T: numero>(a: T, b: T) -> T` aceita dois inteiros ou dois decimais.
+Textos e a mistura de tipos no
+mesmo `T` são rejeitados antes da execução. `/` sempre devolve decimal;
+`%` não é aceito em `T: numero` porque `T` também pode ser decimal.
+Operações entre dois parâmetros genéricos numéricos distintos são rejeitadas
+quando não têm um resultado único garantido. Outros contratos, outras
+restrições e especialização explícita continuam pendentes.
 Tipos suportados: texto, inteiro, decimal, bool, listas homogêneas e opcionais,
 inclusive composições `[texto?]`. Listas vazias podem usar anotação explícita.
 Uma lista que mistura `nulo` e texto infere `[texto?]`; uma lista de `texto`

@@ -208,6 +208,7 @@ func (g *geParser) statement(l geLine, top bool) (*ast.Statement, error) {
 	// Type parameters appear only on declarations, immediately before (.
 	open := 1
 	var typeParams []string
+	var typeParamConstraints []string
 	if len(t) > 2 && t[1].Value == "<" {
 		open = 2
 		for open < len(t) && t[open].Value != ">" {
@@ -221,6 +222,19 @@ func (g *geParser) statement(l geLine, top bool) (*ast.Statement, error) {
 			}
 			typeParams = append(typeParams, t[open].Value)
 			open++
+			constraint := ""
+			if open < len(t) && t[open].Value == ":" {
+				open++
+				if open >= len(t) {
+					return nil, g.syntax(t[len(t)-1], "Restrição ausente; use T: numero")
+				}
+				if t[open].Value != "numero" {
+					return nil, g.syntax(t[open], "Restrição desconhecida; use T: numero para operações numéricas")
+				}
+				constraint = "numeric"
+				open++
+			}
+			typeParamConstraints = append(typeParamConstraints, constraint)
 			if open < len(t) && t[open].Value == "," {
 				open++
 				if open < len(t) && t[open].Value == ">" {
@@ -255,7 +269,7 @@ func (g *geParser) statement(l geLine, top bool) (*ast.Statement, error) {
 			if !top {
 				return nil, g.syntax(first, "Funções devem ser declaradas no topo do módulo")
 			}
-			fn := &ast.FuncDecl{Name: t[0].Value, Pos: g.pos(first), Private: private, TypeParams: typeParams}
+			fn := &ast.FuncDecl{Name: t[0].Value, Pos: g.pos(first), Private: private, TypeParams: typeParams, TypeParamConstraints: typeParamConstraints}
 			args := t[open+1 : close]
 			for len(args) > 0 {
 				if args[0].Type != lexer.TokenIdentifier {

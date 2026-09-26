@@ -21,6 +21,7 @@ func TestFormatterIdempotentAndPreservesBehavior(t *testing.T) {
 		"mut i=0\n# teste\nenquanto i<2\n  i+=1\n  mostre i\n",
 		"variavel i=0\n# teste\nenquanto i<2\n  i+=1\n  mostre i\n",
 		"id<T>(x:T)->T\n  x\nmostre id(1)\nmostre id(\"A\")\n",
+		"somar<T:numero>(a:T,b:T)->T\n  a+b\nmostre somar(2,3)\n",
 	} {
 		t.Run(source, func(t *testing.T) {
 			a, err := Format("x.ge", source)

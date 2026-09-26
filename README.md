@@ -68,6 +68,7 @@ Experimente os exemplos reais:
 ./ge rodar examples/germanio/fundamentos.ge
 ./ge rodar examples/germanio/opcionais.ge
 ./ge rodar examples/germanio/genericos.ge
+./ge rodar examples/germanio/numeros_genericos.ge
 ./ge testar examples/germanio
 ./ge rodar examples/germanio/imports.ge
 ./ge check examples/germanio/entrada.ge
@@ -137,8 +138,19 @@ mostre identidade("olá")
 ```
 
 Cada chamada infere `T` pelo argumento. Operações que só funcionam em tipos
-específicos não são permitidas sobre um `T` sem restrição; restrições de tipo
-e especialização explícita ainda são trabalho futuro.
+específicos não são permitidas sobre um `T` sem restrição. Para contas, use a
+restrição numérica básica:
+
+```ge
+somar<T: numero>(a: T, b: T) -> T
+  a + b
+
+mostre somar(2, 3)
+mostre somar(1.5, 2.5)
+```
+
+`somar("a", "b")` é rejeitado antes de executar. Contratos estruturais,
+outras restrições e especialização explícita continuam no roadmap.
 
 ### Coleções, condições e repetição
 

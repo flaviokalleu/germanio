@@ -1,0 +1,5 @@
+somar<T: numero>(a: T, b: T) -> T
+  a + b
+
+mostre somar(2, 3)
+mostre somar(1.5, 2.5)

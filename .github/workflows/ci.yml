@@ -40,6 +40,7 @@ jobs:
           ./ge rodar examples/germanio/ola.ge
           ./ge rodar examples/germanio/fundamentos.ge
           ./ge rodar examples/germanio/genericos.ge
+          ./ge rodar examples/germanio/numeros_genericos.ge
           ./ge testar examples/germanio
           ./ge testar examples/germanio --coverage
           ./ge rodar examples/germanio/imports.ge

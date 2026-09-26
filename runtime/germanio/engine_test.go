@@ -27,6 +27,7 @@ func TestExecution(t *testing.T) {
 		{"nome = pergunte \"Qual seu nome?\"\nmostre \"Olá {nome}\"", "Flavio\n", "Qual seu nome? Olá Flavio\n"},
 		{"dobro(x) = x * 2\nmostre dobro(21)", "", "42\n"},
 		{"id<T>(x: T) -> T\n  x\nmostre id(7)\nmostre id(\"oi\")", "", "7\noi\n"},
+		{"somar<T: numero>(a: T, b: T) -> T\n  a + b\nmostre somar(2, 3)\nmostre somar(1.5, 2.5)", "", "5\n4\n"},
 		{"somar(a, b)\n  a + b\nmostre somar(2, 3)", "", "5\n"},
 		{"mut total = 0\npara item em [1, 2, 3]\n  total += item\nmostre total", "", "6\n"},
 		{"variavel total = 0\npara item em [1, 2, 3]\n  total += item\nmostre total", "", "6\n"},

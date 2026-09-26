@@ -59,6 +59,17 @@ func TestGenericFunctionSyntax(t *testing.T) {
 		}
 	}
 }
+func TestNumericTypeParameterSyntax(t *testing.T) {
+	p, err := ParseGermanio("numeric.ge", "somar<T: numero>(a: T, b: T) -> T\n  a + b\nmostre somar(2, 3)")
+	if err != nil || len(p.Functions) != 1 || !reflect.DeepEqual(p.Functions[0].TypeParamConstraints, []string{"numeric"}) {
+		t.Fatalf("numeric signature: %+v %v", p, err)
+	}
+	for _, source := range []string{"f<T: texto>(x: T) = x", "f<T:>(x: T) = x", "f<T: numero,>(x: T) = x", "f<T: "} {
+		if _, err := ParseGermanio("bad.ge", source); err == nil {
+			t.Errorf("accepted invalid constraint: %q", source)
+		}
+	}
+}
 func TestNamedTestsSyntax(t *testing.T) {
 	p, err := ParseGermanio("soma_teste.ge", "teste \"soma\"\n  espera 2 + 2 == 4\n  se verdadeiro\n    espera 1 == 1\nmostre \"executar normalmente\"")
 	if err != nil || len(p.Tests) != 1 || len(p.Tests[0].Body) != 2 || len(p.Scripts) != 1 || p.Tests[0].Body[0].Type != "expect" {
