@@ -118,6 +118,11 @@ func (c *checker) unused(s *Scope) error {
 	sort.Strings(names)
 	for _, n := range names {
 		b := s.Bindings[n]
+		if s.Parent != nil {
+			if _, inherited := s.Parent.lookup(n); inherited {
+				continue // A branch view is checked at the declaration's scope.
+			}
+		}
 		if !b.Used {
 			return c.err(b.Pos, "GE2003", "Variável não utilizada", n+" não foi lida.", "Use o valor, remova a declaração ou escreva _ = "+n+" para descarte explícito.")
 		}
@@ -250,14 +255,62 @@ func applyPresence(s *Scope, facts presenceSet, region []*ast.Statement, allowMu
 		refine(s, name, allowMutable && !writesNestedName(region, name))
 	}
 }
-func (c *checker) child(stmts []*ast.Statement, parent *Scope, facts presenceSet) (bool, error) {
+func (c *checker) child(stmts []*ast.Statement, parent *Scope, facts presenceSet) (bool, *Scope, error) {
 	s := scope(parent)
 	applyPresence(s, facts, stmts, true)
 	r, e := c.block(stmts, s)
 	if e == nil {
 		e = c.unused(s)
 	}
-	return r, e
+	return r, s, e
+}
+
+// Merge optional mutable values only when every continuing path guarantees a value.
+func mergeMutable(parent, yes, no *Scope, yesReturns, noReturns bool) {
+	seen := map[string]bool{}
+	for cur := parent; cur != nil; cur = cur.Parent {
+		for name, b := range cur.Bindings {
+			if seen[name] {
+				continue
+			}
+			seen[name] = true
+			base := declared(b)
+			if !base.Mutable || resolve(base.Type).Kind != "optional" {
+				continue
+			}
+			present := func(child *Scope) bool {
+				v, _ := child.lookup(name)
+				return v != nil && resolve(v.Type).Kind != "optional"
+			}
+			if (yesReturns || present(yes)) && (noReturns || present(no)) {
+				parent.Bindings[name] = &Binding{Type: resolve(base.Type).Elem, Mutable: true, Used: true, Pos: base.Pos, Origin: base}
+			} else {
+				parent.Bindings[name] = base
+			}
+		}
+	}
+}
+func recordWrite(s *Scope, name string, base *Binding, value *Type) {
+	if resolve(base.Type).Kind == "optional" && resolve(value).Kind != "" && resolve(value).Kind != "optional" && resolve(value).Kind != "nulo" {
+		s.Bindings[name] = &Binding{Type: resolve(base.Type).Elem, Mutable: true, Used: true, Pos: base.Pos, Origin: base}
+	} else {
+		s.Bindings[name] = base
+	}
+}
+func invalidateLoopWrites(s *Scope, body []*ast.Statement) {
+	seen := map[string]bool{}
+	for cur := s; cur != nil; cur = cur.Parent {
+		for name, b := range cur.Bindings {
+			if seen[name] {
+				continue
+			}
+			seen[name] = true
+			base := declared(b)
+			if base.Mutable && resolve(base.Type).Kind == "optional" && writesName(body, name) {
+				s.Bindings[name] = base
+			}
+		}
+	}
 }
 func (c *checker) block(stmts []*ast.Statement, s *Scope) (bool, error) {
 	terminated := false
@@ -296,7 +349,7 @@ func (c *checker) block(stmts []*ast.Statement, s *Scope) (bool, error) {
 				if !assignable(base.Type, t) {
 					return false, c.mismatch(st.Pos, base.Type, t)
 				}
-				s.Bindings[d.Name] = base // A write invalidates a refined optional.
+				recordWrite(s, d.Name, base, t)
 				continue
 			}
 			want := parseType(d.Annotation)
@@ -323,7 +376,7 @@ func (c *checker) block(stmts []*ast.Statement, s *Scope) (bool, error) {
 			if !assignable(base.Type, t) {
 				return false, c.mismatch(st.Pos, base.Type, t)
 			}
-			s.Bindings[st.Assign.Target] = base
+			recordWrite(s, st.Assign.Target, base, t)
 		case "print", "expr", "return":
 			x := st.Expr
 			if st.Type == "print" {
@@ -359,22 +412,24 @@ func (c *checker) block(stmts []*ast.Statement, s *Scope) (bool, error) {
 			}
 			thenFacts := presenceFacts(&st.If.Condition, true)
 			elseFacts := presenceFacts(&st.If.Condition, false)
-			a, e := c.child(st.If.Body, s, thenFacts)
+			a, yes, e := c.child(st.If.Body, s, thenFacts)
 			if e != nil {
 				return false, e
 			}
-			b, e := c.child(st.If.Else, s, elseFacts)
+			b, no, e := c.child(st.If.Else, s, elseFacts)
 			if e != nil {
 				return false, e
 			}
 			terminated = a && b
 			returns = terminated
+			mergeMutable(s, yes, no, a, b)
 			if a && !b {
 				applyPresence(s, elseFacts, nil, false)
 			} else if b && !a {
 				applyPresence(s, thenFacts, nil, false)
 			}
 		case "while":
+			invalidateLoopWrites(s, st.While.Body)
 			t, e := c.expr(&st.While.Condition, s)
 			if e != nil {
 				return false, e
@@ -383,12 +438,13 @@ func (c *checker) block(stmts []*ast.Statement, s *Scope) (bool, error) {
 				return false, c.mismatch(st.Pos, typ("bool"), t)
 			}
 			c.loops++
-			_, e = c.child(st.While.Body, s, presenceFacts(&st.While.Condition, true))
+			_, _, e = c.child(st.While.Body, s, presenceFacts(&st.While.Condition, true))
 			c.loops--
 			if e != nil {
 				return false, e
 			}
 		case "for_each":
+			invalidateLoopWrites(s, st.ForEach.Body)
 			t, e := c.expr(&st.ForEach.Collection, s)
 			if e != nil {
 				return false, e

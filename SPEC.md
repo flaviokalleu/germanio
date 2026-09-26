@@ -99,6 +99,11 @@ nenhum bloco interno puder reatribuir a mesma variável. Escritas diretas no
 ramo invalidam o refinamento naquela linha: leituras anteriores à escrita
 são aceitas; leituras posteriores exigem
 novo teste. O refinamento não continua após o `se` para variáveis mutáveis.
+Depois de uma atribuição de valor não nulo, uma variável opcional mutável pode
+ser usada como `T` até uma nova atribuição ou junção de fluxos. Após `se`, a
+presença continua apenas quando todos os ramos que prosseguem garantem um valor;
+um ramo que retorna não participa dessa junção. Escritas em loops invalidam a
+presença anterior até que uma nova condição a comprove.
 Não há desreferência implícita de opcional.
 
 `+` soma números ou concatena dois textos; `-`, `*`, `/`, `%` são numéricos.

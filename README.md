@@ -96,6 +96,19 @@ dentro do ramo. Condições `e`/`ou` respeitam o curto circuito: `nome != nulo e
 quantidade(nome) > 0` é seguro. Veja [opcionais.ge](examples/germanio/opcionais.ge).
 Isso também funciona com `variavel` quando o ramo não altera o valor; se houver
 reatribuição, mantenha a verificação e o uso em um trecho sem escrita.
+Se todos os caminhos atribuírem um texto, o uso após o `se` também é seguro:
+
+```ge
+variavel saudacao: texto? = nulo
+se verdadeiro
+  saudacao = "Olá"
+senao
+  saudacao = "Oi"
+mostre saudacao + "!"
+```
+
+Um caminho que ainda possa deixar `saudacao` como `nulo` produz erro na linha
+de uso; loops que a alteram exigem nova verificação de presença.
 
 ### Funções sem cerimônia
 

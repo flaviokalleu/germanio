@@ -140,6 +140,29 @@ func TestMutableGuardExplainsInvalidation(t *testing.T) {
 	}
 }
 
+func TestMutableOptionalJoins(t *testing.T) {
+	for _, source := range []string{
+		"variavel nome: texto? = nulo\nse verdadeiro\n  nome = \"Ada\"\nsenao\n  nome = \"Bia\"\nmostre nome + \"!\"",
+		"variavel nome: texto? = nulo\nnome = \"Ada\"\nmostre nome + \"!\"",
+		"f(flag: bool) -> texto\n  variavel nome: texto? = nulo\n  se flag\n    nome = \"Ada\"\n  senao\n    retorne \"fora\"\n  retorne nome + \"!\"\nmostre f(verdadeiro)",
+	} {
+		if _, err := CheckSource("join.ge", source); err != nil {
+			t.Errorf("expected valid program: %v", err)
+		}
+	}
+	for _, source := range []string{
+		"variavel nome: texto? = nulo\nse verdadeiro\n  nome = \"Ada\"\nmostre nome + \"!\"",
+		"variavel nome: texto? = \"Ada\"\nse verdadeiro\n  nome = nulo\nmostre nome + \"!\"",
+		"variavel nome: texto? = nulo\nse verdadeiro\n  nome = \"Ada\"\nsenao\n  nome = nulo\nmostre nome + \"!\"",
+		"variavel nome: texto? = \"Ada\"\nvariavel i = 0\nenquanto i < 1\n  i += 1\n  nome = nulo\nmostre nome + \"!\"",
+		"variavel nome: texto? = \"Ada\"\nse nome != nulo\n  se verdadeiro\n    nome = nulo\n  mostre nome + \"!\"",
+	} {
+		if _, err := CheckSource("join.ge", source); err == nil || !strings.Contains(err.Error(), "GE2004") {
+			t.Errorf("expected optional diagnostic, got %v", err)
+		}
+	}
+}
+
 func TestLocalModules(t *testing.T) {
 	dir := t.TempDir()
 	write := func(name, source string) {
