@@ -13,7 +13,7 @@ para `.ge`. Não há data de lançamento anunciada para as fases futuras.
 | 1. Fundação | Implementada no escopo da SPEC | `ge`, `.ge`, lexer/parser/AST, análise inicial, interpretador, exemplos, formatter inicial e compatibilidade `.fg` |
 | 2. Tipos e semântica | Em andamento | Opcionais com junção de fluxo, genéricos explícitos básicos, funções privadas, inferência monomórfica fora de genéricos e imports locais |
 | 3. Full-stack `.ge` | Pendente | Apenas HTML estático limitado; servidor/banco/auth do Flang continuam em `.fg` |
-| 4. Toolchain | Em andamento | CLI/formatter/CI iniciais e testes nativos `ge testar`; manifesto, dependências, cobertura e LSP ainda não |
+| 4. Toolchain | Em andamento | CLI/formatter/CI iniciais, testes nativos `ge testar` e cobertura de instruções; manifesto, dependências e LSP ainda não |
 | 5. Performance | Pendente | Limites de execução existem; HIR/MIR e compilação incremental ainda não |
 | 6. Poder avançado | Pendente | Nenhum backend FFI/WASM/JIT/SIMD/GPU `.ge` anunciado |
 
@@ -55,7 +55,7 @@ para `.ge`. Não há data de lançamento anunciada para as fases futuras.
 
 - Introduzir `germanio.toml` e lockfile apenas junto com resolução reproduzível
   de dependências. Completar formatter e linter com saída determinística.
-- Ampliar testes nativos com cobertura, benchmarks/fuzzing pela CLI e LSP com diagnósticos e
+- Ampliar testes nativos com cobertura de ramos, benchmarks/fuzzing pela CLI e LSP com diagnósticos e
   correções verificadas no editor.
 - Critério de saída: projeto criado, formatado, testado e instalado em ambiente
   limpo; builds reproduzíveis e testes de integração na CI.

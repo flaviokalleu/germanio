@@ -177,8 +177,9 @@ teste "soma"
 Salve como `matematica_teste.ge` e execute `ge testar` na pasta ou
 `ge testar matematica_teste.ge`. Os testes têm variáveis locais isoladas.
 `ge check` verifica suas condições sem executá-las; `ge rodar` executa apenas
-o programa. Falhas apontam a linha `espera`; cobertura e detecção de corrida
-pela CLI ainda não estão disponíveis.
+o programa. Falhas apontam a linha `espera`. `ge testar --coverage` informa
+instruções executadas e posições sem cobertura, incluindo funções importadas.
+Detecção de corrida pela CLI ainda não está disponível.
 
 ### Erros que ajudam a corrigir
 
@@ -218,6 +219,7 @@ produz GE4102, com orientação para usar comprimento, como `45px`.
 | `ge rodar arquivo.ge` | Verifica e executa; usa `inicio.ge` se omitido |
 | `ge check arquivo.ge` | Analisa sem executar entrada, banco ou servidor |
 | `ge testar [arquivo-ou-pasta]` | Executa testes `.ge`; pastas buscam `*_teste.ge` |
+| `ge testar --coverage` | Mede instruções executadas nos testes e nas funções |
 | `ge fmt arquivo-ou-pasta` | Formatação inicial com preservação de comentários |
 | `ge fmt --check` | Retorna erro se há diferenças; não escreve |
 | `ge novo pasta` | Cria um programa; não sobrescreve pasta existente |

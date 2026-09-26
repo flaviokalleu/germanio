@@ -58,9 +58,12 @@ type Engine struct {
 	input        *bufio.Reader
 	module       *semantic.Module
 	testName     string
+	coverageAll  map[diagnostics.Position]bool
+	coverageHit  map[diagnostics.Position]bool
 }
 
 func (e *Engine) Run(m *semantic.Module) (err error) {
+	e.coverageAll, e.coverageHit = nil, nil
 	if err = semantic.Check(m); err != nil {
 		return err
 	}
@@ -108,6 +111,8 @@ func (e *Engine) RunTests(m *semantic.Module) (passed []string, err error) {
 	}
 	e.input = bufio.NewReader(e.Input)
 	e.module = m
+	e.coverageAll, e.coverageHit = map[diagnostics.Position]bool{}, map[diagnostics.Position]bool{}
+	e.collectCoverage(m, map[*semantic.Module]bool{}, true)
 	defer func() {
 		if p := recover(); p != nil {
 			if d, ok := p.(*diagnostics.Diagnostic); ok {
@@ -124,6 +129,52 @@ func (e *Engine) RunTests(m *semantic.Module) (passed []string, err error) {
 		passed = append(passed, test.Name)
 	}
 	return passed, nil
+}
+
+func (e *Engine) collectCoverage(m *semantic.Module, visited map[*semantic.Module]bool, entry bool) {
+	if visited[m] {
+		return
+	}
+	visited[m] = true
+	for _, f := range m.Program.Functions {
+		e.collectStatements(f.Body)
+	}
+	if entry {
+		for _, test := range m.Program.Tests {
+			e.collectStatements(test.Body)
+		}
+	}
+	for _, name := range m.ImportOrder {
+		e.collectCoverage(m.Imports[name], visited, false)
+	}
+}
+
+func (e *Engine) collectStatements(stmts []*ast.Statement) {
+	for _, st := range stmts {
+		e.coverageAll[st.Pos] = true
+		switch st.Type {
+		case "if":
+			e.collectStatements(st.If.Body)
+			e.collectStatements(st.If.Else)
+		case "while":
+			e.collectStatements(st.While.Body)
+		case "for_each":
+			e.collectStatements(st.ForEach.Body)
+		}
+	}
+}
+
+// CoverageLines returns the positions reached by ge testar and all eligible
+// statement positions. Consumers can union sets across multiple test files.
+func (e *Engine) CoverageLines() (hit, all map[diagnostics.Position]bool) {
+	hit, all = map[diagnostics.Position]bool{}, map[diagnostics.Position]bool{}
+	for p := range e.coverageHit {
+		hit[p] = true
+	}
+	for p := range e.coverageAll {
+		all[p] = true
+	}
+	return hit, all
 }
 func (e *Engine) fail(pos diagnostics.Position, code, msg, why, fix string) {
 	panic(&diagnostics.Diagnostic{Code: code, Position: pos, Source: e.module.Program.Source, Message: msg, Reason: why, Fix: fix, Example: diagnostics.Explanations[code]})
@@ -142,6 +193,9 @@ func (e *Engine) write(pos diagnostics.Position, s string) {
 func (e *Engine) block(stmts []*ast.Statement, s *env) flow {
 	for _, st := range stmts {
 		e.tick(st.Pos)
+		if e.coverageHit != nil {
+			e.coverageHit[st.Pos] = true
+		}
 		switch st.Type {
 		case "expect":
 			if !e.eval(st.Expect, s).(bool) {

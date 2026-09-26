@@ -41,6 +41,7 @@ jobs:
           ./ge rodar examples/germanio/fundamentos.ge
           ./ge rodar examples/germanio/genericos.ge
           ./ge testar examples/germanio
+          ./ge testar examples/germanio --coverage
           ./ge rodar examples/germanio/imports.ge
           printf 'Flavio\n' | ./ge rodar examples/germanio/entrada.ge
           ./ge fmt examples/germanio --check

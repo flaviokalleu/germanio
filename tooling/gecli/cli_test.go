@@ -74,7 +74,7 @@ func TestCLINativeTests(t *testing.T) {
 		}
 		return path
 	}
-	write("matematica.ge", "soma(a: inteiro, b: inteiro) = a + b\n")
+	write("matematica.ge", "soma(a: inteiro, b: inteiro) = a + b\nnunca() = 99\n")
 	path := write("matematica_teste.ge", "usa \"matematica.ge\"\nteste \"soma\"\n  espera matematica.soma(2, 2) == 4\n")
 	if code, out, err := invoke("testar", dir); code != 0 || !strings.Contains(out, "1 teste(s) passaram") {
 		t.Fatalf("directory test: %d %s %s", code, out, err)
@@ -82,8 +82,11 @@ func TestCLINativeTests(t *testing.T) {
 	if code, out, err := invoke("testar", path); code != 0 || !strings.Contains(out, "ok ") {
 		t.Fatalf("file test: %d %s %s", code, out, err)
 	}
-	if code, _, _ := invoke("testar", dir, "--coverage"); code == 0 {
-		t.Fatal("claimed to support coverage")
+	if code, out, err := invoke("testar", dir, "--coverage"); code != 0 || !strings.Contains(out, "Cobertura de instruções: 2/3 (66.7%)") || !strings.Contains(out, "Sem cobertura: "+filepath.Join(dir, "matematica.ge")+":2:") {
+		t.Fatalf("expected coverage: %d %s %s", code, out, err)
+	}
+	if code, _, _ := invoke("testar", dir, "--race"); code == 0 {
+		t.Fatal("claimed to support race detection")
 	}
 	write("matematica_teste.ge", "teste \"errado\"\n  espera 1 == 2\n")
 	if code, _, err := invoke("testar", dir); code != 1 || !strings.Contains(err, "GE2008") {

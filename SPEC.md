@@ -212,8 +212,13 @@ locais isoladas e limite de passos reiniciado por teste. `ge testar pasta` ou
 executa seus testes, incluindo imports locais de funções. Scripts de topo não
 são executados nos testes; testes importados não são executados implicitamente.
 Uma expectativa falsa recebe GE2008 na linha `espera`, com o nome do teste.
-Arquivos sem testes não contam como sucesso; flags futuras `--coverage` e
-`--race` são recusadas até existir suporte real.
+Arquivos sem testes não contam como sucesso. `ge testar --coverage` informa
+instruções cobertas sobre instruções elegíveis, incluindo corpos de funções
+importadas e dos testes carregados; lista posições que não foram executadas.
+Scripts de topo e testes em módulos importados são excluídos dessa contagem,
+porque não são executados por `ge testar`. Isto mede **instruções**, não ramos
+de `se` nem linhas de expressão: não equivale a branch coverage. `--race` é
+recusado até existir suporte real.
 
 ## Próximas fases (não implementadas)
 
@@ -221,7 +226,7 @@ Arquivos sem testes não contam como sucesso; flags futuras `--coverage` e
   avançados, contratos, restrições genéricas, erros tipados e escopos avançados.
 - Fase 3: UI completa, frontend/backend `.ge`, modelos, RPC seguro, banco e auth.
 - Fase 4: manifesto, dependências, stdlib, LSP/Quick Fix, formatter/linter completos,
-  cobertura de testes, benchmark, fuzzing e profiling.
+  cobertura de ramos, benchmark, fuzzing e profiling.
 - Fase 5: HIR/MIR, otimização, compilação incremental e backends compilados.
 - Fase 6: FFI, WASM/JIT, SIMD/GPU, memória avançada e metaprogramação.
 

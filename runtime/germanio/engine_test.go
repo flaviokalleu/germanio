@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/flaviokalleu/germanio/compiler/diagnostics"
 	"github.com/flaviokalleu/germanio/compiler/semantic"
 )
 
@@ -170,6 +171,28 @@ func TestNativeTestsAreIsolatedAndNotRunByProgram(t *testing.T) {
 	for _, part := range []string{"GE2008", "falha_teste.ge:2:3", "Teste falhou: falha", "Por quê:", "Como corrigir:", "Exemplo:"} {
 		if !strings.Contains(err.Error(), part) {
 			t.Errorf("missing %s: %v", part, err)
+		}
+	}
+}
+func TestCoverageCountsOnlyExecutableTestAndFunctionStatements(t *testing.T) {
+	m, err := semantic.CheckSource("cobertura_teste.ge", "f(x: inteiro) -> inteiro\n  se x == 0\n    retorne 0\n  retorne x\nmostre 999\nteste \"zero\"\n  espera f(0) == 0\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	e := &Engine{}
+	if _, err := e.RunTests(m); err != nil {
+		t.Fatal(err)
+	}
+	hit, all := e.CoverageLines()
+	if len(hit) != 3 || len(all) != 4 {
+		t.Fatalf("expected 3/4, got %d/%d: %+v %+v", len(hit), len(all), hit, all)
+	}
+	if !all[diagnostics.Position{File: "cobertura_teste.ge", Line: 4, Column: 3}] || hit[diagnostics.Position{File: "cobertura_teste.ge", Line: 4, Column: 3}] {
+		t.Fatal("unexecuted return not counted as uncovered")
+	}
+	for p := range all {
+		if p.Line == 5 {
+			t.Fatal("top-level script incorrectly counted")
 		}
 	}
 }
