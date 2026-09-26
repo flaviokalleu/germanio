@@ -63,6 +63,7 @@ Experimente os exemplos reais:
 ```bash
 ./ge rodar examples/germanio/ola.ge
 ./ge rodar examples/germanio/fundamentos.ge
+./ge rodar examples/germanio/opcionais.ge
 ./ge rodar examples/germanio/imports.ge
 ./ge check examples/germanio/entrada.ge
 ./ge fmt examples/germanio --check
@@ -84,6 +85,8 @@ mostre contador
 Valores são imutáveis, a menos que você escreva `mut`. Tipos são inferidos, mas
 anotações são permitidas: `idade: inteiro = 30`. Tipos iniciais: texto, inteiro,
 decimal, bool, listas homogêneas e opcionais `T?`.
+Por exemplo, `nomes: [texto?] = [nulo, "Ada"]` guarda valores
+opcionais; `nulo` não entra em um parâmetro ou lista de tipo obrigatório.
 
 ### Funções sem cerimônia
 

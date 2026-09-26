@@ -27,6 +27,8 @@ de varredura léxica. Nenhum recurso web foi reescrito por aparência.
 - AST ampliado sem remover estruturas legadas; origem em arquivo/linha/coluna.
 - Variáveis imutáveis, `mut`, `const`, inferência inicial monomórfica e anotações.
 - Texto, inteiro, decimal, bool, listas homogêneas, listas vazias tipadas e opcionais.
+- Listas com elementos opcionais inferidos, atribuição segura de `[T]` a `[T?]`
+  e rejeição de `nulo` em parâmetros obrigatórios ou sem tipo definido.
 - Funções, retorno implícito/explicito, recursão, condicionais e loops com controle.
 - Entrada/saída, interpolação, conversões explícitas, quantidade e indexação segura.
 - Imports locais com namespace, diagnóstico de ciclos, duplicatas e acesso externo.
@@ -35,7 +37,7 @@ de varredura léxica. Nenhum recurso web foi reescrito por aparência.
 - Formatter inicial idempotente, que preserva comentários e recusa código inválido.
 - UI natural mínima executável: navbar e botão estáticos, escape de texto,
   arredondamento com unidades verificadas. Não conecta ações nem inicia servidor.
-- Seis exemplos `.ge`, documentação atual, logo fornecida pelo usuário e referência
+- Sete exemplos `.ge`, documentação atual, logo fornecida pelo usuário e referência
   histórica Flang preservada em `docs/FLANG_LEGACY.md`.
 - Highlighting `.ge` na extensão existente, mantendo `.fg`. Sem alegar suporte LSP.
 - CI com testes, vet, race checks, builds e exemplos de ambos os modos.
@@ -46,7 +48,7 @@ de varredura léxica. Nenhum recurso web foi reescrito por aparência.
 - `go vet ./...` e `go test -race ./compiler/... ./runtime/germanio ./tooling/...`.
 - Builds da CLI Germanio e da CLI Flang.
 - Execução real de entrada pelo terminal, exemplos de fundamentos e imports.
-- `ge check` nos seis exemplos `.ge` e nos demos plano/organizado `.fg`.
+- `ge check` nos exemplos `.ge` e nos demos plano/organizado `.fg`.
 - `ge fmt examples/germanio --check`.
 - Fuzzing do parser por 15 segundos: 670.904 entradas, sem falha naquela execução.
 - JSON de metadados e gramática da extensão validado sintaticamente. A extensão

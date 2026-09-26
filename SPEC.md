@@ -77,6 +77,8 @@ o tipo inferido/declarado. Locais, parâmetros e imports sem leitura são erros;
 Inferência inicial é **monomórfica** por função/módulo: não equivale a generics.
 Tipos suportados: texto, inteiro, decimal, bool, listas homogêneas e opcionais,
 inclusive composições `[texto?]`. Listas vazias podem usar anotação explícita.
+Uma lista que mistura `nulo` e texto infere `[texto?]`; uma lista de `texto`
+pode ser atribuída a `[texto?]`, mas a conversão inversa é rejeitada.
 Mapas, dinheiro exato, byte, datas, horas e larguras numéricas adicionais ainda
 não fazem parte do núcleo `.ge` (tipos Flang não foram removidos do modo `.fg`).
 

@@ -1,0 +1,9 @@
+# nulo só pertence a um tipo opcional, inclusive dentro de listas.
+nomes: [texto?] = [nulo, "Ada"]
+mostre nomes[0] == nulo
+mostre nomes[1]
+
+tem_nome(valor: texto?) -> bool
+  valor != nulo
+
+mostre tem_nome(nomes[1])
