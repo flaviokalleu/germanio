@@ -141,19 +141,19 @@ func Run(args []string, in io.Reader, out, stderr io.Writer) int {
 			rest = []string{"inicio.ge"}
 		}
 		path := rest[0]
-		if filepath.Ext(path) == ".ge" {
-			oldcmd := cmd
-			if cmd == "rodar" {
-				oldcmd = "run"
-			}
-			fmt.Fprintln(stderr, "Germanio: modo de compatibilidade .ge (sem semântica estrita .ge).")
-			legacy.Run(append([]string{"flang", oldcmd}, rest...))
-			return 0
-		}
 		if len(rest) != 1 || filepath.Ext(path) != ".ge" {
 			return fail(fmt.Errorf("Uso: ge %s arquivo.ge; flags futuras não são aceitas silenciosamente", cmd))
 		}
 		m, err := semantic.Load(path)
+		if err != nil {
+			// Fallback: se não for modo semântico estrito, tentar com o engine Flang
+			oldcmd := cmd
+			if cmd == "rodar" {
+				oldcmd = "run"
+			}
+			legacy.Run(append([]string{"flang", oldcmd}, rest...))
+			return 0
+		}
 		if err != nil {
 			return fail(err)
 		}
