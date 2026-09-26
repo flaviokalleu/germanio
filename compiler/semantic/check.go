@@ -120,23 +120,62 @@ func (c *checker) unused(s *Scope) error {
 	return nil
 }
 
-// presenceGuard recognizes only direct, deterministic presence comparisons.
-// Arbitrary boolean expressions cannot safely establish a variable's type.
-func presenceGuard(x *ast.Expression) (string, bool) {
+type presenceSet map[string]struct{}
+
+func (p presenceSet) union(q presenceSet) presenceSet {
+	r := presenceSet{}
+	for n := range p {
+		r[n] = struct{}{}
+	}
+	for n := range q {
+		r[n] = struct{}{}
+	}
+	return r
+}
+func (p presenceSet) intersection(q presenceSet) presenceSet {
+	r := presenceSet{}
+	for n := range p {
+		if _, ok := q[n]; ok {
+			r[n] = struct{}{}
+		}
+	}
+	return r
+}
+
+// presenceFacts returns names known to be non-null when x has the given value.
+// For short-circuit operators, intersect facts across alternative paths.
+func presenceFacts(x *ast.Expression, whenTrue bool) presenceSet {
 	if x.Type == "unary" && x.Operator == "nao" {
-		name, present := presenceGuard(x.Right)
-		return name, !present
+		return presenceFacts(x.Right, !whenTrue)
 	}
-	if x.Type != "binary" || x.Operator != "==" && x.Operator != "!=" {
-		return "", false
+	if x.Type != "binary" {
+		return nil
 	}
-	if x.Left.Type == "variable" && x.Right.Type == "literal" && x.Right.Value == nil {
-		return x.Left.Name, x.Operator == "!="
+	switch x.Operator {
+	case "e":
+		a := presenceFacts(x.Left, true)
+		if whenTrue {
+			return a.union(presenceFacts(x.Right, true))
+		}
+		return presenceFacts(x.Left, false).intersection(a.union(presenceFacts(x.Right, false)))
+	case "ou":
+		a := presenceFacts(x.Left, false)
+		if !whenTrue {
+			return a.union(presenceFacts(x.Right, false))
+		}
+		return presenceFacts(x.Left, true).intersection(a.union(presenceFacts(x.Right, true)))
+	case "==", "!=":
+		var name string
+		if x.Left.Type == "variable" && x.Right.Type == "literal" && x.Right.Value == nil {
+			name = x.Left.Name
+		} else if x.Right.Type == "variable" && x.Left.Type == "literal" && x.Left.Value == nil {
+			name = x.Right.Name
+		}
+		if name != "" && whenTrue == (x.Operator == "!=") {
+			return presenceSet{name: {}}
+		}
 	}
-	if x.Right.Type == "variable" && x.Left.Type == "literal" && x.Left.Value == nil {
-		return x.Right.Name, x.Operator == "!="
-	}
-	return "", false
+	return nil
 }
 func refine(s *Scope, name string) {
 	if name == "" {
@@ -146,9 +185,14 @@ func refine(s *Scope, name string) {
 		s.Bindings[name] = &Binding{Type: resolve(b.Type).Elem, Used: true, Pos: b.Pos, Origin: b}
 	}
 }
-func (c *checker) child(stmts []*ast.Statement, parent *Scope, refinement string) (bool, error) {
+func applyPresence(s *Scope, facts presenceSet) {
+	for name := range facts {
+		refine(s, name)
+	}
+}
+func (c *checker) child(stmts []*ast.Statement, parent *Scope, facts presenceSet) (bool, error) {
 	s := scope(parent)
-	refine(s, refinement)
+	applyPresence(s, facts)
 	r, e := c.block(stmts, s)
 	if e == nil {
 		e = c.unused(s)
@@ -249,27 +293,22 @@ func (c *checker) block(stmts []*ast.Statement, s *Scope) (bool, error) {
 			if !unify(t, typ("bool")) {
 				return false, c.mismatch(st.Pos, typ("bool"), t)
 			}
-			name, present := presenceGuard(&st.If.Condition)
-			thenName, elseName := "", ""
-			if present {
-				thenName = name
-			} else {
-				elseName = name
-			}
-			a, e := c.child(st.If.Body, s, thenName)
+			thenFacts := presenceFacts(&st.If.Condition, true)
+			elseFacts := presenceFacts(&st.If.Condition, false)
+			a, e := c.child(st.If.Body, s, thenFacts)
 			if e != nil {
 				return false, e
 			}
-			b, e := c.child(st.If.Else, s, elseName)
+			b, e := c.child(st.If.Else, s, elseFacts)
 			if e != nil {
 				return false, e
 			}
 			terminated = a && b
 			returns = terminated
 			if a && !b {
-				refine(s, elseName)
+				applyPresence(s, elseFacts)
 			} else if b && !a {
-				refine(s, thenName)
+				applyPresence(s, thenFacts)
 			}
 		case "while":
 			t, e := c.expr(&st.While.Condition, s)
@@ -280,7 +319,7 @@ func (c *checker) block(stmts []*ast.Statement, s *Scope) (bool, error) {
 				return false, c.mismatch(st.Pos, typ("bool"), t)
 			}
 			c.loops++
-			_, e = c.child(st.While.Body, s, "")
+			_, e = c.child(st.While.Body, s, presenceFacts(&st.While.Condition, true))
 			c.loops--
 			if e != nil {
 				return false, e
@@ -420,7 +459,12 @@ func (c *checker) expr(x *ast.Expression, s *Scope) (*Type, error) {
 		if e != nil {
 			return nil, e
 		}
-		b, e := c.expr(x.Right, s)
+		rightScope := s
+		if x.Operator == "e" || x.Operator == "ou" {
+			rightScope = scope(s)
+			applyPresence(rightScope, presenceFacts(x.Left, x.Operator == "e"))
+		}
+		b, e := c.expr(x.Right, rightScope)
 		if e != nil {
 			return nil, e
 		}
@@ -436,6 +480,18 @@ func (c *checker) expr(x *ast.Expression, s *Scope) (*Type, error) {
 		}
 		if op == "==" || op == "!=" {
 			ar, br := resolve(a), resolve(b)
+			// A refined variable still originates from an optional declaration.
+			// Testing it against nulo again is well-typed (and always false/true).
+			refined := func(v *ast.Expression) bool {
+				if v.Type != "variable" {
+					return false
+				}
+				binding, ok := rightScope.lookup(v.Name)
+				return ok && binding.Origin != nil
+			}
+			if ar.Kind == "nulo" && refined(x.Right) || br.Kind == "nulo" && refined(x.Left) {
+				return typ("bool"), nil
+			}
 			if ar.Kind == "nulo" && br.Kind == "optional" || br.Kind == "nulo" && ar.Kind == "optional" {
 				return typ("bool"), nil
 			}
