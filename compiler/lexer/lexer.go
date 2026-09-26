@@ -2,6 +2,8 @@ package lexer
 
 import (
 	"fmt"
+	"github.com/flaviokalleu/germanio/compiler/diagnostics"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -191,6 +193,11 @@ const (
 	TokenTags
 	TokenURLTipo
 	TokenMoeda
+	TokenQuestion
+	TokenArrow
+	TokenPlusAssign
+	TokenMinusAssign
+	TokenModulo
 )
 
 // Token represents a single lexical token.
@@ -263,9 +270,9 @@ var keywords = map[string]TokenType{
 	"nao": TokenNao, "em": TokenEm, "ate": TokenAte,
 	// Tipos extras
 	"cpf": TokenCPF, "cnpj": TokenCPF,
-	"cep": TokenCEP,
-	"estrelas": TokenEstrelas,
-	"data_hora": TokenDataHora,
+	"cep":        TokenCEP,
+	"estrelas":   TokenEstrelas,
+	"data_hora":  TokenDataHora,
 	"percentual": TokenPercentual, "porcentagem": TokenPercentual,
 	"tags": TokenTags, "etiquetas": TokenTags,
 	"moeda": TokenMoeda,
@@ -323,9 +330,9 @@ var keywords = map[string]TokenType{
 	// Extra types EN
 	"rating": TokenEstrelas, "stars": TokenEstrelas,
 	"zipcode": TokenCEP, "postal_code": TokenCEP,
-	"datetime": TokenDataHora,
+	"datetime":   TokenDataHora,
 	"percentage": TokenPercentual, "percent": TokenPercentual,
-	"chips": TokenTags,
+	"chips":         TokenTags,
 	"currency_type": TokenMoeda,
 
 	// Colors
@@ -335,11 +342,20 @@ var keywords = map[string]TokenType{
 
 // Lexer tokenizes Flang source code.
 type Lexer struct {
-	source []rune
-	pos    int
-	line   int
-	col    int
-	tokens []Token
+	germanio bool
+	filename string
+	source   []rune
+	pos      int
+	line     int
+	col      int
+	tokens   []Token
+}
+
+// NewGermanio reuses scanning mechanics without legacy keyword translation.
+func NewGermanio(filename, source string) *Lexer {
+	l := New(source)
+	l.germanio, l.filename = true, filename
+	return l
 }
 
 // New creates a new Lexer for the given source code.
@@ -356,6 +372,9 @@ func New(source string) *Lexer {
 func (l *Lexer) Tokenize() ([]Token, error) {
 	for l.pos < len(l.source) {
 		if err := l.scanToken(); err != nil {
+			if l.germanio {
+				return nil, &diagnostics.Diagnostic{Code: "GE1001", Position: diagnostics.Position{File: l.filename, Line: l.line, Column: l.col}, Source: string(l.source), Message: "Código não reconhecido", Reason: err.Error(), Fix: "Confira caracteres, números e aspas duplas. Use mostre para mostrar um valor.", Example: `mostre "Olá"`}
+			}
 			return nil, err
 		}
 	}
@@ -379,6 +398,26 @@ func (l *Lexer) advance() rune {
 
 func (l *Lexer) scanToken() error {
 	ch := l.peek()
+	if l.germanio {
+		if ch == '?' || ch == '%' {
+			tt := TokenQuestion
+			if ch == '%' {
+				tt = TokenModulo
+			}
+			l.tokens = append(l.tokens, Token{Type: tt, Value: string(ch), Line: l.line, Column: l.col})
+			l.advance()
+			return nil
+		}
+		if l.pos+1 < len(l.source) {
+			pair := string(l.source[l.pos : l.pos+2])
+			if tt, ok := map[string]TokenType{"->": TokenArrow, "+=": TokenPlusAssign, "-=": TokenMinusAssign}[pair]; ok {
+				l.tokens = append(l.tokens, Token{Type: tt, Value: pair, Line: l.line, Column: l.col})
+				l.advance()
+				l.advance()
+				return nil
+			}
+		}
+	}
 
 	// Handle newlines
 	if ch == '\n' {
@@ -587,6 +626,9 @@ func (l *Lexer) scanString() error {
 			case '\\':
 				buf.WriteByte('\\')
 			default:
+				if l.germanio {
+					return fmt.Errorf("escape desconhecido: use \\n, \\t, \\\\ ou \\\"")
+				}
 				buf.WriteRune(l.peek())
 			}
 			l.advance()
@@ -608,6 +650,11 @@ func (l *Lexer) scanNumber() error {
 	for l.pos < len(l.source) && (unicode.IsDigit(l.peek()) || l.peek() == '.') {
 		buf.WriteRune(l.advance())
 	}
+	if l.germanio {
+		if _, err := strconv.ParseFloat(buf.String(), 64); err != nil {
+			return fmt.Errorf("número inválido %q", buf.String())
+		}
+	}
 	l.tokens = append(l.tokens, Token{Type: TokenNumber, Value: buf.String(), Line: l.line, Column: startCol})
 	return nil
 }
@@ -619,6 +666,10 @@ func (l *Lexer) scanIdentifier() error {
 		buf.WriteRune(l.advance())
 	}
 	word := buf.String()
+	if l.germanio {
+		l.tokens = append(l.tokens, Token{Type: TokenIdentifier, Value: word, Line: l.line, Column: startCol})
+		return nil
+	}
 	lower := strings.ToLower(word)
 
 	// Check native keywords first (PT + EN)

@@ -1,5 +1,7 @@
 package ast
 
+import "github.com/flaviokalleu/germanio/compiler/diagnostics"
+
 // Node is the base interface for all AST nodes.
 type Node interface {
 	NodeType() string
@@ -7,26 +9,28 @@ type Node interface {
 
 // Program is the root AST node.
 type Program struct {
-	System       *System
-	Theme        *Theme
-	Database     *DatabaseConfig
-	Auth         *AuthConfig
-	WhatsApp     *WhatsAppConfig
-	Email        *EmailConfig
-	Imports      []*Import
-	Models       []*Model
-	Screens      []*Screen
-	Events       []*Event
-	Actions      []*Action
-	Rules        []*Rule
-	Notifiers    []*Notifier
-	Crons        []*CronJob
-	Env          map[string]string
-	Functions    []*FuncDecl
-	Scripts      []*Statement
-	Routes       []*CustomRoute
-	Pages        []*CustomPage
-	SidebarItems []*SidebarItem
+	// Germanio metadata is additive; the legacy full-stack AST stays intact.
+	Source, Filename, Domain string
+	System                   *System
+	Theme                    *Theme
+	Database                 *DatabaseConfig
+	Auth                     *AuthConfig
+	WhatsApp                 *WhatsAppConfig
+	Email                    *EmailConfig
+	Imports                  []*Import
+	Models                   []*Model
+	Screens                  []*Screen
+	Events                   []*Event
+	Actions                  []*Action
+	Rules                    []*Rule
+	Notifiers                []*Notifier
+	Crons                    []*CronJob
+	Env                      map[string]string
+	Functions                []*FuncDecl
+	Scripts                  []*Statement
+	Routes                   []*CustomRoute
+	Pages                    []*CustomPage
+	SidebarItems             []*SidebarItem
 }
 
 func (p *Program) NodeType() string { return "Program" }
@@ -70,6 +74,7 @@ func (s *System) NodeType() string { return "System" }
 // ==================== Import ====================
 
 type Import struct {
+	Pos  diagnostics.Position
 	What string
 	Path string
 }
@@ -439,6 +444,7 @@ func (s *SidebarItem) NodeType() string { return "SidebarItem" }
 
 // Expression represents any value expression.
 type Expression struct {
+	Pos      diagnostics.Position
 	Type     string      // "literal", "variable", "binary", "unary", "call", "field_access", "list"
 	Value    interface{} // for literals (string, float64, bool, nil)
 	Name     string      // for variables and function calls
@@ -456,8 +462,10 @@ func (e *Expression) NodeType() string { return "Expression" }
 
 // VarDecl represents: definir x = 10
 type VarDecl struct {
-	Name  string
-	Value Expression
+	Mutable, Constant bool
+	Annotation        string
+	Name              string
+	Value             Expression
 }
 
 func (v *VarDecl) NodeType() string { return "VarDecl" }
@@ -473,15 +481,21 @@ func (a *Assignment) NodeType() string { return "Assignment" }
 
 // FuncDecl represents: funcao name(params) ... body
 type FuncDecl struct {
-	Name   string
-	Params []string
-	Body   []*Statement
+	Pos        diagnostics.Position
+	ParamTypes []string
+	ResultType string
+	Name       string
+	Params     []string
+	Body       []*Statement
 }
 
 func (f *FuncDecl) NodeType() string { return "FuncDecl" }
 
 // Statement represents any executable statement.
 type Statement struct {
+	Pos     diagnostics.Position
+	Expr    *Expression
+	UI      *UIElement
 	Type    string // "var", "assign", "if", "for_each", "while", "repeat", "return", "break", "continue", "pause", "call", "print", "try"
 	VarDecl *VarDecl
 	Assign  *Assignment
@@ -493,6 +507,12 @@ type Statement struct {
 	Call    *FuncCall
 	Print   *Expression
 	Try     *TryStmt
+}
+
+// UIElement is the deterministic, client-only foundation of natural UI syntax.
+// It has no access to server bindings or arbitrary JavaScript.
+type UIElement struct {
+	Kind, Text, Color, Radius string
 }
 
 func (s *Statement) NodeType() string { return "Statement" }
