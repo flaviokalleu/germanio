@@ -88,7 +88,8 @@ decimal, bool, listas homogêneas e opcionais `T?`.
 Por exemplo, `nomes: [texto?] = [nulo, "Ada"]` guarda valores
 opcionais; `nulo` não entra em um parâmetro ou lista de tipo obrigatório.
 Após `se nome != nulo`, um `nome: texto?` imutável pode ser usado como texto
-dentro do ramo. Veja [opcionais.ge](examples/germanio/opcionais.ge).
+dentro do ramo. Condições `e`/`ou` respeitam o curto circuito: `nome != nulo e
+quantidade(nome) > 0` é seguro. Veja [opcionais.ge](examples/germanio/opcionais.ge).
 
 ### Funções sem cerimônia
 

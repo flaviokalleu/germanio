@@ -84,11 +84,14 @@ não fazem parte do núcleo `.ge` (tipos Flang não foram removidos do modo `.fg
 
 Só `T?` aceita `nulo`. Não há truthy/falsy. Comparações `==` e `!=` são estritas;
 listas comparam estruturalmente. Opcionais podem ser mostrados, atribuídos,
-passados a funções e comparados com `nulo`. Um teste direto `se valor != nulo`
-refina um valor **imutável** `T?` para `T` apenas no ramo verdadeiro; `se valor ==
-nulo` refina no `senao`. Também aceita a comparação invertida e `nao` simples.
-Quando o ramo oposto termina com `retorne`, o refinamento vale até o fim do
-bloco. Variáveis `mut`, expressões booleanas compostas e valores fora do ramo
+passados a funções e comparados com `nulo`. `se valor != nulo` refina um valor
+**imutável** `T?` para `T` no ramo verdadeiro; `se valor == nulo` refina no
+`senao`. A comparação invertida e `nao` também funcionam. `e` verifica seu
+segundo operando quando o primeiro é verdadeiro; `ou`, quando é falso. Somente
+presenças garantidas em **todos** os caminhos alcançam o bloco seguinte. Isso
+permite `se valor != nulo e quantidade(valor) > 0`. Uma condição verdadeira
+também refina o corpo de `enquanto` quando o valor é imutável. Se o ramo oposto
+termina com `retorne`, o refinamento vale até o fim do bloco. Variáveis `mut`
 continuam sem refinamento. Não há desreferência implícita de opcional.
 
 `+` soma números ou concatena dois textos; `-`, `*`, `/`, `%` são numéricos.
