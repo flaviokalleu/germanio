@@ -7,3 +7,11 @@ tem_nome(valor: texto?) -> bool
   valor != nulo
 
 mostre tem_nome(nomes[1])
+
+saudar(valor: texto?) -> texto
+  se valor == nulo
+    retorne "sem nome"
+  retorne "Olá " + valor
+
+mostre saudar(nomes[0])
+mostre saudar(nomes[1])

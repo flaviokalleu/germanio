@@ -87,6 +87,8 @@ anotações são permitidas: `idade: inteiro = 30`. Tipos iniciais: texto, intei
 decimal, bool, listas homogêneas e opcionais `T?`.
 Por exemplo, `nomes: [texto?] = [nulo, "Ada"]` guarda valores
 opcionais; `nulo` não entra em um parâmetro ou lista de tipo obrigatório.
+Após `se nome != nulo`, um `nome: texto?` imutável pode ser usado como texto
+dentro do ramo. Veja [opcionais.ge](examples/germanio/opcionais.ge).
 
 ### Funções sem cerimônia
 
