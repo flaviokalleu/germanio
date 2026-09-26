@@ -73,6 +73,9 @@ func (g *geParser) body(indent int) ([]*ast.Statement, error) {
 	return g.block(indent+2, false)
 }
 func (g *geParser) block(indent int, top bool) ([]*ast.Statement, error) {
+	if indent > 512 {
+		return nil, g.fail(g.lines[g.at].tokens[0], "GE1002", "Muitos blocos aninhados", "O limite de 256 níveis foi excedido.", "Divida o código em funções menores.")
+	}
 	var out []*ast.Statement
 	for g.at < len(g.lines) {
 		l := g.lines[g.at]
@@ -312,6 +315,9 @@ func (g *geParser) statement(l geLine, top bool) (*ast.Statement, error) {
 	if mutable || constant {
 		return nil, g.syntax(first, "Use mut nome = valor ou const NOME = valor")
 	}
+	if len(t) > 1 && first.Type == lexer.TokenIdentifier && t[1].Type == lexer.TokenString && (first.Value == "moste" || first.Value == "mostra" || first.Value == "mostr" || first.Value == "mostrar") {
+		return nil, g.fail(first, "GE1001", "Você quis dizer mostre?", first.Value+" não é o comando de saída Germanio.", `Use mostre "Olá". O compilador não altera seu código silenciosamente.`)
+	}
 	s.Type = "expr"
 	s.Expr, err = expr(t)
 	return s, err
@@ -338,9 +344,10 @@ func (g *geParser) annotation(ts []lexer.Token) (string, error) {
 }
 
 type geExpr struct {
-	g  *geParser
-	ts []lexer.Token
-	at int
+	g     *geParser
+	ts    []lexer.Token
+	at    int
+	depth int
 }
 
 func (g *geParser) expression(ts []lexer.Token) (*ast.Expression, error) {
@@ -374,6 +381,11 @@ func (p *geExpr) accept(s string) bool {
 var gePrecedence = map[string]int{"ou": 1, "e": 2, "==": 3, "!=": 3, "<": 4, ">": 4, "<=": 4, ">=": 4, "+": 5, "-": 5, "*": 6, "/": 6, "%": 6}
 
 func (p *geExpr) parse(min int) (*ast.Expression, error) {
+	p.depth++
+	defer func() { p.depth-- }()
+	if p.depth > 512 {
+		return nil, p.g.syntax(p.tok(), "Expressão muito aninhada; divida em variáveis intermediárias")
+	}
 	t := p.tok()
 	if p.at >= len(p.ts) {
 		return nil, p.g.syntax(t, "Expressão ausente")
@@ -385,6 +397,12 @@ func (p *geExpr) parse(min int) (*ast.Expression, error) {
 	case t.Type == lexer.TokenString:
 		x, err = p.g.stringExpr(t)
 	case t.Value == "-" || t.Value == "nao":
+		if t.Value == "-" && p.at < len(p.ts) && p.ts[p.at].Type == lexer.TokenNumber && p.ts[p.at].Value == "9223372036854775808" {
+			p.at++
+			x.Type = "literal"
+			x.Value = int64(-9223372036854775808)
+			break
+		}
 		x.Type = "unary"
 		x.Operator = t.Value
 		x.Right, err = p.parse(7)

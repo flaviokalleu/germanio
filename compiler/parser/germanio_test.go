@@ -2,8 +2,23 @@ package parser
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 )
+
+func TestGermanioBoundsAndSuggestion(t *testing.T) {
+	if _, err := ParseGermanio("min.ge", "mostre -9223372036854775808"); err != nil {
+		t.Fatal(err)
+	}
+	_, err := ParseGermanio("typo.ge", `moste "Olá"`)
+	if err == nil || !strings.Contains(err.Error(), "Você quis dizer mostre?") {
+		t.Fatal(err)
+	}
+	_, err = ParseGermanio("deep.ge", "mostre "+strings.Repeat("(", 600)+"1"+strings.Repeat(")", 600))
+	if err == nil || !strings.Contains(err.Error(), "GE1001") {
+		t.Fatal(err)
+	}
+}
 
 func TestGermanioAST(t *testing.T) {
 	source := "somar(a: inteiro, b: inteiro) -> inteiro\n  a + b\nmut total = 0\npara item em [1, 2]\n  total += item\nmostre somar(total, 4)\n"
