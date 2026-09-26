@@ -1,4 +1,4 @@
-module github.com/flavio/flang
+module github.com/flaviokalleu/germanio
 
 go 1.26.1
 

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/flavio/flang/compiler/ast"
-	"github.com/flavio/flang/compiler/lexer"
+	"github.com/flaviokalleu/germanio/compiler/ast"
+	"github.com/flaviokalleu/germanio/compiler/lexer"
 )
 
 // Parser converts a stream of tokens into an AST.

@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/flavio/flang/compiler/ast"
-	"github.com/flavio/flang/runtime/httpclient"
+	"github.com/flaviokalleu/germanio/compiler/ast"
+	"github.com/flaviokalleu/germanio/runtime/httpclient"
 )
 
 // Scheduler manages ticker-based cron jobs.

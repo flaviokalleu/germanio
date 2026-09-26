@@ -3,8 +3,8 @@ package parser
 import (
 	"testing"
 
-	"github.com/flavio/flang/compiler/ast"
-	"github.com/flavio/flang/compiler/lexer"
+	"github.com/flaviokalleu/germanio/compiler/ast"
+	"github.com/flaviokalleu/germanio/compiler/lexer"
 )
 
 func parse(t *testing.T, source string) *ast.Program {

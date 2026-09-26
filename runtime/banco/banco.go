@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/flavio/flang/compiler/ast"
+	"github.com/flaviokalleu/germanio/compiler/ast"
 
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"

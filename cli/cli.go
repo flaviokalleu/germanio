@@ -8,8 +8,8 @@ import (
 	goruntime "runtime"
 	"strings"
 
-	"github.com/flavio/flang/runtime"
-	"github.com/flavio/flang/runtime/ide"
+	"github.com/flaviokalleu/germanio/runtime"
+	"github.com/flaviokalleu/germanio/runtime/ide"
 )
 
 const version = "0.6.0"
@@ -126,7 +126,7 @@ func Run(args []string) {
 
 func printUsage() {
 	fmt.Printf(banner, version)
-	fmt.Println(`
+	fmt.Print(`
 Uso: flang <comando> [argumentos]
 
 Comandos:
@@ -1248,7 +1248,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/flavio/flang/runtime"
+	"github.com/flaviokalleu/germanio/runtime"
 )
 
 //go:embed app/*
@@ -1308,7 +1308,7 @@ func extractDir(fs embed.FS, base string, dest string, entries []os.DirEntry) {
 	flangModPath := getFlangModPath()
 
 	// Generate go.mod
-	goMod := "module flang-app\n\ngo 1.26\n\nrequire github.com/flavio/flang v0.0.0\n\nreplace github.com/flavio/flang => " + flangModPath + "\n"
+	goMod := "module flang-app\n\ngo 1.26\n\nrequire github.com/flaviokalleu/germanio v0.0.0\n\nreplace github.com/flaviokalleu/germanio => " + flangModPath + "\n"
 	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte(goMod), 0644); err != nil {
 		fmt.Printf("[flang] Erro ao gerar go.mod: %s\n", err)
 		os.Exit(1)

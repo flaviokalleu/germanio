@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/flavio/flang/cli"
+	"github.com/flaviokalleu/germanio/cli"
 )
 
 func main() {

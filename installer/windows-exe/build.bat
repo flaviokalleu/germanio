@@ -49,7 +49,7 @@ echo    OK
 :: Compilar instalador
 echo [4/4] Compilando instalador...
 pushd "%~dp0"
-go build -ldflags="-s -w -H windowsgui" -o "%BASE%\dist\FlangSetup-0.5.0.exe" installer.go
+go build -tags installer -ldflags="-s -w -H windowsgui" -o "%BASE%\dist\FlangSetup-0.5.0.exe" .
 if errorlevel 1 (
     echo ERRO ao compilar instalador
     exit /b 1
@@ -59,7 +59,7 @@ echo    OK
 
 :: Também compilar versão console (com output no terminal)
 pushd "%~dp0"
-go build -ldflags="-s -w" -o "%BASE%\dist\FlangSetup-0.5.0-console.exe" installer.go
+go build -tags installer -ldflags="-s -w" -o "%BASE%\dist\FlangSetup-0.5.0-console.exe" .
 popd
 
 echo.

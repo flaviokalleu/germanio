@@ -7,17 +7,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/flavio/flang/compiler/ast"
-	"github.com/flavio/flang/compiler/lexer"
-	"github.com/flavio/flang/compiler/parser"
-	authpkg "github.com/flavio/flang/runtime/auth"
-	"github.com/flavio/flang/runtime/banco"
-	cronpkg "github.com/flavio/flang/runtime/cron"
-	emailpkg "github.com/flavio/flang/runtime/email"
-	"github.com/flavio/flang/runtime/httpclient"
-	interp "github.com/flavio/flang/runtime/interpreter"
-	"github.com/flavio/flang/runtime/servidor"
-	wa "github.com/flavio/flang/runtime/whatsapp"
+	"github.com/flaviokalleu/germanio/compiler/ast"
+	"github.com/flaviokalleu/germanio/compiler/lexer"
+	"github.com/flaviokalleu/germanio/compiler/parser"
+	authpkg "github.com/flaviokalleu/germanio/runtime/auth"
+	"github.com/flaviokalleu/germanio/runtime/banco"
+	cronpkg "github.com/flaviokalleu/germanio/runtime/cron"
+	emailpkg "github.com/flaviokalleu/germanio/runtime/email"
+	"github.com/flaviokalleu/germanio/runtime/httpclient"
+	interp "github.com/flaviokalleu/germanio/runtime/interpreter"
+	"github.com/flaviokalleu/germanio/runtime/servidor"
+	wa "github.com/flaviokalleu/germanio/runtime/whatsapp"
 )
 
 // parseFG reads and parses a single .fg file.

@@ -14,8 +14,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/flavio/flang/compiler/ast"
-	"github.com/flavio/flang/runtime/banco"
+	"github.com/flaviokalleu/germanio/compiler/ast"
+	"github.com/flaviokalleu/germanio/runtime/banco"
 )
 
 const maxIterations = 10000

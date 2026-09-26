@@ -5,7 +5,7 @@ import (
 	"html"
 	"strings"
 
-	"github.com/flavio/flang/compiler/ast"
+	"github.com/flaviokalleu/germanio/compiler/ast"
 )
 
 // renderHTML generates the full single-page application HTML.

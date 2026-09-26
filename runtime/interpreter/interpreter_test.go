@@ -3,7 +3,7 @@ package interpreter
 import (
 	"testing"
 
-	"github.com/flavio/flang/compiler/ast"
+	"github.com/flaviokalleu/germanio/compiler/ast"
 )
 
 func newInterp() *Interpreter {

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/flavio/flang/compiler/idiomas"
+	"github.com/flaviokalleu/germanio/compiler/idiomas"
 )
 
 // TokenType identifies the kind of token.
