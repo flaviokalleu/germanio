@@ -3,12 +3,12 @@ somar(a, b)
 
 dobro(x) = x * 2
 
-mut contador = 0
+variavel contador = 0
 enquanto contador < 3
   contador += 1
 
 valores: [inteiro] = [1, 2, 3]
-mut total = 0
+variavel total = 0
 para valor em valores
   total += valor
 

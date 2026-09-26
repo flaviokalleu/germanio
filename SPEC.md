@@ -18,9 +18,10 @@ continuam no compilador/runtime Flang. Trocar apenas a extensão não migra cód
 ## Léxico
 
 UTF-8, identificadores Unicode sensíveis a maiúsculas. Palavras reservadas
-canônicas em português: `mostre`, `pergunte`, `mut`, `const`, `se`, `senao`,
+canônicas em português: `mostre`, `pergunte`, `variavel`, `const`, `se`, `senao`,
 `enquanto`, `para`, `em`, `retorne`, `pare`, `continue`, `usa`, `crie`, `e`, `ou`,
 `nao`, `verdadeiro`, `falso`, `nulo`.
+`mut` é a grafia curta de `variavel` e continua aceita por compatibilidade.
 
 Uma instrução por linha. Dois espaços por nível de bloco; tabulações são erro.
 Linhas vazias e comentários `#` ou `//` são ignorados pelo parser e preservados
@@ -42,7 +43,7 @@ funcao      = nome "(" [param {"," param}] ")" ["->" tipo]
               ("=" expressao | NOVALINHA bloco) ;
 param       = nome [":" tipo] ;
 tipo        = ("texto" | "inteiro" | "decimal" | "bool" | "[" tipo "]") ["?"] ;
-declaracao  = ["mut" | "const"] nome [":" tipo] "=" expressao ;
+declaracao  = ["variavel" | "mut" | "const"] nome [":" tipo] "=" expressao ;
 atribuicao  = nome ("=" | "+=" | "-=") expressao ;
 condicional = "se" expressao NOVALINHA bloco
               ["senao" NOVALINHA bloco] ;
@@ -62,14 +63,15 @@ chaves de bloco, aliases `let/var/fn/function`, nem execução de trechos descon
 ```ge
 nome = "Flavio"
 idade: inteiro = 30
-mut contador = 0
+variavel contador = 0
 contador += 1
 const PI = 3.14159
 telefone: texto? = nulo
 valores: [inteiro] = []
 ```
 
-Declaração é imutável por padrão. `=` posterior altera somente variável `mut`;
+Declaração é imutável por padrão. `=` posterior altera somente variável declarada
+com `variavel` ou `mut`;
 não redeclara nem cria shadowing. `const` só no topo do módulo. Alterações mantêm
 o tipo inferido/declarado. Locais, parâmetros e imports sem leitura são erros;
 `_ = expressao` descarta explicitamente, sem criar uma variável `_`.
@@ -91,7 +93,7 @@ segundo operando quando o primeiro é verdadeiro; `ou`, quando é falso. Somente
 presenças garantidas em **todos** os caminhos alcançam o bloco seguinte. Isso
 permite `se valor != nulo e quantidade(valor) > 0`. Uma condição verdadeira
 também refina o corpo de `enquanto` quando o valor é imutável. Se o ramo oposto
-termina com `retorne`, o refinamento vale até o fim do bloco. Variáveis `mut`
+termina com `retorne`, o refinamento vale até o fim do bloco. Variáveis mutáveis
 continuam sem refinamento. Não há desreferência implícita de opcional.
 
 `+` soma números ou concatena dois textos; `-`, `*`, `/`, `%` são numéricos.

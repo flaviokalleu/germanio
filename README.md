@@ -75,14 +75,15 @@ Experimente os exemplos reais:
 
 ```ge
 nome = "Flavio"
-mut contador = 0
+variavel contador = 0
 contador += 1
 
 mostre "Olá {nome}"
 mostre contador
 ```
 
-Valores são imutáveis, a menos que você escreva `mut`. Tipos são inferidos, mas
+Valores são imutáveis por padrão. Escreva `variavel` quando precisar alterar o
+valor depois; `mut` continua aceito para os programas existentes. Tipos são inferidos, mas
 anotações são permitidas: `idade: inteiro = 30`. Tipos iniciais: texto, inteiro,
 decimal, bool, listas homogêneas e opcionais `T?`.
 Por exemplo, `nomes: [texto?] = [nulo, "Ada"]` guarda valores
@@ -109,7 +110,7 @@ Não é preciso declarar `main`. Blocos usam dois espaços. Inferência de funç
 ### Coleções, condições e repetição
 
 ```ge
-mut total = 0
+variavel total = 0
 para valor em [10, 20, 30]
   total += valor
 
