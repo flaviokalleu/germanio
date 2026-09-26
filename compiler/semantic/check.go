@@ -24,7 +24,7 @@ func (c *checker) mismatch(pos diagnostics.Position, want, got *Type) error {
 		return c.err(pos, "GE2004", "nulo exige tipo opcional", fmt.Sprintf("O destino tem tipo %s; somente T? aceita nulo.", want), "Declare explicitamente um tipo opcional, por exemplo valor: texto? = nulo ou f(x: texto?).")
 	}
 	if resolve(got).Kind == "optional" && resolve(want).Kind != "optional" {
-		d := diag(c.m.Program, pos, "GE2004", "Valor opcional sem verificação", fmt.Sprintf("O valor tem tipo %s e pode ser nulo; este uso exige %s.", got, want), "Teste a presença com se valor != nulo antes de usar o valor e confira se os tipos são compatíveis.").(*diagnostics.Diagnostic)
+		d := diag(c.m.Program, pos, "GE2004", "Valor opcional sem verificação", fmt.Sprintf("O valor tem tipo %s e pode ser nulo; este uso exige %s.", got, want), "Teste a presença com se valor != nulo antes de usar o valor; se já testou, evite reatribuir a variável dentro do mesmo ramo.").(*diagnostics.Diagnostic)
 		d.Example = "valor: texto? = \"Ada\"\nse valor != nulo\n  mostre valor + \"!\""
 		return d
 	}
@@ -182,22 +182,53 @@ func presenceFacts(x *ast.Expression, whenTrue bool) presenceSet {
 	}
 	return nil
 }
-func refine(s *Scope, name string) {
+
+// A mutable optional can be narrowed only when the checked region cannot
+// assign to it. Scan nested blocks too: one path writing nulo is enough to
+// invalidate a branch-wide guarantee.
+func writesName(stmts []*ast.Statement, name string) bool {
+	for _, st := range stmts {
+		switch st.Type {
+		case "bind":
+			if st.VarDecl.Name == name {
+				return true
+			}
+		case "assign":
+			if st.Assign.Target == name {
+				return true
+			}
+		case "if":
+			if writesName(st.If.Body, name) || writesName(st.If.Else, name) {
+				return true
+			}
+		case "while":
+			if writesName(st.While.Body, name) {
+				return true
+			}
+		case "for_each":
+			if st.ForEach.VarName == name || writesName(st.ForEach.Body, name) {
+				return true
+			}
+		}
+	}
+	return false
+}
+func refine(s *Scope, name string, allowMutable bool) {
 	if name == "" {
 		return
 	}
-	if b, ok := s.lookup(name); ok && !b.Mutable && resolve(b.Type).Kind == "optional" {
-		s.Bindings[name] = &Binding{Type: resolve(b.Type).Elem, Used: true, Pos: b.Pos, Origin: b}
+	if b, ok := s.lookup(name); ok && (!b.Mutable || allowMutable) && resolve(b.Type).Kind == "optional" {
+		s.Bindings[name] = &Binding{Type: resolve(b.Type).Elem, Mutable: b.Mutable, Used: true, Pos: b.Pos, Origin: b}
 	}
 }
-func applyPresence(s *Scope, facts presenceSet) {
+func applyPresence(s *Scope, facts presenceSet, region []*ast.Statement, allowMutable bool) {
 	for name := range facts {
-		refine(s, name)
+		refine(s, name, allowMutable && !writesName(region, name))
 	}
 }
 func (c *checker) child(stmts []*ast.Statement, parent *Scope, facts presenceSet) (bool, error) {
 	s := scope(parent)
-	applyPresence(s, facts)
+	applyPresence(s, facts, stmts, true)
 	r, e := c.block(stmts, s)
 	if e == nil {
 		e = c.unused(s)
@@ -311,9 +342,9 @@ func (c *checker) block(stmts []*ast.Statement, s *Scope) (bool, error) {
 			terminated = a && b
 			returns = terminated
 			if a && !b {
-				applyPresence(s, elseFacts)
+				applyPresence(s, elseFacts, nil, false)
 			} else if b && !a {
-				applyPresence(s, thenFacts)
+				applyPresence(s, thenFacts, nil, false)
 			}
 		case "while":
 			t, e := c.expr(&st.While.Condition, s)
@@ -467,7 +498,7 @@ func (c *checker) expr(x *ast.Expression, s *Scope) (*Type, error) {
 		rightScope := s
 		if x.Operator == "e" || x.Operator == "ou" {
 			rightScope = scope(s)
-			applyPresence(rightScope, presenceFacts(x.Left, x.Operator == "e"))
+			applyPresence(rightScope, presenceFacts(x.Left, x.Operator == "e"), nil, true)
 		}
 		b, e := c.expr(x.Right, rightScope)
 		if e != nil {

@@ -28,6 +28,9 @@ func TestValidPrograms(t *testing.T) {
 		"saudar(nome: texto?) -> texto\n  se nome != nulo\n    retorne nome + \"!\"\n  retorne \"sem nome\"\nmostre saudar(\"Ada\")",
 		"f(nome: texto?) -> texto\n  se nome == nulo\n    retorne \"vazio\"\n  retorne nome + \"!\"\nmostre f(\"Ada\")",
 		"nome: texto? = \"Ada\"\nse nao (nulo == nome)\n  mostre nome + \"!\"",
+		"variavel nome: texto? = \"Ada\"\nse nome != nulo\n  mostre nome + \"!\"",
+		"variavel nome: texto? = nulo\nse nome == nulo\n  mostre \"ausente\"\nsenao\n  mostre nome + \"!\"",
+		"variavel nome: texto? = \"Ada\"\nse nome != nulo e quantidade(nome) > 0\n  mostre nome + \"!\"",
 		"nome: texto? = \"Ada\"\nse nulo == nome\n  mostre \"vazio\"\nsenao\n  mostre nome + \"!\"",
 		"nome: texto? = \"Ada\"\nse nome != nulo e quantidade(nome) > 0\n  mostre nome + \"!\"",
 		"nome: texto? = \"Ada\"\nse nome == nulo ou quantidade(nome) > 0\n  mostre \"ok\"\nsenao\n  mostre nome + \"!\"",
@@ -70,13 +73,16 @@ func TestInvalidPrograms(t *testing.T) {
 		{"valores: [texto] = [nulo, \"A\"]\nmostre valores", "GE2004"},
 		{"x: inteiro? = nulo\nmostre x + 1", "GE2004"},
 		{"nome: texto? = \"Ada\"\nse nome != nulo\n  mostre nome + \"!\"\nmostre nome + \"!\"", "GE2004"},
-		{"mut nome: texto? = \"Ada\"\nse nome != nulo\n  mostre nome + \"!\"", "GE2004"},
+		{"variavel nome: texto? = \"Ada\"\nse nome != nulo\n  mostre nome + \"!\"\nmostre nome + \"!\"", "GE2004"},
+		{"variavel nome: texto? = \"Ada\"\nse nome != nulo\n  nome = nulo\n  mostre nome + \"!\"", "GE2004"},
+		{"variavel nome: texto? = \"Ada\"\nse nome != nulo\n  se verdadeiro\n    nome = nulo\n  mostre nome + \"!\"", "GE2004"},
+		{"variavel nome: texto? = \"Ada\"\nenquanto nome != nulo\n  nome = nulo\n  mostre nome + \"!\"", "GE2004"},
 		{"nome: texto? = \"Ada\"\nse nome == nulo\n  mostre nome + \"!\"", "GE2004"},
 		{"nome: texto? = \"Ada\"\nse nome != nulo\n  mostre nome + \"!\"\nsenao\n  mostre nome + \"!\"", "GE2004"},
 		{"nome: texto? = nulo\nse nome != nulo ou quantidade(nome) > 0\n  mostre \"erro\"", "GE2004"},
 		{"nome: texto? = nulo\nse nome == nulo e quantidade(nome) > 0\n  mostre \"erro\"", "GE2004"},
 		{"nome: texto? = nulo\nse nome != nulo ou verdadeiro\n  mostre nome + \"!\"", "GE2004"},
-		{"mut nome: texto? = \"Ada\"\nse nome != nulo e quantidade(nome) > 0\n  mostre nome", "GE2004"},
+		{"mut nome: texto? = \"Ada\"\nse nome != nulo e quantidade(nome) > 0\n  nome = nulo\n  mostre nome + \"!\"", "GE2004"},
 		{"mostre [1, \"2\"]", "GE2004"},
 		{"mostre [1][\"0\"]", "GE2004"},
 		{"mostre 10 / 0", "GE2005"},
@@ -120,6 +126,14 @@ func TestOptionalDiagnosticPointsToOperand(t *testing.T) {
 		if !strings.Contains(err.Error(), part) {
 			t.Errorf("missing %q: %v", part, err)
 		}
+	}
+}
+
+func TestMutableGuardExplainsInvalidation(t *testing.T) {
+	src := "variavel nome: texto? = \"Ada\"\nse nome != nulo\n  nome = nulo\n  mostre nome + \"!\""
+	_, err := CheckSource("ramo.ge", src)
+	if err == nil || !strings.Contains(err.Error(), "ramo.ge:4:10") || !strings.Contains(err.Error(), "evite reatribuir") {
+		t.Fatalf("expected an explanation at the unsafe read: %v", err)
 	}
 }
 

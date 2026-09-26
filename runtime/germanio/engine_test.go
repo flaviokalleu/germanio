@@ -39,6 +39,8 @@ func TestExecution(t *testing.T) {
 		{"nome: texto? = \"Ada\"\nse nome == nulo\n  mostre \"vazio\"\nsenao\n  mostre nome + \"!\"", "", "Ada!\n"},
 		{"nome: texto? = \"Ada\"\nse nome != nulo e quantidade(nome) > 0\n  mostre nome + \"!\"", "", "Ada!\n"},
 		{"nome: texto? = nulo\nse nome != nulo e quantidade(nome) > 0\n  mostre \"inacessível\"\nsenao\n  mostre \"vazio\"", "", "vazio\n"},
+		{"variavel nome: texto? = \"Ada\"\nse nome != nulo e quantidade(nome) > 0\n  mostre nome + \"!\"", "", "Ada!\n"},
+		{"variavel nome: texto? = nulo\nse nome == nulo\n  mostre \"ausente\"\nsenao\n  mostre nome + \"!\"", "", "ausente\n"},
 		{"nome: texto? = \"Ada\"\nse nome == nulo ou quantidade(nome) > 0\n  mostre \"ok\"", "", "ok\n"},
 		{"nome: texto? = nulo\nse nome == nulo ou quantidade(nome) > 0\n  mostre \"ok\"", "", "ok\n"},
 		{"valores = [10, 20]\nmostre valores[1]", "", "20\n"},
