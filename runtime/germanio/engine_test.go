@@ -25,6 +25,7 @@ func TestExecution(t *testing.T) {
 		{`mostre "Olá mundo"`, "", "Olá mundo\n"},
 		{"nome = pergunte \"Qual seu nome?\"\nmostre \"Olá {nome}\"", "Flavio\n", "Qual seu nome? Olá Flavio\n"},
 		{"dobro(x) = x * 2\nmostre dobro(21)", "", "42\n"},
+		{"id<T>(x: T) -> T\n  x\nmostre id(7)\nmostre id(\"oi\")", "", "7\noi\n"},
 		{"somar(a, b)\n  a + b\nmostre somar(2, 3)", "", "5\n"},
 		{"mut total = 0\npara item em [1, 2, 3]\n  total += item\nmostre total", "", "6\n"},
 		{"variavel total = 0\npara item em [1, 2, 3]\n  total += item\nmostre total", "", "6\n"},
@@ -119,6 +120,27 @@ func TestPrivateModuleHelperExecutesLocally(t *testing.T) {
 	}
 	var out bytes.Buffer
 	if err = (&Engine{Output: &out}).Run(m); err != nil || out.String() != "8\n" {
+		t.Fatalf("result %q: %v", out.String(), err)
+	}
+}
+func TestImportedGenericFunction(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "util.ge"), []byte("id<T>(x: T) -> T\n  x\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	entry := filepath.Join(dir, "main.ge")
+	if err := os.WriteFile(entry, []byte("usa \"util.ge\"\nmostre util.id(7)\nmostre util.id(\"olá\")\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	m, err := semantic.Load(entry)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = semantic.Check(m); err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	if err = (&Engine{Output: &out}).Run(m); err != nil || out.String() != "7\nolá\n" {
 		t.Fatalf("result %q: %v", out.String(), err)
 	}
 }

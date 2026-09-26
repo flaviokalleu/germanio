@@ -32,6 +32,19 @@ func Format(filename, source string) (string, error) {
 		if err != nil {
 			return "", err
 		}
+		genericOpen, genericClose := -1, -1
+		start := 0
+		if len(ts) > 0 && ts[0].Value == "privado" {
+			start = 1
+		}
+		if len(ts) > start+3 && ts[start+1].Value == "<" {
+			for j := start + 2; j < len(ts)-1; j++ {
+				if ts[j].Value == ">" && ts[j+1].Value == "(" {
+					genericOpen, genericClose = start+1, j
+					break
+				}
+			}
+		}
 		var b strings.Builder
 		var prev lexer.Token
 		for i, t := range ts {
@@ -58,6 +71,9 @@ func Format(filename, source string) (string, error) {
 				}
 			}
 			if prev.Type == lexer.TokenNumber && t.Type == lexer.TokenIdentifier && (t.Value == "px" || t.Value == "rem") {
+				space = false
+			}
+			if i == genericOpen || i == genericOpen+1 && genericOpen >= 0 || i == genericClose || i == genericClose+1 && genericClose >= 0 {
 				space = false
 			}
 			if space {

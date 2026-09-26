@@ -30,6 +30,10 @@ func (c *checker) mismatch(pos diagnostics.Position, want, got *Type) error {
 	}
 	return c.err(pos, "GE2004", "Tipos incompatíveis", fmt.Sprintf("Esperado %s, recebido %s. Não há coerção implícita.", want, got), "Use valores do mesmo tipo ou uma conversão explícita.")
 }
+func containsParam(t *Type, name string) bool {
+	t = resolve(t)
+	return t.Kind == "param" && t.Name == name || t.Elem != nil && containsParam(t.Elem, name)
+}
 
 var reserved = map[string]bool{"privado": true, "mostre": true, "pergunte": true, "mut": true, "variavel": true, "const": true, "se": true, "senao": true, "enquanto": true, "para": true, "em": true, "e": true, "ou": true, "nao": true, "usa": true, "retorne": true, "pare": true, "continue": true, "crie": true, "verdadeiro": true, "falso": true, "nulo": true, "numero": true, "inteiro": true, "decimal": true, "texto": true, "quantidade": true}
 
@@ -55,9 +59,27 @@ func Check(m *Module) error {
 		if _, ok := m.Imports[d.Name]; ok {
 			return c.err(d.Pos, "GE2001", "Nome de módulo em uso", d.Name+" já identifica um import.", "Renomeie a função.")
 		}
-		f := &Function{Decl: d, Result: parseType(d.ResultType), Module: m}
+		typeParams := map[string]*Type{}
+		for _, name := range d.TypeParams {
+			if reserved[name] || name == "_" || name == d.Name {
+				return c.err(d.Pos, "GE2001", "Parâmetro de tipo inválido", name+" não pode ser usado como parâmetro de tipo.", "Escolha um nome como T ou Elemento.")
+			}
+			typeParams[name] = &Type{Kind: "param", Name: name}
+		}
+		f := &Function{Decl: d, Result: parseTypeParams(d.ResultType, typeParams), Module: m}
 		for _, t := range d.ParamTypes {
-			f.Params = append(f.Params, parseType(t))
+			f.Params = append(f.Params, parseTypeParams(t, typeParams))
+		}
+		for _, name := range d.TypeParams {
+			used := false
+			for _, param := range f.Params {
+				if containsParam(param, name) {
+					used = true
+				}
+			}
+			if !used {
+				return c.err(d.Pos, "GE2004", "Tipo genérico sem inferência", name+" não aparece nos parâmetros da função.", "Inclua "+name+" no tipo de um parâmetro para inferi-lo na chamada.")
+			}
 		}
 		m.Functions[d.Name] = f
 	}
@@ -721,12 +743,35 @@ func (c *checker) expr(x *ast.Expression, s *Scope) (*Type, error) {
 		if len(args) != len(f.Params) {
 			return nil, c.err(x.Pos, "GE2004", "Quantidade de argumentos incorreta", fmt.Sprintf("%s espera %d; recebeu %d.", x.Name, len(f.Params), len(args)), "Confira a assinatura da função.")
 		}
+		params, result := f.Params, f.Result
+		if len(f.Decl.TypeParams) != 0 && f != c.fn {
+			freshParams := map[string]*Type{}
+			for _, name := range f.Decl.TypeParams {
+				freshParams[name] = fresh()
+			}
+			params = make([]*Type, len(f.Params))
+			for i, param := range f.Params {
+				params[i] = instantiate(param, freshParams)
+			}
+			result = instantiate(f.Result, freshParams)
+			for i, a := range args {
+				if !assignable(params[i], a) {
+					return nil, c.mismatch(x.Args[i].Pos, params[i], a)
+				}
+			}
+			for _, name := range f.Decl.TypeParams {
+				if !concreteGeneric(freshParams[name]) {
+					return nil, c.err(x.Pos, "GE2004", "Tipo genérico indeterminado", name+" não pode ser inferido dos argumentos desta chamada.", "Passe um valor tipado, por exemplo identidade(1), ou anote uma lista vazia.")
+				}
+			}
+			return result, nil
+		}
 		for i, a := range args {
-			if !assignable(f.Params[i], a) {
-				return nil, c.mismatch(x.Args[i].Pos, f.Params[i], a)
+			if !assignable(params[i], a) {
+				return nil, c.mismatch(x.Args[i].Pos, params[i], a)
 			}
 		}
-		return f.Result, nil
+		return result, nil
 	}
 	return nil, c.err(x.Pos, "GE1001", "Expressão não suportada", x.Type, "Confira a sintaxe na SPEC.md.")
 }

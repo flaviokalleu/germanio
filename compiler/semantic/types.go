@@ -2,10 +2,11 @@ package semantic
 
 import "strings"
 
-// Type variables are unified once per module: Phase 1 inference is monomorphic.
-// They are independent of Go types and can feed a future IR/backend.
+// Inferred unannotated types are monomorphic. Rigid named parameters are
+// instantiated independently at each call to a generic function.
 type Type struct {
 	Kind       string
+	Name       string // A rigid parameter in a generic function declaration.
 	Elem, Link *Type
 	Constraint string
 }
@@ -24,6 +25,9 @@ func (t *Type) String() string {
 	if t.Kind == "" {
 		return "tipo inferido"
 	}
+	if t.Kind == "param" {
+		return t.Name
+	}
 	if t.Kind == "list" {
 		return "[" + t.Elem.String() + "]"
 	}
@@ -33,14 +37,20 @@ func (t *Type) String() string {
 	return t.Kind
 }
 func parseType(s string) *Type {
+	return parseTypeParams(s, nil)
+}
+func parseTypeParams(s string, params map[string]*Type) *Type {
 	if s == "" {
 		return fresh()
 	}
 	if strings.HasSuffix(s, "?") {
-		return &Type{Kind: "optional", Elem: parseType(s[:len(s)-1])}
+		return &Type{Kind: "optional", Elem: parseTypeParams(s[:len(s)-1], params)}
 	}
 	if strings.HasPrefix(s, "[") {
-		return &Type{Kind: "list", Elem: parseType(s[1 : len(s)-1])}
+		return &Type{Kind: "list", Elem: parseTypeParams(s[1:len(s)-1], params)}
+	}
+	if t, ok := params[s]; ok {
+		return t
 	}
 	return typ(s)
 }
@@ -84,10 +94,33 @@ func unify(a, b *Type) bool {
 	if a.Kind != b.Kind {
 		return false
 	}
+	if a.Kind == "param" {
+		return a.Name == b.Name
+	}
 	if a.Elem != nil {
 		return unify(a.Elem, b.Elem)
 	}
 	return true
+}
+
+// Each call has fresh inference variables. Rigid parameters remain rigid while
+// checking the generic body, so operations requiring concrete types are rejected.
+func instantiate(t *Type, params map[string]*Type) *Type {
+	t = resolve(t)
+	if t.Kind == "param" {
+		return params[t.Name]
+	}
+	if t.Elem != nil {
+		return &Type{Kind: t.Kind, Elem: instantiate(t.Elem, params)}
+	}
+	return t
+}
+func concreteGeneric(t *Type) bool {
+	t = resolve(t)
+	if t.Kind == "" || t.Kind == "nulo" {
+		return false
+	}
+	return t.Elem == nil || concreteGeneric(t.Elem)
 }
 func assignable(want, got *Type) bool {
 	w, g := resolve(want), resolve(got)

@@ -48,6 +48,17 @@ func TestPrivateFunctionSyntax(t *testing.T) {
 		}
 	}
 }
+func TestGenericFunctionSyntax(t *testing.T) {
+	p, err := ParseGermanio("generic.ge", "privado par<A, B>(a: A, b: B) -> [A]\n  [a]\nmostre par(1, \"x\")")
+	if err != nil || len(p.Functions) != 1 || !reflect.DeepEqual(p.Functions[0].TypeParams, []string{"A", "B"}) || p.Functions[0].ResultType != "[A]" {
+		t.Fatalf("generic AST: %+v %v", p, err)
+	}
+	for _, source := range []string{"f<>(x: texto) = x", "f<T,>(x: T) = x", "f<T T>(x: T) = x", "f<T, T>(x: T) = x", "f<texto>(x: texto) = x", "f<T>(x: U) = x"} {
+		if _, err := ParseGermanio("invalid.ge", source); err == nil {
+			t.Errorf("accepted %q", source)
+		}
+	}
+}
 func TestMutableSpellingPreservesAST(t *testing.T) {
 	for _, keyword := range []string{"mut", "variavel"} {
 		program, err := ParseGermanio("a.ge", keyword+" contador = 0\ncontador += 1\nmostre contador")

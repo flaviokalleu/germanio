@@ -67,6 +67,7 @@ Experimente os exemplos reais:
 ./ge rodar examples/germanio/ola.ge
 ./ge rodar examples/germanio/fundamentos.ge
 ./ge rodar examples/germanio/opcionais.ge
+./ge rodar examples/germanio/genericos.ge
 ./ge rodar examples/germanio/imports.ge
 ./ge check examples/germanio/entrada.ge
 ./ge fmt examples/germanio --check
@@ -123,7 +124,20 @@ mostre somar(2, 3)
 ```
 
 Não é preciso declarar `main`. Blocos usam dois espaços. Inferência de funções
-é monomórfica nesta versão; generics ainda não estão implementados.
+sem parâmetros de tipo é monomórfica. Para uma função reutilizável com tipos
+distintos, declare o parâmetro de tipo:
+
+```ge
+identidade<T>(valor: T) -> T
+  valor
+
+mostre identidade(7)
+mostre identidade("olá")
+```
+
+Cada chamada infere `T` pelo argumento. Operações que só funcionam em tipos
+específicos não são permitidas sobre um `T` sem restrição; restrições de tipo
+e especialização explícita ainda são trabalho futuro.
 
 ### Coleções, condições e repetição
 

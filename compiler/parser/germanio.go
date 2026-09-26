@@ -180,13 +180,43 @@ func (g *geParser) statement(l geLine, top bool) (*ast.Statement, error) {
 	}
 	private := keyword == "privado"
 	if private {
-		if !top || len(t) < 3 || t[1].Type != lexer.TokenIdentifier || t[2].Value != "(" {
+		if !top || len(t) < 3 || t[1].Type != lexer.TokenIdentifier || t[2].Value != "(" && t[2].Value != "<" {
 			return nil, g.syntax(first, "Use privado antes de uma função no topo do módulo")
 		}
 		t = t[1:]
 	}
+	// Type parameters appear only on declarations, immediately before (.
+	open := 1
+	var typeParams []string
+	if len(t) > 2 && t[1].Value == "<" {
+		open = 2
+		for open < len(t) && t[open].Value != ">" {
+			if t[open].Type != lexer.TokenIdentifier || reservedTypeName(t[open].Value) {
+				return nil, g.syntax(t[open], "Parâmetro de tipo precisa de um nome como T")
+			}
+			for _, previous := range typeParams {
+				if previous == t[open].Value {
+					return nil, g.syntax(t[open], "Parâmetro de tipo duplicado: "+previous)
+				}
+			}
+			typeParams = append(typeParams, t[open].Value)
+			open++
+			if open < len(t) && t[open].Value == "," {
+				open++
+				if open < len(t) && t[open].Value == ">" {
+					return nil, g.syntax(t[open], "Remova a vírgula final de <T>")
+				}
+			} else if open < len(t) && t[open].Value != ">" {
+				return nil, g.syntax(t[open], "Separe parâmetros de tipo por vírgulas")
+			}
+		}
+		if len(typeParams) == 0 || open >= len(t) || open+1 >= len(t) || t[open+1].Value != "(" {
+			return nil, g.syntax(first, "Use funcao<T>(valor: T) = valor")
+		}
+		open++
+	}
 	// A function declaration is distinguished from a call by =, -> or a body.
-	if len(t) > 2 && t[0].Type == lexer.TokenIdentifier && t[1].Value == "(" {
+	if len(t) > open+1 && t[0].Type == lexer.TokenIdentifier && t[open].Value == "(" {
 		close := -1
 		depth := 0
 		for i, x := range t {
@@ -205,8 +235,8 @@ func (g *geParser) statement(l geLine, top bool) (*ast.Statement, error) {
 			if !top {
 				return nil, g.syntax(first, "Funções devem ser declaradas no topo do módulo")
 			}
-			fn := &ast.FuncDecl{Name: t[0].Value, Pos: g.pos(first), Private: private}
-			args := t[2:close]
+			fn := &ast.FuncDecl{Name: t[0].Value, Pos: g.pos(first), Private: private, TypeParams: typeParams}
+			args := t[open+1 : close]
 			for len(args) > 0 {
 				if args[0].Type != lexer.TokenIdentifier {
 					return nil, g.syntax(args[0], "Parâmetro precisa de um nome")
@@ -220,7 +250,7 @@ func (g *geParser) statement(l geLine, top bool) (*ast.Statement, error) {
 					for n < len(args) && args[n].Value != "," {
 						n++
 					}
-					typ, err = g.annotation(args[:n])
+					typ, err = g.annotation(args[:n], fn.TypeParams)
 					if err != nil {
 						return nil, err
 					}
@@ -240,7 +270,7 @@ func (g *geParser) statement(l geLine, top bool) (*ast.Statement, error) {
 				for n < len(tail) && tail[n].Value != "=" {
 					n++
 				}
-				fn.ResultType, err = g.annotation(tail[1:n])
+				fn.ResultType, err = g.annotation(tail[1:n], fn.TypeParams)
 				if err != nil {
 					return nil, err
 				}
@@ -291,7 +321,7 @@ func (g *geParser) statement(l geLine, top bool) (*ast.Statement, error) {
 			for n < len(rest) && rest[n].Value != "=" {
 				n++
 			}
-			annotation, err = g.annotation(rest[1:n])
+			annotation, err = g.annotation(rest[1:n], nil)
 			if err != nil {
 				return nil, err
 			}
@@ -332,7 +362,14 @@ func (g *geParser) statement(l geLine, top bool) (*ast.Statement, error) {
 	s.Expr, err = expr(t)
 	return s, err
 }
-func (g *geParser) annotation(ts []lexer.Token) (string, error) {
+func reservedTypeName(name string) bool {
+	switch name {
+	case "texto", "inteiro", "decimal", "bool", "nulo", "privado", "variavel", "mut", "const":
+		return true
+	}
+	return false
+}
+func (g *geParser) annotation(ts []lexer.Token, typeParams []string) (string, error) {
 	if len(ts) == 0 {
 		return "", g.syntax(lexer.Token{Line: 1, Column: 1}, "Tipo ausente")
 	}
@@ -349,6 +386,11 @@ func (g *geParser) annotation(ts []lexer.Token) (string, error) {
 	switch base {
 	case "texto", "inteiro", "decimal", "bool":
 		return s, nil
+	}
+	for _, name := range typeParams {
+		if base == name {
+			return s, nil
+		}
 	}
 	return "", g.syntax(ts[0], "Tipo ainda não suportado: "+s+". Use texto, inteiro, decimal, bool, [T] ou T?")
 }

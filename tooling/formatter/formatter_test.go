@@ -20,6 +20,7 @@ func TestFormatterIdempotentAndPreservesBehavior(t *testing.T) {
 		"crie botão azul\n  borda arredondada 16px\n",
 		"mut i=0\n# teste\nenquanto i<2\n  i+=1\n  mostre i\n",
 		"variavel i=0\n# teste\nenquanto i<2\n  i+=1\n  mostre i\n",
+		"id<T>(x:T)->T\n  x\nmostre id(1)\nmostre id(\"A\")\n",
 	} {
 		t.Run(source, func(t *testing.T) {
 			a, err := Format("x.ge", source)
@@ -55,6 +56,10 @@ func TestFormatterStyle(t *testing.T) {
 	got, err := Format("x.ge", "x=1\nmostre x+2\n")
 	if err != nil || got != "x = 1\nmostre x + 2\n" {
 		t.Fatalf("%q %v", got, err)
+	}
+	got, err = Format("x.ge", "privado id<T>(x:T)->T\n  x\n")
+	if err != nil || got != "privado id<T>(x: T) -> T\n  x\n" {
+		t.Fatalf("generic style %q %v", got, err)
 	}
 }
 func TestFormatterRejectsInvalid(t *testing.T) {

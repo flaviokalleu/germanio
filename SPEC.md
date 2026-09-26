@@ -39,10 +39,11 @@ parte desta versão. Decimais em execução são IEEE-754 de 64 bits, sempre fin
 ```ebnf
 programa    = { import | funcao | instrucao } ;
 import      = "usa" string ;
-funcao      = ["privado"] nome "(" [param {"," param}] ")" ["->" tipo]
+funcao      = ["privado"] nome ["<" nome {"," nome} ">"]
+              "(" [param {"," param}] ")" ["->" tipo]
               ("=" expressao | NOVALINHA bloco) ;
 param       = nome [":" tipo] ;
-tipo        = ("texto" | "inteiro" | "decimal" | "bool" | "[" tipo "]") ["?"] ;
+tipo        = ("texto" | "inteiro" | "decimal" | "bool" | parametro_tipo | "[" tipo "]") ["?"] ;
 declaracao  = ["variavel" | "mut" | "const"] nome [":" tipo] "=" expressao ;
 atribuicao  = nome ("=" | "+=" | "-=") expressao ;
 condicional = "se" expressao NOVALINHA bloco
@@ -76,7 +77,14 @@ não redeclara nem cria shadowing. `const` só no topo do módulo. Alterações 
 o tipo inferido/declarado. Locais, parâmetros e imports sem leitura são erros;
 `_ = expressao` descarta explicitamente, sem criar uma variável `_`.
 
-Inferência inicial é **monomórfica** por função/módulo: não equivale a generics.
+Tipos inferidos sem parâmetro explícito continuam **monomórficos**. Funções
+com parâmetros de tipo explícitos, como `identidade<T>(valor: T) -> T`,
+instanciam `T` independentemente em cada chamada. A inferência vem dos
+argumentos: `identidade(1)` e `identidade("A")` podem coexistir, mas
+`identidade(nulo)` e `identidade([])` não definem `T` e são rejeitados.
+Parâmetros genéricos são rígidos no corpo: `T + 1` é inválido porque nem todo
+`T` suporta soma. Não existem restrições de tipo nem especialização explícita
+nesta etapa; genéricos não tornam as demais inferências polimórficas.
 Tipos suportados: texto, inteiro, decimal, bool, listas homogêneas e opcionais,
 inclusive composições `[texto?]`. Listas vazias podem usar anotação explícita.
 Uma lista que mistura `nulo` e texto infere `[texto?]`; uma lista de `texto`

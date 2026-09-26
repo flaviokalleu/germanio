@@ -11,7 +11,7 @@ para `.ge`. Não há data de lançamento anunciada para as fases futuras.
 | Fase | Estado | Entrega comprovável |
 | --- | --- | --- |
 | 1. Fundação | Implementada no escopo da SPEC | `ge`, `.ge`, lexer/parser/AST, análise inicial, interpretador, exemplos, formatter inicial e compatibilidade `.fg` |
-| 2. Tipos e semântica | Em andamento | Opcionais com refinamento de presença, inferência monomórfica, mutabilidade, funções, escopos e imports locais básicos |
+| 2. Tipos e semântica | Em andamento | Opcionais com junção de fluxo, genéricos explícitos básicos, funções privadas, inferência monomórfica fora de genéricos e imports locais |
 | 3. Full-stack `.ge` | Pendente | Apenas HTML estático limitado; servidor/banco/auth do Flang continuam em `.fg` |
 | 4. Toolchain | Pendente | CLI/formatter/CI iniciais existem; manifesto, dependências e LSP ainda não |
 | 5. Performance | Pendente | Limites de execução existem; HIR/MIR e compilação incremental ainda não |
@@ -25,8 +25,9 @@ para `.ge`. Não há data de lançamento anunciada para as fases futuras.
   loops; rejeitar acesso a valores que podem voltar a ser `nulo`.
 - Verificar inferência e coerção numérica em funções, listas e módulos, incluindo
   chamadas recursivas e imports compartilhados.
-- Definir contratos verificáveis para funções, genéricos fundamentais e erros
-  tipados, sempre com semântica de execução e diagnósticos.
+- Ampliar genéricos fundamentais (restrições, inferência em casos complexos),
+  definir contratos verificáveis para funções e erros tipados, sempre com
+  semântica de execução e diagnósticos.
 - Critério de saída: para cada regra, executar exemplos que passam e falham,
   testar os caminhos do verificador e do interpretador e registrar limites na SPEC.
 

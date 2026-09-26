@@ -1,0 +1,10 @@
+# Cada chamada deduz T separadamente a partir do argumento.
+identidade<T>(valor: T) -> T
+  valor
+
+primeiro<T>(valores: [T]) -> T
+  valores[0]
+
+mostre identidade(7)
+mostre identidade("olá")
+mostre primeiro(["azul", "verde"])

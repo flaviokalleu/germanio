@@ -483,6 +483,7 @@ func (a *Assignment) NodeType() string { return "Assignment" }
 type FuncDecl struct {
 	Pos        diagnostics.Position
 	Private    bool // Accessible only inside the declaring module in .ge.
+	TypeParams []string
 	ParamTypes []string
 	ResultType string
 	Name       string

@@ -220,6 +220,29 @@ func TestPrivateModuleFunction(t *testing.T) {
 		t.Fatalf("expected educational private access diagnostic: %v", err)
 	}
 }
+func TestGenericCalls(t *testing.T) {
+	for _, source := range []string{
+		"identidade<T>(valor: T) -> T\n  valor\nmostre identidade(1)\nmostre identidade(\"Ada\")",
+		"primeiro<T>(valores: [T]) -> T\n  valores[0]\nmostre primeiro([1, 2])\nmostre primeiro([\"A\"])",
+		"igual<T>(a: T, b: T) -> bool\n  a == b\nmostre igual(1, 2)",
+		"id<T>(x: T) = x\nrepetir<U>(v: U) -> U\n  id(v)\nmostre repetir(\"sim\")",
+	} {
+		if _, err := CheckSource("generico.ge", source); err != nil {
+			t.Errorf("valid generic: %v", err)
+		}
+	}
+	for _, source := range []string{
+		"igual<T>(a: T, b: T) = a == b\nmostre igual(1, \"um\")",
+		"id<T>(x: T) = x\nmostre id(nulo)",
+		"id<T>(x: T) = x\nmostre id([])",
+		"f<T>(x: inteiro) -> T\n  retorne x\nmostre f(1)",
+		"f<T>(x: T) -> T\n  x + 1\nmostre f(2)",
+	} {
+		if _, err := CheckSource("generico.ge", source); err == nil {
+			t.Errorf("invalid generic accepted: %s", source)
+		}
+	}
+}
 func TestImportCannotEscapeProject(t *testing.T) {
 	root := t.TempDir()
 	inside := filepath.Join(root, "project")
