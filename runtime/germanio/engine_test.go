@@ -101,3 +101,24 @@ func TestModuleFunctionsDoNotRunImportedScripts(t *testing.T) {
 		t.Fatalf("%s %v", out.String(), err)
 	}
 }
+func TestPrivateModuleHelperExecutesLocally(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "math.ge"), []byte("privado dobrar(x: inteiro) = x * 2\npublico(x: inteiro) = dobrar(x)\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, "main.ge")
+	if err := os.WriteFile(path, []byte("usa \"math.ge\"\nmostre math.publico(4)\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	m, err := semantic.Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = semantic.Check(m); err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	if err = (&Engine{Output: &out}).Run(m); err != nil || out.String() != "8\n" {
+		t.Fatalf("result %q: %v", out.String(), err)
+	}
+}

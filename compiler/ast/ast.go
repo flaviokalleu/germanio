@@ -482,6 +482,7 @@ func (a *Assignment) NodeType() string { return "Assignment" }
 // FuncDecl represents: funcao name(params) ... body
 type FuncDecl struct {
 	Pos        diagnostics.Position
+	Private    bool // Accessible only inside the declaring module in .ge.
 	ParamTypes []string
 	ResultType string
 	Name       string

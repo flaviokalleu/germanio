@@ -41,6 +41,7 @@ var Explanations = map[string]string{
 	"GE2006": "Índice fora dos limites. Use um índice inteiro entre zero e quantidade(lista) - 1.",
 	"GE2007": "Código inalcançável. Remova comandos depois de retorne, pare ou continue.",
 	"GE3001": "Módulo inválido. Use um arquivo .ge relativo ao projeto, sem ciclos de importação.",
+	"GE3002": "Função privada. Exporte uma função pública que a chame, por exemplo: publico(x) = interna(x).",
 	"GE4102": "Unidade incorreta. Arredondamento usa comprimento, como 16px; rotação usa ângulo, como 45deg.",
 	"GE9001": "Limite de execução excedido. Verifique a condição do loop ou da recursão.",
 }

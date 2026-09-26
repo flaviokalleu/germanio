@@ -31,7 +31,7 @@ func (c *checker) mismatch(pos diagnostics.Position, want, got *Type) error {
 	return c.err(pos, "GE2004", "Tipos incompatíveis", fmt.Sprintf("Esperado %s, recebido %s. Não há coerção implícita.", want, got), "Use valores do mesmo tipo ou uma conversão explícita.")
 }
 
-var reserved = map[string]bool{"mostre": true, "pergunte": true, "mut": true, "variavel": true, "const": true, "se": true, "senao": true, "enquanto": true, "para": true, "em": true, "e": true, "ou": true, "nao": true, "usa": true, "retorne": true, "pare": true, "continue": true, "crie": true, "verdadeiro": true, "falso": true, "nulo": true, "numero": true, "inteiro": true, "decimal": true, "texto": true, "quantidade": true}
+var reserved = map[string]bool{"privado": true, "mostre": true, "pergunte": true, "mut": true, "variavel": true, "const": true, "se": true, "senao": true, "enquanto": true, "para": true, "em": true, "e": true, "ou": true, "nao": true, "usa": true, "retorne": true, "pare": true, "continue": true, "crie": true, "verdadeiro": true, "falso": true, "nulo": true, "numero": true, "inteiro": true, "decimal": true, "texto": true, "quantidade": true}
 
 func Check(m *Module) error {
 	if m.checked {
@@ -714,6 +714,9 @@ func (c *checker) expr(x *ast.Expression, s *Scope) (*Type, error) {
 		f, ok := mod.Functions[name]
 		if !ok {
 			return nil, c.unknown(x.Pos, x.Name)
+		}
+		if mod != c.m && f.Decl.Private {
+			return nil, c.err(x.Pos, "GE3002", "Função privada: "+x.Name, "A função pertence à implementação interna do módulo "+mod.Program.Filename+".", "Exponha uma função pública nesse módulo e chame-a pelo import.")
 		}
 		if len(args) != len(f.Params) {
 			return nil, c.err(x.Pos, "GE2004", "Quantidade de argumentos incorreta", fmt.Sprintf("%s espera %d; recebeu %d.", x.Name, len(f.Params), len(args)), "Confira a assinatura da função.")

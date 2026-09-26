@@ -146,6 +146,10 @@ usa "matematica.ge"
 mostre matematica.somar(2, 3)
 ```
 
+Dentro de `matematica.ge`, `privado auxiliar(x) = x * 2` pode servir a outras
+funções do módulo. Chamadas externas a `matematica.auxiliar(...)` recebem um
+diagnóstico; funções sem `privado` compõem a API pública.
+
 ### Erros que ajudam a corrigir
 
 `"5" + 2` é erro, não uma coerção escondida. Use `numero("5") + 2`.

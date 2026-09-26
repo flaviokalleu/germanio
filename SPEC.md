@@ -39,7 +39,7 @@ parte desta versão. Decimais em execução são IEEE-754 de 64 bits, sempre fin
 ```ebnf
 programa    = { import | funcao | instrucao } ;
 import      = "usa" string ;
-funcao      = nome "(" [param {"," param}] ")" ["->" tipo]
+funcao      = ["privado"] nome "(" [param {"," param}] ")" ["->" tipo]
               ("=" expressao | NOVALINHA bloco) ;
 param       = nome [":" tipo] ;
 tipo        = ("texto" | "inteiro" | "decimal" | "bool" | "[" tipo "]") ["?"] ;
@@ -126,6 +126,9 @@ somar(a: inteiro, b: inteiro) -> inteiro
 A última expressão simples de um corpo é retorno implícito. Retornos condicionais
 usam `retorne`; funções com retorno precisam cobrir todos os caminhos. Funções
 são declaradas no topo do módulo, podem chamar outras funções e ser recursivas.
+Uma função marcada `privado` só pode ser chamada no módulo que a declarou;
+as demais funções são públicas por padrão. `privado` só antecede declarações
+de funções no topo do arquivo.
 Nesta fundação, dados externos entram por parâmetros: funções não capturam
 variáveis de topo/closures. Isso evita dependência de ordem e estado oculto;
 escopos mais avançados e contratos ficam para a Fase 2.
@@ -143,7 +146,7 @@ mostre matematica.somar(2, 3)
 ```
 
 Imports locais são nomes de arquivo `.ge` entre aspas; o nome-base forma o
-namespace. Exportam funções, não estado. O código de topo do arquivo importado
+namespace. Exportam funções públicas, não estado. O código de topo do arquivo importado
 é verificado, mas não executado. Arquivos dentro de subdiretórios são permitidos;
 caminhos fora da pasta do entrypoint, inclusive por symlinks, são bloqueados.
 Ciclos, módulos duplicados, funções inexistentes e imports não utilizados são

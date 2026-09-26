@@ -37,6 +37,17 @@ func TestGermanioAST(t *testing.T) {
 		t.Fatal("non deterministic parse")
 	}
 }
+func TestPrivateFunctionSyntax(t *testing.T) {
+	p, err := ParseGermanio("a.ge", "privado dobro(x: inteiro) -> inteiro\n  x * 2\nmostre dobro(3)")
+	if err != nil || len(p.Functions) != 1 || !p.Functions[0].Private || p.Functions[0].Name != "dobro" {
+		t.Fatalf("invalid private function: %+v %v", p, err)
+	}
+	for _, source := range []string{"privado x = 1", "privado mostre 1", "privado f(1)", "se verdadeiro\n  privado f() = 1"} {
+		if _, err := ParseGermanio("a.ge", source); err == nil {
+			t.Errorf("accepted %q", source)
+		}
+	}
+}
 func TestMutableSpellingPreservesAST(t *testing.T) {
 	for _, keyword := range []string{"mut", "variavel"} {
 		program, err := ParseGermanio("a.ge", keyword+" contador = 0\ncontador += 1\nmostre contador")

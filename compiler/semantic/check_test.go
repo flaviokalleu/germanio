@@ -194,6 +194,32 @@ func TestLocalModules(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+func TestPrivateModuleFunction(t *testing.T) {
+	dir := t.TempDir()
+	write := func(name, src string) {
+		t.Helper()
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(src), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("math.ge", "privado dobrar(x: inteiro) -> inteiro\n  x * 2\npublico(x: inteiro) = dobrar(x)")
+	write("main.ge", "usa \"math.ge\"\nmostre math.publico(3)")
+	m, err := Load(filepath.Join(dir, "main.ge"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := Check(m); err != nil {
+		t.Fatal(err)
+	}
+	write("main.ge", "usa \"math.ge\"\nmostre math.dobrar(3)")
+	m, err = Load(filepath.Join(dir, "main.ge"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = Check(m); err == nil || !strings.Contains(err.Error(), "GE3002") || !strings.Contains(err.Error(), "main.ge:2:8") || !strings.Contains(err.Error(), "Exemplo:") {
+		t.Fatalf("expected educational private access diagnostic: %v", err)
+	}
+}
 func TestImportCannotEscapeProject(t *testing.T) {
 	root := t.TempDir()
 	inside := filepath.Join(root, "project")

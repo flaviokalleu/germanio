@@ -178,6 +178,13 @@ func (g *geParser) statement(l geLine, top bool) (*ast.Statement, error) {
 		s.UI, err = g.ui(t, l.indent)
 		return s, err
 	}
+	private := keyword == "privado"
+	if private {
+		if !top || len(t) < 3 || t[1].Type != lexer.TokenIdentifier || t[2].Value != "(" {
+			return nil, g.syntax(first, "Use privado antes de uma função no topo do módulo")
+		}
+		t = t[1:]
+	}
 	// A function declaration is distinguished from a call by =, -> or a body.
 	if len(t) > 2 && t[0].Type == lexer.TokenIdentifier && t[1].Value == "(" {
 		close := -1
@@ -198,7 +205,7 @@ func (g *geParser) statement(l geLine, top bool) (*ast.Statement, error) {
 			if !top {
 				return nil, g.syntax(first, "Funções devem ser declaradas no topo do módulo")
 			}
-			fn := &ast.FuncDecl{Name: first.Value, Pos: g.pos(first)}
+			fn := &ast.FuncDecl{Name: t[0].Value, Pos: g.pos(first), Private: private}
 			args := t[2:close]
 			for len(args) > 0 {
 				if args[0].Type != lexer.TokenIdentifier {
@@ -262,6 +269,9 @@ func (g *geParser) statement(l geLine, top bool) (*ast.Statement, error) {
 			g.program.Functions = append(g.program.Functions, fn)
 			return nil, nil
 		}
+	}
+	if private {
+		return nil, g.syntax(first, "Use privado apenas antes da declaração de uma função")
 	}
 	mutable, constant := false, false
 	if first.Value == "mut" || first.Value == "variavel" || first.Value == "const" {
