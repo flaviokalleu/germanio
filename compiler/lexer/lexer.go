@@ -738,6 +738,14 @@ func (l *Lexer) scanIdentifier() error {
 		return nil
 	}
 	lower := strings.ToLower(word)
+	// Portuguese keywords may be written with accents (único, não, função).
+	if _, ok := keywords[lower]; !ok {
+		if folded := foldAccents(lower); folded != lower {
+			if _, ok := keywords[folded]; ok {
+				lower = folded
+			}
+		}
+	}
 
 	// Check native keywords first (PT + EN)
 	if tt, ok := keywords[lower]; ok {
@@ -786,3 +794,7 @@ func IsTypeKeyword(tt TokenType) bool {
 	}
 	return false
 }
+
+var accentFolder = strings.NewReplacer("á", "a", "à", "a", "â", "a", "ã", "a", "é", "e", "ê", "e", "í", "i", "ó", "o", "ô", "o", "õ", "o", "ú", "u", "ü", "u", "ç", "c")
+
+func foldAccents(s string) string { return accentFolder.Replace(s) }

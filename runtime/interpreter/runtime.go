@@ -10,6 +10,7 @@ import (
 	"github.com/flaviokalleu/germanio/compiler/ast"
 	"github.com/flaviokalleu/germanio/compiler/diagnostics"
 	"github.com/flaviokalleu/germanio/runtime/banco"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // RuntimeError is a failure raised while executing .ge code. Status is the
@@ -223,6 +224,7 @@ func (interp *Interpreter) isModel(name string) bool {
 var dbMethods = map[string]bool{
 	"buscar": true, "encontrar": true, "filtrar": true, "paginar": true, "contar": true, "existe": true,
 	"criar": true, "atualizar": true, "deletar": true, "apagar_onde": true,
+	"verificar_senha": true, "por_segredo": true, "revogar": true,
 	"listar": true, "todos": true, "list": true, "all": true, "create": true, "update": true, "delete": true, "count": true,
 }
 
@@ -385,6 +387,8 @@ func (interp *Interpreter) assignTo(target *ast.Expression, val any, scope *Scop
 // meaning (400 validação, 404 inexistente, 409 conflito) instead of nulo.
 func (interp *Interpreter) dbCall(c *Call, model, method string, args []any) any {
 	db := interp.DB
+	m := interp.modelAST(model)
+	clean := func(row map[string]any) map[string]any { return stripSecrets(m, row) }
 	fail := func(err error) {
 		var ec *banco.ErrCampo
 		switch {
@@ -428,9 +432,19 @@ func (interp *Interpreter) dbCall(c *Call, model, method string, args []any) any
 	rowsToList := func(rows []map[string]any) []any {
 		out := make([]any, len(rows))
 		for i, r := range rows {
-			out[i] = r
+			out[i] = clean(r)
 		}
 		return out
+	}
+	filtros := func(i int, required bool) map[string]any {
+		var f map[string]any
+		if required {
+			f = c.Map(args, i, "filtros")
+		} else {
+			f = c.OptMap(args, i, "filtros")
+		}
+		checkSecretFilters(c, m, f)
+		return f
 	}
 	switch method {
 	case "buscar":
@@ -445,9 +459,9 @@ func (interp *Interpreter) dbCall(c *Call, model, method string, args []any) any
 		if err != nil {
 			fail(err)
 		}
-		return row
+		return clean(row)
 	case "encontrar":
-		q := consulta(c.Map(args, 0, "filtros"), c.OptMap(args, 1, "opcoes"))
+		q := consulta(filtros(0, true), c.OptMap(args, 1, "opcoes"))
 		q.Limite = 1
 		rows, _, err := db.Filtrar(model, q)
 		if err != nil {
@@ -456,15 +470,15 @@ func (interp *Interpreter) dbCall(c *Call, model, method string, args []any) any
 		if len(rows) == 0 {
 			return nil
 		}
-		return rows[0]
+		return clean(rows[0])
 	case "filtrar":
-		rows, _, err := db.Filtrar(model, consulta(c.OptMap(args, 0, "filtros"), c.OptMap(args, 1, "opcoes")))
+		rows, _, err := db.Filtrar(model, consulta(filtros(0, false), c.OptMap(args, 1, "opcoes")))
 		if err != nil {
 			fail(err)
 		}
 		return rowsToList(rows)
 	case "paginar":
-		q := consulta(c.OptMap(args, 0, "filtros"), c.OptMap(args, 1, "opcoes"))
+		q := consulta(filtros(0, false), c.OptMap(args, 1, "opcoes"))
 		if q.Limite <= 0 {
 			q.Limite = 20
 		}
@@ -477,30 +491,109 @@ func (interp *Interpreter) dbCall(c *Call, model, method string, args []any) any
 		}
 		return map[string]any{"itens": rowsToList(rows), "total": float64(total), "pagina": float64(q.Pagina), "limite": float64(q.Limite)}
 	case "contar", "count":
-		n, err := db.ContarFiltro(model, consulta(c.OptMap(args, 0, "filtros"), nil))
+		n, err := db.ContarFiltro(model, consulta(filtros(0, false), nil))
 		if err != nil {
 			fail(err)
 		}
 		return float64(n)
 	case "existe":
-		n, err := db.ContarFiltro(model, consulta(c.Map(args, 0, "filtros"), nil))
+		n, err := db.ContarFiltro(model, consulta(filtros(0, true), nil))
 		if err != nil {
 			fail(err)
 		}
 		return n > 0
 	case "criar", "create":
-		row, err := db.CriarMapa(model, c.Map(args, 0, "dados"))
+		data, reveal := interp.prepareWrite(c, m, c.Map(args, 0, "dados"), true, 0)
+		row, err := db.CriarMapa(model, data)
 		if err != nil {
 			fail(err)
+		}
+		row = clean(row)
+		for k, v := range reveal {
+			row[k] = v // shown once, only in the creation result
 		}
 		return row
 	case "atualizar", "update":
 		id := c.Num(args, 0, "id")
-		row, err := db.AtualizarMapa(model, int64(id), c.Map(args, 1, "dados"))
+		data, _ := interp.prepareWrite(c, m, c.Map(args, 1, "dados"), false, int64(id))
+		row, err := db.AtualizarMapa(model, int64(id), data)
 		if err != nil {
 			fail(err)
 		}
-		return row
+		return clean(row)
+	case "verificar_senha":
+		// modelo.verificar_senha(registro_ou_id, senha[, campo]) — tempo constante
+		var id float64
+		switch r := c.Arg(args, 0, "registro").(type) {
+		case map[string]any:
+			id = toNumber(r["id"])
+		case nil:
+			id = -1
+		default:
+			id = toNumber(r)
+		}
+		senha := toString(c.Arg(args, 1, "senha"))
+		campo := ""
+		if len(args) > 2 {
+			campo = c.Str(args, 2, "campo")
+		} else {
+			for _, f := range m.Fields {
+				if f.Type == ast.FieldSenha || (f.Protected && f.Type != ast.FieldSegredo) {
+					campo = strings.ToLower(f.Name)
+					break
+				}
+			}
+		}
+		if campo == "" {
+			panic(c.Fail(0, "%s: o modelo não tem campo senha", c.Name))
+		}
+		hash := ""
+		if row, _ := db.BuscarRegistro(model, int64(id)); row != nil {
+			hash, _ = row[campo].(string)
+		}
+		if hash == "" {
+			dummyOnce.Do(func() { dummyHash, _ = bcrypt.GenerateFromPassword([]byte("germanio"), bcryptCost) })
+			bcrypt.CompareHashAndPassword(dummyHash, []byte(senha))
+			return false
+		}
+		return bcrypt.CompareHashAndPassword([]byte(hash), []byte(senha)) == nil
+	case "por_segredo":
+		// modelo.por_segredo(valor[, campo]) → registro ativo (não expirado nem revogado) ou nulo
+		valor, _ := c.Arg(args, 0, "segredo").(string)
+		campo := ""
+		if len(args) > 1 {
+			campo = c.Str(args, 1, "campo")
+		} else {
+			for _, f := range m.Fields {
+				if f.Type == ast.FieldSegredo {
+					campo = strings.ToLower(f.Name)
+					break
+				}
+			}
+		}
+		if campo == "" {
+			panic(c.Fail(0, "%s: o modelo não tem campo segredo", c.Name))
+		}
+		if valor == "" {
+			return nil
+		}
+		rows, _, err := db.Filtrar(model, banco.Consulta{Filtros: map[string]any{campo: digest(valor)}, Limite: 1})
+		if err != nil {
+			fail(err)
+		}
+		if len(rows) == 0 || !secretActive(m, rows[0]) {
+			return nil
+		}
+		return clean(rows[0])
+	case "revogar":
+		if !m.Revocable {
+			panic(c.Fail(0, "%s: o modelo não é revogavel", c.Name))
+		}
+		row, err := db.AtualizarMapa(model, int64(c.Num(args, 0, "id")), map[string]any{"revoked": true})
+		if err != nil {
+			fail(err)
+		}
+		return clean(row)
 	case "deletar", "delete":
 		id := c.Num(args, 0, "id")
 		n, err := db.DeletarFiltro(model, banco.Consulta{Filtros: map[string]any{"id": id}})
@@ -509,7 +602,7 @@ func (interp *Interpreter) dbCall(c *Call, model, method string, args []any) any
 		}
 		return n > 0
 	case "apagar_onde":
-		n, err := db.DeletarFiltro(model, consulta(c.Map(args, 0, "filtros"), nil))
+		n, err := db.DeletarFiltro(model, consulta(filtros(0, true), nil))
 		if err != nil {
 			fail(err)
 		}

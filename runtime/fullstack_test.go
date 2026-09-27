@@ -82,8 +82,11 @@ func TestFullstackRoutesAndCapabilities(t *testing.T) {
 	if out["login"] != "ada" || out["senha_hash"] != nil {
 		t.Fatalf("resposta de criação inesperada: %v", out)
 	}
-	// unique login → 409 from the database layer
-	c.expect("POST", "/api/contas", map[string]any{"login": "ada", "senha": "segredo123"}, 409)
+	// declared `unico` → field-level validation error (GitLab/Rails format)
+	dup := c.expect("POST", "/api/contas", map[string]any{"login": "ada", "senha": "segredo123"}, 400)
+	if msg, _ := dup["message"].(map[string]any); msg == nil || msg["login"].([]any)[0] != "has already been taken" {
+		t.Fatalf("erro de unicidade inesperado: %v", dup)
+	}
 
 	// internal models have no automatic REST endpoint
 	c.expect("GET", "/api/conta", nil, 404)

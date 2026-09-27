@@ -32,6 +32,8 @@ type Program struct {
 	Routes                   []*CustomRoute
 	Pages                    []*CustomPage
 	SidebarItems             []*SidebarItem
+	// Intent layer (compiler/ast/intencao.go)
+	Intent *Intent
 }
 
 func (p *Program) NodeType() string { return "Program" }
@@ -63,6 +65,7 @@ func (p *Program) Merge(other *Program) {
 	p.Routes = append(p.Routes, other.Routes...)
 	p.Pages = append(p.Pages, other.Pages...)
 	p.SidebarItems = append(p.SidebarItems, other.SidebarItems...)
+	p.Intent = MergeIntent(p.Intent, other.Intent)
 }
 
 // ==================== System ====================
@@ -249,9 +252,15 @@ type Model struct {
 	// UniqueTogether / IndexTogether are composite constraints: unico(a, b).
 	UniqueTogether [][]string
 	IndexTogether  [][]string
-	IsAuth         bool     // is this the auth user model?
-	HasMany        []string // model names for 1:N relationships
-	ManyToMany     []string // model names for N:N relationships
+	// ExpiresDays > 0 adds expires_at (data) defaulting to today + N days;
+	// secret lookups ignore expired records.
+	ExpiresDays int
+	// Revocable adds revoked (booleano) and modelo.revogar(id).
+	Revocable  bool
+	Pos        diagnostics.Position
+	IsAuth     bool     // is this the auth user model?
+	HasMany    []string // model names for 1:N relationships
+	ManyToMany []string // model names for N:N relationships
 }
 
 func (m *Model) NodeType() string { return "Model" }
@@ -264,6 +273,7 @@ const (
 	FieldTexto      FieldType = "texto"
 	FieldNumero     FieldType = "numero"
 	FieldInteiro    FieldType = "inteiro"
+	FieldSegredo    FieldType = "segredo"
 	FieldData       FieldType = "data"
 	FieldBooleano   FieldType = "booleano"
 	FieldEmail      FieldType = "email"
@@ -298,7 +308,24 @@ type Field struct {
 	Reference  string   // pertence_a model
 	EnumValues []string // for enum type
 	Index      bool
+
+	// Declarative schema (nível 1/2). All are enforced by the runtime on
+	// every create/update, whatever route or function performs it.
+	Protected    bool     // senha protegida: hashed, never readable
+	Hidden       bool     // oculto: never serialized
+	Immutable    bool     // imutavel: cannot change after creation
+	Min, Max     *float64 // length for text, value for numbers
+	Format       string   // formato "regex" (RE2)
+	Validator    string   // valida funcao: .ge predicate
+	Prefix       string   // prefixo of generated secrets
+	HasDefault   bool
+	DefaultValue any // typed default (= valor)
+	Pos          diagnostics.Position
 }
+
+// IsSecret reports whether the field stores a hash or digest that must
+// never leave the runtime (senha, segredo).
+func (f *Field) IsSecret() bool { return f.Type == FieldSenha || f.Type == FieldSegredo || f.Protected }
 
 func (f *Field) NodeType() string { return "Field" }
 

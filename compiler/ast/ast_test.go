@@ -80,10 +80,10 @@ func TestResolveColorHexPassthrough(t *testing.T) {
 
 func TestThemePresets(t *testing.T) {
 	tests := []struct {
-		name     string
-		dark     bool
-		style    string
-		primary  string
+		name    string
+		dark    bool
+		style   string
+		primary string
 	}{
 		{"moderno", true, "glassmorphism", "#6366f1"},
 		{"modern", true, "glassmorphism", "#6366f1"},
@@ -152,11 +152,11 @@ func TestProgramMerge(t *testing.T) {
 		Models: []*Model{{Name: "cliente"}},
 	}
 	p2 := &Program{
-		Theme:  &Theme{Primary: "#ff0000"},
-		Models: []*Model{{Name: "produto"}},
-		Screens: []*Screen{{Name: "tela1"}},
+		Theme:     &Theme{Primary: "#ff0000"},
+		Models:    []*Model{{Name: "produto"}},
+		Screens:   []*Screen{{Name: "tela1"}},
 		Functions: []*FuncDecl{{Name: "fn1"}},
-		Events: []*Event{{Trigger: "click"}},
+		Events:    []*Event{{Trigger: "click"}},
 	}
 
 	p1.Merge(p2)
