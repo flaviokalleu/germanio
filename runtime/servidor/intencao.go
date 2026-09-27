@@ -413,6 +413,14 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 		a.fail(w, 401, a.msg("401", root))
 		return
 	}
+	need := "ler"
+	if unsafeMethods[r.Method] {
+		need = "escrever"
+	}
+	if !a.s.scopeAllows(ctx, need) {
+		a.fail(w, 403, map[string]any{"pt": "O token não tem escopo para esta ação", "en": "insufficient_scope"}[a.app.Messages])
+		return
+	}
 	// Browser sessions must prove writes came from the app (CSRF).
 	if _, byToken := ctx.Values["token"]; !byToken && unsafeMethods[r.Method] && r.Header.Get("Authorization") == "" {
 		if sess := interp.SessaoDaRequisicao(r); sess != nil {
@@ -1166,6 +1174,14 @@ func (a *intentAPI) inwardBody(e *ast.Entity, body map[string]any) map[string]an
 func (a *intentAPI) guards(ctx *interp.Context, atual map[string]any, e *ast.Entity, data, before map[string]any) error {
 	if err := a.checkBranches(ctx, e, data); err != nil {
 		return err
+	}
+	if l := a.app.Login; l != nil && e.Singular == l.TokenEntity && len(l.Scopes) > 0 && data["escopos"] != nil {
+		for _, sc := range strings.Split(toStr(data["escopos"]), ",") {
+			if _, ok := l.Scopes[strings.TrimSpace(sc)]; !ok {
+				msg := map[string]string{"pt": "contém escopo desconhecido " + strings.TrimSpace(sc), "en": "can only contain available scopes"}[a.app.Messages]
+				return &interp.RuntimeError{Status: 400, Message: msg, Payload: map[string]any{"escopos": []any{msg}}}
+			}
+		}
 	}
 	order := map[string]int{"private": 0, "internal": 1, "public": 2}
 	for _, field := range e.CeilingFields {

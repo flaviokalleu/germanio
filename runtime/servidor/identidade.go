@@ -336,3 +336,21 @@ func jsonString(v any) string {
 }
 
 func urlQuery(s string) string { return url.QueryEscape(s) }
+
+// scopeAllows: a request authenticated by an access token may only do what
+// the token's scopes permit. Sessions, OAuth and passwords are not limited.
+func (s *Servidor) scopeAllows(ctx *interp.Context, need string) bool {
+	l := s.Program.App.Login
+	tok, ok := ctx.Values["token"].(map[string]any)
+	if !ok || len(l.Scopes) == 0 {
+		return true
+	}
+	for _, sc := range strings.Split(toStr(tok["escopos"]), ",") {
+		for _, perm := range l.Scopes[strings.TrimSpace(sc)] {
+			if perm == "tudo" || perm == need || (need == "ler" && perm == "escrever") {
+				return true
+			}
+		}
+	}
+	return false
+}

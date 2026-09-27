@@ -106,3 +106,22 @@ func TestFluxo2CloneCommitPush(t *testing.T) {
 	runFails(t, dir, "git", "clone", "--quiet", u.String()+"/ada/engine.git", "wrong")
 	ada.must("GET", "/api/v4/projects/"+id(p)+"/repository/commits/deadbeef", nil, 404)
 }
+
+// Escopos de token: read_api só lê; read_repository só clona.
+func TestEscoposDeToken(t *testing.T) {
+	base := gitlab(t)
+	ada := signup(t, base, "ada")
+	ada.must("POST", "/api/v4/projects", map[string]any{"name": "Scoped", "path": "scoped", "initialize_with_readme": true}, 201)
+	ro := ada.must("POST", "/api/v4/personal_access_tokens", map[string]any{"name": "ro", "scopes": "read_api"}, 201)
+	roAPI := &api{t: t, base: base, token: ro["token"].(string), pat: true}
+	roAPI.must("GET", "/api/v4/projects/1", nil, 200)
+	roAPI.must("POST", "/api/v4/projects", map[string]any{"name": "x", "path": "x"}, 403)
+	u, _ := url.Parse(base)
+	u.User = url.UserPassword("ada", ro["token"].(string))
+	runFails(t, t.TempDir(), "git", "clone", "--quiet", u.String()+"/ada/scoped.git", "x")
+	repo := ada.must("POST", "/api/v4/personal_access_tokens", map[string]any{"name": "repo", "scopes": "read_repository"}, 201)
+	u.User = url.UserPassword("ada", repo["token"].(string))
+	run(t, t.TempDir(), "git", "clone", "--quiet", u.String()+"/ada/scoped.git", "x")
+	(&api{t: t, base: base, token: repo["token"].(string), pat: true}).must("GET", "/api/v4/projects/1", nil, 403)
+	ada.must("POST", "/api/v4/personal_access_tokens", map[string]any{"name": "bad", "scopes": "sudo"}, 400)
+}

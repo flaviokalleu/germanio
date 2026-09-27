@@ -433,6 +433,9 @@ func ResolveIntent(prog *ast.Program) error {
 				return r.errAt(in.Login.Pos, "%s precisa de um campo segredo (ex.: token segredo prefixo \"tok-\")", te.Plural)
 			}
 			in.Login.TokenEntity = te.Singular
+			if len(in.Login.Scopes) > 0 && fieldByNameAST(te.Model, "escopos") == nil {
+				return r.errAt(in.Login.Pos, "escopos declarados, mas %s não tem o campo escopos", te.Plural)
+			}
 		}
 		if in.Login.ActiveField != "" && fieldByNameAST(le.Model, in.Login.ActiveField) == nil {
 			return r.errAt(in.Login.Pos, "login exige %s, mas %s não tem esse campo", in.Login.ActiveField, le.Singular)

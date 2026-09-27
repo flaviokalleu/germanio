@@ -118,6 +118,10 @@ func (a *intentAPI) serveGit(w http.ResponseWriter, r *http.Request, entities []
 	if service == "receive-pack" {
 		verb = "enviar_codigo"
 	}
+	if !a.s.scopeAllows(ctx, verb) {
+		http.Error(w, "The token does not have the scope for this operation", http.StatusForbidden)
+		return
+	}
 	allowed := false
 	if verb == "baixar_codigo" && len(e.Rules["baixar_codigo"]) == 0 {
 		allowed = true // seeing the record is enough to clone when no rule narrows it
@@ -202,6 +206,14 @@ func (a *intentAPI) mountRepository(mux *http.ServeMux, base string, e *ast.Enti
 			atual, err := a.s.identify(ctx, r)
 			if err != nil {
 				a.fail(w, 401, a.msg("401", e))
+				return
+			}
+			need := "ler"
+			if write {
+				need = "escrever"
+			}
+			if !a.s.scopeAllows(ctx, need) {
+				a.fail(w, 403, map[string]any{"pt": "O token não tem escopo para esta ação", "en": "insufficient_scope"}[a.app.Messages])
 				return
 			}
 			row := a.find(ctx, e, r.PathValue("ref"), nil)

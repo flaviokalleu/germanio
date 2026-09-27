@@ -34,6 +34,12 @@ login bloqueia após 10 tentativas por 10 minutos
 login aceita tokens de acesso no cabeçalho "PRIVATE-TOKEN"
 login aceita oauth por 2 horas
 
+escopo "api" permite tudo
+escopo "read_api" permite ler
+escopo "read_user" permite ler
+escopo "read_repository" permite baixar código
+escopo "write_repository" permite baixar código e enviar código
+
 todos podem ver usuarios
 
 usuario pode

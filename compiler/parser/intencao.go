@@ -73,6 +73,8 @@ func (p *Parser) isIntentLine() bool {
 		return len(w) == 3 && w[1] == "em"
 	case "vocabulario":
 		return true
+	case "escopo":
+		return len(w) >= 4
 	case "quem":
 		return len(w) >= 5 && w[1] == "cria"
 	case "cada":
@@ -151,6 +153,28 @@ func (p *Parser) parseIntentLine() error {
 		}
 		target, _ := phrase(w[2:k])
 		in.Creators = append(in.Creators, &ast.CreatorRole{Entity: target, Role: w[k+1], Pos: pos})
+		return nil
+	case "escopo":
+		// escopo "read_api" permite ler
+		if len(head.toks) < 4 || head.toks[1].Type != lexer.TokenString || w[2] != "permite" {
+			return p.errorf(head.toks[0], `use: escopo "nome" permite tudo|ler|escrever|baixar código|enviar código`)
+		}
+		if in.Login == nil {
+			in.Login = &ast.LoginDecl{Pos: pos}
+		}
+		if in.Login.Scopes == nil {
+			in.Login.Scopes = map[string][]string{}
+		}
+		name := head.toks[1].Value
+		for _, it := range splitItems(head.toks[3:]) {
+			perm := strings.Join(it, "_")
+			switch perm {
+			case "tudo", "ler", "escrever", "baixar_codigo", "enviar_codigo":
+				in.Login.Scopes[name] = append(in.Login.Scopes[name], perm)
+			default:
+				return p.errorf(head.toks[0], "permissão de escopo desconhecida %q (use tudo, ler, escrever, baixar código, enviar código)", perm)
+			}
+		}
 		return nil
 	case "vocabulario":
 		// vocabulário da integração + linhas `nome é "externo"`

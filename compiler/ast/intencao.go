@@ -127,6 +127,7 @@ type LoginDecl struct {
 	LockMinutes  int
 	ActiveField  string // login exige estado "active"
 	ActiveValue  any
+	Scopes       map[string][]string // escopo "x" permite ler|escrever|tudo|baixar código|enviar código
 	Pos          diagnostics.Position
 }
 
@@ -204,6 +205,12 @@ func mergeLogin(a, b *LoginDecl) {
 	}
 	if b.ActiveField != "" {
 		a.ActiveField, a.ActiveValue = b.ActiveField, b.ActiveValue
+	}
+	for k, v := range b.Scopes {
+		if a.Scopes == nil {
+			a.Scopes = map[string][]string{}
+		}
+		a.Scopes[k] = v
 	}
 }
 
