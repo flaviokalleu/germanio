@@ -240,14 +240,14 @@ func (interp *Interpreter) Can(ctx *Context, atual map[string]any, e *ast.Entity
 		rules = append(append(append([]*ast.AccessRule{}, rules...), e.Rules["editar"]...), e.Rules["excluir"]...)
 	}
 	for _, r := range rules {
-		if interp.rulePasses(ctx, atual, e, r, record) {
+		if interp.RulePasses(ctx, atual, e, r, record) {
 			return true
 		}
 	}
 	return false
 }
 
-func (interp *Interpreter) rulePasses(ctx *Context, atual map[string]any, e *ast.Entity, r *ast.AccessRule, record map[string]any) bool {
+func (interp *Interpreter) RulePasses(ctx *Context, atual map[string]any, e *ast.Entity, r *ast.AccessRule, record map[string]any) bool {
 	if r.Own && !interp.Owns(atual, e, record) {
 		return false
 	}

@@ -1,51 +1,53 @@
 # AGENT_STATE
 
 ## CURRENT_PHASE
-Fase 2 — capabilities fundamentais do Germanio (P0 da GERMANIO_GAPS).
+Fase 3 — GitLab em linguagem de intenção; próximo: Issues (fluxo 3).
 
 ## CURRENT_GOAL
-Tornar o dialeto full-stack capaz de expressar uma API REST real em `.ge`
-(G01–G07, G12, G22), depois cripto/sessão (G10, G11).
+Continuar o GitLab por intenção: issues → merge requests → CI/CD → páginas (UI),
+evoluindo o Germanio a cada parede encontrada.
 
 ## LAST_GOOD_COMMIT
-ab8c77b (baseline: `go build ./...` e `go test ./...` verdes, 14 pacotes com testes)
+(ver `git log -1`; todos os testes verdes neste commit)
 
 ## COMPLETED
-- Auditoria do Germanio (lexer, dois parsers, semantic, dois engines, servidor, banco, auth, jobs, CLI, tooling).
-- Baseline verde registrado.
-- Auditoria de implementações GitLab anteriores: **nenhuma existe** (nenhum `runtime/gitlab/`, nenhuma referência a GitLab).
-- Auditoria do GitLab FOSS @ c8c0c71 → research/gitlab/ARCHITECTURE.md, FEATURE_INVENTORY.md.
-- GERMANIO_GAPS.md inicial (G01–G23).
+- Auditoria Germanio + GitLab FOSS (research/gitlab/*).
+- Plataforma full-stack endurecida (rotas, erros com posição, mapas, cadeias, banco com filtros,
+  cripto, sessão/CSRF, segurança de `/api/_eval`).
+- Camada de intenção (docs/INTENCAO.md): dados, relações, login, papéis/membros/herança,
+  permissões, hooks `antes de`/`quando`, integração, repositórios Git.
+- Capability Git (runtime/git): CLI sem shell, smart HTTP com verificação antes de atualizar refs.
+- GitLab `.ge`: identidade, tokens, grupos, subgrupos, membros, projetos, repositórios, navegação.
+- E2E: fluxo 1, fluxo 2 (git real), grupos/papéis — PASS.
 
 ## IN_PROGRESS
-- G01–G07, G12, G22.
+- Issues.
 
 ## NEXT
-1. cripto + token/sessão + CSRF (G10, G11, G20)
-2. examples/gitlab-foss: identity, groups, projects (fluxo 1)
-3. runtime/git + git smart HTTP (G13, G14) → fluxo 2
-4. issues (fluxo 3), merge requests (fluxo 4)
-5. tarefas + processo + yaml → CI (fluxo 5)
-6. registro ui.* → frontend
-7. webhooks, notificações, admin; ge check/graph/explain para o dialeto full-stack
+1. Issues: `projeto tem issues`, labels, comentários, responsáveis, fechar/reabrir, confidencial.
+2. Merge requests: origem/destino, diff, aprovação, merge, conflito.
+3. CI/CD: pipelines, etapas, jobs, runner, logs (tarefas + processo + yaml).
+4. Páginas (`crie página`) — UI conectada, sem botões zumbis.
+5. `ge explain`/`ge check`/`ge graph` sobre a camada de intenção.
+6. Escopos de token (G33), transação (G39), paginação SQL (G40).
 
 ## BLOCKERS
-Nenhum no momento.
+Nenhum.
 
 ## GERMANIO_GAPS
-Ver GERMANIO_GAPS.md (23 abertos no início).
+Ver GERMANIO_GAPS.md (G01–G40).
 
 ## TEST_STATUS
-`go build ./...` OK · `go test ./...` OK (baseline).
+`go build ./...` OK · `go test ./...` OK (13 pacotes, inclui E2E GitLab) · exemplos antigos idênticos ·
+teste de arquitetura: `grep -ri gitlab runtime compiler tooling cli` vazio.
 
 ## IMPORTANT_DECISIONS
-- **D1 — Dialeto alvo**: o repositório tem dois front-ends. O núcleo estrito (`parser/germanio.go` + `semantic` +
-  `runtime/germanio`) é tipado e tem bons diagnósticos, mas não tem mapas, registros, stdlib, servidor, banco nem UI
-  (Fase 3 do ROADMAP pendente). O dialeto full-stack (`parser/parser.go` + `runtime/interpreter` + `runtime/servidor` +
-  `runtime/banco`) já executa aplicações web. O GitLab será escrito no **dialeto full-stack**, que será endurecido
-  (erros visíveis, contexto HTTP, consultas, capabilities). Levar o núcleo estrito ao full-stack é trabalho futuro
-  registrado; não é escondido.
-- **D2 — Sem runtime/gitlab**: nenhuma linha de Go conhece GitLab. Teste de arquitetura: `grep -ri gitlab runtime compiler tooling` deve ser vazio.
-- **D3 — Git via CLI `git`** (2.43 disponível) com argumentos em array, sem shell, caminhos confinados à raiz
-  configurada; merge em repositório bare via `git merge-tree --write-tree` (git ≥ 2.38).
-- **D4 — Escopo núcleo v1** = fluxos 1–5 da missão + testes negativos; o resto do GitLab fica classificado no inventário.
+- D1 — Dialeto full-stack como base; o núcleo estrito segue separado.
+- D2 — Nenhum Go conhece GitLab (teste de arquitetura acima).
+- D3 — Git via CLI `git` sem shell; merge em bare via `merge-tree`.
+- D4 — Escopo núcleo = fluxos 1–5 + negativos; resto classificado no inventário.
+- D5 — Intenção antes de técnica: CRUD, login, permissões, relações e API são derivados;
+  `rota`/`requisicao`/`responder` ficam como nível 4.
+- D6 — Hooks em duas fases: `antes de` (pode ajustar `dados` e recusar) e `quando` (depois).
+- D7 — Mensagens em português por padrão; `mensagens em inglês` para compatibilidade de API.
+- D8 — Registro invisível responde 404; dentro de algo com membros só papéis autorizam criação.

@@ -12,6 +12,10 @@ logica
       retornar falso
     retornar indice_de(RESERVADOS, minusculo(caminho)) < 0
 
+  # Projetos seguem a mesma forma, mas nomes reservados valem só para namespaces.
+  funcao caminho_de_projeto(caminho)
+    retornar tamanho(caminho) <= 255 e regex.casa(REGEX_CAMINHO, caminho) e nao termina_com(caminho, ".git") e nao termina_com(caminho, ".atom")
+
   funcao nivel_visibilidade(v)
     retornar indice_de(["private", "internal", "public"], v)
 

@@ -4,7 +4,7 @@ tenha projetos
 
 cada projeto tem
     name obrigatório
-    path obrigatório valida caminho_valido
+    path obrigatório valida caminho_de_projeto
     full_path único
     description
     visibility

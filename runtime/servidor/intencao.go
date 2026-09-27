@@ -57,7 +57,7 @@ func (a *intentAPI) mount(mux *http.ServeMux, base string, e *ast.Entity, integr
 	mux.HandleFunc("PATCH "+base+"/{ref}", h("editar", nil, ""))
 	mux.HandleFunc("DELETE "+base+"/{ref}", h("excluir", nil, ""))
 	for verb := range e.Rules {
-		if !isStandard(verb) {
+		if !isStandard(verb) && verb != "sair" && verb != "baixar_codigo" && verb != "enviar_codigo" {
 			mux.HandleFunc("POST "+base+"/{ref}/"+verb, h("acao", nil, verb))
 		}
 	}
@@ -370,6 +370,10 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, root *ast.Enti
 		}
 		data := a.writable(atual, e, body, scope)
 		if !a.canCreate(ctx, atual, e, data) {
+			if pe := a.hiddenParent(ctx, atual, e, data); pe != nil {
+				a.fail(w, 404, a.msg("404", pe))
+				return
+			}
 			deny(nil)
 			return
 		}
@@ -479,7 +483,10 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, root *ast.Enti
 }
 
 func (a *intentAPI) hookVars(atual map[string]any, e *ast.Entity, row map[string]any, body map[string]any) map[string]any {
-	return map[string]any{"atual": nilIfEmpty(atual), "registro": row, e.Singular: row, "dados": body}
+	if body == nil {
+		body = map[string]any{}
+	}
+	return map[string]any{"atual": nilIfEmpty(atual), "registro": row, e.Singular: row, "entrada": body}
 }
 
 // canCreate checks `criar`; a generic signed-in permission does not let
@@ -497,7 +504,7 @@ func (a *intentAPI) canCreate(ctx *interp.Context, atual map[string]any, e *ast.
 			// Inside something that has members, only roles decide.
 			ok = !membered && (rule.Anyone || atual != nil)
 		default:
-			ok = a.in.Can(ctx, atual, e, "criar", data)
+			ok = a.in.RulePasses(ctx, atual, e, rule, data)
 		}
 		if !ok {
 			continue
@@ -749,4 +756,21 @@ func anyoneMay(e *ast.Entity) bool {
 		}
 	}
 	return false
+}
+
+// hiddenParent returns the parent entity referenced by data that atual
+// cannot see (its existence must not be revealed).
+func (a *intentAPI) hiddenParent(ctx *interp.Context, atual map[string]any, e *ast.Entity, data map[string]any) *ast.Entity {
+	for field, target := range e.Parents {
+		if data[field] == nil {
+			continue
+		}
+		pe := a.app.Entities[target]
+		res, _ := a.in.Op(ctx, pe.Singular, "buscar", data[field])
+		row, _ := res.(map[string]any)
+		if row == nil || !a.in.Can(ctx, atual, pe, "ver", row) {
+			return pe
+		}
+	}
+	return nil
 }
