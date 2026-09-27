@@ -1,0 +1,89 @@
+sistema testefullstack
+
+dados
+  conta interno
+    login: texto obrigatorio unico
+    senha_hash: texto obrigatorio
+
+  nota interno
+    conta: numero obrigatorio
+    iid: numero obrigatorio
+    title: texto obrigatorio
+    state: texto
+    unico(conta, iid)
+
+logica
+  funcao classificar(n)
+    definir rotulo = "pequeno"
+    para cada i em [1, 2, 3]
+      se n > 10
+        definir rotulo = "grande"
+      senao
+        definir rotulo = "pequeno"
+    definir rotulo = rotulo + "!"
+    retornar rotulo
+
+  funcao conta_atual(requisicao)
+    definir s = requisicao.sessao
+    se s == nulo
+      falhar(401, "401 Unauthorized")
+    retornar conta.buscar(s.conta_id)
+
+rotas
+  rota POST "/api/contas"
+    definir corpo = requisicao.corpo
+    se tamanho(corpo.senha) < 8
+      responder(400, {message: "senha curta"})
+    definir c = conta.criar({login: corpo.login, senha_hash: cripto.hash_senha(corpo.senha)})
+    responder(201, {id: c.id, login: c.login})
+
+  rota POST "/api/sessao"
+    definir c = conta.encontrar({login: requisicao.corpo.login})
+    se c == nulo ou nao cripto.verificar_senha(requisicao.corpo.senha, c.senha_hash)
+      responder(401, {message: "credenciais inválidas"})
+    definir s = sessao.iniciar({conta_id: c.id})
+    retornar {csrf: s.csrf}
+
+  rota POST "/api/notas"
+    definir c = conta_atual(requisicao)
+    definir iid = sequencia.proxima("notas:" + texto(c.id))
+    definir n = nota.criar({conta: c.id, iid: iid, title: requisicao.corpo.title, state: "opened"})
+    responder(201, n)
+
+  rota GET "/api/notas/:iid"
+    definir c = conta_atual(requisicao)
+    definir n = nota.encontrar({conta: c.id, iid: numero(requisicao.parametros.iid)})
+    se n == nulo
+      falhar(404, "404 Not found")
+    retornar {iid: n.iid, title: n.title, state: n.state, meta: {dono: c.login, tags: ["a", "b"]}}
+
+  rota PUT "/api/notas/:iid"
+    definir c = conta_atual(requisicao)
+    definir n = nota.encontrar({conta: c.id, iid: numero(requisicao.parametros.iid)})
+    definir mudancas = {}
+    se tem(requisicao.corpo, "state")
+      mudancas.state = requisicao.corpo.state
+    retornar nota.atualizar(n.id, mudancas)
+
+  rota GET "/api/notas"
+    definir c = conta_atual(requisicao)
+    definir filtros = {conta: c.id}
+    se requisicao.consulta.state != nulo
+      filtros.state = requisicao.consulta.state
+    definir lista = nota.filtrar(filtros, {ordenar: "-iid"})
+    definir titulos = []
+    para cada n em lista
+      titulos = adicionar(titulos, n.title)
+    retornar {total: nota.contar(filtros), titulos: titulos, primeiro: lista[0].title}
+
+  rota GET "/api/classificar/:n"
+    retornar {a: classificar(numero(requisicao.parametros.n))}
+
+  rota GET "/api/quebrado"
+    retornar variavel_que_nao_existe + 1
+
+  rota GET "/api/capturado"
+    tentar
+      falhar(418, "chá")
+    erro falha
+      retornar {capturado: falha}

@@ -9,12 +9,14 @@ import (
 	"math"
 	"math/rand"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/flaviokalleu/germanio/compiler/ast"
+	"github.com/flaviokalleu/germanio/compiler/diagnostics"
 	"github.com/flaviokalleu/germanio/runtime/banco"
 )
 
@@ -39,10 +41,18 @@ type signal struct {
 type Scope struct {
 	vars   map[string]interface{}
 	parent *Scope
+	// ctx is the execution context inherited by nested scopes.
+	ctx *Context
+	// global marks the interpreter's top-level scope.
+	global bool
 }
 
 func NewScope(parent *Scope) *Scope {
-	return &Scope{vars: make(map[string]interface{}), parent: parent}
+	s := &Scope{vars: make(map[string]interface{}), parent: parent}
+	if parent != nil {
+		s.ctx = parent.ctx
+	}
+	return s
 }
 
 func (s *Scope) Get(name string) (interface{}, bool) {
@@ -55,15 +65,17 @@ func (s *Scope) Get(name string) (interface{}, bool) {
 	return nil, false
 }
 
+// Set updates the nearest scope that has name, or creates it here. Code
+// running inside a request or task never writes the global scope: a global
+// with the same name is shadowed locally, so concurrent executions cannot
+// race on shared state.
 func (s *Scope) Set(name string, value interface{}) {
-	// Update in the scope where it exists, or set in current scope.
-	if _, ok := s.vars[name]; ok {
-		s.vars[name] = value
-		return
-	}
-	if s.parent != nil {
-		if _, ok := s.parent.Get(name); ok {
-			s.parent.Set(name, value)
+	for cur := s; cur != nil; cur = cur.parent {
+		if cur.global && s.ctx != nil && !s.ctx.AllowGlobal {
+			break
+		}
+		if _, ok := cur.vars[name]; ok {
+			cur.vars[name] = value
 			return
 		}
 	}
@@ -87,15 +99,21 @@ type Interpreter struct {
 	WAClient interface {
 		EnviarMensagem(telefone, mensagem string) error
 	}
+	// Modules are capability namespaces callable as modulo.funcao(...).
+	Modules map[string]map[string]ModuleFunc
 }
 
 // New creates a new interpreter.
 func New(db *banco.Banco) *Interpreter {
-	return &Interpreter{
-		Global:    NewScope(nil),
+	global := NewScope(nil)
+	global.global = true
+	interp := &Interpreter{
+		Global:    global,
 		Functions: make(map[string]*ast.FuncDecl),
 		DB:        db,
 	}
+	registerStdlib(interp)
+	return interp
 }
 
 // AppendLog adds a message to the log buffer.
@@ -146,7 +164,9 @@ func (interp *Interpreter) ExecStatement(stmt *ast.Statement, scope *Scope) {
 
 	case "assign":
 		val := interp.EvalExpr(&stmt.Assign.Value, scope)
-		if stmt.Assign.Field != "" {
+		if stmt.Assign.TargetExpr != nil {
+			interp.assignTo(stmt.Assign.TargetExpr, val, scope)
+		} else if stmt.Assign.Field != "" {
 			// Object field assignment
 			obj, ok := scope.Get(stmt.Assign.Target)
 			if !ok {
@@ -155,6 +175,8 @@ func (interp *Interpreter) ExecStatement(stmt *ast.Statement, scope *Scope) {
 			}
 			if m, ok := obj.(map[string]interface{}); ok {
 				m[stmt.Assign.Field] = val
+			} else {
+				panic(interp.errAt(stmt.Pos, 0, "só é possível atribuir '%s' em um mapa, '%s' é %s", stmt.Assign.Field, stmt.Assign.Target, typeName(obj)))
 			}
 		} else {
 			scope.Set(stmt.Assign.Target, val)
@@ -190,9 +212,15 @@ func (interp *Interpreter) ExecStatement(stmt *ast.Statement, scope *Scope) {
 		msg := toString(val)
 		fmt.Println("[germanio]", msg)
 		interp.AppendLog(msg)
+		if scope.ctx != nil {
+			scope.ctx.Output = append(scope.ctx.Output, msg)
+		}
 
 	case "call":
-		interp.execCall(stmt.Call, scope)
+		interp.execCall(stmt.Call, scope, stmt.Pos)
+
+	case "expr":
+		interp.EvalExpr(stmt.Expr, scope)
 
 	case "try":
 		interp.execTry(stmt.Try, scope)
@@ -214,7 +242,7 @@ func (interp *Interpreter) execWhen(when *ast.WhenStmt, scope *Scope) {
 		if c == nil {
 			continue
 		}
-		if c.IsDefault || (c.Pattern != nil && isEqual(target, interp.EvalExpr(c.Pattern, scope))) {
+		if c.IsDefault || (c.Pattern != nil && isEqual(target, interp.evalPattern(c.Pattern, scope))) {
 			interp.ExecStatements(c.Body, NewScope(scope))
 			return
 		}
@@ -282,8 +310,19 @@ func (interp *Interpreter) execForEach(forEach *ast.ForEachStmt, scope *Scope) {
 				items = append(items, string(ch))
 			}
 		}
+	case map[string]interface{}:
+		keys := make([]string, 0, len(c))
+		for k := range c {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			items = append(items, k)
+		}
+	case nil:
+		panic(interp.errAt(forEach.Collection.Pos, 0, "para cada sobre nulo"))
 	default:
-		return
+		panic(interp.errAt(forEach.Collection.Pos, 0, "para cada exige lista, texto ou mapa, recebido %s", typeName(collection)))
 	}
 
 	loopScope := NewScope(scope)
@@ -291,8 +330,7 @@ func (interp *Interpreter) execForEach(forEach *ast.ForEachStmt, scope *Scope) {
 	for _, item := range items {
 		iterations++
 		if iterations > maxIterations {
-			interp.AppendLog("ERRO: limite de iteracoes atingido (for_each)")
-			break
+			panic(interp.errAt(forEach.Collection.Pos, 0, "limite de %d iterações excedido em para cada", maxIterations))
 		}
 		loopScope.SetLocal(forEach.VarName, item)
 		shouldBreak := false
@@ -327,8 +365,7 @@ func (interp *Interpreter) execWhile(whileStmt *ast.WhileStmt, scope *Scope) {
 	for {
 		iterations++
 		if iterations > maxIterations {
-			interp.AppendLog("ERRO: limite de iteracoes atingido (while)")
-			break
+			panic(interp.errAt(whileStmt.Condition.Pos, 0, "limite de %d iterações excedido em enquanto", maxIterations))
 		}
 		if !toBool(interp.EvalExpr(&whileStmt.Condition, loopScope)) {
 			break
@@ -396,37 +433,35 @@ func (interp *Interpreter) execRepeat(repeatStmt *ast.RepeatStmt, scope *Scope) 
 	}
 }
 
-func (interp *Interpreter) execCall(call *ast.FuncCall, scope *Scope) interface{} {
+func (interp *Interpreter) execCall(call *ast.FuncCall, scope *Scope, pos diagnostics.Position) interface{} {
 	if call == nil {
 		return nil
 	}
-
-	name := call.Name
-	args := make([]interface{}, len(call.Args))
-	for i, arg := range call.Args {
-		args[i] = interp.EvalExpr(arg, scope)
-	}
-
-	// Check built-in functions
-	if result, ok := interp.callBuiltin(name, args); ok {
-		return result
-	}
-
-	// Check user-defined functions
-	if fn, ok := interp.Functions[name]; ok {
-		return interp.callFunction(fn, args)
-	}
-
-	// DB operations via object.method pattern
-	if call.Object != "" {
-		return interp.callDBMethod(call.Object, name, args, scope)
-	}
-
-	return nil
+	return interp.evalCall(&ast.Expression{Type: "call", Name: call.Name, Object: call.Object, Args: call.Args, Pos: pos}, scope)
 }
 
+const maxCallDepth = 200
+
+// callFunction is kept for callers outside a scope (legacy paths).
 func (interp *Interpreter) callFunction(fn *ast.FuncDecl, args []interface{}) interface{} {
+	return interp.callFunctionIn(fn, args, interp.Global, diagnostics.Position{})
+}
+
+func (interp *Interpreter) callFunctionIn(fn *ast.FuncDecl, args []interface{}, caller *Scope, pos diagnostics.Position) interface{} {
+	if len(args) > len(fn.Params) {
+		panic(interp.errAt(pos, 0, "a função '%s' recebe %d argumento(s), recebeu %d", fn.Name, len(fn.Params), len(args)))
+	}
 	fnScope := NewScope(interp.Global)
+	if caller != nil {
+		fnScope.ctx = caller.ctx
+	}
+	if fnScope.ctx != nil {
+		fnScope.ctx.depth++
+		defer func() { fnScope.ctx.depth-- }()
+		if fnScope.ctx.depth > maxCallDepth {
+			panic(interp.errAt(pos, 0, "profundidade máxima de chamadas (%d) excedida em '%s'", maxCallDepth, fn.Name))
+		}
+	}
 	for i, param := range fn.Params {
 		if i < len(args) {
 			fnScope.SetLocal(param, args[i])
@@ -541,7 +576,11 @@ func (interp *Interpreter) execTry(tryStmt *ast.TryStmt, scope *Scope) {
 				if len(tryStmt.Catch) > 0 {
 					catchScope := NewScope(scope)
 					if tryStmt.ErrVar != "" {
-						catchScope.SetLocal(tryStmt.ErrVar, fmt.Sprintf("%v", r))
+						msg := fmt.Sprintf("%v", r)
+						if re, ok := r.(*RuntimeError); ok {
+							msg = re.Message
+						}
+						catchScope.SetLocal(tryStmt.ErrVar, msg)
 					}
 					interp.ExecStatements(tryStmt.Catch, catchScope)
 				}
@@ -559,20 +598,22 @@ func (interp *Interpreter) EvalExpr(expr *ast.Expression, scope *Scope) interfac
 
 	switch expr.Type {
 	case "literal":
-		// Parse number strings to float64
-		if s, ok := expr.Value.(string); ok {
-			if f, err := strconv.ParseFloat(s, 64); err == nil {
-				return f
-			}
-		}
 		return expr.Value
 
 	case "variable":
 		if val, ok := scope.Get(expr.Name); ok {
 			return val
 		}
-		// Could be a model name — return as string
-		return expr.Name
+		if expr.Canon != "" {
+			if val, ok := scope.Get(expr.Canon); ok {
+				return val
+			}
+		}
+		// A model name evaluates to itself (para cada t em ticket).
+		if interp.isModel(expr.Name) {
+			return expr.Name
+		}
+		panic(interp.errAt(expr.Pos, 0, "variável '%s' não definida.%s", expr.Name, suggest(expr.Name, scope.names())))
 
 	case "binary":
 		return interp.evalBinary(expr, scope)
@@ -581,51 +622,28 @@ func (interp *Interpreter) EvalExpr(expr *ast.Expression, scope *Scope) interfac
 		return interp.evalUnary(expr, scope)
 
 	case "call":
-		call := &ast.FuncCall{
-			Name:   expr.Name,
-			Object: expr.Object,
+		return interp.evalCall(expr, scope)
+
+	case "field_access":
+		if obj, ok := scope.Get(expr.Object); ok {
+			return interp.member(expr.Pos, obj, expr.Field)
 		}
+		if interp.isModel(expr.Object) {
+			// Legacy lazy reference used by older screens and rules.
+			return fmt.Sprintf("%s.%s", expr.Object, expr.Field)
+		}
+		panic(interp.errAt(expr.Pos, 0, "variável '%s' não definida.%s", expr.Object, suggest(expr.Object, scope.names())))
+
+	case "member":
+		return interp.member(expr.Pos, interp.EvalExpr(expr.Target, scope), expr.Field)
+
+	case "method":
+		target := interp.EvalExpr(expr.Target, scope)
 		args := make([]interface{}, len(expr.Args))
 		for i, a := range expr.Args {
 			args[i] = interp.EvalExpr(a, scope)
 		}
-		// Built-in functions
-		if result, ok := interp.callBuiltin(expr.Name, args); ok {
-			return result
-		}
-		// User-defined functions
-		if fn, ok := interp.Functions[expr.Name]; ok {
-			return interp.callFunction(fn, args)
-		}
-		// Object method calls
-		if expr.Object != "" {
-			call.Args = expr.Args
-			result := interp.callDBMethod(expr.Object, expr.Name, args, scope)
-			if result != nil {
-				return result
-			}
-			// Try as a method on a variable
-			if obj, ok := scope.Get(expr.Object); ok {
-				return interp.callObjMethod(obj, expr.Name, args)
-			}
-		}
-		return nil
-
-	case "field_access":
-		if obj, ok := scope.Get(expr.Object); ok {
-			if m, ok := obj.(map[string]interface{}); ok {
-				return m[expr.Field]
-			}
-		}
-		// Try as model name for DB access
-		if interp.DB != nil {
-			modelName := strings.ToLower(expr.Object)
-			if _, ok := interp.DB.Models[modelName]; ok {
-				// Return a string reference for lazy evaluation
-				return fmt.Sprintf("%s.%s", expr.Object, expr.Field)
-			}
-		}
-		return nil
+		return interp.valueMethod(&Call{Interp: interp, Scope: scope, Pos: expr.Pos, Name: expr.Name}, target, expr.Name, args)
 
 	case "list":
 		result := make([]interface{}, len(expr.Elements))
@@ -634,35 +652,58 @@ func (interp *Interpreter) EvalExpr(expr *ast.Expression, scope *Scope) interfac
 		}
 		return result
 
+	case "map":
+		result := make(map[string]interface{}, len(expr.Keys))
+		for i, k := range expr.Keys {
+			result[k] = interp.EvalExpr(expr.Elements[i], scope)
+		}
+		return result
+
 	case "index":
-		// Array indexing: arr[0] or obj.field[0]
 		var collection interface{}
-		if expr.Object != "" && expr.Field != "" {
-			// obj.field[index]
-			if obj, ok := scope.Get(expr.Object); ok {
-				if m, ok := obj.(map[string]interface{}); ok {
-					collection = m[expr.Field]
-				}
+		switch {
+		case expr.Left != nil:
+			collection = interp.EvalExpr(expr.Left, scope)
+		case expr.Object != "" && expr.Field != "":
+			obj, ok := scope.Get(expr.Object)
+			if !ok {
+				panic(interp.errAt(expr.Pos, 0, "variável '%s' não definida", expr.Object))
 			}
-		} else {
-			// name[index]
-			collection, _ = scope.Get(expr.Name)
+			collection = interp.member(expr.Pos, obj, expr.Field)
+		default:
+			v, ok := scope.Get(expr.Name)
+			if !ok {
+				panic(interp.errAt(expr.Pos, 0, "variável '%s' não definida", expr.Name))
+			}
+			collection = v
 		}
-		idx := int(toNumber(interp.EvalExpr(expr.Index, scope)))
-		switch arr := collection.(type) {
-		case []interface{}:
-			if idx >= 0 && idx < len(arr) {
-				return arr[idx]
-			}
-		case string:
-			if idx >= 0 && idx < len(arr) {
-				return string(arr[idx])
-			}
-		}
-		return nil
+		return interp.index(expr.Pos, collection, interp.EvalExpr(expr.Index, scope))
 	}
 
-	return nil
+	panic(interp.errAt(expr.Pos, 0, "expressão desconhecida: %s", expr.Type))
+}
+
+// evalPattern evaluates a quando-case pattern; an undefined bare name is a
+// symbol (aprovado -> ...), matching the documented pattern syntax.
+func (interp *Interpreter) evalPattern(expr *ast.Expression, scope *Scope) interface{} {
+	if expr.Type == "variable" {
+		if v, ok := scope.Get(expr.Name); ok {
+			return v
+		}
+		return expr.Name
+	}
+	return interp.EvalExpr(expr, scope)
+}
+
+// names lists visible variable names (for suggestions).
+func (s *Scope) names() []string {
+	var out []string
+	for cur := s; cur != nil; cur = cur.parent {
+		for k := range cur.vars {
+			out = append(out, k)
+		}
+	}
+	return out
 }
 
 func (interp *Interpreter) evalBinary(expr *ast.Expression, scope *Scope) interface{} {
@@ -683,9 +724,15 @@ func (interp *Interpreter) evalBinary(expr *ast.Expression, scope *Scope) interf
 	case "/":
 		r := toNumber(right)
 		if r == 0 {
-			return float64(0)
+			panic(interp.errAt(expr.Pos, 0, "divisão por zero"))
 		}
 		return toNumber(left) / r
+	case "%":
+		r := toNumber(right)
+		if r == 0 {
+			panic(interp.errAt(expr.Pos, 0, "divisão por zero"))
+		}
+		return math.Mod(toNumber(left), r)
 	case "==":
 		return isEqual(left, right)
 	case "!=":
@@ -913,7 +960,9 @@ func (interp *Interpreter) callBuiltin(name string, args []interface{}) (interfa
 			return args, true
 		}
 		if arr, ok := args[0].([]interface{}); ok {
-			return append(arr, args[1]), true
+			out := make([]interface{}, len(arr), len(arr)+1)
+			copy(out, arr)
+			return append(out, args[1]), true
 		}
 		return []interface{}{args[0], args[1]}, true
 
@@ -951,9 +1000,14 @@ func (interp *Interpreter) callBuiltin(name string, args []interface{}) (interfa
 			return []interface{}{}, true
 		}
 		if m, ok := args[0].(map[string]interface{}); ok {
-			keys := make([]interface{}, 0, len(m))
+			names := make([]string, 0, len(m))
 			for k := range m {
-				keys = append(keys, k)
+				names = append(names, k)
+			}
+			sort.Strings(names)
+			keys := make([]interface{}, len(names))
+			for i, k := range names {
+				keys[i] = k
 			}
 			return keys, true
 		}
@@ -1678,7 +1732,7 @@ func (interp *Interpreter) callBuiltin(name string, args []interface{}) (interfa
 		return fmt.Sprintf("%x", h), true
 	}
 
-	return nil, false
+	return extraBuiltin(name, args)
 }
 
 // gerarPixCode generates a simplified PIX EMV code
@@ -1829,6 +1883,8 @@ func (interp *Interpreter) Run(program *ast.Program) {
 				fmt.Printf("[germanio] ERRO runtime: %v\n", r)
 			}
 		}()
+		interp.Global.ctx = &Context{AllowGlobal: true}
+		defer func() { interp.Global.ctx = nil }()
 		interp.ExecStatements(program.Scripts, interp.Global)
 	}()
 }
@@ -1861,7 +1917,9 @@ func (interp *Interpreter) EvalStatements(stmts []*ast.Statement, fns []*ast.Fun
 				interp.AppendLog(fmt.Sprintf("ERRO: %v", r))
 			}
 		}()
-		interp.ExecStatements(stmts, interp.Global)
+		scope := NewScope(interp.Global)
+		scope.ctx = &Context{}
+		interp.ExecStatements(stmts, scope)
 	}()
 
 	interp.logMu.Lock()

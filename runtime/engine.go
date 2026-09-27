@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -34,6 +35,7 @@ func parseFG(arquivo string) (*ast.Program, error) {
 	}
 
 	p := parser.New(tokens)
+	p.File = arquivo
 	program, err := p.Parse()
 	if err != nil {
 		return nil, fmt.Errorf("erro de parsing em %s: %w", arquivo, err)
@@ -116,54 +118,78 @@ func resolveImports(program *ast.Program, baseDir string, resolved map[string]bo
 }
 
 // Executar loads a .ge file and runs the application.
-func Executar(arquivo string, porta string) error {
-	// Load .env
+// App is a loaded Germanio application ready to serve.
+type App struct {
+	Program     *ast.Program
+	DB          *banco.Banco
+	Interpreter *interp.Interpreter
+	Server      *servidor.Servidor
+	Handler     http.Handler
+	// closers run on Fechar (background workers, WhatsApp, cron).
+	closers []func()
+}
+
+// Fechar stops background work and closes the database.
+func (a *App) Fechar() {
+	for i := len(a.closers) - 1; i >= 0; i-- {
+		a.closers[i]()
+	}
+	if a.DB != nil {
+		a.DB.Fechar()
+	}
+}
+
+// Capabilities registered by other runtime packages (git, processo, ui…).
+// Each one receives the app after the interpreter exists and before the
+// startup scripts run.
+var capabilityHooks []func(*App) error
+
+// RegistrarCapability adds a hook that exposes a capability to .ge code.
+func RegistrarCapability(hook func(*App) error) {
+	capabilityHooks = append(capabilityHooks, hook)
+}
+
+// OnClose registers cleanup for a capability.
+func (a *App) OnClose(f func()) { a.closers = append(a.closers, f) }
+
+// Carregar parses, resolves imports, opens the database, wires the
+// interpreter and capabilities and builds the HTTP handler.
+func Carregar(arquivo string, porta string) (*App, error) {
 	envPath := filepath.Join(filepath.Dir(arquivo), ".env")
 	LoadEnv(envPath)
 
-	// Override port from env
-	if envPort := GetEnv("PORT", ""); envPort != "" && porta == "8080" {
-		porta = envPort
-	}
-
-	fmt.Printf("[germanio] Carregando: %s\n", arquivo)
-
 	program, err := parseFG(arquivo)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	// Resolve imports
 	baseDir := filepath.Dir(arquivo)
 	if err := resolveImports(program, baseDir, nil); err != nil {
-		return err
+		return nil, err
 	}
 
 	if program.System == nil {
-		return fmt.Errorf("declaração 'sistema' não encontrada")
+		return nil, fmt.Errorf("declaração 'sistema' não encontrada")
 	}
 
 	fmt.Printf("[germanio] Sistema: %s\n", program.System.Name)
-	fmt.Printf("[germanio] Modelos: %d | Telas: %d | Eventos: %d | Regras: %d\n",
-		len(program.Models), len(program.Screens), len(program.Events), len(program.Rules))
+	fmt.Printf("[germanio] Modelos: %d | Telas: %d | Rotas: %d | Funções: %d\n",
+		len(program.Models), len(program.Screens), len(program.Routes), len(program.Functions))
 
-	// Database
 	db, err := banco.Abrir(program.Database, program.System.Name, program.Models)
 	if err != nil {
-		return fmt.Errorf("erro no banco: %w", err)
+		return nil, fmt.Errorf("erro no banco: %w", err)
 	}
 	db.Rules = program.Rules
+	app := &App{Program: program, DB: db}
 
-	// Auth
 	var authHandler *authpkg.Auth
 	if program.Auth != nil && program.Auth.Enabled {
-		// Use env variable for JWT secret if available
 		jwtSecret := program.Auth.JWTSecret
 		if envSecret := GetEnv("JWT_SECRET", ""); envSecret != "" {
 			jwtSecret = envSecret
 		}
 		if jwtSecret == "germanio-secret-change-me" {
-			// Generate a random secret if default
 			jwtSecret = fmt.Sprintf("germanio-%d-%s", time.Now().UnixNano(), program.System.Name)
 			fmt.Println("[germanio] AVISO: JWT secret gerado automaticamente. Defina JWT_SECRET no .env para produção.")
 		}
@@ -178,7 +204,6 @@ func Executar(arquivo string, porta string) error {
 		fmt.Println("[germanio] Auth: ativado")
 	}
 
-	// WhatsApp
 	var waClient *wa.Client
 	if program.WhatsApp != nil && program.WhatsApp.Enabled {
 		waClient = wa.Novo(program.WhatsApp.DBPath)
@@ -188,11 +213,10 @@ func Executar(arquivo string, porta string) error {
 					fmt.Printf("[germanio] AVISO WhatsApp: %s (continuando sem WhatsApp)\n", err)
 				}
 			}()
-			defer waClient.Desconectar()
+			app.OnClose(waClient.Desconectar)
 		}
 	}
 
-	// Email
 	var emailClient *emailpkg.Client
 	if program.Email != nil && program.Email.Host != "" {
 		emailClient = emailpkg.Novo(emailpkg.Config{
@@ -205,47 +229,75 @@ func Executar(arquivo string, porta string) error {
 		fmt.Println("[germanio] Email SMTP: ativado")
 	}
 
-	// HTTP Client
 	httpClient := httpclient.Novo()
 
-	// Server
 	srv := servidor.Novo(program, db, porta)
 	srv.Auth = authHandler
 	srv.WA = waClient
 	srv.Email = emailClient
 	srv.HTTPClient = httpClient
 
-	// Interpreter / Scripting Engine
 	interpreter := interp.New(db)
 	interpreter.HTTPClient = httpClient
 	if waClient != nil {
 		interpreter.WAClient = waClient
 	}
 	srv.Interpreter = interpreter
+	app.Interpreter = interpreter
+	app.Server = srv
 
-	// Register functions and execute top-level scripts
-	if len(program.Functions) > 0 || len(program.Scripts) > 0 {
-		interpreter.Run(program)
-		fmt.Printf("[germanio] Logica: %d funcao(es), %d script(s)\n", len(program.Functions), len(program.Scripts))
+	for _, hook := range capabilityHooks {
+		if err := hook(app); err != nil {
+			app.Fechar()
+			return nil, err
+		}
 	}
 
-	// Cron Jobs
+	if len(program.Functions) > 0 || len(program.Scripts) > 0 {
+		interpreter.Run(program)
+	}
+
 	if len(program.Crons) > 0 {
 		scheduler := cronpkg.Novo(program.Crons)
 		scheduler.Iniciar()
-		defer scheduler.Parar()
+		app.OnClose(scheduler.Parar)
 		fmt.Printf("[germanio] Cron: %d job(s) agendado(s)\n", len(program.Crons))
 	}
 
-	fmt.Printf("\n[germanio] %s rodando em http://localhost:%s\n\n", program.System.Name, porta)
-
-	// Hot reload
-	WatchFiles(baseDir, arquivo, porta)
-
-	return srv.Iniciar()
+	handler, err := srv.Handler()
+	if err != nil {
+		app.Fechar()
+		return nil, err
+	}
+	app.Handler = handler
+	return app, nil
 }
 
-// Verificar loads and parses a .ge file without running.
+func Executar(arquivo string, porta string) error {
+	if envPort := GetEnv("PORT", ""); envPort != "" && porta == "8080" {
+		porta = envPort
+	}
+	fmt.Printf("[germanio] Carregando: %s\n", arquivo)
+	app, err := Carregar(arquivo, porta)
+	if err != nil {
+		return err
+	}
+	defer app.Fechar()
+
+	fmt.Printf("\n[germanio] %s rodando em http://localhost:%s\n\n", app.Program.System.Name, porta)
+	WatchFiles(filepath.Dir(arquivo), arquivo, porta)
+
+	server := &http.Server{
+		Addr:           ":" + porta,
+		Handler:        app.Handler,
+		ReadTimeout:    60 * time.Second,
+		WriteTimeout:   10 * time.Minute, // git clone/push and job logs stream for a while
+		IdleTimeout:    60 * time.Second,
+		MaxHeaderBytes: 1 << 20,
+	}
+	return server.ListenAndServe()
+}
+
 func Verificar(arquivo string) error {
 	program, err := parseFG(arquivo)
 	if err != nil {

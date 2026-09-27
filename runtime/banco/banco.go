@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -148,6 +149,10 @@ func buildDSN(config *ast.DatabaseConfig, appName string) (driver string, dsn st
 		if dbName == "" {
 			dbName = appName + ".db"
 		}
+		// GERMANIO_SQLITE overrides the file (tests, deploys, ":memory:"-like temp files).
+		if override := os.Getenv("GERMANIO_SQLITE"); override != "" {
+			dbName = override
+		}
 		return "sqlite", dbName + "?_pragma=journal_mode(WAL)&_pragma=foreign_keys(ON)"
 	}
 }
@@ -265,6 +270,18 @@ func (b *Banco) criarTabela(model *ast.Model) error {
 		b.DB.Exec(alterSQL) // ignore error if column already exists
 	}
 
+	// Composite constraints: unico(a, b) and indice(a, b)
+	for _, group := range model.UniqueTogether {
+		if err := b.compositeIndex(name, group, true); err != nil {
+			return err
+		}
+	}
+	for _, group := range model.IndexTogether {
+		if err := b.compositeIndex(name, group, false); err != nil {
+			return err
+		}
+	}
+
 	// Create indexes for fields with Index: true
 	for _, f := range model.Fields {
 		if f.Index {
@@ -277,6 +294,23 @@ func (b *Banco) criarTabela(model *ast.Model) error {
 		}
 	}
 
+	return nil
+}
+
+func (b *Banco) compositeIndex(table string, group []string, unique bool) error {
+	cols := make([]string, len(group))
+	for i, c := range group {
+		cols[i] = q(strings.ToLower(c))
+	}
+	kind, prefix := "INDEX", "idx"
+	if unique {
+		kind, prefix = "UNIQUE INDEX", "uniq"
+	}
+	name := fmt.Sprintf("%s_%s_%s", prefix, table, strings.ToLower(strings.Join(group, "_")))
+	stmt := fmt.Sprintf("CREATE %s IF NOT EXISTS %s ON %s(%s)", kind, q(name), q(table), strings.Join(cols, ", "))
+	if _, err := b.DB.Exec(stmt); err != nil {
+		return fmt.Errorf("erro ao criar %s %s: %w", strings.ToLower(kind), name, err)
+	}
 	return nil
 }
 
@@ -652,6 +686,12 @@ func (b *Banco) ListarTodos(modelo string) ([]map[string]any, error) {
 
 // Validar checks field constraints.
 func (b *Banco) Validar(modelo string, dados map[string]any) error {
+	return b.validar(modelo, dados, false)
+}
+
+// validar checks field types and rules. In partial mode (updates) only the
+// keys present in dados are checked, so absent required fields are kept.
+func (b *Banco) validar(modelo string, dados map[string]any, parcial bool) error {
 	model, ok := b.Models[modelo]
 	if !ok {
 		return fmt.Errorf("modelo '%s' não encontrado", modelo)
@@ -660,6 +700,9 @@ func (b *Banco) Validar(modelo string, dados map[string]any) error {
 	for _, f := range model.Fields {
 		fname := strings.ToLower(f.Name)
 		val, exists := dados[fname]
+		if parcial && !exists {
+			continue
+		}
 
 		if f.Required && (!exists || val == nil || val == "") {
 			return fmt.Errorf("campo '%s' é obrigatório", f.Name)
@@ -697,6 +740,9 @@ func (b *Banco) Validar(modelo string, dados map[string]any) error {
 		}
 		fname := strings.ToLower(rule.Field)
 		val, exists := dados[fname]
+		if parcial && !exists {
+			continue
+		}
 
 		// Check if this rule applies to a field in this model
 		fieldInModel := false

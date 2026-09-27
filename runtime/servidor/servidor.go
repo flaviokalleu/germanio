@@ -46,6 +46,8 @@ type Servidor struct {
 	presenceMu  sync.RWMutex
 	htmlCache   string
 	htmlCacheMu sync.RWMutex
+	// Render converts special route bodies (UI trees) into responses.
+	Render Renderer
 }
 
 // Novo creates a new server.
@@ -58,7 +60,27 @@ func Novo(program *ast.Program, db *banco.Banco, porta string) *Servidor {
 }
 
 // Iniciar starts the HTTP server.
+// Iniciar builds the handler and serves it on s.Porta.
 func (s *Servidor) Iniciar() error {
+	handler, err := s.Handler()
+	if err != nil {
+		return err
+	}
+	defer s.Jobs.Close()
+	server := &http.Server{
+		Addr:           ":" + s.Porta,
+		Handler:        handler,
+		ReadTimeout:    15 * time.Second,
+		WriteTimeout:   30 * time.Second,
+		IdleTimeout:    60 * time.Second,
+		MaxHeaderBytes: 1 << 20, // 1MB
+	}
+	return server.ListenAndServe()
+}
+
+// Handler assembles every endpoint of the application. It is separate from
+// Iniciar so tests and embedders can serve the app without a TCP port.
+func (s *Servidor) Handler() (http.Handler, error) {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", s.handlePagina)
@@ -96,30 +118,9 @@ func (s *Servidor) Iniciar() error {
 	mux.HandleFunc("/api/_eval", s.handleEval)
 	mux.HandleFunc("/api/_log", s.handleLog)
 
-	// Custom routes
-	for _, route := range s.Program.Routes {
-		r := route // capture for closure
-		mux.HandleFunc(r.Path, func(w http.ResponseWriter, req *http.Request) {
-			if r.Method != "" && req.Method != r.Method {
-				s.jsonError(w, "método não permitido", http.StatusMethodNotAllowed)
-				return
-			}
-			if s.Interpreter != nil {
-				output := s.Interpreter.EvalStatements(r.Handler, nil)
-				w.Header().Set("Content-Type", "application/json")
-				if len(output) > 0 {
-					json.NewEncoder(w).Encode(map[string]interface{}{
-						"resultado": output[len(output)-1],
-						"output":    output,
-					})
-				} else {
-					json.NewEncoder(w).Encode(map[string]interface{}{"ok": true})
-				}
-			} else {
-				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]interface{}{"ok": true})
-			}
-		})
+	// Custom routes written in .ge
+	if err := s.registerRoutes(mux); err != nil {
+		return nil, err
 	}
 
 	// Prompt Events routes (quando receber / quando chamar)
@@ -167,8 +168,6 @@ func (s *Servidor) Iniciar() error {
 	s.WS.OnDisconnect = func(count int) {
 		s.WS.Broadcast(WSMessage{Type: "presenca_socket", Data: map[string]any{"connections": count}})
 	}
-	defer s.Jobs.Close()
-
 	// Periodic rate limiter cleanup
 	go func() {
 		for {
@@ -192,15 +191,7 @@ func (s *Servidor) Iniciar() error {
 		}
 	}()
 
-	server := &http.Server{
-		Addr:           ":" + s.Porta,
-		Handler:        handler,
-		ReadTimeout:    15 * time.Second,
-		WriteTimeout:   30 * time.Second,
-		IdleTimeout:    60 * time.Second,
-		MaxHeaderBytes: 1 << 20, // 1MB
-	}
-	return server.ListenAndServe()
+	return handler, nil
 }
 
 func (s *Servidor) middleware(next http.Handler) http.Handler {
@@ -338,13 +329,12 @@ func (s *Servidor) handleEval(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Require authentication for code execution
-	if s.Auth != nil {
-		role := r.Header.Get("X-User-Role")
-		if role != "admin" {
-			s.jsonError(w, "Apenas administradores podem executar código", http.StatusForbidden)
-			return
-		}
+	// Code execution requires an authenticated admin. Without the built-in
+	// auth there is no admin to check, so the endpoint stays disabled unless
+	// explicitly enabled for local development.
+	if !s.devEndpointAllowed(r) {
+		s.jsonError(w, "Apenas administradores podem executar código", http.StatusForbidden)
+		return
 	}
 
 	if s.Interpreter == nil {
@@ -406,7 +396,19 @@ func (s *Servidor) handleEval(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// devEndpointAllowed guards /api/_eval and /api/_log.
+func (s *Servidor) devEndpointAllowed(r *http.Request) bool {
+	if s.Auth != nil {
+		return r.Header.Get("X-User-Role") == "admin"
+	}
+	return os.Getenv("GERMANIO_DEV_EVAL") == "1"
+}
+
 func (s *Servidor) handleLog(w http.ResponseWriter, r *http.Request) {
+	if !s.devEndpointAllowed(r) {
+		s.jsonError(w, "Apenas administradores podem ler logs", http.StatusForbidden)
+		return
+	}
 	if s.Interpreter == nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte(`{"logs":[]}`))
@@ -462,7 +464,7 @@ func (s *Servidor) handleAPI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, ok := s.DB.Models[modelo]; !ok {
+	if m, ok := s.DB.Models[modelo]; !ok || m.Internal {
 		s.jsonError(w, fmt.Sprintf("modelo '%s' não existe", modelo), http.StatusNotFound)
 		return
 	}
@@ -1219,31 +1221,31 @@ func (s *Servidor) handleOpenAPIJSON(w http.ResponseWriter, r *http.Request) {
 		mName := strings.ToLower(m.Name)
 		paths["/api/"+mName] = map[string]any{
 			"get": map[string]any{
-				"summary":     "Listar " + m.Name,
-				"tags":        []string{m.Name},
-				"responses":   map[string]any{"200": map[string]any{"description": "Lista de " + m.Name}},
+				"summary":   "Listar " + m.Name,
+				"tags":      []string{m.Name},
+				"responses": map[string]any{"200": map[string]any{"description": "Lista de " + m.Name}},
 			},
 			"post": map[string]any{
-				"summary":     "Criar " + m.Name,
-				"tags":        []string{m.Name},
-				"responses":   map[string]any{"201": map[string]any{"description": m.Name + " criado"}},
+				"summary":   "Criar " + m.Name,
+				"tags":      []string{m.Name},
+				"responses": map[string]any{"201": map[string]any{"description": m.Name + " criado"}},
 			},
 		}
 		paths["/api/"+mName+"/{id}"] = map[string]any{
 			"get": map[string]any{
-				"summary":     "Obter " + m.Name + " por ID",
-				"tags":        []string{m.Name},
-				"responses":   map[string]any{"200": map[string]any{"description": "Detalhes de " + m.Name}},
+				"summary":   "Obter " + m.Name + " por ID",
+				"tags":      []string{m.Name},
+				"responses": map[string]any{"200": map[string]any{"description": "Detalhes de " + m.Name}},
 			},
 			"put": map[string]any{
-				"summary":     "Atualizar " + m.Name,
-				"tags":        []string{m.Name},
-				"responses":   map[string]any{"200": map[string]any{"description": m.Name + " atualizado"}},
+				"summary":   "Atualizar " + m.Name,
+				"tags":      []string{m.Name},
+				"responses": map[string]any{"200": map[string]any{"description": m.Name + " atualizado"}},
 			},
 			"delete": map[string]any{
-				"summary":     "Deletar " + m.Name,
-				"tags":        []string{m.Name},
-				"responses":   map[string]any{"200": map[string]any{"description": m.Name + " removido"}},
+				"summary":   "Deletar " + m.Name,
+				"tags":      []string{m.Name},
+				"responses": map[string]any{"200": map[string]any{"description": m.Name + " removido"}},
 			},
 		}
 	}

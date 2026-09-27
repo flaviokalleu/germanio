@@ -1,6 +1,7 @@
 package interpreter
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/flaviokalleu/germanio/compiler/ast"
@@ -47,7 +48,7 @@ func TestVariableDeclaration(t *testing.T) {
 		Type: "var",
 		VarDecl: &ast.VarDecl{
 			Name:  "x",
-			Value: ast.Expression{Type: "literal", Value: "10"},
+			Value: ast.Expression{Type: "literal", Value: float64(10)},
 		},
 	}
 	interp.ExecStatement(stmt, interp.Global)
@@ -69,11 +70,10 @@ func TestArithmetic(t *testing.T) {
 		right    interface{}
 		expected float64
 	}{
-		{"+", "5", "3", 8},
-		{"-", "10", "4", 6},
-		{"*", "6", "7", 42},
-		{"/", "20", "5", 4},
-		{"/", "10", "0", 0}, // division by zero returns 0
+		{"+", 5.0, 3.0, 8},
+		{"-", 10.0, 4.0, 6},
+		{"*", 6.0, 7.0, 42},
+		{"/", 20.0, 5.0, 4},
 	}
 
 	for _, tt := range tests {
@@ -90,6 +90,19 @@ func TestArithmetic(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDivisionByZeroFails(t *testing.T) {
+	interp := newInterp()
+	defer func() {
+		r := recover()
+		re, ok := r.(*RuntimeError)
+		if !ok || !strings.Contains(re.Message, "divisão por zero") {
+			t.Fatalf("expected division by zero error, got %v", r)
+		}
+	}()
+	interp.EvalExpr(&ast.Expression{Type: "binary", Operator: "/",
+		Left: &ast.Expression{Type: "literal", Value: 10.0}, Right: &ast.Expression{Type: "literal", Value: 0.0}}, interp.Global)
 }
 
 func TestStringConcatenation(t *testing.T) {
@@ -200,13 +213,13 @@ func TestIfElse(t *testing.T) {
 			Body: []*ast.Statement{
 				{
 					Type:   "assign",
-					Assign: &ast.Assignment{Target: "x", Value: ast.Expression{Type: "literal", Value: "1"}},
+					Assign: &ast.Assignment{Target: "x", Value: ast.Expression{Type: "literal", Value: float64(1)}},
 				},
 			},
 			Else: []*ast.Statement{
 				{
 					Type:   "assign",
-					Assign: &ast.Assignment{Target: "x", Value: ast.Expression{Type: "literal", Value: "2"}},
+					Assign: &ast.Assignment{Target: "x", Value: ast.Expression{Type: "literal", Value: float64(2)}},
 				},
 			},
 		},
@@ -248,7 +261,7 @@ func TestFunctionCallAndReturn(t *testing.T) {
 					Type:     "binary",
 					Operator: "*",
 					Left:     &ast.Expression{Type: "variable", Name: "n"},
-					Right:    &ast.Expression{Type: "literal", Value: "2"},
+					Right:    &ast.Expression{Type: "literal", Value: float64(2)},
 				},
 			},
 		},
@@ -260,7 +273,7 @@ func TestFunctionCallAndReturn(t *testing.T) {
 		Type: "call",
 		Name: "dobro",
 		Args: []*ast.Expression{
-			{Type: "literal", Value: "5"},
+			{Type: "literal", Value: float64(5)},
 		},
 	}
 	result := interp.EvalExpr(expr, interp.Global)
@@ -283,9 +296,9 @@ func TestForEachLoop(t *testing.T) {
 			Collection: ast.Expression{
 				Type: "list",
 				Elements: []*ast.Expression{
-					{Type: "literal", Value: "1"},
-					{Type: "literal", Value: "2"},
-					{Type: "literal", Value: "3"},
+					{Type: "literal", Value: float64(1)},
+					{Type: "literal", Value: float64(2)},
+					{Type: "literal", Value: float64(3)},
 				},
 			},
 			Body: []*ast.Statement{
@@ -578,9 +591,9 @@ func TestListLiteral(t *testing.T) {
 	expr := &ast.Expression{
 		Type: "list",
 		Elements: []*ast.Expression{
-			{Type: "literal", Value: "1"},
-			{Type: "literal", Value: "2"},
-			{Type: "literal", Value: "3"},
+			{Type: "literal", Value: float64(1)},
+			{Type: "literal", Value: float64(2)},
+			{Type: "literal", Value: float64(3)},
 		},
 	}
 	result := interp.EvalExpr(expr, interp.Global)
@@ -625,7 +638,7 @@ func TestWhileLoop(t *testing.T) {
 			Condition: ast.Expression{
 				Type: "binary", Operator: "<",
 				Left:  &ast.Expression{Type: "variable", Name: "i"},
-				Right: &ast.Expression{Type: "literal", Value: "5"},
+				Right: &ast.Expression{Type: "literal", Value: float64(5)},
 			},
 			Body: []*ast.Statement{
 				{
@@ -646,7 +659,7 @@ func TestWhileLoop(t *testing.T) {
 						Value: ast.Expression{
 							Type: "binary", Operator: "+",
 							Left:  &ast.Expression{Type: "variable", Name: "i"},
-							Right: &ast.Expression{Type: "literal", Value: "1"},
+							Right: &ast.Expression{Type: "literal", Value: float64(1)},
 						},
 					},
 				},
@@ -669,7 +682,7 @@ func TestRepeatLoop(t *testing.T) {
 	repeatStmt := &ast.Statement{
 		Type: "repeat",
 		Repeat: &ast.RepeatStmt{
-			Count: ast.Expression{Type: "literal", Value: "5"},
+			Count: ast.Expression{Type: "literal", Value: float64(5)},
 			Body: []*ast.Statement{
 				{
 					Type: "assign",
@@ -678,7 +691,7 @@ func TestRepeatLoop(t *testing.T) {
 						Value: ast.Expression{
 							Type: "binary", Operator: "+",
 							Left:  &ast.Expression{Type: "variable", Name: "count"},
-							Right: &ast.Expression{Type: "literal", Value: "1"},
+							Right: &ast.Expression{Type: "literal", Value: float64(1)},
 						},
 					},
 				},

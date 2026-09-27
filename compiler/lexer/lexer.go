@@ -217,6 +217,18 @@ type Token struct {
 	Line   int
 	Column int
 	Indent int
+	// Raw is the identifier exactly as written. Value holds the canonical
+	// keyword after multilingual normalization; names (fields, map keys,
+	// variables) must use Raw so that "title" never silently becomes "titulo".
+	Raw string
+}
+
+// Name returns the spelling a token had in the source.
+func (t Token) Name() string {
+	if t.Raw != "" {
+		return t.Raw
+	}
+	return t.Value
 }
 
 func (t Token) String() string {
@@ -729,26 +741,26 @@ func (l *Lexer) scanIdentifier() error {
 
 	// Check native keywords first (PT + EN)
 	if tt, ok := keywords[lower]; ok {
-		l.tokens = append(l.tokens, Token{Type: tt, Value: lower, Line: l.line, Column: startCol})
+		l.tokens = append(l.tokens, Token{Type: tt, Value: lower, Line: l.line, Column: startCol, Raw: word})
 		return nil
 	}
 
 	// Check multilingual translations → canonical PT keyword → token
 	if canonical, ok := idiomas.Translations[lower]; ok && canonical != "_skip" {
 		if tt, ok := keywords[canonical]; ok {
-			l.tokens = append(l.tokens, Token{Type: tt, Value: canonical, Line: l.line, Column: startCol})
+			l.tokens = append(l.tokens, Token{Type: tt, Value: canonical, Line: l.line, Column: startCol, Raw: word})
 			return nil
 		}
 	}
 	// Also try the original word (handles CJK characters that may not lowercase)
 	if canonical, ok := idiomas.Translations[word]; ok && canonical != "_skip" {
 		if tt, ok := keywords[canonical]; ok {
-			l.tokens = append(l.tokens, Token{Type: tt, Value: canonical, Line: l.line, Column: startCol})
+			l.tokens = append(l.tokens, Token{Type: tt, Value: canonical, Line: l.line, Column: startCol, Raw: word})
 			return nil
 		}
 	}
 
-	l.tokens = append(l.tokens, Token{Type: TokenIdentifier, Value: word, Line: l.line, Column: startCol})
+	l.tokens = append(l.tokens, Token{Type: TokenIdentifier, Value: word, Line: l.line, Column: startCol, Raw: word})
 	return nil
 }
 

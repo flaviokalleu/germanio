@@ -243,9 +243,15 @@ type Model struct {
 	Icon       string
 	Fields     []*Field
 	SoftDelete bool
-	IsAuth     bool     // is this the auth user model?
-	HasMany    []string // model names for 1:N relationships
-	ManyToMany []string // model names for N:N relationships
+	// Internal models get no automatic REST endpoints nor generated screens;
+	// only .ge code (rotas, funcoes) can read or write them.
+	Internal bool
+	// UniqueTogether / IndexTogether are composite constraints: unico(a, b).
+	UniqueTogether [][]string
+	IndexTogether  [][]string
+	IsAuth         bool     // is this the auth user model?
+	HasMany        []string // model names for 1:N relationships
+	ManyToMany     []string // model names for N:N relationships
 }
 
 func (m *Model) NodeType() string { return "Model" }
@@ -414,6 +420,7 @@ func (c *CronJob) NodeType() string { return "CronJob" }
 // ==================== Custom Route ====================
 
 type CustomRoute struct {
+	Pos     diagnostics.Position
 	Method  string       // GET, POST, PUT, DELETE
 	Path    string       // /api/relatorio, /api/custom/stats
 	Handler []*Statement // code to execute
@@ -544,6 +551,14 @@ type Expression struct {
 	Field    string
 	Elements []*Expression // for list literals
 	Index    *Expression   // for array[index] access
+	// Keys holds map literal keys, parallel to Elements ({chave: valor}).
+	Keys []string
+	// Target is the receiver of "member" (x.campo) and "method" (x.f(...))
+	// when the receiver is an arbitrary expression rather than a plain name.
+	Target *Expression
+	// Canon is the canonical multilingual keyword for Name when it differs
+	// from the spelling in the source (e.g. "texte" → "texto").
+	Canon string
 }
 
 func (e *Expression) NodeType() string { return "Expression" }
@@ -563,6 +578,8 @@ type Assignment struct {
 	Target string
 	Field  string // for object.field = value
 	Value  Expression
+	// TargetExpr is set for nested targets: a.b.c = v, lista[0] = v.
+	TargetExpr *Expression
 }
 
 func (a *Assignment) NodeType() string { return "Assignment" }

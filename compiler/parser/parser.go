@@ -2,9 +2,11 @@ package parser
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/flaviokalleu/germanio/compiler/ast"
+	"github.com/flaviokalleu/germanio/compiler/diagnostics"
 	"github.com/flaviokalleu/germanio/compiler/lexer"
 )
 
@@ -13,6 +15,22 @@ type Parser struct {
 	tokens  []lexer.Token
 	pos     int
 	program *ast.Program
+	// File names the source in positions and runtime errors.
+	File string
+}
+
+// at converts a token into a source position.
+func (p *Parser) at(tok lexer.Token) diagnostics.Position {
+	return diagnostics.Position{File: p.File, Line: tok.Line, Column: tok.Column}
+}
+
+// errorf reports a parse error with file and line.
+func (p *Parser) errorf(tok lexer.Token, format string, args ...any) error {
+	file := p.File
+	if file == "" {
+		file = "<fonte>"
+	}
+	return fmt.Errorf("%s:%d:%d: %s", file, tok.Line, tok.Column, fmt.Sprintf(format, args...))
 }
 
 // New creates a new Parser for the given tokens.
@@ -172,9 +190,18 @@ func (p *Parser) skipToNextLine() {
 }
 
 func (p *Parser) isBlockKeyword() bool {
-	tt := p.current().Type
+	tok := p.current()
+	tt := tok.Type
 	if tt == lexer.TokenImportar {
 		return true // imports break blocks
+	}
+	// Top-level blocks spelled as plain identifiers end the previous block
+	// when they start a line at column 1.
+	if tt == lexer.TokenIdentifier && tok.Column == 1 {
+		switch tok.Value {
+		case "rotas", "routes", "paginas", "pages", "pagina", "page", "sidebar", "menu":
+			return true
+		}
 	}
 	return lexer.IsBlockKeyword(tt)
 }
@@ -209,7 +236,13 @@ func (p *Parser) isNameToken(tok lexer.Token) bool {
 		lexer.TokenColon, lexer.TokenDot, lexer.TokenComma,
 		lexer.TokenString, lexer.TokenNumber,
 		lexer.TokenEquals, lexer.TokenPlus, lexer.TokenMinus,
-		lexer.TokenStar, lexer.TokenSlash, lexer.TokenLParen, lexer.TokenRParen:
+		lexer.TokenStar, lexer.TokenSlash, lexer.TokenLParen, lexer.TokenRParen,
+		lexer.TokenLBrace, lexer.TokenRBrace, lexer.TokenLBracket, lexer.TokenRBracket,
+		lexer.TokenDiferente, lexer.TokenMaiorIgual, lexer.TokenMenorIgual,
+		lexer.TokenMaiorQue, lexer.TokenMenorQue, lexer.TokenEqualEqual,
+		lexer.TokenQuestion, lexer.TokenArrow, lexer.TokenPlusAssign, lexer.TokenMinusAssign,
+		lexer.TokenModulo, lexer.TokenE, lexer.TokenOu, lexer.TokenNao,
+		lexer.TokenNulo, lexer.TokenVerdadeiro, lexer.TokenFalso:
 		return false
 	}
 	if lexer.IsBlockKeyword(tok.Type) {
@@ -233,7 +266,8 @@ func (p *Parser) parseDirectTable() error {
 
 // parseDirectQuando parses top-level prompt events like:
 // quando receber cobranca com cliente_id:
-//   ...
+//
+//	...
 func (p *Parser) parseDirectQuando() error {
 	event, err := p.parseEvent()
 	if err != nil {
@@ -268,12 +302,15 @@ func (p *Parser) parseDados() error {
 // parseModel parses a single model definition.
 func (p *Parser) parseModel() (*ast.Model, error) {
 	nameTok := p.advance()
-	model := &ast.Model{Name: nameTok.Value}
+	model := &ast.Model{Name: nameTok.Name()}
 
 	// Check for modifiers after model name on the same line (e.g. soft_delete)
 	for !p.isAtEnd() && p.current().Type != lexer.TokenNewline {
 		if p.current().Type == lexer.TokenSoftDelete {
 			model.SoftDelete = true
+			p.advance()
+		} else if v := p.current().Name(); v == "interno" || v == "internal" {
+			model.Internal = true
 			p.advance()
 		} else if p.current().Type == lexer.TokenIndent {
 			p.advance()
@@ -302,6 +339,33 @@ func (p *Parser) parseModel() (*ast.Model, error) {
 			p.skipIndent()
 			if !p.isAtEnd() && p.current().Type != lexer.TokenNewline {
 				model.HasMany = append(model.HasMany, p.advance().Value)
+			}
+			continue
+		}
+		// Composite constraints: unico(a, b) / indice(a, b)
+		if (tok.Type == lexer.TokenUnico || tok.Type == lexer.TokenIndice) && p.peek(1).Type == lexer.TokenLParen {
+			unique := tok.Type == lexer.TokenUnico
+			p.advance()
+			p.advance() // '('
+			var group []string
+			for !p.isAtEnd() && p.current().Type != lexer.TokenRParen {
+				if p.current().Type == lexer.TokenComma || p.current().Type == lexer.TokenIndent {
+					p.advance()
+					continue
+				}
+				if !p.isNameToken(p.current()) {
+					return nil, p.errorf(p.current(), "nome de campo esperado em %s(...)", tok.Value)
+				}
+				group = append(group, p.advance().Name())
+			}
+			if p.current().Type != lexer.TokenRParen || len(group) < 2 {
+				return nil, p.errorf(tok, "%s(...) exige pelo menos dois campos e ')'", tok.Value)
+			}
+			p.advance()
+			if unique {
+				model.UniqueTogether = append(model.UniqueTogether, group)
+			} else {
+				model.IndexTogether = append(model.IndexTogether, group)
 			}
 			continue
 		}
@@ -374,7 +438,7 @@ func (p *Parser) parseField() (*ast.Field, error) {
 	}
 
 	field := &ast.Field{
-		Name: nameTok.Value,
+		Name: nameTok.Name(),
 		Type: fieldType,
 	}
 
@@ -482,13 +546,13 @@ func tokenToFieldType(tok lexer.Token) (ast.FieldType, error) {
 		// New types PT
 		"cpf": ast.FieldCPF, "cnpj": ast.FieldCPF,
 		"cep": ast.FieldCEP, "zipcode": ast.FieldCEP,
-		"cor": ast.FieldCor,
+		"cor":      ast.FieldCor,
 		"estrelas": ast.FieldEstrelas, "rating": ast.FieldEstrelas, "stars": ast.FieldEstrelas,
 		"hora": ast.FieldHora, "horario": ast.FieldHora, "time": ast.FieldHora,
 		"data_hora": ast.FieldDataHora, "datetime": ast.FieldDataHora,
 		"percentual": ast.FieldPercentual, "porcentagem": ast.FieldPercentual, "percentage": ast.FieldPercentual,
 		"tags": ast.FieldTags, "etiquetas": ast.FieldTags, "chips": ast.FieldTags,
-		"url": ast.FieldURL,
+		"url":   ast.FieldURL,
 		"moeda": ast.FieldMoeda, "currency_type": ast.FieldMoeda,
 	}
 	if ft, ok := typeMap[tok.Value]; ok {
@@ -1959,6 +2023,15 @@ func (p *Parser) parseCronJob() (*ast.CronJob, error) {
 // parseStatement parses a single statement at a given indentation level.
 func (p *Parser) parseStatement(minIndent int) (*ast.Statement, error) {
 	tok := p.current()
+	stmt, err := p.parseStatementInner(minIndent)
+	if stmt != nil && stmt.Pos.Line == 0 {
+		stmt.Pos = p.at(tok)
+	}
+	return stmt, err
+}
+
+func (p *Parser) parseStatementInner(minIndent int) (*ast.Statement, error) {
+	tok := p.current()
 
 	switch tok.Type {
 	case lexer.TokenDefinir:
@@ -1989,12 +2062,11 @@ func (p *Parser) parseStatement(minIndent int) (*ast.Statement, error) {
 	case lexer.TokenParar:
 		p.advance()
 		return &ast.Statement{Type: "break"}, nil
-	case lexer.TokenIdentifier:
-		return p.parseIdentStmt()
-	default:
-		p.advance()
-		return nil, nil
 	}
+	if tok.Type == lexer.TokenIdentifier || p.isNameToken(tok) || tok.Type == lexer.TokenLParen {
+		return p.parseIdentStmt()
+	}
+	return nil, p.errorf(tok, "instrução inesperada: %q", tok.Value)
 }
 
 // parseVarDecl: definir x = expression
@@ -2003,15 +2075,15 @@ func (p *Parser) parseVarDecl() (*ast.Statement, error) {
 	p.skipIndent()
 
 	nameTok := p.current()
-	if nameTok.Type != lexer.TokenIdentifier {
-		return nil, fmt.Errorf("line %d: expected variable name after 'definir', got %q", nameTok.Line, nameTok.Value)
+	if nameTok.Type != lexer.TokenIdentifier && !p.isNameToken(nameTok) {
+		return nil, p.errorf(nameTok, "nome de variável esperado depois de 'definir', encontrado %q", nameTok.Value)
 	}
 	p.advance()
 	p.skipIndent()
 
 	// Expect '='
 	if p.current().Type != lexer.TokenEquals {
-		return nil, fmt.Errorf("line %d: expected '=' after variable name", p.current().Line)
+		return nil, p.errorf(p.current(), "esperado '=' depois de 'definir %s'", nameTok.Name())
 	}
 	p.advance()
 	p.skipIndent()
@@ -2024,103 +2096,57 @@ func (p *Parser) parseVarDecl() (*ast.Statement, error) {
 	return &ast.Statement{
 		Type: "var",
 		VarDecl: &ast.VarDecl{
-			Name:  nameTok.Value,
+			Name:  nameTok.Name(),
 			Value: *expr,
 		},
 	}, nil
 }
 
-// parseIdentStmt parses assignment (x = ..., x.field = ...) or function call (fn(...))
+// parseIdentStmt parses assignments (x = v, a.b.c = v, l[0] = v) and
+// expression statements (f(x), obj.metodo(x), git.criar(x)). A bare name on
+// its own line keeps the legacy meaning of a command call without arguments.
 func (p *Parser) parseIdentStmt() (*ast.Statement, error) {
-	nameTok := p.advance() // consume identifier
-	p.skipIndent()
-
-	// Check for dot (field access assignment)
-	if p.current().Type == lexer.TokenDot {
-		p.advance() // consume '.'
-		p.skipIndent()
-		fieldTok := p.current()
-		if fieldTok.Type != lexer.TokenIdentifier && !p.isNameToken(fieldTok) {
-			return nil, fmt.Errorf("line %d: expected field name after '.'", fieldTok.Line)
-		}
+	nameTok := p.current()
+	if (nameTok.Type == lexer.TokenIdentifier || p.isNameToken(nameTok)) && p.peek(1).Type == lexer.TokenEquals {
 		p.advance()
-		p.skipIndent()
-
-		if p.current().Type == lexer.TokenEquals {
-			p.advance() // consume '='
-			p.skipIndent()
-			expr, err := p.parseExpression()
-			if err != nil {
-				return nil, err
-			}
-			return &ast.Statement{
-				Type: "assign",
-				Assign: &ast.Assignment{
-					Target: nameTok.Value,
-					Field:  fieldTok.Value,
-					Value:  *expr,
-				},
-			}, nil
-		}
-
-		// It's a method call: obj.method(args)
-		if p.current().Type == lexer.TokenLParen {
-			args, err := p.parseCallArgs()
-			if err != nil {
-				return nil, err
-			}
-			return &ast.Statement{
-				Type: "call",
-				Call: &ast.FuncCall{
-					Name:   fieldTok.Value,
-					Object: nameTok.Value,
-					Args:   args,
-				},
-			}, nil
-		}
-
-		return nil, fmt.Errorf("line %d: expected '=' or '(' after field access", p.current().Line)
-	}
-
-	// Check for '=' (assignment)
-	if p.current().Type == lexer.TokenEquals {
 		p.advance() // consume '='
 		p.skipIndent()
 		expr, err := p.parseExpression()
 		if err != nil {
 			return nil, err
 		}
-		return &ast.Statement{
-			Type: "assign",
-			Assign: &ast.Assignment{
-				Target: nameTok.Value,
-				Value:  *expr,
-			},
-		}, nil
+		return &ast.Statement{Type: "assign", Assign: &ast.Assignment{Target: nameTok.Name(), Value: *expr}}, nil
 	}
 
-	// Check for '(' (function call)
-	if p.current().Type == lexer.TokenLParen {
-		args, err := p.parseCallArgs()
+	x, err := p.parseExpression()
+	if err != nil {
+		return nil, err
+	}
+	p.skipIndent()
+	if p.current().Type == lexer.TokenEquals {
+		eq := p.advance()
+		p.skipIndent()
+		value, err := p.parseExpression()
 		if err != nil {
 			return nil, err
 		}
-		return &ast.Statement{
-			Type: "call",
-			Call: &ast.FuncCall{
-				Name: nameTok.Value,
-				Args: args,
-			},
-		}, nil
+		switch x.Type {
+		case "field_access":
+			return &ast.Statement{Type: "assign", Assign: &ast.Assignment{Target: x.Object, Field: x.Field, Value: *value}}, nil
+		case "member", "index":
+			return &ast.Statement{Type: "assign", Assign: &ast.Assignment{TargetExpr: x, Value: *value}}, nil
+		}
+		return nil, p.errorf(eq, "o lado esquerdo de '=' precisa ser uma variável, campo ou índice")
 	}
-
-	// Bare identifier — treat as call with no args (like a command)
-	return &ast.Statement{
-		Type: "call",
-		Call: &ast.FuncCall{
-			Name: nameTok.Value,
-		},
-	}, nil
+	switch x.Type {
+	case "variable":
+		return &ast.Statement{Type: "call", Call: &ast.FuncCall{Name: x.Name}}, nil
+	case "call":
+		return &ast.Statement{Type: "expr", Expr: x}, nil
+	case "method":
+		return &ast.Statement{Type: "expr", Expr: x}, nil
+	}
+	return nil, p.errorf(nameTok, "expressão sem efeito: use definir, uma atribuição ou uma chamada")
 }
 
 // parseCallArgs parses (arg1, arg2, ...)
@@ -2146,9 +2172,10 @@ func (p *Parser) parseCallArgs() ([]*ast.Expression, error) {
 		args = append(args, arg)
 		p.skipIndent()
 	}
-	if p.current().Type == lexer.TokenRParen {
-		p.advance() // consume ')'
+	if p.current().Type != lexer.TokenRParen {
+		return nil, p.errorf(p.current(), "falta fechar ')' da chamada")
 	}
+	p.advance() // consume ')'
 	return args, nil
 }
 
@@ -2202,7 +2229,7 @@ func (p *Parser) parseReturnStmt() (*ast.Statement, error) {
 
 // parseIfStmt: se condition \n body \n senao se condition \n body \n senao \n body
 func (p *Parser) parseIfStmt(minIndent int) (*ast.Statement, error) {
-	p.advance() // consume 'se'/'if'
+	seTok := p.advance() // consume 'se'/'if'
 	p.skipIndent()
 
 	cond, err := p.parseExpression()
@@ -2221,10 +2248,11 @@ func (p *Parser) parseIfStmt(minIndent int) (*ast.Statement, error) {
 	}
 	ifStmt.Body = body
 
-	// Parse else-if and else clauses
+	// Parse else-if and else clauses. A senao belongs to this se only when it
+	// sits at the same indentation; otherwise the lookahead is undone so the
+	// enclosing block still sees its own de-indentation.
 	for {
-		p.skipNewlinesAndIndent()
-		if p.isAtEnd() || p.isBlockKeyword() {
+		if !p.continuationAt(seTok, lexer.TokenSenao) {
 			break
 		}
 
@@ -2269,14 +2297,35 @@ func (p *Parser) parseIfStmt(minIndent int) (*ast.Statement, error) {
 	}, nil
 }
 
+// continuationAt reports whether the next meaningful line starts with want
+// at the same column as opener (senao after se, erro after tentar). When it
+// does, the parser is left on that token; otherwise nothing is consumed.
+func (p *Parser) continuationAt(opener lexer.Token, want lexer.TokenType) bool {
+	save := p.pos
+	col := 1
+	for !p.isAtEnd() && (p.current().Type == lexer.TokenNewline || p.current().Type == lexer.TokenIndent) {
+		if p.current().Type == lexer.TokenIndent {
+			col = p.current().Indent + 1
+		} else {
+			col = 1
+		}
+		p.advance()
+	}
+	if p.current().Type == want && (p.current().Column == opener.Column || col == opener.Column) {
+		return true
+	}
+	p.pos = save
+	return false
+}
+
 // parseForEachStmt: para_cada x em collection \n body
 func (p *Parser) parseForEachStmt(minIndent int) (*ast.Statement, error) {
 	p.advance() // consume 'para_cada'/'for_each'
 	p.skipIndent()
 
 	varTok := p.current()
-	if varTok.Type != lexer.TokenIdentifier {
-		return nil, fmt.Errorf("line %d: expected variable name after 'para_cada'", varTok.Line)
+	if varTok.Type != lexer.TokenIdentifier && !p.isNameToken(varTok) {
+		return nil, p.errorf(varTok, "nome de variável esperado depois de 'para_cada'")
 	}
 	p.advance()
 	p.skipIndent()
@@ -2300,7 +2349,7 @@ func (p *Parser) parseForEachStmt(minIndent int) (*ast.Statement, error) {
 	return &ast.Statement{
 		Type: "for_each",
 		ForEach: &ast.ForEachStmt{
-			VarName:    varTok.Value,
+			VarName:    varTok.Name(),
 			Collection: *collExpr,
 			Body:       body,
 		},
@@ -2318,8 +2367,8 @@ func (p *Parser) parseForStmt(minIndent int) (*ast.Statement, error) {
 		p.skipIndent()
 
 		varTok := p.current()
-		if varTok.Type != lexer.TokenIdentifier {
-			return nil, fmt.Errorf("line %d: expected variable name after 'para cada'", varTok.Line)
+		if varTok.Type != lexer.TokenIdentifier && !p.isNameToken(varTok) {
+			return nil, p.errorf(varTok, "nome de variável esperado depois de 'para cada'")
 		}
 		p.advance()
 		p.skipIndent()
@@ -2342,7 +2391,7 @@ func (p *Parser) parseForStmt(minIndent int) (*ast.Statement, error) {
 		return &ast.Statement{
 			Type: "for_each",
 			ForEach: &ast.ForEachStmt{
-				VarName:    varTok.Value,
+				VarName:    varTok.Name(),
 				Collection: *collExpr,
 				Body:       body,
 			},
@@ -2409,7 +2458,7 @@ func (p *Parser) parseRepeatStmt(minIndent int) (*ast.Statement, error) {
 
 // parseTryStmt: tentar \n body \n erro [varname] \n body
 func (p *Parser) parseTryStmt(minIndent int) (*ast.Statement, error) {
-	p.advance() // consume 'tentar'/'try'
+	tentarTok := p.advance() // consume 'tentar'/'try'
 
 	tryBody, err := p.parseBlock(minIndent)
 	if err != nil {
@@ -2420,15 +2469,16 @@ func (p *Parser) parseTryStmt(minIndent int) (*ast.Statement, error) {
 		Body: tryBody,
 	}
 
-	// Look for 'erro'/'error'
-	p.skipNewlinesAndIndent()
-	if p.current().Type == lexer.TokenErro {
+	// Look for 'erro'/'error' aligned with 'tentar'
+	if p.continuationAt(tentarTok, lexer.TokenErro) {
 		p.advance() // consume 'erro'
 		p.skipIndent()
 
 		// Optional error variable name
-		if p.current().Type == lexer.TokenIdentifier {
-			tryStmt.ErrVar = p.advance().Value
+		if t := p.current(); t.Type == lexer.TokenE || t.Type == lexer.TokenOu {
+			return nil, p.errorf(t, "%q é um operador lógico e não pode nomear o erro; use, por exemplo, erro falha", t.Name())
+		} else if t.Type == lexer.TokenIdentifier || p.isNameToken(t) {
+			tryStmt.ErrVar = p.advance().Name()
 		}
 
 		catchBody, err := p.parseBlock(minIndent)
@@ -2740,10 +2790,12 @@ func (p *Parser) parseMultiplication() (*ast.Expression, error) {
 		return nil, err
 	}
 
-	for p.current().Type == lexer.TokenStar || p.current().Type == lexer.TokenSlash {
+	for p.current().Type == lexer.TokenStar || p.current().Type == lexer.TokenSlash || p.current().Type == lexer.TokenModulo {
 		op := "*"
 		if p.current().Type == lexer.TokenSlash {
 			op = "/"
+		} else if p.current().Type == lexer.TokenModulo {
+			op = "%"
 		}
 		p.advance()
 		p.skipIndent()
@@ -2793,213 +2845,205 @@ func (p *Parser) parseUnary() (*ast.Expression, error) {
 
 func (p *Parser) parsePrimary() (*ast.Expression, error) {
 	tok := p.current()
+	pos := p.at(tok)
 
 	switch tok.Type {
 	case lexer.TokenNumber:
 		p.advance()
-		return &ast.Expression{Type: "literal", Value: tok.Value}, nil
+		n, err := strconv.ParseFloat(tok.Value, 64)
+		if err != nil {
+			return nil, p.errorf(tok, "número inválido %q", tok.Value)
+		}
+		return p.parsePostfix(&ast.Expression{Type: "literal", Value: n, Pos: pos})
 
 	case lexer.TokenString:
 		p.advance()
-		return &ast.Expression{Type: "literal", Value: tok.Value}, nil
+		return p.parsePostfix(&ast.Expression{Type: "literal", Value: tok.Value, Pos: pos})
 
 	case lexer.TokenVerdadeiro:
 		p.advance()
-		return &ast.Expression{Type: "literal", Value: true}, nil
+		return &ast.Expression{Type: "literal", Value: true, Pos: pos}, nil
 
 	case lexer.TokenFalso:
 		p.advance()
-		return &ast.Expression{Type: "literal", Value: false}, nil
+		return &ast.Expression{Type: "literal", Value: false, Pos: pos}, nil
 
 	case lexer.TokenNulo:
 		p.advance()
-		return &ast.Expression{Type: "literal", Value: nil}, nil
+		return &ast.Expression{Type: "literal", Value: nil, Pos: pos}, nil
 
 	case lexer.TokenLParen:
 		p.advance() // consume '('
-		p.skipIndent()
+		p.skipNewlinesAndIndent()
 		expr, err := p.parseExpression()
 		if err != nil {
 			return nil, err
 		}
-		p.skipIndent()
-		if p.current().Type == lexer.TokenRParen {
-			p.advance() // consume ')'
+		p.skipNewlinesAndIndent()
+		if p.current().Type != lexer.TokenRParen {
+			return nil, p.errorf(p.current(), "falta fechar ')' aberto na linha %d", tok.Line)
 		}
-		return expr, nil
+		p.advance()
+		return p.parsePostfix(expr)
 
 	case lexer.TokenLBracket:
 		// List literal: [1, 2, 3]
 		p.advance() // consume '['
-		p.skipIndent()
 		var elements []*ast.Expression
-		for !p.isAtEnd() && p.current().Type != lexer.TokenRBracket {
-			if p.current().Type == lexer.TokenComma || p.current().Type == lexer.TokenNewline || p.current().Type == lexer.TokenIndent {
+		for {
+			for p.current().Type == lexer.TokenComma || p.current().Type == lexer.TokenNewline || p.current().Type == lexer.TokenIndent {
 				p.advance()
-				continue
+			}
+			if p.current().Type == lexer.TokenRBracket {
+				p.advance()
+				break
+			}
+			if p.isAtEnd() {
+				return nil, p.errorf(tok, "lista aberta com '[' não foi fechada")
 			}
 			elem, err := p.parseExpression()
 			if err != nil {
 				return nil, err
 			}
 			elements = append(elements, elem)
-			p.skipIndent()
 		}
-		if p.current().Type == lexer.TokenRBracket {
-			p.advance()
+		return p.parsePostfix(&ast.Expression{Type: "list", Elements: elements, Pos: pos})
+
+	case lexer.TokenLBrace:
+		return p.parseMapLiteral()
+	}
+
+	if !p.isNameToken(tok) {
+		return nil, p.errorf(tok, "expressão esperada, encontrado %q", tok.Value)
+	}
+
+	// Names: variables, calls, module/model members. Keywords may be used as
+	// names (texto(x), usuario.nome); Raw keeps the spelling from the source.
+	name := tok.Name()
+	canon := ""
+	if tok.Value != name {
+		canon = tok.Value
+	}
+	p.advance()
+
+	var x *ast.Expression
+	switch {
+	case p.current().Type == lexer.TokenLParen:
+		args, err := p.parseCallArgs()
+		if err != nil {
+			return nil, err
 		}
-		return &ast.Expression{Type: "list", Elements: elements}, nil
-
-	case lexer.TokenIdentifier:
-		name := tok.Value
-		p.advance()
-
-		// Check for function call: name(...)
+		x = &ast.Expression{Type: "call", Name: name, Canon: canon, Args: args, Pos: pos}
+	case p.current().Type == lexer.TokenDot && p.isNameToken(p.peek(1)):
+		p.advance() // consume '.'
+		fieldTok := p.advance()
 		if p.current().Type == lexer.TokenLParen {
 			args, err := p.parseCallArgs()
 			if err != nil {
 				return nil, err
 			}
-			return &ast.Expression{
-				Type: "call",
-				Name: name,
-				Args: args,
-			}, nil
+			fcanon := ""
+			if fieldTok.Value != fieldTok.Name() {
+				fcanon = fieldTok.Value
+			}
+			x = &ast.Expression{Type: "call", Name: fieldTok.Name(), Canon: fcanon, Object: name, Args: args, Pos: pos}
+		} else {
+			x = &ast.Expression{Type: "field_access", Object: name, Field: fieldTok.Name(), Pos: pos}
 		}
+	default:
+		x = &ast.Expression{Type: "variable", Name: name, Canon: canon, Pos: pos}
+	}
+	return p.parsePostfix(x)
+}
 
-		// Check for array indexing: name[index]
-		if p.current().Type == lexer.TokenLBracket {
-			p.advance() // consume '['
+// peek returns the token n positions ahead without consuming.
+func (p *Parser) peek(n int) lexer.Token {
+	if p.pos+n < len(p.tokens) {
+		return p.tokens[p.pos+n]
+	}
+	return lexer.Token{Type: lexer.TokenEOF}
+}
+
+// parsePostfix applies any chain of .campo, .metodo(args) and [indice].
+func (p *Parser) parsePostfix(x *ast.Expression) (*ast.Expression, error) {
+	for {
+		tok := p.current()
+		switch {
+		case tok.Type == lexer.TokenDot && p.isNameToken(p.peek(1)):
+			p.advance()
+			f := p.advance()
+			if p.current().Type == lexer.TokenLParen {
+				args, err := p.parseCallArgs()
+				if err != nil {
+					return nil, err
+				}
+				x = &ast.Expression{Type: "method", Target: x, Name: f.Name(), Args: args, Pos: p.at(f)}
+			} else {
+				x = &ast.Expression{Type: "member", Target: x, Field: f.Name(), Pos: p.at(f)}
+			}
+		case tok.Type == lexer.TokenLBracket:
+			p.advance()
 			p.skipIndent()
-			indexExpr, err := p.parseExpression()
+			idx, err := p.parseExpression()
 			if err != nil {
 				return nil, err
 			}
 			p.skipIndent()
-			if p.current().Type == lexer.TokenRBracket {
-				p.advance() // consume ']'
+			if p.current().Type != lexer.TokenRBracket {
+				return nil, p.errorf(p.current(), "falta fechar ']'")
 			}
-			return &ast.Expression{
-				Type:  "index",
-				Name:  name,
-				Index: indexExpr,
-			}, nil
-		}
-
-		// Check for field access: name.field
-		if p.current().Type == lexer.TokenDot {
-			p.advance() // consume '.'
-			fieldTok := p.current()
-			fieldName := fieldTok.Value
 			p.advance()
-
-			// Check for method call: name.field(...)
-			if p.current().Type == lexer.TokenLParen {
-				args, err := p.parseCallArgs()
-				if err != nil {
-					return nil, err
-				}
-				return &ast.Expression{
-					Type:   "call",
-					Name:   fieldName,
-					Object: name,
-					Args:   args,
-				}, nil
-			}
-
-			// Check for array index after field access: obj.field[0]
-			if p.current().Type == lexer.TokenLBracket {
-				p.advance()
-				p.skipIndent()
-				indexExpr, err := p.parseExpression()
-				if err != nil {
-					return nil, err
-				}
-				p.skipIndent()
-				if p.current().Type == lexer.TokenRBracket {
-					p.advance()
-				}
-				return &ast.Expression{
-					Type:   "index",
-					Object: name,
-					Field:  fieldName,
-					Index:  indexExpr,
-				}, nil
-			}
-
-			return &ast.Expression{
-				Type:   "field_access",
-				Object: name,
-				Field:  fieldName,
-			}, nil
+			x = &ast.Expression{Type: "index", Left: x, Index: idx, Pos: p.at(tok)}
+		default:
+			return x, nil
 		}
+	}
+}
 
-		return &ast.Expression{Type: "variable", Name: name}, nil
-
-	default:
-		// For keywords used as identifiers/functions in expression context
-		// e.g. texto(x), numero(x), tamanho(x), maiusculo(x)
-		if p.isNameToken(tok) {
-			name := tok.Value
+// parseMapLiteral parses {chave: valor, "outra chave": valor}, possibly
+// spread over several lines.
+func (p *Parser) parseMapLiteral() (*ast.Expression, error) {
+	open := p.advance() // consume '{'
+	x := &ast.Expression{Type: "map", Pos: p.at(open)}
+	seen := map[string]bool{}
+	for {
+		for p.current().Type == lexer.TokenComma || p.current().Type == lexer.TokenNewline || p.current().Type == lexer.TokenIndent {
 			p.advance()
-
-			// Check for function call: name(...)
-			if p.current().Type == lexer.TokenLParen {
-				args, err := p.parseCallArgs()
-				if err != nil {
-					return nil, err
-				}
-				return &ast.Expression{Type: "call", Name: name, Args: args}, nil
-			}
-
-			// Check for array indexing: name[index]
-			if p.current().Type == lexer.TokenLBracket {
-				p.advance() // consume '['
-				p.skipIndent()
-				indexExpr, err := p.parseExpression()
-				if err != nil {
-					return nil, err
-				}
-				p.skipIndent()
-				if p.current().Type == lexer.TokenRBracket {
-					p.advance()
-				}
-				return &ast.Expression{Type: "index", Name: name, Index: indexExpr}, nil
-			}
-
-			// Check for field access: name.field
-			if p.current().Type == lexer.TokenDot {
-				p.advance()
-				fieldTok := p.current()
-				fieldName := fieldTok.Value
-				p.advance()
-				if p.current().Type == lexer.TokenLParen {
-					args, err := p.parseCallArgs()
-					if err != nil {
-						return nil, err
-					}
-					return &ast.Expression{Type: "call", Name: fieldName, Object: name, Args: args}, nil
-				}
-				// Check for array index after field access: obj.field[0]
-				if p.current().Type == lexer.TokenLBracket {
-					p.advance()
-					p.skipIndent()
-					indexExpr, err := p.parseExpression()
-					if err != nil {
-						return nil, err
-					}
-					p.skipIndent()
-					if p.current().Type == lexer.TokenRBracket {
-						p.advance()
-					}
-					return &ast.Expression{Type: "index", Object: name, Field: fieldName, Index: indexExpr}, nil
-				}
-				return &ast.Expression{Type: "field_access", Object: name, Field: fieldName}, nil
-			}
-
-			return &ast.Expression{Type: "variable", Name: name}, nil
 		}
-		return &ast.Expression{Type: "literal", Value: nil}, nil
+		if p.current().Type == lexer.TokenRBrace {
+			p.advance()
+			return p.parsePostfix(x)
+		}
+		if p.isAtEnd() {
+			return nil, p.errorf(open, "mapa aberto com '{' não foi fechado")
+		}
+		keyTok := p.current()
+		var key string
+		switch {
+		case keyTok.Type == lexer.TokenString:
+			key = keyTok.Value
+		case p.isNameToken(keyTok):
+			key = keyTok.Name()
+		default:
+			return nil, p.errorf(keyTok, "chave de mapa esperada, encontrado %q", keyTok.Value)
+		}
+		if seen[key] {
+			return nil, p.errorf(keyTok, "chave %q repetida no mapa", key)
+		}
+		seen[key] = true
+		p.advance()
+		p.skipIndent()
+		if p.current().Type != lexer.TokenColon {
+			return nil, p.errorf(p.current(), "esperado ':' depois da chave %q", key)
+		}
+		p.advance()
+		p.skipNewlinesAndIndent()
+		val, err := p.parseExpression()
+		if err != nil {
+			return nil, err
+		}
+		x.Keys = append(x.Keys, key)
+		x.Elements = append(x.Elements, val)
 	}
 }
 
@@ -3028,17 +3072,24 @@ func (p *Parser) parseRotas() error {
 			p.advance()
 			p.skipIndent()
 
-			route := &ast.CustomRoute{}
+			route := &ast.CustomRoute{Pos: p.at(tok)}
 
 			// Method: GET, POST, PUT, DELETE
 			if !p.isAtEnd() && p.current().Type != lexer.TokenNewline {
-				route.Method = strings.ToUpper(p.advance().Value)
+				route.Method = strings.ToUpper(p.advance().Name())
 			}
 			p.skipIndent()
 
 			// Path
 			if !p.isAtEnd() && p.current().Type == lexer.TokenString {
 				route.Path = p.advance().Value
+			} else {
+				return p.errorf(p.current(), "rota %s exige um caminho entre aspas, como \"/api/itens/:id\"", route.Method)
+			}
+			switch route.Method {
+			case "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD":
+			default:
+				return p.errorf(tok, "método HTTP desconhecido %q; use GET, POST, PUT, PATCH, DELETE ou HEAD", route.Method)
 			}
 
 			// Parse body as statements
