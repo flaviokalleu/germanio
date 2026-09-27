@@ -15,9 +15,9 @@ var Translations = map[string]string{
 	"acciones": "acoes", "integraciones": "integracoes",
 	"base_de_datos": "banco", "autenticacion": "autenticacao",
 	"importar_es": "_skip", // same as PT
-	"titulo_es": "_skip",   // same as PT
-	"mostrar_es": "_skip",  // same as PT
-	"boton": "botao", "formulario_es": "_skip",
+	"titulo_es":   "_skip", // same as PT
+	"mostrar_es":  "_skip", // same as PT
+	"boton":       "botao", "formulario_es": "_skip",
 	"entrada_es": "_skip", "busqueda": "busca",
 	"grafico_es": "_skip", "tabla": "tabela",
 	"campo_es": "_skip", "seleccionar": "selecionar",
@@ -70,8 +70,8 @@ var Translations = map[string]string{
 	"actions_fr": "_skip", "integrations_fr": "_skip",
 	"logique": "logica", "base_donnees": "banco",
 	"authentification": "autenticacao",
-	"importer": "importar",
-	"titre": "titulo", "afficher": "mostrar",
+	"importer":         "importar",
+	"titre":            "titulo", "afficher": "mostrar",
 	"bouton": "botao", "formulaire": "formulario",
 	"recherche": "busca", "graphique": "grafico",
 	"tableau": "tabela", "champ": "campo",
@@ -97,7 +97,7 @@ var Translations = map[string]string{
 	"autorisation": "permissao", "exiger": "requer",
 	// Modifiers FR
 	"obligatoire": "obrigatorio",
-	"defaut": "padrao",
+	"defaut":      "padrao",
 	// Scripting FR
 	"tant_que": "enquanto", "fois": "vezes",
 	"vrai": "verdadeiro", "faux": "falso",
@@ -170,9 +170,9 @@ var Translations = map[string]string{
 	"dati": "dados", "schermate": "telas",
 	"schermata": "tela", "eventi": "eventos",
 	"azioni": "acoes", "integrazioni": "integracoes",
-	"database_it": "_skip",
+	"database_it":    "_skip",
 	"autenticazione": "autenticacao",
-	"importare": "importar", "da": "de",
+	"importare":      "importar", "da": "de",
 	"schermo": "tela", "elenco": "lista",
 	"mostrare": "mostrar", "pulsante": "botao",
 	"modulo": "formulario", "ricerca": "busca",
@@ -199,11 +199,11 @@ var Translations = map[string]string{
 	"pubblico": "publico",
 	// Modifiers IT
 	"obbligatorio": "obrigatorio",
-	"predefinito": "padrao",
+	"predefinito":  "padrao",
 	// Scripting IT
 	"mentre": "enquanto", "volte": "vezes",
-	"vero": "verdadeiro",
-	"fermare": "parar",
+	"vero":     "verdadeiro",
+	"fermare":  "parar",
 	"stampare": "mostrar",
 	// Relationships IT
 	"appartiene_a": "pertence_a", "ha_molti": "tem_muitos",
@@ -269,7 +269,7 @@ var Translations = map[string]string{
 	"テーマ": "tema", "ロジック": "logica",
 	"データベース": "banco", "認証": "autenticacao",
 	"インポート": "importar",
-	"タイトル": "titulo", "リスト": "lista", "表示": "mostrar",
+	"タイトル":  "titulo", "リスト": "lista", "表示": "mostrar",
 	"ボタン": "botao", "フォーム": "formulario", "検索": "busca",
 	"グラフ": "grafico", "テーブル": "tabela",
 	// Types JA
@@ -305,7 +305,7 @@ var Translations = map[string]string{
 	"화면": "tela", "이벤트": "eventos", "테마": "tema",
 	"로직": "logica", "데이터베이스": "banco", "인증": "autenticacao",
 	"가져오기": "importar",
-	"제목": "titulo", "목록": "lista", "보기": "mostrar",
+	"제목":   "titulo", "목록": "lista", "보기": "mostrar",
 	"버튼": "botao", "양식": "formulario", "찾기": "busca",
 	"차트": "grafico", "테이블": "tabela",
 	// Types KO
@@ -473,14 +473,14 @@ var Translations = map[string]string{
 	"olaylar": "eventos", "eylemler": "acoes",
 	"veritabani": "banco", "kimlik_dogrulama": "autenticacao",
 	"iceri_aktar": "importar",
-	"baslik": "titulo", "goster": "mostrar",
+	"baslik":      "titulo", "goster": "mostrar",
 	"dugme": "botao", "arama": "busca",
 	"metin": "texto", "sayi": "numero", "tarih": "data",
 	"resim": "imagem", "dosya": "arquivo",
 	"durum": "status", "para": "dinheiro", "sifre": "senha",
 	"olustur": "criar", "guncelle": "atualizar", "sil": "deletar",
 	"gonder": "enviar",
-	"eger": "se", "degilse": "senao",
+	"eger":   "se", "degilse": "senao",
 	"esit": "igual", "buyuk": "maior", "kucuk": "menor",
 	"tanimla": "definir", "don": "retornar", "fonksiyon": "funcao",
 	"zorunlu": "obrigatorio", "benzersiz": "unico",
@@ -506,7 +506,7 @@ var Translations = map[string]string{
 	"bang": "igual", "lon_hon": "maior", "nho_hon": "menor",
 	"dinh_nghia": "definir", "tra_ve": "retornar", "ham": "funcao",
 	"bat_buoc": "obrigatorio",
-	"lap": "repetir", "lan": "vezes",
+	"lap":      "repetir", "lan": "vezes",
 	"dung": "verdadeiro", "sai": "falso",
 	"in": "mostrar", "dung_lai": "parar",
 	"mau": "cor", "toi": "escuro", "sang": "claro",
@@ -527,7 +527,7 @@ var Translations = map[string]string{
 	"rowne": "igual", "wieksze": "maior", "mniejsze": "menor",
 	"zdefiniuj": "definir", "zwroc": "retornar", "funkcja": "funcao",
 	"wymagane": "obrigatorio",
-	"powtorz": "repetir", "razy": "vezes",
+	"powtorz":  "repetir", "razy": "vezes",
 	"prawda": "verdadeiro", "falsz": "falso",
 	"wypisz": "mostrar", "zatrzymaj": "parar",
 	"kolor": "cor", "ciemny": "escuro", "jasny": "claro",
@@ -536,7 +536,7 @@ var Translations = map[string]string{
 	// ~30 million speakers
 	"gegevens": "dados", "schermen": "telas", "scherm": "tela",
 	"gebeurtenissen": "eventos",
-	"invoeren": "importar", "van": "de",
+	"invoeren":       "importar", "van": "de",
 	"tonen": "mostrar", "knop": "botao", "zoeken": "busca",
 	"tekst_nl": "_skip", "nummer": "numero",
 	"afbeelding": "imagem", "bestand": "arquivo",
@@ -547,17 +547,17 @@ var Translations = map[string]string{
 	"gelijk": "igual", "groter": "maior",
 	"definieer": "definir", "retourneer": "retornar", "functie": "funcao",
 	"verplicht": "obrigatorio",
-	"herhaal": "repetir", "keer": "vezes",
+	"herhaal":   "repetir", "keer": "vezes",
 	"waar": "verdadeiro", "onwaar": "falso",
 	"afdrukken": "mostrar",
-	"kleur": "cor", "donker": "escuro", "licht": "claro",
+	"kleur":     "cor", "donker": "escuro", "licht": "claro",
 
 	// ===================== THAI (TH) =====================
 	// ~70 million speakers
 	"ระบบ": "sistema", "ข้อมูล": "dados", "หน้าจอ": "tela",
 	"เหตุการณ์": "eventos", "ธีม": "tema",
 	"ฐานข้อมูล": "banco",
-	"นำเข้า": "importar", "จาก": "de",
+	"นำเข้า":    "importar", "จาก": "de",
 	"หัวข้อ": "titulo", "รายการ": "lista", "แสดง": "mostrar",
 	"ปุ่ม": "botao", "ค้นหา": "busca",
 	"ข้อความ": "texto", "ตัวเลข": "numero", "วันที่": "data",
@@ -568,7 +568,7 @@ var Translations = map[string]string{
 	"เท่ากับ": "igual", "มากกว่า": "maior", "น้อยกว่า": "menor",
 	"กำหนด": "definir", "คืนค่า": "retornar", "ฟังก์ชัน": "funcao",
 	"จำเป็น": "obrigatorio",
-	"พิมพ์": "mostrar", "หยุด": "parar",
+	"พิมพ์":  "mostrar", "หยุด": "parar",
 	"สี": "cor", "มืด": "escuro", "สว่าง": "claro",
 
 	// ===================== SWAHILI (SW) =====================
@@ -576,7 +576,7 @@ var Translations = map[string]string{
 	"mfumo": "sistema", "takwimu": "dados", "skrini": "tela",
 	"matukio": "eventos", "mandhari": "tema",
 	"hifadhidata": "banco",
-	"agiza": "importar", "kutoka": "de",
+	"agiza":       "importar", "kutoka": "de",
 	"kichwa": "titulo", "orodha": "lista", "onesha": "mostrar",
 	"kitufe": "botao", "tafuta": "busca",
 	"maandishi": "texto", "nambari": "numero", "tarehe": "data",
@@ -586,7 +586,7 @@ var Translations = map[string]string{
 	"ikiwa": "se", "vinginevyo": "senao",
 	"sawa": "igual", "kubwa": "maior", "ndogo": "menor",
 	"eleza": "definir", "rudisha": "retornar", "kazi": "funcao",
-	"lazima": "obrigatorio",
+	"lazima":   "obrigatorio",
 	"chapisha": "mostrar", "simama": "parar",
 	"rangi": "cor", "giza": "escuro",
 }

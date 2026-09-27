@@ -396,4 +396,3 @@ func (p *Parser) fieldFromTokens(t []lexer.Token) (*ast.Field, error) {
 	}
 	return f, nil
 }
-

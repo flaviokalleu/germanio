@@ -1,6 +1,9 @@
 package ast
 
-import "github.com/flaviokalleu/germanio/compiler/diagnostics"
+import (
+	"github.com/flaviokalleu/germanio/compiler/diagnostics"
+	"github.com/flaviokalleu/germanio/compiler/lexer"
+)
 
 // Intent is the human-level description of an application: what exists,
 // who can do what, what is allowed, what must happen and what appears.
@@ -36,7 +39,7 @@ type EntityDecl struct {
 // FieldsDecl: `cada X tem` / `X tem` block, resolved to an entity later.
 type FieldsDecl struct {
 	Entity string
-	Fields []*Field
+	Lines  [][]lexer.Token // fields or relations, decided by the resolver
 	Pos    diagnostics.Position
 }
 

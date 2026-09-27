@@ -48,6 +48,13 @@ func (p *Parser) Parse() (*ast.Program, error) {
 
 	for !p.isAtEnd() {
 		tok := p.current()
+		if p.isIntentLine() {
+			if err := p.parseIntentLine(); err != nil {
+				return nil, err
+			}
+			p.skipWhitespace()
+			continue
+		}
 		switch tok.Type {
 		case lexer.TokenImportar:
 			if err := p.parseImportar(); err != nil {
@@ -203,6 +210,9 @@ func (p *Parser) isBlockKeyword() bool {
 			return true
 		}
 	}
+	if tok.Column == 1 && p.isIntentLine() {
+		return true
+	}
 	return lexer.IsBlockKeyword(tt)
 }
 
@@ -251,7 +261,6 @@ func (p *Parser) isNameToken(tok lexer.Token) bool {
 	return true
 }
 
-
 // parseDirectQuando parses top-level prompt events like:
 // quando receber cobranca com cliente_id:
 //
@@ -264,8 +273,6 @@ func (p *Parser) parseDirectQuando() error {
 	p.program.Events = append(p.program.Events, event)
 	return nil
 }
-
-
 
 func (p *Parser) peekNextMeaningful() lexer.Token {
 	saved := p.pos
@@ -281,7 +288,6 @@ func (p *Parser) peekNextMeaningful() lexer.Token {
 	p.pos = saved
 	return lexer.Token{Type: lexer.TokenEOF}
 }
-
 
 func tokenToFieldType(tok lexer.Token) (ast.FieldType, error) {
 	switch tok.Type {
