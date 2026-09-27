@@ -138,6 +138,7 @@ func SessaoDaRequisicao(r *http.Request) map[string]any {
 }
 
 func registerStdlib(interp *Interpreter) {
+	registerAccess(interp)
 	bcryptCost = bcrypt.DefaultCost
 	if os.Getenv("GERMANIO_BCRYPT_RAPIDO") == "1" { // test suites only
 		bcryptCost = bcrypt.MinCost

@@ -1,0 +1,58 @@
+# Pessoas e tokens de acesso (User, PersonalAccessToken)
+
+tenha usuarios
+tenha tokens de acesso
+
+cada usuario tem
+    username obrigatório e único valida caminho_valido
+    email obrigatório, único e privado
+    name obrigatório
+    senha min 8 max 128
+    state começa com "active"
+    admin começa com falso
+    can_create_group começa com verdadeiro
+
+cada token de acesso tem
+    name obrigatório
+    token segredo prefixo "glpat-"
+    scopes começa com "api"
+    expira em 365 dias
+    revogavel
+
+token de acesso pertence a usuario
+
+tenha login
+tenha cadastro
+login usa username e email
+login exige state "active"
+login bloqueia após 10 tentativas por 10 minutos
+login aceita tokens de acesso no cabeçalho "PRIVATE-TOKEN"
+login aceita oauth por 2 horas
+
+todos podem ver usuarios
+
+usuario pode
+    editar seu perfil
+    criar tokens de acesso
+    ver seus tokens de acesso
+    revogar seus tokens de acesso
+
+somente administrador pode
+    criar usuarios
+    excluir usuarios
+    bloquear usuarios
+    desbloquear usuarios
+
+quando bloquear usuario
+    usuario.atualizar(usuario.id, {state: "blocked"})
+
+quando desbloquear usuario
+    usuario.atualizar(usuario.id, {state: "active"})
+
+disponibilize usuarios para integração como "users"
+disponibilize tokens de acesso para integração como "personal_access_tokens"
+
+ao iniciar
+    definir senha_root = ambiente.ler("GITLAB_ROOT_PASSWORD", nulo)
+    se senha_root != nulo e usuario.contar() == 0
+        usuario.criar({username: "root", email: "admin@example.com", name: "Administrator", senha: senha_root, admin: verdadeiro})

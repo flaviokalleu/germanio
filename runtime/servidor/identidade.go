@@ -46,6 +46,26 @@ func (s *Servidor) identify(ctx *interp.Context, r *http.Request) (map[string]an
 		}
 	}
 	var user map[string]any
+	// HTTP Basic (git clients): the password may be an access token or the
+	// person's password (subject to lockout).
+	if bu, bp, ok := r.BasicAuth(); ok && raw == "" {
+		if login.TokenEntity != "" {
+			res, err := s.Interpreter.Op(ctx, login.TokenEntity, "por_segredo", bp)
+			if tok, ok := res.(map[string]any); ok && err == nil {
+				user = s.loadPerson(ctx, tok[app.LoginEntity+"_id"])
+				ctx.Values["token"] = tok
+			}
+		}
+		if user == nil {
+			user = s.authenticate(ctx, bu, bp)
+			ctx.Values["token"] = "basic"
+		}
+		if user == nil || !s.active(user) {
+			return nil, errInvalidCredential
+		}
+		ctx.Values["atual"] = user
+		return user, nil
+	}
 	if raw != "" {
 		if login.TokenEntity != "" {
 			res, err := s.Interpreter.Op(ctx, login.TokenEntity, "por_segredo", raw)

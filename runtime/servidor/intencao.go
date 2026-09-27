@@ -64,6 +64,9 @@ func (a *intentAPI) mount(mux *http.ServeMux, base string, e *ast.Entity, integr
 	if (e.HasMembers || e.InheritVia != "") && a.app.MemberModel != "" {
 		mux.HandleFunc("POST "+base+"/{ref}/sair", h("acao", nil, "sair"))
 	}
+	if e.Repository && a.s.Git != nil {
+		a.mountRepository(mux, base, e)
+	}
 	for _, c := range a.childrenOf(e) {
 		name := c.Plural
 		if integration && c.Integrate != "" {
@@ -195,15 +198,21 @@ func readBody(r *http.Request) (map[string]any, error) {
 	return out, nil
 }
 
-// serialize produces the public representation of a record.
+// serialize produces the public representation of a record. Private
+// fields appear only to the record's owner and administrators.
 func serialize(e *ast.Entity, row map[string]any) map[string]any {
+	return serializeFor(nil, nil, e, row, true)
+}
+
+func serializeFor(in *interp.Interpreter, atual map[string]any, e *ast.Entity, row map[string]any, trusted bool) map[string]any {
 	if row == nil {
 		return nil
 	}
 	out := make(map[string]any, len(row))
 	hidden := map[string]bool{}
+	showPrivate := trusted || (in != nil && (in.IsAdmin(atual) || in.Owns(atual, e, row)))
 	for _, f := range e.Model.Fields {
-		if f.Hidden || f.IsSecret() {
+		if f.Hidden || f.IsSecret() || (f.Private && !showPrivate) {
 			hidden[strings.ToLower(f.Name)] = true
 		}
 	}
@@ -352,7 +361,7 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, root *ast.Enti
 			a.fail(w, 404, a.msg("404", e))
 			return
 		}
-		a.json(w, 200, serialize(e, row), nil)
+		a.json(w, 200, serializeFor(a.in, atual, e, row, false), nil)
 	case "criar":
 		body, err := readBody(r)
 		if err != nil {
@@ -360,11 +369,6 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, root *ast.Enti
 			return
 		}
 		data := a.writable(atual, e, body, scope)
-		if e.Singular == a.app.MemberModel && data["pessoa_id"] == nil {
-			if v, ok := body["user_id"]; ok {
-				data["pessoa_id"] = v
-			}
-		}
 		if !a.canCreate(ctx, atual, e, data) {
 			deny(nil)
 			return
@@ -389,6 +393,12 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, root *ast.Enti
 		for k := range scope {
 			delete(data, k)
 		}
+		if h := e.Hooks["antes_editar"]; h != nil {
+			if _, _, err := a.in.RunHook(ctx, h, map[string]any{"atual": nilIfEmpty(atual), "registro": row, e.Singular: row, "dados": data, "entrada": body}); err != nil {
+				a.failErr(w, r, err)
+				return
+			}
+		}
 		updated, err := a.in.Op(ctx, e.Singular, "atualizar", row["id"], data)
 		if err != nil {
 			a.failErr(w, r, err)
@@ -408,7 +418,7 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, root *ast.Enti
 			}
 			urow = a.find(ctx, e, fmt.Sprint(row["id"]), nil)
 		}
-		a.json(w, 200, serialize(e, urow), nil)
+		a.json(w, 200, serializeFor(a.in, atual, e, urow, false), nil)
 	case "excluir":
 		row := a.find(ctx, e, ref, scope)
 		if row == nil || !a.in.Can(ctx, atual, e, "ver", row) {
@@ -443,6 +453,15 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, root *ast.Enti
 			deny(row)
 			return
 		}
+		if verb == "revogar" && e.Hooks[verb] == nil {
+			res, err := a.in.Op(ctx, e.Singular, "revogar", row["id"])
+			if err != nil {
+				a.failErr(w, r, err)
+				return
+			}
+			a.json(w, 200, serializeFor(a.in, atual, e, res.(map[string]any), false), nil)
+			return
+		}
 		result, resp, err := a.in.RunHook(ctx, e.Hooks[verb], a.hookVars(atual, e, row, body))
 		if err != nil {
 			a.failErr(w, r, err)
@@ -453,7 +472,7 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, root *ast.Enti
 			return
 		}
 		if result == nil {
-			result = serialize(e, a.find(ctx, e, fmt.Sprint(row["id"]), nil))
+			result = serializeFor(a.in, atual, e, a.find(ctx, e, fmt.Sprint(row["id"]), nil), false)
 		}
 		a.json(w, 200, result, nil)
 	}
@@ -470,23 +489,18 @@ func (a *intentAPI) canCreate(ctx *interp.Context, atual map[string]any, e *ast.
 	if a.in.IsAdmin(atual) {
 		return true
 	}
+	_, membered := a.memberedParentLevel(ctx, atual, e, data)
 	for _, rule := range e.Rules["criar"] {
 		ok := false
 		switch {
-		case rule.Anyone:
-			ok = true
-		case rule.SignedIn:
-			ok = atual != nil
+		case rule.Anyone || rule.SignedIn:
+			// Inside something that has members, only roles decide.
+			ok = !membered && (rule.Anyone || atual != nil)
 		default:
 			ok = a.in.Can(ctx, atual, e, "criar", data)
 		}
 		if !ok {
 			continue
-		}
-		if (rule.Anyone || rule.SignedIn) && !rule.Own {
-			if lvl, membered := a.memberedParentLevel(ctx, atual, e, data); membered && lvl < a.app.Roles[0].Level {
-				continue
-			}
 		}
 		if rule.Own && !a.in.Owns(atual, e, data) {
 			continue
@@ -528,13 +542,25 @@ func (a *intentAPI) memberedParentLevel(ctx *interp.Context, atual map[string]an
 }
 
 func (a *intentAPI) create(w http.ResponseWriter, r *http.Request, ctx *interp.Context, atual map[string]any, e *ast.Entity, data, body map[string]any) {
+	if h := e.Hooks["antes_criar"]; h != nil {
+		// dados is the record about to be created; the hook may adjust it.
+		if _, _, err := a.in.RunHook(ctx, h, map[string]any{"atual": nilIfEmpty(atual), "dados": data, "entrada": body}); err != nil {
+			a.failErr(w, r, err)
+			return
+		}
+	}
 	res, err := a.in.Op(ctx, e.Singular, "criar", data)
 	if err != nil {
 		a.failErr(w, r, err)
 		return
 	}
 	row := res.(map[string]any)
-	out := serialize(e, row)
+	if err := a.createRepository(ctx, e, row); err != nil {
+		a.in.Op(ctx, e.Singular, "deletar", row["id"])
+		a.failErr(w, r, err)
+		return
+	}
+	out := serializeFor(a.in, atual, e, row, false)
 	for _, f := range e.Model.Fields {
 		if f.Type == ast.FieldSegredo {
 			out[strings.ToLower(f.Name)] = row[strings.ToLower(f.Name)] // shown once
@@ -542,11 +568,12 @@ func (a *intentAPI) create(w http.ResponseWriter, r *http.Request, ctx *interp.C
 	}
 	if h := e.Hooks["criar"]; h != nil {
 		if _, _, err := a.in.RunHook(ctx, h, a.hookVars(atual, e, row, body)); err != nil {
+			a.removeRepository(e, row)
 			a.in.Op(ctx, e.Singular, "deletar", row["id"]) // nothing stays half-created
 			a.failErr(w, r, err)
 			return
 		}
-		fresh := serialize(e, a.find(ctx, e, fmt.Sprint(row["id"]), nil))
+		fresh := serializeFor(a.in, atual, e, a.find(ctx, e, fmt.Sprint(row["id"]), nil), false)
 		for k, v := range fresh {
 			out[k] = v
 		}
@@ -557,12 +584,20 @@ func (a *intentAPI) create(w http.ResponseWriter, r *http.Request, ctx *interp.C
 // remove runs `quando excluir` first (it may refuse), then deletes the
 // record and everything that belongs to it.
 func (a *intentAPI) remove(ctx *interp.Context, atual map[string]any, e *ast.Entity, row map[string]any) error {
+	if h := e.Hooks["antes_excluir"]; h != nil {
+		if _, _, err := a.in.RunHook(ctx, h, a.hookVars(atual, e, row, nil)); err != nil {
+			return err
+		}
+	}
+	if err := a.cascade(ctx, e, row, 0); err != nil {
+		return err
+	}
 	if h := e.Hooks["excluir"]; h != nil {
 		if _, _, err := a.in.RunHook(ctx, h, a.hookVars(atual, e, row, nil)); err != nil {
 			return err
 		}
 	}
-	return a.cascade(ctx, e, row, 0)
+	return nil
 }
 
 func (a *intentAPI) cascade(ctx *interp.Context, e *ast.Entity, row map[string]any, depth int) error {
@@ -584,8 +619,11 @@ func (a *intentAPI) cascade(ctx *interp.Context, e *ast.Entity, row map[string]a
 			}
 		}
 	}
-	_, err := a.in.Op(ctx, e.Singular, "deletar", row["id"])
-	return err
+	if _, err := a.in.Op(ctx, e.Singular, "deletar", row["id"]); err != nil {
+		return err
+	}
+	a.removeRepository(e, row)
+	return nil
 }
 
 // leave removes atual's own membership (quando excluir membro may refuse).
@@ -655,7 +693,7 @@ func (a *intentAPI) list(w http.ResponseWriter, r *http.Request, ctx *interp.Con
 		}
 		m := res.(map[string]any)
 		for _, it := range m["itens"].([]any) {
-			items = append(items, serialize(e, it.(map[string]any)))
+			items = append(items, serializeFor(a.in, atual, e, it.(map[string]any), false))
 		}
 		total = int(m["total"].(float64))
 	} else {
@@ -670,7 +708,7 @@ func (a *intentAPI) list(w http.ResponseWriter, r *http.Request, ctx *interp.Con
 		for _, it := range res.([]any) {
 			row := it.(map[string]any)
 			if a.in.Can(ctx, atual, e, "ver", row) {
-				visible = append(visible, serialize(e, row))
+				visible = append(visible, serializeFor(a.in, atual, e, row, false))
 			}
 		}
 		total = len(visible)

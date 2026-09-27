@@ -317,6 +317,7 @@ type Field struct {
 	// every create/update, whatever route or function performs it.
 	Protected    bool     // senha protegida: hashed, never readable
 	Hidden       bool     // oculto: never serialized
+	Private      bool     // privado: shown only to its owner and administrators
 	Immutable    bool     // imutavel: cannot change after creation
 	Min, Max     *float64 // length for text, value for numbers
 	Format       string   // formato "regex" (RE2)

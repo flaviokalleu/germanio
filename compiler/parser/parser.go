@@ -1870,7 +1870,7 @@ func (p *Parser) parseStatementInner(minIndent int) (*ast.Statement, error) {
 		p.advance()
 		return &ast.Statement{Type: "break"}, nil
 	}
-	if tok.Type == lexer.TokenIdentifier || p.isNameToken(tok) || tok.Type == lexer.TokenLParen {
+	if tok.Type == lexer.TokenIdentifier || p.isNameToken(tok) || tok.Type == lexer.TokenLParen || (lexer.IsBlockKeyword(tok.Type) && tok.Column != 1) {
 		return p.parseIdentStmt()
 	}
 	return nil, p.errorf(tok, "instrução inesperada: %q", tok.Value)
@@ -2430,7 +2430,7 @@ func (p *Parser) parseBlock(minIndent int) ([]*ast.Statement, error) {
 					continue
 				}
 				// Check for block keywords that end logic blocks
-				if p.isBlockKeyword() {
+				if p.isBlockKeyword() && (p.current().Column == 1 || !lexer.IsBlockKeyword(p.current().Type) || p.peek(1).Type != lexer.TokenDot) {
 					p.pos-- // put indent back
 					return stmts, nil
 				}
@@ -2756,7 +2756,7 @@ func (p *Parser) parsePrimary() (*ast.Expression, error) {
 		return p.parseMapLiteral()
 	}
 
-	if !p.isNameToken(tok) {
+	if !p.isNameToken(tok) && !(lexer.IsBlockKeyword(tok.Type) && tok.Column != 1) {
 		return nil, p.errorf(tok, "expressão esperada, encontrado %q", tok.Value)
 	}
 
@@ -2777,7 +2777,7 @@ func (p *Parser) parsePrimary() (*ast.Expression, error) {
 			return nil, err
 		}
 		x = &ast.Expression{Type: "call", Name: name, Canon: canon, Args: args, Pos: pos}
-	case p.current().Type == lexer.TokenDot && p.isNameToken(p.peek(1)):
+	case p.current().Type == lexer.TokenDot && (p.isNameToken(p.peek(1)) || lexer.IsBlockKeyword(p.peek(1).Type)):
 		p.advance() // consume '.'
 		fieldTok := p.advance()
 		if p.current().Type == lexer.TokenLParen {
@@ -2812,7 +2812,7 @@ func (p *Parser) parsePostfix(x *ast.Expression) (*ast.Expression, error) {
 	for {
 		tok := p.current()
 		switch {
-		case tok.Type == lexer.TokenDot && p.isNameToken(p.peek(1)):
+		case tok.Type == lexer.TokenDot && (p.isNameToken(p.peek(1)) || lexer.IsBlockKeyword(p.peek(1).Type)):
 			p.advance()
 			f := p.advance()
 			if p.current().Type == lexer.TokenLParen {
@@ -2865,7 +2865,7 @@ func (p *Parser) parseMapLiteral() (*ast.Expression, error) {
 		switch {
 		case keyTok.Type == lexer.TokenString:
 			key = keyTok.Value
-		case p.isNameToken(keyTok):
+		case p.isNameToken(keyTok) || lexer.IsBlockKeyword(keyTok.Type):
 			key = keyTok.Name()
 		default:
 			return nil, p.errorf(keyTok, "chave de mapa esperada, encontrado %q", keyTok.Value)

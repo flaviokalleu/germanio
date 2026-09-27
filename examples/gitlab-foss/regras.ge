@@ -1,0 +1,68 @@
+# Regras específicas do GitLab (nível 3: lógica explícita).
+
+logica
+  # Gitlab::PathRegex
+  definir REGEX_CAMINHO = "^[a-zA-Z0-9_.][a-zA-Z0-9_.-]*[a-zA-Z0-9_-]$|^[a-zA-Z0-9_]$"
+  definir RESERVADOS = ["-", "admin", "api", "assets", "dashboard", "explore", "groups", "help", "oauth", "projects", "public", "search", "uploads", "users"]
+
+  funcao caminho_valido(caminho)
+    se tamanho(caminho) > 255 ou nao regex.casa(REGEX_CAMINHO, caminho)
+      retornar falso
+    se termina_com(caminho, ".git") ou termina_com(caminho, ".atom")
+      retornar falso
+    retornar indice_de(RESERVADOS, minusculo(caminho)) < 0
+
+  funcao nivel_visibilidade(v)
+    retornar indice_de(["private", "internal", "public"], v)
+
+# O caminho completo vem do grupo pai; um subgrupo não pode ser mais
+# visível que o pai. Quem cria o grupo vira owner.
+antes de criar grupo
+    dados.full_path = dados.path
+    se dados.pai_id != nulo
+        definir pai = grupo.buscar(dados.pai_id)
+        dados.full_path = pai.full_path + "/" + dados.path
+        se nivel_visibilidade(dados.visibility) > nivel_visibilidade(pai.visibility)
+            recuse "Visibility level is not allowed since the parent group has a more restrictive visibility"
+    se usuario.existe({username: dados.full_path})
+        recuse "Path has already been taken"
+
+quando criar grupo
+    membro.criar({recurso: "grupo", recurso_id: grupo.id, pessoa_id: atual.id, papel: "owner"})
+
+# Projeto pessoal fica no namespace do usuário; projeto de grupo, no grupo.
+antes de criar projeto
+    se dados.grupo_id == nulo
+        dados.full_path = atual.username + "/" + dados.path
+    senao
+        definir g = grupo.buscar(dados.grupo_id)
+        dados.full_path = g.full_path + "/" + dados.path
+        se nivel_visibilidade(dados.visibility) > nivel_visibilidade(g.visibility)
+            recuse "Visibility level is not allowed in a more restrictive group"
+    se grupo.existe({full_path: dados.full_path})
+        recuse "Path has already been taken"
+
+quando criar projeto
+    se projeto.grupo_id == nulo
+        membro.criar({recurso: "projeto", recurso_id: projeto.id, pessoa_id: atual.id, papel: "owner"})
+    se obter(entrada, "initialize_with_readme", falso) == verdadeiro
+        git.commitar(projeto.repositorio, {branch: projeto.default_branch, mensagem: "Initial commit", autor: {nome: atual.name, email: atual.email}, acoes: [{acao: "criar", caminho: "README.md", conteudo: "# " + projeto.name + "\n"}]})
+
+# A branch padrão é protegida: só maintainers enviam direto para ela.
+antes de enviar código para projeto
+    para cada mudanca em atualizacoes
+        se mudanca.branch == projeto.default_branch e acesso.nivel("projeto", projeto) < acesso.papel("maintainer")
+            recuse "You are not allowed to push code to protected branches on this project."
+
+# A API do GitLab fala em user_id e access_level; ninguém concede mais do que tem.
+antes de criar membro
+    se dados.pessoa_id == nulo
+        dados.pessoa_id = obter(entrada, "user_id", nulo)
+    se dados.papel == nulo e obter(entrada, "access_level", nulo) != nulo
+        dados.papel = acesso.nome_papel(entrada.access_level)
+    se acesso.papel(dados.papel) > acesso.nivel("membro", dados)
+        recuse "403 Forbidden"
+
+antes de excluir membro
+    se membro.papel == "owner" e membro.contar({recurso: membro.recurso, recurso_id: membro.recurso_id, papel: "owner"}) == 1
+        recuse "The last owner cannot leave or be removed"

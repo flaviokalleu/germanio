@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"github.com/flaviokalleu/germanio/runtime/git"
 	"io"
 	"mime"
 	"net"
@@ -48,6 +49,8 @@ type Servidor struct {
 	htmlCacheMu sync.RWMutex
 	// Render converts special route bodies (UI trees) into responses.
 	Render Renderer
+	// Git stores repositories for entities declared with `tem repositório`.
+	Git *git.Store
 }
 
 // Novo creates a new server.
@@ -158,6 +161,7 @@ func (s *Servidor) Handler() (http.Handler, error) {
 	if s.Auth != nil {
 		handler = s.Auth.Middleware(handler)
 	}
+	handler = s.gitMiddleware(handler)
 	handler = s.middleware(handler)
 
 	if s.WA != nil {

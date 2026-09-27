@@ -1,0 +1,27 @@
+# Projetos e seus repositórios (Project, ProjectMember)
+
+tenha projetos
+
+cada projeto tem
+    name obrigatório
+    path obrigatório valida caminho_valido
+    full_path único
+    description
+    visibility
+    default_branch começa com "main"
+    archived começa com falso
+
+projeto tem repositório
+projeto pertence a grupo opcional
+projeto tem membros com papel
+projeto herda membros do grupo
+
+usuario pode criar projetos
+developer pode criar projetos
+guest pode ver projetos
+reporter pode baixar código dos projetos
+developer pode enviar código para projetos
+maintainer pode administrar projeto
+somente owner pode excluir projetos
+
+disponibilize projetos para integração como "projects"

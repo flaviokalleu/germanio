@@ -39,6 +39,8 @@ type Entity struct {
 	Rules      map[string][]*AccessRule // verb → alternatives (any grants)
 	Hooks      map[string]*Hook         // verb → hook
 	Integrate  string                   // exposed name for integration, "" = not exposed
+	Repository bool                     // X tem repositório
+	RepoKey    string                   // field whose value addresses the repository (<valor>.git)
 	Search     []string                 // fields searched by pesquisar
 	Filters    []string                 // fields accepted by filtrar
 }

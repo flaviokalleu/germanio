@@ -24,8 +24,8 @@ usuario pode
 
 somente administrador pode excluir pedidos
 
-quando criar pedido
-    se pedido.total > 1000
+antes de criar pedido
+    se dados.total > 1000
         recuse "Pedidos acima de 1000 precisam de aprovação"
 
 ao iniciar

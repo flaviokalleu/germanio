@@ -26,6 +26,20 @@ func Singular(name string) string {
 	return strings.Join(parts, "_")
 }
 
+// altSingular is the plain "drop the s" form of the head word.
+func altSingular(name string) string {
+	parts := strings.Split(name, "_")
+	head := len(parts) - 1
+	for i, w := range parts {
+		if (w == "de" || w == "do" || w == "da") && i > 0 {
+			head = 0
+			break
+		}
+	}
+	parts[head] = strings.TrimSuffix(parts[head], "s")
+	return strings.Join(parts, "_")
+}
+
 func singularWord(w string) string {
 	switch {
 	case len(w) <= 3:
@@ -136,6 +150,28 @@ func ResolveIntent(prog *ast.Program) error {
 		app.Order = append(app.Order, sing)
 		r.byName[d.Name] = e
 		r.byName[sing] = e
+		// Alternative singular ("tokens" → "token" besides "tokem"): the form
+		// used in `cada <singular> tem` decides which one names the data.
+		if alt := altSingular(d.Name); alt != sing {
+			if _, taken := r.byName[alt]; !taken {
+				r.byName[alt] = e
+			}
+		}
+	}
+	for _, b := range in.FieldBlocks {
+		if e := r.byName[b.Entity]; e != nil && b.Entity != e.Singular && b.Entity != e.Plural {
+			delete(app.Entities, e.Singular)
+			for i, n := range app.Order {
+				if n == e.Singular {
+					app.Order[i] = b.Entity
+				}
+			}
+			e.Singular, e.Model.Name = b.Entity, b.Entity
+			if e.Label == titleCase(Singular(e.Plural)) {
+				e.Label, e.Model.Label = titleCase(b.Entity), titleCase(b.Entity)
+			}
+			app.Entities[b.Entity] = e
+		}
 	}
 
 	// 2. Field blocks: each line is a relation (names another entity,
@@ -155,6 +191,9 @@ func ResolveIntent(prog *ast.Program) error {
 				if err := r.membership(e, member, b.Pos); err != nil {
 					return err
 				}
+			case joined == "repositorio" || joined == "repositorio_git":
+				e.Repository = true
+				e.Model.Fields = append(e.Model.Fields, &ast.Field{Name: "repositorio", Type: ast.FieldTexto, Hidden: true, Pos: b.Pos})
 			case joined == "sub"+e.Plural || joined == "sub_"+e.Plural:
 				e.HierarchyField = "pai_id"
 				e.Model.Fields = append(e.Model.Fields, &ast.Field{Name: "pai_id", Type: ast.FieldInteiro, Reference: e.Singular, Index: true, Pos: b.Pos})
@@ -164,14 +203,17 @@ func ResolveIntent(prog *ast.Program) error {
 				r.hasMany(e, child, b.Pos)
 			default:
 				fp.File = b.Pos.File
-				f, err := fp.fieldFromTokens(line)
-				if err != nil {
+				before := len(e.Model.Fields)
+				if err := fp.modelMember(e.Model, line); err != nil {
 					return err
 				}
-				if existing := fieldByNameAST(e.Model, f.Name); existing != nil {
-					return r.errAt(f.Pos, "%s já tem o campo %s", e.Singular, f.Name)
+				for _, f := range e.Model.Fields[before:] {
+					for _, g := range e.Model.Fields[:before] {
+						if strings.EqualFold(f.Name, g.Name) {
+							return r.errAt(f.Pos, "%s já tem o campo %s", e.Singular, f.Name)
+						}
+					}
 				}
-				e.Model.Fields = append(e.Model.Fields, f)
 			}
 		}
 	}
@@ -216,8 +258,11 @@ func ResolveIntent(prog *ast.Program) error {
 		app.LoginEntity = withPassword[0]
 		le := app.Entities[app.LoginEntity]
 		if app.MemberModel != "" {
-			if f := fieldByNameAST(app.Entities[app.MemberModel].Model, "pessoa_id"); f != nil {
+			me := app.Entities[app.MemberModel]
+			if f := fieldByNameAST(me.Model, "pessoa_id"); f != nil {
 				f.Reference = app.LoginEntity
+				me.Parents["pessoa_id"] = app.LoginEntity
+				le.Children = appendUnique(le.Children, me.Singular)
 			}
 		}
 		if len(in.Login.Fields) == 0 {
@@ -297,6 +342,23 @@ func ResolveIntent(prog *ast.Program) error {
 		}
 	}
 
+	// Repository URL key: first unique text field (e.g. full_path).
+	for _, n := range app.Order {
+		e := app.Entities[n]
+		if !e.Repository {
+			continue
+		}
+		for _, f := range e.Model.Fields {
+			if f.Unique && f.Type == ast.FieldTexto {
+				e.RepoKey = strings.ToLower(f.Name)
+				break
+			}
+		}
+		if e.RepoKey == "" {
+			return fmt.Errorf("%s tem repositório: declare um campo de texto único para o endereço (ex.: caminho único)", e.Plural)
+		}
+	}
+
 	// 7. Hooks
 	for _, h := range in.Hooks {
 		e, err := r.entity(h.Target, h.Pos)
@@ -304,6 +366,9 @@ func ResolveIntent(prog *ast.Program) error {
 			return err
 		}
 		verb := CanonVerb(h.Verb)
+		if h.Before {
+			verb = "antes_" + verb
+		}
 		if _, dup := e.Hooks[verb]; dup {
 			return r.errAt(h.Pos, "quando %s %s declarado duas vezes", h.Verb, h.Target)
 		}
@@ -441,7 +506,8 @@ func ResolveIntent(prog *ast.Program) error {
 		e := app.Entities[n]
 		for verb, rules := range e.Rules {
 			if !standardVerb(verb) {
-				if _, ok := e.Hooks[verb]; !ok && !(verb == "sair" && (e.HasMembers || e.InheritVia != "")) {
+				builtin := (verb == "sair" && (e.HasMembers || e.InheritVia != "")) || (verb == "revogar" && e.Model.Revocable)
+				if _, ok := e.Hooks[verb]; !ok && !builtin {
 					return fmt.Errorf("a ação %q sobre %s não tem definição. Escreva:\n\nquando %s %s\n    ...", verb, e.Plural, verb, e.Singular)
 				}
 				for _, rl := range rules {
@@ -459,7 +525,7 @@ func ResolveIntent(prog *ast.Program) error {
 
 func standardVerb(v string) bool {
 	switch v {
-	case "ver", "criar", "editar", "excluir":
+	case "ver", "criar", "editar", "excluir", "baixar_codigo", "enviar_codigo":
 		return true
 	}
 	return false

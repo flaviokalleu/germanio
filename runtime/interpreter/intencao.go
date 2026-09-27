@@ -231,7 +231,7 @@ func (interp *Interpreter) Can(ctx *Context, atual map[string]any, e *ast.Entity
 	if interp.IsAdmin(atual) {
 		return true
 	}
-	if verb == "ver" && interp.visible(atual, e, record) {
+	if (verb == "ver" || verb == "baixar_codigo") && interp.visible(atual, e, record) {
 		return true
 	}
 	rules := e.Rules[verb]
@@ -291,3 +291,62 @@ func Friendly(err error) string {
 
 var _ = diagnostics.Position{}
 var _ = strings.ToLower
+
+// registerAccess exposes the authorization engine to level-3 code.
+func registerAccess(interp *Interpreter) {
+	atualOf := func(c *Call) map[string]any {
+		if v, ok := c.Scope.Get("atual"); ok {
+			m, _ := v.(map[string]any)
+			return m
+		}
+		return nil
+	}
+	entity := func(c *Call, name string) *ast.Entity {
+		if interp.App == nil {
+			panic(c.Fail(0, "acesso exige dados declarados com tenha"))
+		}
+		e, ok := interp.App.Entities[name]
+		if !ok {
+			panic(c.Fail(0, "%s não é um dado declarado", name))
+		}
+		return e
+	}
+	interp.RegisterModule("acesso", map[string]ModuleFunc{
+		// acesso.nivel("projeto", registro) → nível de quem está agindo
+		"nivel": func(c *Call, args []any) any {
+			e := entity(c, c.Str(args, 0, "dado"))
+			rec, _ := c.Arg(args, 1, "registro").(map[string]any)
+			return float64(interp.Level(c.Ctx(), atualOf(c), e, rec))
+		},
+		// acesso.papel("maintainer") → nível numérico do papel
+		"papel": func(c *Call, args []any) any {
+			if interp.App == nil {
+				return 0.0
+			}
+			return float64(interp.App.Level(c.Str(args, 0, "papel")))
+		},
+		// acesso.pode("editar", "projeto", registro)
+		"pode": func(c *Call, args []any) any {
+			e := entity(c, c.Str(args, 1, "dado"))
+			rec, _ := c.Arg(args, 2, "registro").(map[string]any)
+			return interp.Can(c.Ctx(), atualOf(c), e, c.Str(args, 0, "ação"), rec)
+		},
+		// acesso.nome_papel(30) → "developer" (maior papel com nível ≤ n)
+		"nome_papel": func(c *Call, args []any) any {
+			if interp.App == nil {
+				return nil
+			}
+			n := int(c.Num(args, 0, "nível"))
+			name := any(nil)
+			for _, r := range interp.App.Roles {
+				if r.Level <= n {
+					name = r.Name
+				}
+			}
+			return name
+		},
+		"administrador": func(c *Call, args []any) any {
+			return interp.IsAdmin(atualOf(c))
+		},
+	})
+}

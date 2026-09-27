@@ -393,6 +393,8 @@ func (p *Parser) fieldFromTokens(t []lexer.Token) (*ast.Field, error) {
 				}
 			case "oculto", "oculta":
 				f.Hidden = true
+			case "privado", "privada":
+				f.Private = true
 			case "imutavel":
 				f.Immutable = true
 			case "opcional":

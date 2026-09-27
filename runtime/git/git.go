@@ -463,7 +463,7 @@ func (s *Store) Tree(rel, rev, path string) ([]TreeEntry, error) {
 		}
 		list = append(list, e)
 	}
-	// Directories first, like the GitLab tree view.
+	// Directories first, as repository browsers show them.
 	dirs, files := []TreeEntry{}, []TreeEntry{}
 	for _, e := range list {
 		if e.Type == "tree" {

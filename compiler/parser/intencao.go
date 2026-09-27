@@ -77,11 +77,13 @@ func (p *Parser) isIntentLine() bool {
 		return len(w) >= 2
 	case "ao":
 		return len(w) == 2 && w[1] == "iniciar"
+	case "antes":
+		return len(w) >= 4 && w[1] == "de"
 	case "quando":
 		return len(w) >= 3 && !legacyTrigger[w[1]]
 	}
 	for _, x := range w[1:] {
-		if x == "tem" || x == "pode" || x == "pertence" || x == "herda" {
+		if x == "tem" || x == "pode" || x == "podem" || x == "pertence" || x == "herda" {
 			return true
 		}
 	}
@@ -135,9 +137,22 @@ func (p *Parser) parseIntentLine() error {
 		stmts, err := p.statementsIn(body)
 		in.Init = append(in.Init, stmts...)
 		return err
-	case "quando":
-		verb := w[1]
-		target, _ := phrase(w[2:])
+	case "quando", "antes":
+		before := w[0] == "antes"
+		rest := w[1:]
+		if before {
+			rest = w[2:]
+		}
+		verb := rest[0]
+		targetWords := rest[1:]
+		// "enviar código para projeto" → verb enviar_codigo
+		if (verb == "enviar" || verb == "baixar") && len(targetWords) > 0 && targetWords[0] == "codigo" {
+			verb, targetWords = verb+"_codigo", targetWords[1:]
+			if len(targetWords) > 0 && (targetWords[0] == "para" || targetWords[0] == "em") {
+				targetWords = targetWords[1:]
+			}
+		}
+		target, _ := phrase(targetWords)
 		stmts, err := p.statementsIn(body)
 		if err != nil {
 			return err
@@ -145,14 +160,14 @@ func (p *Parser) parseIntentLine() error {
 		if len(stmts) == 0 {
 			return p.errorf(head.toks[0], "quando %s %s precisa de um bloco com o que deve acontecer", verb, target)
 		}
-		in.Hooks = append(in.Hooks, &ast.Hook{Verb: verb, Target: target, Body: stmts, Pos: pos})
+		in.Hooks = append(in.Hooks, &ast.Hook{Before: before, Verb: verb, Target: target, Body: stmts, Pos: pos})
 		return nil
 	case "somente":
 		return p.parsePode(head, body, true)
 	}
 	for i, x := range w {
 		switch x {
-		case "pode":
+		case "pode", "podem":
 			return p.parsePode(head, body, false)
 		case "tem":
 			subject, _ := phrase(w[:i])
@@ -305,6 +320,11 @@ func splitItems(t []lexer.Token) [][]string {
 func (p *Parser) parseTenha(head dline, body []dline) error {
 	in := p.intent()
 	items := splitItems(head.toks[1:])
+	// tenha papeis + indented list of roles
+	if len(items) == 1 && len(items[0]) == 1 && (items[0][0] == "papeis" || items[0][0] == "papel") && len(body) > 0 {
+		wrapped := append([]dline{{indent: body[0].indent - 1, toks: head.toks[1:2]}}, body...)
+		return p.parseTenha(dline{toks: head.toks[:1]}, wrapped)
+	}
 	positions := []lexer.Token{}
 	for range items {
 		positions = append(positions, head.toks[0])
@@ -316,7 +336,17 @@ func (p *Parser) parseTenha(head dline, body []dline) error {
 			level := 0
 			for _, k := range children(body, i) {
 				for _, it := range splitItems(k.toks) {
-					level += 10
+					// "guest 10" sets the level explicitly; otherwise levels
+					// grow by 10 in declaration order.
+					if n, err := strconv.Atoi(it[len(it)-1]); err == nil && len(it) > 1 {
+						if n <= level {
+							return p.errorf(k.toks[0], "papéis vão do menor para o maior: %d deve ser maior que %d", n, level)
+						}
+						level = n
+						it = it[:len(it)-1]
+					} else {
+						level += 10
+					}
 					in.Roles = append(in.Roles, &ast.Role{Name: strings.Join(it, "_"), Level: level, Pos: p.at(k.toks[0])})
 				}
 			}
@@ -362,7 +392,7 @@ func (p *Parser) parsePode(head dline, body []dline, only bool) error {
 		i = 1
 	}
 	k := i
-	for k < len(w) && w[k] != "pode" {
+	for k < len(w) && w[k] != "pode" && w[k] != "podem" {
 		k++
 	}
 	if k == len(w) || k == i {
@@ -374,7 +404,14 @@ func (p *Parser) parsePode(head dline, body []dline, only bool) error {
 			return p.errorf(tok, "falta a ação depois de pode")
 		}
 		verb := ws[0]
-		target, own := phrase(ws[1:])
+		rest := ws[1:]
+		if (verb == "enviar" || verb == "baixar") && len(rest) > 0 && rest[0] == "codigo" {
+			verb, rest = verb+"_codigo", rest[1:]
+			if len(rest) > 0 && (rest[0] == "para" || rest[0] == "em") {
+				rest = rest[1:]
+			}
+		}
+		target, own := phrase(rest)
 		in.Grants = append(in.Grants, &ast.Grant{Role: role, Only: only, Verb: verb, Target: target, Own: own, Pos: p.at(tok)})
 		return nil
 	}

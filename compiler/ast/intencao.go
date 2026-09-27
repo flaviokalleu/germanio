@@ -93,6 +93,7 @@ type Permit struct {
 // Hook: `quando VERBO ALVO` + body. For create/edit/delete it runs after
 // the operation; for any other verb the body is the action itself.
 type Hook struct {
+	Before bool // antes de <verbo>: runs first and may refuse or adjust dados
 	Verb   string
 	Target string
 	Body   []*Statement
