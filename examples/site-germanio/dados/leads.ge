@@ -1,0 +1,6 @@
+tabela Lead
+  nome: texto obrigatorio
+  email: email obrigatorio unico
+  empresa: texto
+  interesse: texto
+  status: status

@@ -1,0 +1,8 @@
+quando receber contato com nome, email, empresa, interesse
+  lead = criar Lead com
+    nome = nome
+    email = email
+    empresa = empresa
+    interesse = interesse
+    status = "novo"
+  responder sucesso

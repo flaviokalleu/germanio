@@ -1,0 +1,44 @@
+pagina "/comunidade"
+  titulo "Comunidade — Germanio"
+
+  navbar
+    logo "/assets/germanio.png" "Germanio"
+    link "Início" "/"
+    link "Documentação" "/docs"
+    link "Exemplos" "/exemplos"
+    link "Blog" "/blog"
+    botao "Instalar" "/instalar"
+
+  hero
+    badge "COMUNIDADE E CÓDIGO ABERTO"
+    titulo "Construído em Público, para Desenvolvedores."
+    descricao "Participe das discussões técnicas, envie sugestões de RFC e contribua com o compilador em Go."
+    botao primario "Acessar Repositório GitHub" "https://github.com/flaviokalleu/germanio"
+    botao secundario "Participar das Discussões" "https://github.com/flaviokalleu/germanio/discussions"
+
+  secao "Canais e Recursos"
+    subtitulo "Onde acompanhar o progresso e colaborar."
+    grade 3 colunas
+      card
+        icone "🐙"
+        tag "GITHUB"
+        titulo "Repositório Principal"
+        texto "Código aberto do compilador, interpretador, runtime, CLI e exemplos."
+        link "https://github.com/flaviokalleu/germanio"
+      card
+        icone "💬"
+        tag "DISCUSSÕES"
+        titulo "RFCs & Ideias"
+        texto "Debates sobre a evolução da sintaxe, novos tipos e otimizações de runtime."
+        link "https://github.com/flaviokalleu/germanio/discussions"
+      card
+        icone "🧩"
+        tag "VS CODE"
+        titulo "Extensão Oficial"
+        texto "Realce de sintaxe oficial para arquivos .ge no VS Code."
+        link "https://github.com/flaviokalleu/germanio/tree/master/vscode-germanio"
+
+  rodape
+    copyright "Germanio © 2026 — Comunidade Open Source."
+    link "GitHub" "https://github.com/flaviokalleu/germanio"
+    link "Início" "/"

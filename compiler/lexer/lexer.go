@@ -35,6 +35,8 @@ const (
 	TokenSlash
 	TokenLParen
 	TokenRParen
+	TokenLBrace
+	TokenRBrace
 
 	// Block keywords
 	TokenSistema
@@ -586,6 +588,16 @@ func (l *Lexer) scanToken() error {
 	}
 	if ch == ']' {
 		l.tokens = append(l.tokens, Token{Type: TokenRBracket, Value: "]", Line: l.line, Column: l.col})
+		l.advance()
+		return nil
+	}
+	if ch == '{' {
+		l.tokens = append(l.tokens, Token{Type: TokenLBrace, Value: "{", Line: l.line, Column: l.col})
+		l.advance()
+		return nil
+	}
+	if ch == '}' {
+		l.tokens = append(l.tokens, Token{Type: TokenRBrace, Value: "}", Line: l.line, Column: l.col})
 		l.advance()
 		return nil
 	}

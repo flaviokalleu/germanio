@@ -423,10 +423,96 @@ func (c *CustomRoute) NodeType() string { return "CustomRoute" }
 
 // ==================== Custom Page ====================
 
+type PageUIBlock interface {
+	UIBlockType() string
+}
+
+type PageNavbar struct {
+	Logo    string
+	Brand   string
+	Links   []*PageNavLink
+	Buttons []*PageNavButton
+}
+
+func (p *PageNavbar) UIBlockType() string { return "Navbar" }
+
+type PageNavLink struct {
+	Label string
+	URL   string
+}
+
+type PageNavButton struct {
+	Label   string
+	URL     string
+	Primary bool
+}
+
+type PageHero struct {
+	Badge       string
+	Title       string
+	Highlight   string
+	Description string
+	Buttons     []*PageHeroButton
+	Command     string
+	Mascot      string
+	CodePreview *PageCodePreview
+}
+
+func (p *PageHero) UIBlockType() string { return "Hero" }
+
+type PageHeroButton struct {
+	Label   string
+	URL     string
+	Primary bool
+}
+
+type PageCodePreview struct {
+	Filename string
+	Code     string
+}
+
+type PageSection struct {
+	Title      string
+	Subtitle   string
+	Columns    int
+	Cards      []*PageCard
+	CodeBlocks []*PageCodeBlock
+	TextBlocks []string
+}
+
+func (p *PageSection) UIBlockType() string { return "Section" }
+
+type PageCard struct {
+	Icon          string
+	Title         string
+	Text          string
+	Link          string
+	Tag           string
+	Code          string
+	ButtonLabel   string
+	ButtonURL     string
+	ButtonPrimary bool
+}
+
+type PageCodeBlock struct {
+	Title    string
+	Language string
+	Code     string
+}
+
+type PageFooter struct {
+	Text      string
+	Copyright string
+	Links     []*PageNavLink
+}
+
+func (p *PageFooter) UIBlockType() string { return "Footer" }
+
 type CustomPage struct {
 	Path    string // URL path
 	Title   string
-	Content string // raw HTML content
+	Content string // raw HTML content (fallback)
+	Blocks  []PageUIBlock
 }
 
 func (c *CustomPage) NodeType() string { return "CustomPage" }
@@ -507,21 +593,56 @@ func (t *TestDecl) NodeType() string { return "TestDecl" }
 
 // Statement represents any executable statement.
 type Statement struct {
-	Pos     diagnostics.Position
-	Expr    *Expression
-	UI      *UIElement
-	Type    string // "var", "assign", "if", "for_each", "while", "repeat", "return", "break", "continue", "pause", "call", "print", "try"
-	VarDecl *VarDecl
-	Assign  *Assignment
-	If      *IfStmt
-	ForEach *ForEachStmt
-	While   *WhileStmt
-	Repeat  *RepeatStmt
-	Return  *Expression
-	Call    *FuncCall
-	Print   *Expression
-	Expect  *Expression
-	Try     *TryStmt
+	Pos         diagnostics.Position
+	Expr        *Expression
+	UI          *UIElement
+	Type        string // "var", "assign", "if", "for_each", "while", "repeat", "return", "break", "continue", "pause", "call", "print", "try"
+	VarDecl     *VarDecl
+	Assign      *Assignment
+	If          *IfStmt
+	ForEach     *ForEachStmt
+	While       *WhileStmt
+	Repeat      *RepeatStmt
+	Return      *Expression
+	Call        *FuncCall
+	Print       *Expression
+	Expect      *Expression
+	Try         *TryStmt
+	When        *WhenStmt
+	Concurrency *ConcurrencyStmt
+}
+
+// WhenCase represents a single case in pattern matching:
+// existe -> ...
+// vazio -> ...
+// aprovado -> ...
+// ou -> ...
+type WhenCase struct {
+	Pos       diagnostics.Position
+	Pattern   *Expression // nil for default (ou)
+	IsDefault bool
+	Body      []*Statement
+}
+
+// WhenStmt represents pattern matching or null-safe presence check:
+//
+//	quando status {
+//	  aprovado -> liberar()
+//	  ou -> revisar()
+//	}
+type WhenStmt struct {
+	Target Expression
+	Cases  []*WhenCase
+}
+
+// ConcurrencyStmt represents structured concurrency:
+//
+//	ao mesmo tempo {
+//	  buscar_usuarios()
+//	  buscar_pedidos()
+//	}
+type ConcurrencyStmt struct {
+	Tasks []*Statement
 }
 
 // UIElement is the deterministic, client-only foundation of natural UI syntax.

@@ -10,6 +10,37 @@ func newInterp() *Interpreter {
 	return New(nil)
 }
 
+func TestWhenExecutesMatchingCaseAndConcurrencyExecutesTasks(t *testing.T) {
+	interp := newInterp()
+	interp.Global.Set("status", "aprovado")
+	interp.Global.Set("resultado", "")
+	interp.Global.Set("primeiro", "")
+	interp.Global.Set("segundo", "")
+	when := &ast.Statement{Type: "when", When: &ast.WhenStmt{
+		Target: ast.Expression{Type: "variable", Name: "status"},
+		Cases: []*ast.WhenCase{
+			{Pattern: &ast.Expression{Type: "literal", Value: "recusado"}, Body: []*ast.Statement{{Type: "assign", Assign: &ast.Assignment{Target: "resultado", Value: ast.Expression{Type: "literal", Value: "nao"}}}}},
+			{Pattern: &ast.Expression{Type: "literal", Value: "aprovado"}, Body: []*ast.Statement{{Type: "assign", Assign: &ast.Assignment{Target: "resultado", Value: ast.Expression{Type: "literal", Value: "sim"}}}}},
+		},
+	}}
+	interp.ExecStatement(when, interp.Global)
+	if result, _ := interp.Global.Get("resultado"); result != "sim" {
+		t.Fatalf("when não executou o caso correspondente: %v", result)
+	}
+
+	concurrency := &ast.Statement{Type: "concurrency", Concurrency: &ast.ConcurrencyStmt{Tasks: []*ast.Statement{
+		{Type: "assign", Assign: &ast.Assignment{Target: "primeiro", Value: ast.Expression{Type: "literal", Value: "ok"}}},
+		{Type: "assign", Assign: &ast.Assignment{Target: "segundo", Value: ast.Expression{Type: "literal", Value: "ok"}}},
+	}}}
+	interp.ExecStatement(concurrency, interp.Global)
+	if value, _ := interp.Global.Get("primeiro"); value != "ok" {
+		t.Fatal("primeira tarefa de concorrência não executou")
+	}
+	if value, _ := interp.Global.Get("segundo"); value != "ok" {
+		t.Fatal("segunda tarefa de concorrência não executou")
+	}
+}
+
 func TestVariableDeclaration(t *testing.T) {
 	interp := newInterp()
 	stmt := &ast.Statement{
@@ -168,13 +199,13 @@ func TestIfElse(t *testing.T) {
 			Condition: ast.Expression{Type: "literal", Value: true},
 			Body: []*ast.Statement{
 				{
-					Type: "assign",
+					Type:   "assign",
 					Assign: &ast.Assignment{Target: "x", Value: ast.Expression{Type: "literal", Value: "1"}},
 				},
 			},
 			Else: []*ast.Statement{
 				{
-					Type: "assign",
+					Type:   "assign",
 					Assign: &ast.Assignment{Target: "x", Value: ast.Expression{Type: "literal", Value: "2"}},
 				},
 			},

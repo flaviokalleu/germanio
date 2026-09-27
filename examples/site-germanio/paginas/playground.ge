@@ -1,0 +1,41 @@
+pagina "/playground"
+  titulo "Playground — Germanio"
+
+  navbar
+    logo "/assets/germanio.png" "Germanio"
+    link "Início" "/"
+    link "Documentação" "/docs"
+    link "Exemplos" "/exemplos"
+    botao "Instalar" "/instalar"
+
+  hero
+    badge "PLAYGROUND EXPERIMENTAL"
+    titulo "Escreva Germanio. Veja o Resultado."
+    descricao "Experimente trechos de código Germanio e entenda como o compilador processa declarações, tabelas e páginas."
+    botao primario "Baixar CLI para Testar Local" "/instalar"
+    botao secundario "Documentação" "/docs"
+    codigo "playground.ge" "app TestePlayground\nbanco sqlite\n\ntabela Item\n  nome: texto obrigatorio\n  quantidade: inteiro\n\nquando receber adicionar com nome, quantidade\n  novo = criar Item com nome = nome, quantidade = quantidade\n  responder sucesso"
+
+  secao "Como Experimentar"
+    subtitulo "Execute projetos Germanio na sua máquina com um único comando."
+    grade 3 colunas
+      card
+        icone "💻"
+        titulo "1. Instale o binário ge"
+        texto "Instale a CLI em seu Linux/macOS ou compile via Go."
+        link "/instalar"
+      card
+        icone "⚡"
+        titulo "2. Valide com ge check"
+        texto "O compilador valida tipos, campos e sintaxe em milissegundos."
+        link "/docs"
+      card
+        icone "🚀"
+        titulo "3. Execute com ge rodar"
+        texto "Seu servidor sobe automaticamente na porta 8085 com SQLite e APIs REST."
+        link "/docs"
+
+  rodape
+    copyright "Germanio © 2026 — Playground."
+    link "GitHub" "https://github.com/flaviokalleu/germanio"
+    link "Início" "/"

@@ -136,10 +136,10 @@ func (g *geParser) statement(l geLine, top bool) (*ast.Statement, error) {
 		}
 		g.program.Imports = append(g.program.Imports, &ast.Import{Path: t[1].Value, Pos: g.pos(first)})
 		return nil, nil
-	case "mostre", "retorne":
+	case "mostre", "mostrar", "retorne":
 		s.Expr, err = expr(t[1:])
 		s.Type = "expr"
-		if first.Value == "mostre" {
+		if first.Value == "mostre" || first.Value == "mostrar" {
 			s.Type = "print"
 			s.Print = s.Expr
 		} else {
@@ -197,6 +197,14 @@ func (g *geParser) statement(l geLine, top bool) (*ast.Statement, error) {
 		s.Type = "ui"
 		s.UI, err = g.ui(t, l.indent)
 		return s, err
+	case "quando":
+		// Pattern matching: quando alvo { ou quando alvo
+		return g.whenStatement(l, t)
+	case "ao":
+		// Concurrency: ao mesmo tempo { ... }
+		if len(t) >= 3 && t[1].Value == "mesmo" && t[2].Value == "tempo" {
+			return g.concurrencyStatement(l, t)
+		}
 	}
 	private := keyword == "privado"
 	if private {
@@ -389,20 +397,108 @@ func (g *geParser) statement(l geLine, top bool) (*ast.Statement, error) {
 	if mutable || constant {
 		return nil, g.syntax(first, "Use variavel nome = valor ou const NOME = valor")
 	}
-	if len(t) > 1 && first.Type == lexer.TokenIdentifier && t[1].Type == lexer.TokenString && (first.Value == "moste" || first.Value == "mostra" || first.Value == "mostr" || first.Value == "mostrar") {
+	if len(t) > 1 && first.Type == lexer.TokenIdentifier && t[1].Type == lexer.TokenString && (first.Value == "moste" || first.Value == "mostra" || first.Value == "mostr") {
 		return nil, g.fail(first, "GE1001", "Você quis dizer mostre?", first.Value+" não é o comando de saída Germanio.", `Use mostre "Olá". O compilador não altera seu código silenciosamente.`)
 	}
 	s.Type = "expr"
 	s.Expr, err = expr(t)
 	return s, err
 }
+
+func (g *geParser) whenStatement(l geLine, t []lexer.Token) (*ast.Statement, error) {
+	expr := func(ts []lexer.Token) (*ast.Expression, error) { return g.expression(ts) }
+	tokens := t[1:]
+	if len(tokens) > 0 && tokens[len(tokens)-1].Value == "{" {
+		tokens = tokens[:len(tokens)-1]
+	}
+	if len(tokens) == 0 {
+		return nil, g.syntax(t[0], "Use quando <expressao>")
+	}
+	target, e := expr(tokens)
+	if e != nil {
+		return nil, e
+	}
+	whenStmt := &ast.WhenStmt{Target: *target}
+	if g.at >= len(g.lines) || g.lines[g.at].indent <= l.indent {
+		return nil, g.syntax(t[0], "Bloco quando vazio; forneça casos como aprovado -> ... ou -> ...")
+	}
+	caseIndent := g.lines[g.at].indent
+	for g.at < len(g.lines) && g.lines[g.at].indent == caseIndent {
+		cl := g.lines[g.at]
+		ct := cl.tokens
+		if len(ct) == 1 && ct[0].Value == "}" {
+			g.at++
+			break
+		}
+		g.at++
+		arrowIdx := -1
+		for i, tok := range ct {
+			if tok.Value == "->" {
+				arrowIdx = i
+				break
+			}
+		}
+		if arrowIdx == -1 {
+			return nil, g.syntax(ct[0], "Caso do quando exige -> (exemplo: aprovado -> liberar() ou -> revisar())")
+		}
+		patternToks := ct[:arrowIdx]
+		bodyToks := ct[arrowIdx+1:]
+		if len(bodyToks) > 0 && bodyToks[len(bodyToks)-1].Value == "}" {
+			bodyToks = bodyToks[:len(bodyToks)-1]
+		}
+		if len(bodyToks) == 0 {
+			return nil, g.syntax(ct[arrowIdx], "Corpo do caso ausente após ->")
+		}
+		caseNode := &ast.WhenCase{Pos: g.pos(ct[0])}
+		if len(patternToks) == 1 && patternToks[0].Value == "ou" {
+			caseNode.IsDefault = true
+		} else if len(patternToks) == 0 {
+			return nil, g.syntax(ct[arrowIdx], "Padrão ausente antes de ->")
+		} else {
+			patExpr, err := expr(patternToks)
+			if err != nil {
+				return nil, err
+			}
+			caseNode.Pattern = patExpr
+		}
+		subStmt, err := g.statement(geLine{tokens: bodyToks, indent: cl.indent}, false)
+		if err != nil {
+			return nil, err
+		}
+		if subStmt != nil {
+			caseNode.Body = []*ast.Statement{subStmt}
+		}
+		whenStmt.Cases = append(whenStmt.Cases, caseNode)
+	}
+	if g.at < len(g.lines) && len(g.lines[g.at].tokens) == 1 && g.lines[g.at].tokens[0].Value == "}" {
+		g.at++
+	}
+	return &ast.Statement{Pos: g.pos(t[0]), Type: "when", When: whenStmt}, nil
+}
+
+func (g *geParser) concurrencyStatement(l geLine, t []lexer.Token) (*ast.Statement, error) {
+	body, e := g.body(l.indent)
+	if e != nil {
+		return nil, e
+	}
+	if g.at < len(g.lines) && len(g.lines[g.at].tokens) == 1 && g.lines[g.at].tokens[0].Value == "}" {
+		g.at++
+	}
+	return &ast.Statement{
+		Pos:         g.pos(t[0]),
+		Type:        "concurrency",
+		Concurrency: &ast.ConcurrencyStmt{Tasks: body},
+	}, nil
+}
+
 func reservedTypeName(name string) bool {
 	switch name {
-	case "texto", "inteiro", "decimal", "bool", "nulo", "privado", "variavel", "mut", "const":
+	case "texto", "inteiro", "decimal", "bool", "numero", "dinheiro", "email", "url", "data", "hora", "uuid", "nulo", "privado", "variavel", "mut", "const":
 		return true
 	}
 	return false
 }
+
 func (g *geParser) annotation(ts []lexer.Token, typeParams []string) (string, error) {
 	if len(ts) == 0 {
 		return "", g.syntax(lexer.Token{Line: 1, Column: 1}, "Tipo ausente")
@@ -418,7 +514,7 @@ func (g *geParser) annotation(ts []lexer.Token, typeParams []string) (string, er
 		base = strings.TrimSuffix(base, "?")
 	}
 	switch base {
-	case "texto", "inteiro", "decimal", "bool":
+	case "texto", "inteiro", "decimal", "bool", "numero", "dinheiro", "email", "url", "data", "hora", "uuid":
 		return s, nil
 	}
 	for _, name := range typeParams {
@@ -426,7 +522,7 @@ func (g *geParser) annotation(ts []lexer.Token, typeParams []string) (string, er
 			return s, nil
 		}
 	}
-	return "", g.syntax(ts[0], "Tipo ainda não suportado: "+s+". Use texto, inteiro, decimal, bool, [T] ou T?")
+	return "", g.syntax(ts[0], "Tipo ainda não suportado: "+s+". Use texto, inteiro, decimal, bool, numero, dinheiro, email, [T] ou T?")
 }
 
 type geExpr struct {

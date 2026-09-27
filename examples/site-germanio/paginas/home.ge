@@ -1,0 +1,70 @@
+pagina "/"
+  titulo "Germanio — Diga o que quer construir"
+
+  navbar
+    logo "/assets/germanio.png" "Germanio"
+    link "Início" "/"
+    link "Documentação" "/docs"
+    link "Exemplos" "/exemplos"
+    link "Aprender" "/aprender"
+    link "Playground" "/playground"
+    link "Comunidade" "/comunidade"
+    botao "Instalar" "/instalar"
+
+  hero
+    badge "GERMANIO 1.0"
+    titulo "Diga o que quer construir."
+    destaque "Germanio transforma em software."
+    descricao "Uma linguagem de programação full-stack criada para ser simples no primeiro dia e poderosa quando você precisar ir além. Frontend, backend e banco na mesma linguagem determinística."
+    botao primario "Começar com Germanio →" "/docs"
+    botao secundario "Abrir Playground" "/playground"
+    comando "curl -fsSL https://raw.githubusercontent.com/flaviokalleu/germanio/master/install.sh | bash"
+    codigo "app.ge" "app MinhaLoja\nbanco sqlite\n\ntabela Produto\n  nome: texto obrigatorio\n  preco: dinheiro\n  estoque: inteiro\n\nquando receber cadastrar com nome, preco\n  produto = criar Produto com nome = nome, preco = preco\n  responder sucesso"
+
+  secao "Pilares Fundamentais"
+    subtitulo "Sem rodeios, sem complexidade acidental. Engenharia real em sintaxe natural."
+    grade 3 colunas
+      card
+        icone "⚡"
+        tag "ERGONOMIA"
+        titulo "Simples de Aprender"
+        texto "Comece em minutos com uma sintaxe natural e determinística. Sem boilerplate infinito."
+        link "/aprender"
+      card
+        icone "🔷"
+        tag "FULL-STACK"
+        titulo "Full-stack por Natureza"
+        texto "Declare tabelas, regras de negócio e rotas de API sem separar camadas artificiais."
+        link "/docs"
+      card
+        icone "🛡️"
+        tag "ROBUSTEZ"
+        titulo "Seguro e Compilado em Go"
+        texto "Runtime em Go nativo, SQLite embutido sem dependências externas e tipagem estrita."
+        link "/docs"
+
+  secao "Uma Linguagem. Todo o Software."
+    subtitulo "Frontend, backend e banco de dados conversando nativamente."
+    grade 3 colunas
+      card
+        icone "🗄️"
+        titulo "1. Banco Declarativo"
+        texto "Tabelas com tipos nativos (texto, dinheiro, email, status) e migrações automáticas."
+        code "tabela Lead\n  nome: texto obrigatorio\n  email: email obrigatorio unico\n  status: status"
+      card
+        icone "⚙️"
+        titulo "2. Eventos e Regras"
+        texto "Rotas de backend com tratamento determinístico e respostas estruturadas."
+        code "quando receber contato com nome, email\n  lead = criar Lead\n  responder sucesso"
+      card
+        icone "🖥️"
+        titulo "3. Páginas e Componentes"
+        texto "UI declarativa pura compilada para a web sem precisar de HTML manual."
+        code "pagina \"/\"\n  navbar\n    logo \"/logo.png\"\n  hero\n    titulo \"Bem-vindo\""
+
+  rodape
+    copyright "Germanio © 2026 — Desenvolvido por Flávio Kalleu e contribuidores."
+    link "GitHub" "https://github.com/flaviokalleu/germanio"
+    link "Docs" "/docs"
+    link "Exemplos" "/exemplos"
+    link "Instalar" "/instalar"

@@ -64,6 +64,7 @@ func (s *Servidor) Iniciar() error {
 	mux.HandleFunc("/", s.handlePagina)
 	mux.HandleFunc("/api/", s.handleAPI)
 	mux.HandleFunc("/upload", s.handleUpload)
+	mux.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("assets"))))
 	mux.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("uploads"))))
 	mux.HandleFunc("/media/stream", s.handleMediaStream)
 	mux.HandleFunc("/ws", s.WS.HandleWS)
@@ -144,21 +145,9 @@ func (s *Servidor) Iniciar() error {
 		}
 	}
 
-	// Custom pages
-	for _, page := range s.Program.Pages {
-		pg := page
-		mux.HandleFunc(pg.Path, func(w http.ResponseWriter, req *http.Request) {
-			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			title := pg.Title
-			if title == "" {
-				title = s.Program.System.Name
-			}
-			pageHTML := fmt.Sprintf(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>%s</title>
-<style>body{font-family:system-ui;margin:0;padding:20px}</style></head><body>%s</body></html>`,
-				title, pg.Content)
-			w.Write([]byte(pageHTML))
-		})
-	}
+	// `handlePagina` is registered once at `/` and dispatches custom pages by
+	// exact path. A single dispatcher avoids duplicate ServeMux registrations
+	// while preserving the generated interface as the fallback.
 
 	// Apply middleware chain
 	var handler http.Handler = mux
@@ -314,7 +303,33 @@ func (s *Servidor) getCachedHTML() string {
 
 func (s *Servidor) handlePagina(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(s.getCachedHTML()))
+
+	// Custom pages take priority over the generated CRUD interface, including
+	// the root path. This lets a Germanio project use `pagina "/"` as its
+	// public site without losing the generated interface as fallback.
+	for _, page := range s.Program.Pages {
+		if page.Path != r.URL.Path {
+			continue
+		}
+		if len(page.Blocks) > 0 {
+			rendered := RenderDeclarativePage(page)
+			_, _ = w.Write([]byte(rendered))
+			return
+		}
+		trimmed := strings.TrimSpace(page.Content)
+		if strings.HasPrefix(strings.ToLower(trimmed), "<!doctype") || strings.HasPrefix(strings.ToLower(trimmed), "<html") {
+			_, _ = w.Write([]byte(trimmed))
+			return
+		}
+		title := page.Title
+		if title == "" && s.Program.System != nil {
+			title = s.Program.System.Name
+		}
+		_, _ = fmt.Fprintf(w, `<!DOCTYPE html><html><head><meta charset="utf-8"><title>%s</title><style>body{font-family:system-ui;margin:0;padding:20px}</style></head><body>%s</body></html>`, title, page.Content)
+		return
+	}
+
+	_, _ = w.Write([]byte(s.getCachedHTML()))
 }
 
 func (s *Servidor) handleEval(w http.ResponseWriter, r *http.Request) {

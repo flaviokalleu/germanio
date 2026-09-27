@@ -3,135 +3,20 @@ app GermanioSite
 banco sqlite
 
 tema
-  cor primaria "#0284c7"
-  cor secundaria "#0f172a"
-  cor destaque "#38bdf8"
+  cor primaria "#00D9FF"
+  cor secundaria "#080B10"
+  cor destaque "#168BFF"
   estilo "moderno"
 
-tabela Lead
-  nome: texto obrigatorio
-  email: email obrigatorio unico
-  empresa: texto
-  mensagem: texto_longo
-  status: status
-
-tabela Exemplo
-  titulo: texto obrigatorio
-  codigo: texto_longo
-  descricao: texto
-
-quando receber contato com nome, email, empresa, mensagem
-  novo_lead = criar Lead
-  responder sucesso
-
-paginas
-
-  pagina "/site"
-    titulo "Germanio — A Linguagem Declarativa Moderna"
-    conteudo """
-    <div style="font-family:system-ui,-apple-system,sans-serif;color:#f8fafc;background:#090d16;min-height:100vh;padding:0;margin:0;">
-      <!-- Hero -->
-      <nav style="display:flex;justify-content:space-between;align-items:center;padding:24px 48px;border-bottom:1px solid #1e293b;">
-        <div style="font-size:1.5rem;font-weight:800;color:#38bdf8;letter-spacing:-0.5px;">⚡ GERMANIO</div>
-        <div style="display:flex;gap:24px;align-items:center;">
-          <a href="/docs" style="color:#94a3b8;text-decoration:none;font-weight:600;">Documentação</a>
-          <a href="/api/docs" style="color:#94a3b8;text-decoration:none;font-weight:600;">Swagger UI</a>
-          <a href="https://github.com/flaviokalleu/germanio" target="_blank" style="background:#0284c7;color:#fff;padding:8px 18px;border-radius:8px;text-decoration:none;font-weight:bold;">GitHub</a>
-        </div>
-      </nav>
-
-      <header style="max-width:1000px;margin:60px auto 40px;text-align:center;padding:0 24px;">
-        <h1 style="font-size:3.5rem;font-weight:900;line-height:1.1;margin-bottom:20px;background:linear-gradient(to right,#38bdf8,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
-          Crie Sistemas Full-Stack com a Simplicidade de um Prompt
-        </h1>
-        <p style="font-size:1.25rem;color:#94a3b8;max-width:700px;margin:0 auto 32px;line-height:1.6;">
-          Germanio transforma declarações em linguagem natural em APIs REST completas, banco de dados relacional e interfaces modernas em Go.
-        </p>
-        <div style="display:inline-block;background:#0f172a;border:1px solid #1e293b;padding:14px 28px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.5);">
-          <code style="color:#38bdf8;font-size:1.1rem;font-family:monospace;">curl -fsSL https://raw.githubusercontent.com/flaviokalleu/germanio/master/install.sh | bash</code>
-        </div>
-      </header>
-
-      <!-- Code Demo -->
-      <section style="max-width:900px;margin:40px auto;padding:0 24px;">
-        <div style="background:#0f172a;border:1px solid #1e293b;border-radius:16px;overflow:hidden;box-shadow:0 20px 40px rgba(0,0,0,0.6);">
-          <div style="background:#1e293b;padding:12px 20px;display:flex;gap:8px;align-items:center;">
-            <div style="width:12px;height:12px;border-radius:50%;background:#ef4444;"></div>
-            <div style="width:12px;height:12px;border-radius:50%;background:#eab308;"></div>
-            <div style="width:12px;height:12px;border-radius:50%;background:#22c55e;"></div>
-            <span style="color:#64748b;font-size:0.85rem;margin-left:12px;font-family:monospace;">app.ge</span>
-          </div>
-          <pre style="padding:24px;margin:0;color:#e2e8f0;font-size:1rem;line-height:1.7;overflow-x:auto;font-family:monospace;"><code><span style="color:#38bdf8;">app</span> MeuSaaS
-
-<span style="color:#38bdf8;">banco</span> sqlite
-
-<span style="color:#818cf8;">tabela</span> Cliente
-  nome: texto
-  whatsapp: texto único
-  saldo: dinheiro padrão 0
-
-<span style="color:#38bdf8;">quando receber</span> cobranca <span style="color:#38bdf8;">com</span> cliente_id
-  cliente = buscar Cliente onde id == cliente_id
-  <span style="color:#f43f5e;">se</span> cliente.saldo > 0
-    enviar whatsapp para cliente.whatsapp: "Olá {cliente.nome}, saldo: {cliente.saldo}"
-    responder sucesso</code></pre>
-        </div>
-      </section>
-
-      <!-- Features Grid -->
-      <section style="max-width:1000px;margin:60px auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;padding:0 24px;">
-        <div style="background:#0f172a;border:1px solid #1e293b;padding:24px;border-radius:12px;">
-          <h3 style="color:#38bdf8;margin-top:0;">⚡ Backend & REST API</h3>
-          <p style="color:#94a3b8;line-height:1.5;">Rotas CRUD automáticas, Swagger UI em /api/docs e validação de schema.</p>
-        </div>
-        <div style="background:#0f172a;border:1px solid #1e293b;padding:24px;border-radius:12px;">
-          <h3 style="color:#818cf8;margin-top:0;">🔒 Blindado para Produção</h3>
-          <p style="color:#94a3b8;line-height:1.5;">Rate limiting por IP real, proteção CSP/CORS, mascaramento de senhas e JWT.</p>
-        </div>
-        <div style="background:#0f172a;border:1px solid #1e293b;padding:24px;border-radius:12px;">
-          <h3 style="color:#34d399;margin-top:0;">🤖 Pronto para IA (MCP)</h3>
-          <p style="color:#94a3b8;line-height:1.5;">Integração direta com Cursor, Claude Desktop e agentes para gerar apps .ge.</p>
-        </div>
-      </section>
-
-      <footer style="text-align:center;padding:40px 24px;border-top:1px solid #1e293b;color:#64748b;">
-        Germanio © 2026 — Criado por Flávio Kalleu
-      </footer>
-    </div>
-    """
-
-  pagina "/docs"
-    titulo "Germanio — Documentação Oficial"
-    conteudo """
-    <div style="max-width:900px;margin:40px auto;font-family:system-ui,-apple-system,sans-serif;color:#f8fafc;background:#0f172a;padding:32px;border-radius:16px;box-shadow:0 20px 25px -5px rgba(0,0,0,0.5);">
-      <h1 style="color:#38bdf8;font-size:2.5rem;margin-bottom:8px;">Documentação do Germanio</h1>
-      <p style="color:#94a3b8;font-size:1.1rem;margin-bottom:24px;">Aprenda a construir APIs, bancos e dashboards full-stack com sintaxe natural em minutos.</p>
-      
-      <div style="background:#1e293b;padding:20px;border-radius:8px;margin-bottom:24px;border-left:4px solid #38bdf8;">
-        <h3 style="margin-top:0;color:#f8fafc;">Instalação Rápida (Linux / macOS)</h3>
-        <pre style="background:#0f172a;padding:12px;border-radius:6px;color:#38bdf8;overflow-x:auto;"><code>curl -fsSL https://raw.githubusercontent.com/flaviokalleu/germanio/master/install.sh | bash</code></pre>
-      </div>
-
-      <div style="background:#1e293b;padding:20px;border-radius:8px;margin-bottom:24px;">
-        <h3 style="margin-top:0;color:#f8fafc;">Estrutura Básica de um App</h3>
-        <pre style="background:#0f172a;padding:12px;border-radius:6px;color:#e2e8f0;overflow-x:auto;"><code>app MeuApp
-banco postgres
-
-tabela Usuario
-  nome: texto obrigatorio
-  email: email obrigatorio unico
-  saldo: dinheiro padrao 0
-
-quando receber cobranca com cliente_id
-  cliente = buscar Usuario onde id == cliente_id
-  se cliente.saldo > 0
-    enviar whatsapp para cliente.whatsapp: "Seu saldo é {cliente.saldo}"
-    responder sucesso</code></pre>
-      </div>
-
-      <div style="display:flex;gap:12px;">
-        <a href="/" style="display:inline-block;padding:10px 20px;background:#38bdf8;color:#0f172a;text-decoration:none;font-weight:bold;border-radius:8px;">Voltar ao Início</a>
-        <a href="/api/docs" style="display:inline-block;padding:10px 20px;background:#334155;color:#f8fafc;text-decoration:none;font-weight:bold;border-radius:8px;">Swagger UI</a>
-      </div>
-    </div>
-    """
+importar "dados/leads.ge"
+importar "rotas/contato.ge"
+importar "paginas/home.ge"
+importar "paginas/docs.ge"
+importar "paginas/exemplos.ge"
+importar "paginas/playground.ge"
+importar "paginas/pacotes.ge"
+importar "paginas/aprender.ge"
+importar "paginas/comunidade.ge"
+importar "paginas/blog.ge"
+importar "paginas/instalar.ge"
+importar "paginas/roadmap.ge"

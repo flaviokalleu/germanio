@@ -13,12 +13,21 @@ import (
 	"github.com/flaviokalleu/germanio/compiler/semantic"
 	"github.com/flaviokalleu/germanio/runtime/germanio"
 	"github.com/flaviokalleu/germanio/tooling/formatter"
+	"github.com/flaviokalleu/germanio/tooling/intelligence"
 )
 
 const Version = "0.7.0-dev"
 const help = `Germanio — simples para começar, explícito para evoluir.
 
 Uso: ge <comando> [arquivo]
+  init [subcomando]      Inicia ou expande um projeto através do Project Intelligence
+    ge init              Cria projeto guiado, rápido ou por descrição
+    ge init entidade N   Cria entidade, banco, API e página conectada
+    ge init pagina N     Cria página contextual, a partir da entidade existente
+    ge init dashboard    Cria dashboard com métricas do projeto
+  graph                  Exibe o Project Knowledge Graph textual
+  explain pagina N       Explica as conexões de uma página
+  eject componente       Transfere componente para controle manual
   rodar [inicio.ge]       Verifica e executa Germanio
   check [inicio.ge]       Verifica sem executar nem ler entrada
   testar [arquivo/pasta] [--coverage]  Executa testes .ge isolados
@@ -60,6 +69,43 @@ func Run(args []string, in io.Reader, out, stderr io.Writer) int {
 			return fail(fmt.Errorf("Use ge legado ajuda (help no Germanio)"))
 		}
 		legacy.Run(append([]string{"germanio"}, rest...))
+		return 0
+	case "init":
+		return handleInit(rest, in, out, stderr)
+	case "graph":
+		cwd, _ := os.Getwd()
+		graph, err := intelligence.NewProjectAnalyzer(cwd).Analyze()
+		if err != nil {
+			return fail(err)
+		}
+		fmt.Fprint(out, graph.RenderTextTree())
+		return 0
+	case "explain":
+		if len(rest) < 2 || (rest[0] != "pagina" && rest[0] != "tela") {
+			return fail(fmt.Errorf("Uso: ge explain pagina <nome>"))
+		}
+		cwd, _ := os.Getwd()
+		graph, err := intelligence.NewProjectAnalyzer(cwd).Analyze()
+		if err != nil {
+			return fail(err)
+		}
+		explanation, err := graph.ExplainPage(rest[1])
+		if err != nil {
+			return fail(err)
+		}
+		fmt.Fprintf(out, "Página: %s\nRota: %s\nOrigem: %s\nBanco: %s\nBackend: %s\n", explanation.PageName, explanation.Path, explanation.Entity, explanation.DatabaseTable, explanation.BackendService)
+		fmt.Fprintf(out, "Componentes: %s\nAções: %s\n", strings.Join(explanation.Components, ", "), strings.Join(explanation.Actions, "; "))
+		return 0
+	case "eject":
+		if len(rest) != 1 {
+			return fail(fmt.Errorf("Uso: ge eject <componente>"))
+		}
+		cwd, _ := os.Getwd()
+		file, err := intelligence.NewIntelligenceEngine(cwd).EjectComponent(rest[0])
+		if err != nil {
+			return fail(err)
+		}
+		fmt.Fprintln(out, "Componente ejetado:", file)
 		return 0
 	case "testar":
 		path := "."
@@ -240,6 +286,131 @@ func Run(args []string, in io.Reader, out, stderr io.Writer) int {
 	default:
 		return fail(fmt.Errorf("Comando desconhecido ou ainda não implementado: %s. Use ge ajuda", cmd))
 	}
+}
+
+func handleInit(args []string, in io.Reader, out, stderr io.Writer) int {
+	_ = in
+	cwd, err := os.Getwd()
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 1
+	}
+	engine := intelligence.NewIntelligenceEngine(cwd)
+	dryRun := false
+	var exportPath, importPath string
+	var positional []string
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		switch arg {
+		case "--dry-run":
+			dryRun = true
+		case "--yes", "-y":
+			// Deterministic non-interactive mode currently uses safe defaults.
+		case "--export", "--from":
+			if i+1 >= len(args) {
+				fmt.Fprintf(stderr, "A flag %s requer um arquivo.\n", arg)
+				return 1
+			}
+			value := args[i+1]
+			if arg == "--export" {
+				exportPath = value
+			} else {
+				importPath = value
+			}
+			i++
+		default:
+			positional = append(positional, arg)
+		}
+	}
+	if importPath != "" {
+		if dryRun {
+			fmt.Fprintln(out, "DRY RUN: especificação não foi importada.")
+			return 0
+		}
+		if err := engine.ImportSpec(importPath); err != nil {
+			fmt.Fprintln(stderr, err)
+			return 1
+		}
+		fmt.Fprintf(out, "✓ Projeto importado de %s.\n", importPath)
+		return 0
+	}
+
+	if len(positional) >= 2 {
+		switch positional[0] {
+		case "entidade", "modelo":
+			name := positional[1]
+			if err := engine.InitEntity(intelligence.InitEntityOptions{RootDir: cwd, Name: name, DryRun: dryRun}); err != nil {
+				fmt.Fprintln(stderr, err)
+				return 1
+			}
+			fmt.Fprintf(out, "✓ Entidade '%s' criada e conectada.\n", name)
+			return 0
+		case "pagina", "tela":
+			name := positional[1]
+			if err := engine.InitPage(intelligence.InitPageOptions{RootDir: cwd, Name: name, DryRun: dryRun}); err != nil {
+				fmt.Fprintln(stderr, err)
+				return 1
+			}
+			fmt.Fprintf(out, "✓ Página '%s' criada e conectada.\n", name)
+			return 0
+		}
+	}
+	if len(positional) == 1 && positional[0] == "dashboard" {
+		if err := engine.InitDashboard(dryRun); err != nil {
+			fmt.Fprintln(stderr, err)
+			return 1
+		}
+		fmt.Fprintln(out, "✓ Dashboard criado com métricas derivadas do grafo.")
+		return 0
+	}
+	if len(positional) == 1 {
+		contextualCaps := map[string]string{
+			"api":         intelligence.CapAPI,
+			"componente":  intelligence.CapDashboard,
+			"auth":        intelligence.CapAuth,
+			"pagamento":   intelligence.CapBilling,
+			"chat":        intelligence.CapChat,
+			"busca":       intelligence.CapSearch,
+			"upload":      intelligence.CapStorage,
+			"notificacao": intelligence.CapNotification,
+		}
+		if capID, ok := contextualCaps[positional[0]]; ok {
+			cap := intelligence.StandardCapabilities[capID]
+			fmt.Fprintf(out, "%s — %s [%s].\n", cap.ID, cap.Name, cap.Status)
+			return 0
+		}
+	}
+
+	name := "MeuApp"
+	mode := "rapido"
+	description := ""
+	if len(positional) > 0 {
+		name = positional[0]
+	}
+	if len(positional) > 1 {
+		mode = "prompt"
+		description = strings.Join(positional[1:], " ")
+	}
+	graph, err := engine.InitProject(intelligence.InitProjectOptions{
+		RootDir: cwd, Name: name, Mode: mode, Description: description,
+		DryRun: dryRun, NonInteractive: true,
+	})
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 1
+	}
+	if dryRun {
+		fmt.Fprintf(out, "dry-run: %s", intelligence.NewTransactionManager(cwd, true, nil).RenderDiffPlan())
+	}
+	if exportPath != "" && !dryRun {
+		if err := engine.ExportSpec(exportPath); err != nil {
+			fmt.Fprintln(stderr, err)
+			return 1
+		}
+		fmt.Fprintf(out, "✓ Especificação exportada para %s.\n", exportPath)
+	}
+	fmt.Fprintf(out, "✓ Projeto '%s' inicializado. Entidades: %d; páginas: %d.\n", name, len(graph.Entities), len(graph.Pages))
+	return 0
 }
 
 func geFiles(path string) ([]string, error) {

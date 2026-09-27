@@ -1,0 +1,41 @@
+pagina "/roadmap"
+  titulo "Roadmap Oficial — Germanio"
+
+  navbar
+    logo "/assets/germanio.png" "Germanio"
+    link "Início" "/"
+    link "Documentação" "/docs"
+    link "Exemplos" "/exemplos"
+    link "Comunidade" "/comunidade"
+    botao "Instalar" "/instalar"
+
+  hero
+    badge "PLANEJAMENTO TÉCNICO"
+    titulo "Metas e Próximos Passos."
+    descricao "Acompanhe as prioridades técnicas transparentes do projeto: estabilidade, performance e ergonomia."
+    botao primario "Contribuir no GitHub" "https://github.com/flaviokalleu/germanio"
+    botao secundario "Documentação" "/docs"
+
+  secao "Próximos Marcos de Desenvolvimento"
+    subtitulo "Recursos planejados para o ecossistema Germanio."
+    grade 3 colunas
+      card
+        icone "📦"
+        tag "EM ANDAMENTO"
+        titulo "Gerenciador de Pacotes"
+        texto "Comando 'ge adicionar' para inclusão de bibliotecas de terceiros com checagem de hash e resolução de dependências."
+      card
+        icone "🔍"
+        tag "PLANEJADO"
+        titulo "LSP & Formatter Canônico"
+        texto "Servidor LSP para autocompletion completo no VS Code/Neovim e comando nativo 'ge fmt'."
+      card
+        icone "⚡"
+        tag "PLANEJADO"
+        titulo "Playground WASM"
+        texto "Compilação do core Germanio para WebAssembly para execução client-side sem necessidade de backend."
+
+  rodape
+    copyright "Germanio © 2026 — Roadmap Oficial."
+    link "GitHub" "https://github.com/flaviokalleu/germanio"
+    link "Início" "/"

@@ -41,8 +41,13 @@ var Explanations = map[string]string{
 	"GE2006": "Índice fora dos limites. Use um índice inteiro entre zero e quantidade(lista) - 1.",
 	"GE2007": "Código inalcançável. Remova comandos depois de retorne, pare ou continue.",
 	"GE2008": "Teste falhou. Confira o resultado real e ajuste a função ou a condição após espera. Exemplo: espera somar(2, 2) == 4.",
+	"GE2009": "Padrão não tratado em 'quando'. Cubra todos os casos possíveis ou forneça um ramo padrão 'ou -> ...'.",
+	"GE2010": "Valor potencialmente ausente. Trate com 'quando valor { existe -> ... vazio -> ... }'.",
 	"GE3001": "Módulo inválido. Use um arquivo .ge relativo ao projeto, sem ciclos de importação.",
 	"GE3002": "Função privada. Exporte uma função pública que a chame, por exemplo: publico(x) = interna(x).",
 	"GE4102": "Unidade incorreta. Arredondamento usa comprimento, como 16px; rotação usa ângulo, como 45deg.",
+	"GE5001": "Possível SQL Injection. Evite concatenar variáveis diretamente em strings SQL; use parâmetros.",
+	"GE5002": "Segredo ou chave de API exposta no código. Utilize variáveis de ambiente ou arquivo de configuração seguro.",
+	"GE6001": "Erro em concorrência estruturada. Garanta que as tarefas em 'ao mesmo tempo' sejam independentes.",
 	"GE9001": "Limite de execução excedido. Verifique a condição do loop ou da recursão.",
 }

@@ -24,7 +24,7 @@ const maxIterations = 10000
 type signalType int
 
 const (
-	signalReturn   signalType = iota
+	signalReturn signalType = iota
 	signalBreak
 	signalContinue
 )
@@ -81,8 +81,10 @@ type Interpreter struct {
 	DB         *banco.Banco
 	LogBuffer  []string
 	logMu      sync.Mutex
-	HTTPClient interface{ Chamar(method, url string, body []byte) ([]byte, error) }
-	WAClient   interface {
+	HTTPClient interface {
+		Chamar(method, url string, body []byte) ([]byte, error)
+	}
+	WAClient interface {
 		EnviarMensagem(telefone, mensagem string) error
 	}
 }
@@ -194,6 +196,42 @@ func (interp *Interpreter) ExecStatement(stmt *ast.Statement, scope *Scope) {
 
 	case "try":
 		interp.execTry(stmt.Try, scope)
+
+	case "when":
+		interp.execWhen(stmt.When, scope)
+
+	case "concurrency":
+		interp.execConcurrency(stmt.Concurrency, scope)
+	}
+}
+
+func (interp *Interpreter) execWhen(when *ast.WhenStmt, scope *Scope) {
+	if when == nil {
+		return
+	}
+	target := interp.EvalExpr(&when.Target, scope)
+	for _, c := range when.Cases {
+		if c == nil {
+			continue
+		}
+		if c.IsDefault || (c.Pattern != nil && isEqual(target, interp.EvalExpr(c.Pattern, scope))) {
+			interp.ExecStatements(c.Body, NewScope(scope))
+			return
+		}
+	}
+}
+
+func (interp *Interpreter) execConcurrency(concurrency *ast.ConcurrencyStmt, scope *Scope) {
+	if concurrency == nil {
+		return
+	}
+	// The base interpreter deliberately executes a structured concurrency block
+	// in source order. It preserves deterministic state and avoids concurrent
+	// mutation of interpreter scopes, database handles and log buffers. A future
+	// worker runtime may schedule independent tasks in parallel behind the same
+	// join boundary, but may not change observable program semantics.
+	for _, task := range concurrency.Tasks {
+		interp.ExecStatement(task, NewScope(scope))
 	}
 }
 

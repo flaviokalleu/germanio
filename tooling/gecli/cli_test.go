@@ -57,6 +57,82 @@ func TestCLIInvalidAndFormatting(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+func TestInitCreatesContextualProjectAndCanExplainIt(t *testing.T) {
+	oldWD, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	project := t.TempDir()
+	if err := os.Chdir(project); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(oldWD)
+
+	if code, out, err := invoke("init", "MeuCRM", "--yes"); code != 0 {
+		t.Fatalf("init failed: %s %s", out, err)
+	}
+	if _, err := os.Stat(filepath.Join(project, ".germanio", "project.json")); err != nil {
+		t.Fatalf("project manifest was not created: %v", err)
+	}
+	if code, out, err := invoke("init", "entidade", "Cliente", "--yes"); code != 0 {
+		t.Fatalf("entity init failed: %s %s", out, err)
+	}
+	if code, out, err := invoke("init", "pagina", "clientes", "--yes"); code != 0 {
+		t.Fatalf("page init failed: %s %s", out, err)
+	}
+	if code, out, err := invoke("graph"); code != 0 || !strings.Contains(out, "Cliente") {
+		t.Fatalf("graph failed: %d %s %s", code, out, err)
+	}
+	if code, out, err := invoke("explain", "pagina", "clientes"); code != 0 || !strings.Contains(out, "Página:") {
+		t.Fatalf("explain failed: %d %s %s", code, out, err)
+	}
+}
+
+func TestInitFlagsExportFromAndModes(t *testing.T) {
+	project := t.TempDir()
+	oldWD, _ := os.Getwd()
+	if err := os.Chdir(project); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(oldWD)
+	if code, out, err := invoke("init", "--dry-run", "--yes", "--export", "spec.geinit"); code != 0 || !strings.Contains(out, "dry-run") || err != "" {
+		t.Fatalf("dry-run: %d %s %s", code, out, err)
+	}
+	if _, err := os.Stat(filepath.Join(project, "spec.geinit")); !os.IsNotExist(err) {
+		t.Fatal("dry-run wrote export")
+	}
+	if code, _, err := invoke("init", "--yes", "--export", "spec.geinit"); code != 0 {
+		t.Fatalf("export: %s", err)
+	}
+	if _, err := os.Stat(filepath.Join(project, "spec.geinit")); err != nil {
+		t.Fatal(err)
+	}
+	other := t.TempDir()
+	old := project
+	_ = old
+	if err := os.Chdir(other); err != nil {
+		t.Fatal(err)
+	}
+	if code, out, err := invoke("init", "--from", filepath.Join(project, "spec.geinit")); code != 0 || !strings.Contains(out, "importado") {
+		t.Fatalf("from: %d %s %s", code, out, err)
+	}
+}
+
+func TestContextualInitCommandsReportCapabilityState(t *testing.T) {
+	project := t.TempDir()
+	oldWD, _ := os.Getwd()
+	defer os.Chdir(oldWD)
+	if err := os.Chdir(project); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"api", "componente", "auth", "pagamento", "chat", "busca", "upload", "notificacao"} {
+		code, out, err := invoke("init", name)
+		if code != 0 || !strings.Contains(out, "CAP_") || err != "" {
+			t.Fatalf("%s: %d %s %s", name, code, out, err)
+		}
+	}
+}
+
 func TestNoUnsupportedCommandsClaimSuccess(t *testing.T) {
 	for _, name := range []string{"build", "fuzz", "ai", "gpu", "wasm"} {
 		if code, _, _ := invoke(name); code == 0 {

@@ -1,0 +1,48 @@
+pagina "/exemplos"
+  titulo "Exemplos — Germanio"
+
+  navbar
+    logo "/assets/germanio.png" "Germanio"
+    link "Início" "/"
+    link "Documentação" "/docs"
+    link "Exemplos" "/exemplos"
+    link "Aprender" "/aprender"
+    botao "Instalar" "/instalar"
+
+  hero
+    badge "EXEMPLOS PRÁTICOS"
+    titulo "Da Ideia ao Software em Produção."
+    descricao "Veja como problemas reais são resolvidos em poucos blocos com a linguagem Germanio."
+    botao primario "Ver no GitHub" "https://github.com/flaviokalleu/germanio/tree/master/examples"
+    botao secundario "Documentação" "/docs"
+
+  secao "Projetos de Exemplo"
+    subtitulo "Aplicações reais rodando com o compilador Germanio."
+    grade 3 colunas
+      card
+        icone "💬"
+        tag "API & REST"
+        titulo "Captura de Leads"
+        texto "Recebimento de contatos com validação de email e inserção em SQLite."
+        code "tabela Lead\n  nome: texto obrigatorio\n  email: email obrigatorio unico\n\nquando receber contato com nome, email\n  lead = criar Lead\n  responder sucesso"
+        link "/docs"
+      card
+        icone "🛍️"
+        tag "ECOMMERCE"
+        titulo "Catálogo de Loja"
+        texto "Listagem de produtos, controle de estoque e cálculo de valores em tipo dinheiro."
+        code "tabela Produto\n  nome: texto obrigatorio\n  preco: dinheiro\n  estoque: inteiro"
+        link "/docs"
+      card
+        icone "🌐"
+        tag "WEBSITE"
+        titulo "Portal Oficial"
+        texto "Este próprio portal oficial é escrito 100% em arquivos .ge com importações modulares."
+        code "app GermanioSite\nimportar \"dados/leads.ge\"\nimportar \"paginas/home.ge\""
+        link "/"
+
+  rodape
+    copyright "Germanio © 2026 — Exemplos Oficiais."
+    link "GitHub" "https://github.com/flaviokalleu/germanio"
+    link "Início" "/"
+    link "Docs" "/docs"

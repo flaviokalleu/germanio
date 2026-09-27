@@ -97,6 +97,13 @@ func (p *Parser) Parse() (*ast.Program, error) {
 						return nil, err
 					}
 					handled = true
+				case "pagina", "page":
+					page, err := p.parseCustomPage()
+					if err != nil {
+						return nil, err
+					}
+					p.program.Pages = append(p.program.Pages, page)
+					handled = true
 				case "sidebar", "menu":
 					if err := p.parseSidebar(); err != nil {
 						return nil, err
@@ -3050,12 +3057,12 @@ func (p *Parser) parseRotas() error {
 	return nil
 }
 
-// parsePaginas parses custom HTML pages.
+// parsePaginas parses custom pages block.
 // paginas
 //
 //	pagina "/sobre"
 //	  titulo "Sobre nós"
-//	  html "<div>Conteúdo</div>"
+//	  hero ...
 func (p *Parser) parsePaginas() error {
 	p.advance() // consume 'paginas'
 	p.skipWhitespace()
@@ -3072,49 +3079,10 @@ func (p *Parser) parsePaginas() error {
 		}
 
 		if tok.Value == "pagina" || tok.Value == "page" {
-			p.advance()
-			p.skipIndent()
-
-			page := &ast.CustomPage{}
-
-			// Path
-			if !p.isAtEnd() && p.current().Type == lexer.TokenString {
-				page.Path = p.advance().Value
+			page, err := p.parseCustomPage()
+			if err != nil {
+				return err
 			}
-			p.skipWhitespace()
-
-			// Parse properties
-			for !p.isAtEnd() && !p.isBlockKeyword() {
-				inner := p.current()
-				if inner.Type == lexer.TokenNewline || inner.Type == lexer.TokenIndent {
-					p.advance()
-					continue
-				}
-				if inner.Value == "pagina" || inner.Value == "page" {
-					break
-				}
-				if inner.Type == lexer.TokenIdentifier && (inner.Value == "rotas" || inner.Value == "routes" ||
-					inner.Value == "paginas" || inner.Value == "pages" || inner.Value == "sidebar" || inner.Value == "menu") {
-					break
-				}
-				switch inner.Value {
-				case "titulo", "title":
-					p.advance()
-					p.skipIndent()
-					if !p.isAtEnd() && p.current().Type == lexer.TokenString {
-						page.Title = p.advance().Value
-					}
-				case "html", "conteudo", "content":
-					p.advance()
-					p.skipIndent()
-					if !p.isAtEnd() && p.current().Type == lexer.TokenString {
-						page.Content = p.advance().Value
-					}
-				default:
-					p.advance()
-				}
-			}
-
 			p.program.Pages = append(p.program.Pages, page)
 			continue
 		}
