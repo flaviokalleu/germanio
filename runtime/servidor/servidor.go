@@ -71,6 +71,8 @@ func (s *Servidor) Iniciar() error {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte(`{"status":"ok"}`))
 	})
+	mux.HandleFunc("/api/docs", s.handleOpenAPISwagger)
+	mux.HandleFunc("/api/openapi.json", s.handleOpenAPIJSON)
 
 	// Auth routes
 	if s.Auth != nil {
@@ -416,6 +418,16 @@ func (s *Servidor) handleAPI(w http.ResponseWriter, r *http.Request) {
 	// Handle /api/_stats
 	if parts[0] == "_stats" {
 		s.handleStats(w, r)
+		return
+	}
+
+	if parts[0] == "docs" {
+		s.handleOpenAPISwagger(w, r)
+		return
+	}
+
+	if parts[0] == "openapi.json" {
+		s.handleOpenAPIJSON(w, r)
 		return
 	}
 
@@ -1158,6 +1170,104 @@ func screenMatchesModel(screen *ast.Screen, modelo string) bool {
 }
 
 // handleRestaurar restores a soft-deleted record.
+func (s *Servidor) handleOpenAPISwagger(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	html := `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Germanio API Docs</title>
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css" />
+</head>
+<body>
+  <div id="swagger-ui"></div>
+  <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js" crossorigin></script>
+  <script>
+    window.onload = () => {
+      window.ui = SwaggerUIBundle({
+        url: '/api/openapi.json',
+        dom_id: '#swagger-ui',
+      });
+    };
+  </script>
+</body>
+</html>`
+	w.Write([]byte(html))
+}
+
+func (s *Servidor) handleOpenAPIJSON(w http.ResponseWriter, r *http.Request) {
+	paths := make(map[string]any)
+
+	// Add CRUD models
+	for _, m := range s.Program.Models {
+		mName := strings.ToLower(m.Name)
+		paths["/api/"+mName] = map[string]any{
+			"get": map[string]any{
+				"summary":     "Listar " + m.Name,
+				"tags":        []string{m.Name},
+				"responses":   map[string]any{"200": map[string]any{"description": "Lista de " + m.Name}},
+			},
+			"post": map[string]any{
+				"summary":     "Criar " + m.Name,
+				"tags":        []string{m.Name},
+				"responses":   map[string]any{"201": map[string]any{"description": m.Name + " criado"}},
+			},
+		}
+		paths["/api/"+mName+"/{id}"] = map[string]any{
+			"get": map[string]any{
+				"summary":     "Obter " + m.Name + " por ID",
+				"tags":        []string{m.Name},
+				"responses":   map[string]any{"200": map[string]any{"description": "Detalhes de " + m.Name}},
+			},
+			"put": map[string]any{
+				"summary":     "Atualizar " + m.Name,
+				"tags":        []string{m.Name},
+				"responses":   map[string]any{"200": map[string]any{"description": m.Name + " atualizado"}},
+			},
+			"delete": map[string]any{
+				"summary":     "Deletar " + m.Name,
+				"tags":        []string{m.Name},
+				"responses":   map[string]any{"200": map[string]any{"description": m.Name + " removido"}},
+			},
+		}
+	}
+
+	// Add Prompt events
+	for _, evt := range s.Program.Events {
+		if evt.Trigger == "receber" || evt.Trigger == "chamar" {
+			actionName := strings.TrimSpace(evt.Target)
+			if actionName == "" {
+				actionName = strings.TrimSpace(evt.ActionRef)
+			}
+			parts := strings.Fields(actionName)
+			if len(parts) > 0 {
+				slug := strings.ToLower(parts[0])
+				paths["/api/"+slug] = map[string]any{
+					"post": map[string]any{
+						"summary":   "Ação Prompt: " + slug,
+						"tags":      []string{"Ações"},
+						"responses": map[string]any{"200": map[string]any{"description": "Ação executada com sucesso"}},
+					},
+				}
+			}
+		}
+	}
+
+	doc := map[string]any{
+		"openapi": "3.0.0",
+		"info": map[string]any{
+			"title":       s.Program.System.Name + " API",
+			"version":     "1.0.0",
+			"description": "API REST gerada automaticamente pelo Germanio",
+		},
+		"paths": paths,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(doc)
+}
+
 func (s *Servidor) handleRestaurar(w http.ResponseWriter, r *http.Request, modelo string, id int64) {
 	if r.Method != http.MethodPut {
 		s.jsonError(w, "método não permitido", http.StatusMethodNotAllowed)
