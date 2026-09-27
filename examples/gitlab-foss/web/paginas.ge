@@ -1,0 +1,17 @@
+# O que aparece para as pessoas.
+
+crie página Projetos
+    mostre projetos
+    permita
+        pesquisar
+        criar
+        editar
+        excluir
+
+crie página Grupos
+    mostre grupos
+    permita
+        pesquisar
+        criar
+        editar
+        excluir

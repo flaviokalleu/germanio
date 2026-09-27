@@ -323,6 +323,7 @@ type Field struct {
 	NumberedBy   string   // numerado por <entidade>: sequence per parent (holds the FK field after resolution)
 	ListOf       string   // lista de <texto|entidade>
 	System       bool     // maintained by the runtime (estado, fechada_em); never written by people
+	Label        string   // spelling for people (accents kept): "descrição"
 	Immutable    bool     // imutavel: cannot change after creation
 	Min, Max     *float64 // length for text, value for numbers
 	Format       string   // formato "regex" (RE2)

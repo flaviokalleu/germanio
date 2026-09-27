@@ -287,7 +287,7 @@ func (p *Parser) fieldFromTokens(t []lexer.Token) (*ast.Field, error) {
 		return nil, p.errorf(name, "nome de campo esperado, encontrado %q", name.Value)
 	}
 	// Names are accent-folded so "descrição" and "descricao" are the same field.
-	f := &ast.Field{Name: foldWord(name.Name()), Pos: p.at(name)}
+	f := &ast.Field{Name: foldWord(name.Name()), Label: strings.ReplaceAll(name.Name(), "_", " "), Pos: p.at(name)}
 	i := 1
 	if i < len(t) && t[i].Type == lexer.TokenColon {
 		i++

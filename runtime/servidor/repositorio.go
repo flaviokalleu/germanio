@@ -184,7 +184,7 @@ func (a *intentAPI) serveGit(w http.ResponseWriter, r *http.Request, entities []
 func (a *intentAPI) mountRepository(mux *http.ServeMux, base string, e *ast.Entity) {
 	seg := "repositorio"
 	names := map[string]string{"branches": "branches", "commits": "commits", "tree": "arvore", "files": "arquivos", "compare": "comparar", "diff": "diff"}
-	if a.app.Messages == "en" {
+	if a.extern && a.app.Messages == "en" {
 		seg = "repository"
 		names = map[string]string{"branches": "branches", "commits": "commits", "tree": "tree", "files": "files", "compare": "compare", "diff": "diff"}
 	}

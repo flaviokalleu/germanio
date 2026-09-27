@@ -54,6 +54,7 @@ type Servidor struct {
 	// intent is the running intent layer; onClose stops background work.
 	intent  *intentAPI
 	onClose []func()
+	mux     *http.ServeMux
 }
 
 // Fechar stops background work (executors).
@@ -139,6 +140,8 @@ func (s *Servidor) Handler() (http.Handler, error) {
 	if err := s.registerIntent(mux); err != nil {
 		return nil, err
 	}
+	s.mux = mux
+	s.registerPages(mux)
 
 	// Prompt Events routes (quando receber / quando chamar)
 	for _, evt := range s.Program.Events {

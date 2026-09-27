@@ -29,8 +29,8 @@ Motivo em AGENT_STATE.md › IMPORTANT_DECISIONS D1.
 | G16 | Execução de processo segura | runner de CI | inexistente | Processo | MISSING | P1 | `processo.executar(prog, args, opcoes)` sem shell, timeout, dir confinado | OPEN |
 | G17 | YAML | `.gitlab-ci.yml` | inexistente | Serialização | MISSING | P1 | `yaml.ler(texto)` | OPEN |
 | G18 | Markdown seguro | issues, MRs, notas, README | inexistente | Texto | MISSING | P2 | `markdown.html(texto)` sanitizado | OPEN |
-| G19 | UI de aplicação (não só CRUD): layout, tabelas, formulários, CodeViewer, DiffViewer, árvore, logs | frontend GitLab | renderer só gera CRUD de telas | UI | MISSING | P0 | registro `ui.*` renderizado no servidor com escape + CSRF | OPEN |
-| G20 | CSRF para formulários com sessão por cookie | UI | inexistente | Segurança | MISSING | P0 | token CSRF automático no registro UI + verificação no servidor | IN_PROGRESS — verificação no servidor pronta (teste 403); inserção automática nos formulários depende de G19 |
+| G19 | UI de aplicação (não só CRUD): layout, tabelas, formulários, CodeViewer, DiffViewer, árvore, logs | frontend GitLab | renderer só gera CRUD de telas | UI | MISSING | P0 | páginas de intenção renderizadas no servidor (`runtime/servidor/paginas.go`) usando as mesmas operações da API; componentes por capability (código, diff, log) | DONE — `TestInterfaceWeb` |
+| G20 | CSRF para formulários com sessão por cookie | UI | inexistente | Segurança | MISSING | P0 | token CSRF em todo formulário + verificação | DONE — `TestInterfaceWeb` |
 | G21 | `ge check`/`graph`/`explain` entenderem apps do dialeto full-stack | stress test | tooling lê o modelo de intelligence, não rotas/funções | Tooling | PARTIAL | P2 | análise de rotas, funções chamadas e modelos referenciados | OPEN |
 | G22 | Handler concorrente com escopo isolado | servidor | `EvalStatements` usa escopo global compartilhado | Concorrência | BUG | P0 | escopo por requisição filho do global | DONE — escopo por requisição; `Scope.Set` não escreve no global durante requisição |
 | G23 | Parser tolera tokens desconhecidos silenciosamente | auditoria | `default: p.advance()` em vários blocos | Diagnóstico | BUG | P2 | erro com linha dentro de corpos de rota/função | PARTIAL — corpos de rota/função/logica agora falham com arquivo:linha; blocos de tela/tema ainda toleram |
@@ -67,3 +67,4 @@ Motivo em AGENT_STATE.md › IMPORTANT_DECISIONS D1.
 | G54 | Protocolo de runner externo (/jobs/request, trace, update) | CI/CD | não implementado | Integração | MISSING | P2 | expor fila de etapas para executores remotos com token | OPEN |
 | G55 | Artefatos de job | CI/CD | sem capability de armazenamento de arquivos | Arquivos | MISSING | P2 | capability de arquivos (uploads) + `artifacts: paths` | OPEN |
 | G56 | Vocabulário não injetivo (aberta/aberto → opened) escolhia ao acaso | fluxo 3 sob -race | tradução reversa por mapa Go | Integração | BUG | P1 | tradução reversa determinística e pelo contexto do dado | DONE — `-race -count=3` |
+| G57 | Nomes de campo sem acento na tela (Descricao) | UI | nomes normalizados para casar vocabulário | UI | BUG | P3 | rótulo guarda a grafia original | DONE |
