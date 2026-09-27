@@ -1,0 +1,131 @@
+# Namespace (User/Group), Member (app/models/namespace.rb, group.rb, member.rb)
+
+dados
+  namespace interno
+    name: texto obrigatorio
+    path: texto obrigatorio
+    full_path: texto obrigatorio unico
+    kind: texto obrigatorio
+    owner_id: inteiro
+    parent_id: inteiro indice
+    visibility_level: inteiro
+    description: texto_longo
+
+  membro interno
+    source_type: texto obrigatorio
+    source_id: inteiro obrigatorio
+    usuario_id: inteiro obrigatorio indice
+    access_level: inteiro obrigatorio
+    created_by_id: inteiro
+    expires_at: texto
+    unico(source_type, source_id, usuario_id)
+
+logica
+  # Nível efetivo de um usuário num namespace, herdando dos grupos ancestrais
+  # (GroupMember + hierarquia de subgrupos). Dono do namespace pessoal = Owner.
+  funcao nivel_no_namespace(u, ns)
+    se u == nulo ou ns == nulo
+      retornar 0
+    se u.admin
+      retornar NIVEL.admin
+    definir nivel = 0
+    definir atual = ns
+    definir saltos = 0
+    enquanto atual != nulo e saltos < 20
+      se atual.kind == "user" e atual.owner_id == u.id
+        definir nivel = max(nivel, NIVEL.owner)
+      definir m = membro.encontrar({source_type: "Namespace", source_id: atual.id, usuario_id: u.id})
+      se m != nulo e (m.expires_at == nulo ou m.expires_at >= hoje())
+        definir nivel = max(nivel, m.access_level)
+      se atual.parent_id == nulo
+        definir atual = nulo
+      senao
+        definir atual = namespace.buscar(atual.parent_id)
+      definir saltos = saltos + 1
+    retornar nivel
+
+  # GroupPolicy#read_group
+  funcao pode_ler_grupo(u, g)
+    se g.visibility_level == VISIBILIDADE.public
+      retornar verdadeiro
+    se u == nulo
+      retornar falso
+    se g.visibility_level == VISIBILIDADE.internal
+      retornar verdadeiro
+    se nivel_no_namespace(u, g) >= NIVEL.guest
+      retornar verdadeiro
+    # Membros de projetos do grupo também enxergam o grupo
+    para cada p em projeto.filtrar({namespace_id: g.id})
+      se nivel_no_projeto(u, p) >= NIVEL.guest
+        retornar verdadeiro
+    retornar falso
+
+  funcao grupo_por_ref(ref)
+    definir g = nulo
+    se eh_numero(ref)
+      definir g = namespace.buscar(ref)
+    senao
+      definir g = namespace.encontrar({full_path: ref})
+    se g == nulo ou g.kind != "group"
+      falhar(404, "404 Group Not Found")
+    retornar g
+
+  funcao apresentar_namespace(ns)
+    retornar {id: ns.id, name: ns.name, path: ns.path, kind: ns.kind, full_path: ns.full_path, parent_id: ns.parent_id, web_url: URL_BASE + "/" + ns.full_path}
+
+  funcao apresentar_grupo(g)
+    retornar {id: g.id, name: g.name, path: g.path, full_name: g.name, full_path: g.full_path, description: g.description, visibility: nome_visibilidade(g.visibility_level), parent_id: g.parent_id, web_url: URL_BASE + "/groups/" + g.full_path, created_at: g.criado_em}
+
+  funcao apresentar_membro(m)
+    definir u = usuario.buscar(m.usuario_id)
+    definir r = apresentar_usuario(u, falso)
+    r.access_level = m.access_level
+    r.expires_at = m.expires_at
+    r.created_at = m.criado_em
+    retornar r
+
+  # Groups::CreateService
+  funcao criar_grupo(u, dados)
+    definir nome = cortar(texto(obter(dados, "name", "")))
+    se nome == ""
+      erro_validacao("name", "can't be blank")
+    definir caminho = obter(dados, "path", caminho_de_nome(nome))
+    se nao caminho_valido(caminho)
+      erro_validacao("path", "is invalid")
+    definir pai = nulo
+    definir completo = caminho
+    se obter(dados, "parent_id", nulo) != nulo
+      definir pai = grupo_por_ref(dados.parent_id)
+      se nivel_no_namespace(u, pai) < NIVEL.maintainer
+        falhar(403, "403 Forbidden")
+      definir completo = pai.full_path + "/" + caminho
+    senao
+      se nao u.can_create_group e nao u.admin
+        falhar(403, "403 Forbidden")
+    se namespace.existe({full_path: completo}) ou (pai == nulo e usuario.existe({username: caminho}))
+      erro_validacao("path", "has already been taken")
+    definir vis = nivel_visibilidade(obter(dados, "visibility", "private"))
+    definir pai_id = nulo
+    se pai != nulo
+      definir pai_id = pai.id
+      # Um subgrupo não pode ser mais visível que o pai
+      se vis > pai.visibility_level
+        erro_validacao("visibility_level", "is not allowed since the parent group has a more restrictive visibility")
+    definir g = namespace.criar({name: nome, path: caminho, full_path: completo, kind: "group", owner_id: u.id, parent_id: pai_id, visibility_level: vis, description: obter(dados, "description", "")})
+    membro.criar({source_type: "Namespace", source_id: g.id, usuario_id: u.id, access_level: NIVEL.owner, created_by_id: u.id})
+    retornar g
+
+  # Members::CreateService — regras comuns a grupos e projetos
+  funcao adicionar_membro(ator, nivel_ator, tipo, origem_id, dados)
+    definir alvo = usuario.buscar(obter(dados, "user_id", nulo))
+    se alvo == nulo
+      falhar(404, "404 User Not Found")
+    definir nivel = inteiro(obter(dados, "access_level", 0))
+    se indice_de([10, 15, 20, 30, 40, 50], nivel) < 0
+      erro_validacao("access_level", "is not included in the list")
+    # Só Owner concede Owner; ninguém concede acima do próprio nível
+    se nivel > nivel_ator ou (nivel == NIVEL.owner e nivel_ator < NIVEL.owner)
+      falhar(403, "403 Forbidden")
+    se membro.existe({source_type: tipo, source_id: origem_id, usuario_id: alvo.id})
+      falhar(409, "Member already exists")
+    retornar membro.criar({source_type: tipo, source_id: origem_id, usuario_id: alvo.id, access_level: nivel, created_by_id: ator.id, expires_at: obter(dados, "expires_at", nulo)})

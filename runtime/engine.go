@@ -171,6 +171,9 @@ func Carregar(arquivo string, porta string) (*App, error) {
 	if program.System == nil {
 		return nil, fmt.Errorf("declaração 'sistema' não encontrada")
 	}
+	if err := checarDuplicatas(program); err != nil {
+		return nil, err
+	}
 
 	fmt.Printf("[germanio] Sistema: %s\n", program.System.Name)
 	fmt.Printf("[germanio] Modelos: %d | Telas: %d | Rotas: %d | Funções: %d\n",
@@ -340,6 +343,28 @@ func Verificar(arquivo string) error {
 	}
 	if len(program.Crons) > 0 {
 		fmt.Printf("  cron:     %d job(s)\n", len(program.Crons))
+	}
+	return nil
+}
+
+// checarDuplicatas rejects two functions or two models with the same name
+// across all imported files; the later one used to replace the earlier
+// silently.
+func checarDuplicatas(program *ast.Program) error {
+	fns := map[string]*ast.FuncDecl{}
+	for _, f := range program.Functions {
+		if prev, ok := fns[f.Name]; ok {
+			return fmt.Errorf("%s:%d: função '%s' já definida em %s:%d", f.Pos.File, f.Pos.Line, f.Name, prev.Pos.File, prev.Pos.Line)
+		}
+		fns[f.Name] = f
+	}
+	models := map[string]bool{}
+	for _, m := range program.Models {
+		name := strings.ToLower(m.Name)
+		if models[name] {
+			return fmt.Errorf("modelo '%s' definido mais de uma vez", m.Name)
+		}
+		models[name] = true
 	}
 	return nil
 }

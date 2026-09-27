@@ -18,6 +18,8 @@ type RuntimeError struct {
 	Status  int
 	Message string
 	Pos     diagnostics.Position
+	// Payload is the structured value given to falhar (maps, lists).
+	Payload any
 }
 
 func (e *RuntimeError) Error() string {
@@ -551,11 +553,14 @@ func (interp *Interpreter) globalFuncs() map[string]ModuleFunc {
 		// falhar(status, mensagem) raises an error that tentar/erro can catch.
 		"falhar": func(c *Call, args []any) any {
 			status := int(c.Num(args, 0, "status"))
-			msg := ""
+			e := &RuntimeError{Status: status, Pos: c.Pos}
 			if len(args) > 1 {
-				msg = toString(args[1])
+				e.Message = toString(args[1])
+				if _, isText := args[1].(string); !isText {
+					e.Payload = args[1]
+				}
 			}
-			panic(&RuntimeError{Status: status, Message: msg, Pos: c.Pos})
+			panic(e)
 		},
 		// obter(mapa, chave, padrao) reads an optional key.
 		"obter": func(c *Call, args []any) any {

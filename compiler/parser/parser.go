@@ -534,6 +534,7 @@ func tokenToFieldType(tok lexer.Token) (ast.FieldType, error) {
 	}
 	typeMap := map[string]ast.FieldType{
 		"texto": ast.FieldTexto, "numero": ast.FieldNumero, "data": ast.FieldData,
+		"inteiro": ast.FieldInteiro, "integer": ast.FieldInteiro,
 		"booleano": ast.FieldBooleano, "email": ast.FieldEmail, "telefone": ast.FieldTelefone,
 		"imagem": ast.FieldImagem, "arquivo": ast.FieldArquivo, "upload": ast.FieldUpload,
 		"link": ast.FieldLink, "status": ast.FieldStatus, "dinheiro": ast.FieldDinheiro,
@@ -2496,12 +2497,12 @@ func (p *Parser) parseTryStmt(minIndent int) (*ast.Statement, error) {
 
 // parseFuncDecl: funcao name(param1, param2) \n body
 func (p *Parser) parseFuncDecl() (*ast.FuncDecl, error) {
-	p.advance() // consume 'funcao'/'function'
+	funcTok := p.advance() // consume 'funcao'/'function'
 	p.skipIndent()
 
 	nameTok := p.current()
-	if nameTok.Type != lexer.TokenIdentifier {
-		return nil, fmt.Errorf("line %d: expected function name after 'funcao'", nameTok.Line)
+	if nameTok.Type != lexer.TokenIdentifier && !p.isNameToken(nameTok) {
+		return nil, p.errorf(nameTok, "nome de função esperado depois de 'funcao'")
 	}
 	p.advance()
 	p.skipIndent()
@@ -2515,11 +2516,21 @@ func (p *Parser) parseFuncDecl() (*ast.FuncDecl, error) {
 				p.advance()
 				continue
 			}
-			params = append(params, p.advance().Value)
+			t := p.current()
+			if t.Type == lexer.TokenNewline || !(t.Type == lexer.TokenIdentifier || p.isNameToken(t)) {
+				return nil, p.errorf(t, "parâmetro inválido na função %s", nameTok.Name())
+			}
+			for _, prev := range params {
+				if prev == t.Name() {
+					return nil, p.errorf(t, "parâmetro %q repetido na função %s", prev, nameTok.Name())
+				}
+			}
+			params = append(params, p.advance().Name())
 		}
-		if p.current().Type == lexer.TokenRParen {
-			p.advance() // consume ')'
+		if p.current().Type != lexer.TokenRParen {
+			return nil, p.errorf(nameTok, "falta fechar ')' nos parâmetros de %s", nameTok.Name())
 		}
+		p.advance() // consume ')'
 	}
 
 	body, err := p.parseBlock(0)
@@ -2528,9 +2539,10 @@ func (p *Parser) parseFuncDecl() (*ast.FuncDecl, error) {
 	}
 
 	return &ast.FuncDecl{
-		Name:   nameTok.Value,
+		Name:   nameTok.Name(),
 		Params: params,
 		Body:   body,
+		Pos:    p.at(funcTok),
 	}, nil
 }
 

@@ -1,0 +1,109 @@
+# API de grupos, namespaces e membros de grupo (lib/api/groups.rb, members.rb, namespaces.rb)
+
+rotas
+  rota POST "/api/v4/groups"
+    definir u = escritor(requisicao)
+    responder(201, apresentar_grupo(criar_grupo(u, requisicao.corpo)))
+
+  rota GET "/api/v4/groups"
+    definir u = leitor(requisicao)
+    definir itens = []
+    para cada g em namespace.filtrar({kind: "group"}, {ordenar: "full_path", limite: 1000})
+      se pode_ler_grupo(u, g)
+        itens = adicionar(itens, apresentar_grupo(g))
+    retornar itens
+
+  rota GET "/api/v4/groups/:id"
+    definir u = leitor(requisicao)
+    definir g = grupo_por_ref(requisicao.parametros.id)
+    se nao pode_ler_grupo(u, g)
+      falhar(404, "404 Group Not Found")
+    retornar apresentar_grupo(g)
+
+  rota PUT "/api/v4/groups/:id"
+    definir u = escritor(requisicao)
+    definir g = grupo_por_ref(requisicao.parametros.id)
+    se nivel_no_namespace(u, g) < NIVEL.owner
+      falhar(403, "403 Forbidden")
+    definir c = requisicao.corpo
+    definir mudancas = {}
+    se tem(c, "name")
+      mudancas.name = c.name
+    se tem(c, "description")
+      mudancas.description = c.description
+    se tem(c, "visibility")
+      mudancas.visibility_level = nivel_visibilidade(c.visibility)
+    retornar apresentar_grupo(namespace.atualizar(g.id, mudancas))
+
+  rota DELETE "/api/v4/groups/:id"
+    definir u = escritor(requisicao)
+    definir g = grupo_por_ref(requisicao.parametros.id)
+    se nivel_no_namespace(u, g) < NIVEL.owner
+      falhar(403, "403 Forbidden")
+    se namespace.existe({parent_id: g.id}) ou projeto.existe({namespace_id: g.id})
+      falhar(400, "Group has subgroups or projects; remove them first")
+    membro.apagar_onde({source_type: "Namespace", source_id: g.id})
+    namespace.deletar(g.id)
+    responder(202, {message: "202 Accepted"})
+
+  rota GET "/api/v4/groups/:id/subgroups"
+    definir u = leitor(requisicao)
+    definir g = grupo_por_ref(requisicao.parametros.id)
+    se nao pode_ler_grupo(u, g)
+      falhar(404, "404 Group Not Found")
+    definir itens = []
+    para cada s em namespace.filtrar({parent_id: g.id}, {ordenar: "path"})
+      se pode_ler_grupo(u, s)
+        itens = adicionar(itens, apresentar_grupo(s))
+    retornar itens
+
+  rota GET "/api/v4/groups/:id/projects"
+    definir u = leitor(requisicao)
+    definir g = grupo_por_ref(requisicao.parametros.id)
+    se nao pode_ler_grupo(u, g)
+      falhar(404, "404 Group Not Found")
+    definir itens = []
+    para cada p em projeto.filtrar({namespace_id: g.id}, {ordenar: "path"})
+      se pode(u, p, "ler_projeto")
+        itens = adicionar(itens, apresentar_projeto(p, u))
+    retornar itens
+
+  rota GET "/api/v4/groups/:id/members"
+    definir u = leitor(requisicao)
+    definir g = grupo_por_ref(requisicao.parametros.id)
+    se nao pode_ler_grupo(u, g)
+      falhar(404, "404 Group Not Found")
+    definir itens = []
+    para cada m em membro.filtrar({source_type: "Namespace", source_id: g.id}, {ordenar: "id"})
+      itens = adicionar(itens, apresentar_membro(m))
+    retornar itens
+
+  rota POST "/api/v4/groups/:id/members"
+    definir u = escritor(requisicao)
+    definir g = grupo_por_ref(requisicao.parametros.id)
+    definir nivel = nivel_no_namespace(u, g)
+    se nivel < NIVEL.maintainer
+      falhar(403, "403 Forbidden")
+    responder(201, apresentar_membro(adicionar_membro(u, nivel, "Namespace", g.id, requisicao.corpo)))
+
+  rota DELETE "/api/v4/groups/:id/members/:user_id"
+    definir u = escritor(requisicao)
+    definir g = grupo_por_ref(requisicao.parametros.id)
+    definir m = membro.encontrar({source_type: "Namespace", source_id: g.id, usuario_id: inteiro(requisicao.parametros.user_id)})
+    se m == nulo
+      falhar(404, "404 Member Not Found")
+    definir nivel = nivel_no_namespace(u, g)
+    se m.usuario_id != u.id e (nivel < NIVEL.maintainer ou m.access_level > nivel)
+      falhar(403, "403 Forbidden")
+    # O último Owner não pode sair
+    se m.access_level == NIVEL.owner e membro.contar({source_type: "Namespace", source_id: g.id, access_level: NIVEL.owner}) == 1
+      falhar(403, "403 Forbidden - the last owner cannot be removed")
+    membro.deletar(m.id)
+    responder(204, nulo)
+
+  rota GET "/api/v4/namespaces"
+    definir u = exigir_usuario(requisicao)
+    definir itens = [apresentar_namespace(namespace.buscar(u.namespace_id))]
+    para cada m em membro.filtrar({source_type: "Namespace", usuario_id: u.id})
+      itens = adicionar(itens, apresentar_namespace(namespace.buscar(m.source_id)))
+    retornar itens

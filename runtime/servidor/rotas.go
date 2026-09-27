@@ -291,9 +291,13 @@ func (s *Servidor) writeResponse(w http.ResponseWriter, resp *interp.Response) {
 
 func (s *Servidor) writeRouteError(w http.ResponseWriter, req *http.Request, route *ast.CustomRoute, err error) {
 	var re *interp.RuntimeError
-	status, msg := http.StatusInternalServerError, "500 Internal Server Error"
+	status := http.StatusInternalServerError
+	var msg any = "500 Internal Server Error"
 	if errors.As(err, &re) && re.Status >= 400 && re.Status < 600 {
 		status, msg = re.Status, re.Message
+		if re.Payload != nil {
+			msg = re.Payload
+		}
 	} else {
 		// Unexpected failures are logged with position and hidden from clients
 		// unless GERMANIO_DEBUG=1.

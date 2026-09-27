@@ -1,0 +1,59 @@
+# ProjectPolicy — regras de autorização do GitLab escritas em Germanio.
+# O runtime não conhece papéis; ele só executa estas funções.
+
+logica
+  # Nível mínimo de membro para cada ação em projetos (doc/user/permissions.md)
+  definir NIVEL_MINIMO = {baixar_codigo_privado: 20, administrar_issue: 15, ler_confidencial: 15, administrar_labels: 15, push_codigo: 30, criar_branch: 30, criar_mr: 30, mesclar_mr: 30, aprovar_mr: 30, atualizar_pipeline: 30, ler_pipeline_privado: 20, administrar_projeto: 40, administrar_membros: 40, administrar_runners: 40, administrar_hooks: 40, administrar_variaveis: 40, remover_projeto: 50}
+
+  # Acesso efetivo: membro direto do projeto ou herdado do namespace.
+  funcao nivel_no_projeto(u, p)
+    se u == nulo
+      retornar 0
+    se u.admin
+      retornar NIVEL.admin
+    definir nivel = nivel_no_namespace(u, namespace.buscar(p.namespace_id))
+    definir m = membro.encontrar({source_type: "Project", source_id: p.id, usuario_id: u.id})
+    se m != nulo e (m.expires_at == nulo ou m.expires_at >= hoje())
+      definir nivel = max(nivel, m.access_level)
+    retornar nivel
+
+  funcao pode_ler_projeto(u, p)
+    se p.visibility_level == VISIBILIDADE.public
+      retornar verdadeiro
+    se u == nulo
+      retornar falso
+    se p.visibility_level == VISIBILIDADE.internal
+      retornar verdadeiro
+    retornar nivel_no_projeto(u, p) >= NIVEL.guest
+
+  funcao pode(u, p, acao)
+    se nao pode_ler_projeto(u, p)
+      retornar falso
+    se acao == "ler_projeto" ou acao == "ler_issue"
+      retornar verdadeiro
+    definir nivel = nivel_no_projeto(u, p)
+    # Projetos arquivados são somente leitura
+    se p.archived e indice_de(["baixar_codigo", "ler_mr", "ler_pipeline"], acao) < 0 e acao != "administrar_projeto"
+      retornar falso
+    se acao == "baixar_codigo" ou acao == "ler_mr"
+      retornar p.visibility_level != VISIBILIDADE.private ou nivel >= NIVEL_MINIMO.baixar_codigo_privado
+    se acao == "ler_pipeline"
+      retornar (p.public_builds e p.visibility_level != VISIBILIDADE.private) ou nivel >= NIVEL_MINIMO.ler_pipeline_privado
+    se acao == "criar_issue" ou acao == "comentar"
+      retornar u != nulo
+    se nao tem(NIVEL_MINIMO, acao)
+      falhar(500, "ação de permissão desconhecida: " + acao)
+    retornar u != nulo e nivel >= obter(NIVEL_MINIMO, acao)
+
+  # Branches protegidas: push/merge exigem o nível configurado.
+  funcao pode_push_branch(u, p, ramo)
+    se nao pode(u, p, "push_codigo")
+      retornar falso
+    definir bp = branch_protegida_para(p, ramo)
+    retornar bp == nulo ou nivel_no_projeto(u, p) >= bp.push_access_level
+
+  funcao pode_mesclar_em(u, p, ramo)
+    se nao pode(u, p, "mesclar_mr")
+      retornar falso
+    definir bp = branch_protegida_para(p, ramo)
+    retornar bp == nulo ou nivel_no_projeto(u, p) >= bp.merge_access_level

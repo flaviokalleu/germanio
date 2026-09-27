@@ -263,6 +263,7 @@ type FieldType string
 const (
 	FieldTexto      FieldType = "texto"
 	FieldNumero     FieldType = "numero"
+	FieldInteiro    FieldType = "inteiro"
 	FieldData       FieldType = "data"
 	FieldBooleano   FieldType = "booleano"
 	FieldEmail      FieldType = "email"
@@ -305,7 +306,7 @@ func (ft FieldType) SQLType() string {
 	switch ft {
 	case FieldNumero, FieldDinheiro, FieldEstrelas, FieldPercentual:
 		return "REAL"
-	case FieldBooleano:
+	case FieldBooleano, FieldInteiro:
 		return "INTEGER"
 	case FieldData, FieldDataHora:
 		return "DATETIME"

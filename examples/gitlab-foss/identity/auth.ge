@@ -1,0 +1,95 @@
+# Autenticação de requisições (lib/gitlab/auth/auth_finders.rb).
+# Ordem: PRIVATE-TOKEN → Authorization: Bearer (PAT ou OAuth) → sessão web.
+
+logica
+  funcao usuario_atual(requisicao)
+    definir cab = requisicao.cabecalhos
+    definir bruto = obter(cab, "private-token", nulo)
+    definir autorizacao = obter(cab, "authorization", "")
+    se bruto == nulo e comeca_com(autorizacao, "Bearer ")
+      definir bruto = substring(autorizacao, 7)
+    se bruto != nulo
+      retornar usuario_por_token(requisicao, bruto)
+    se requisicao.sessao != nulo
+      definir u = usuario.buscar(requisicao.sessao.usuario_id)
+      se u != nulo e u.state == "active"
+        requisicao.escopos = ["api", "read_api", "read_user", "read_repository", "write_repository"]
+        retornar u
+    retornar nulo
+
+  funcao usuario_por_token(requisicao, bruto)
+    definir u = nulo
+    se comeca_com(bruto, "glpat-")
+      definir t = token_acesso.encontrar({digest: cripto.sha256(bruto)})
+      se t == nulo ou t.revoked
+        falhar(401, "401 Unauthorized")
+      se t.expires_at != nulo e t.expires_at < hoje()
+        falhar(401, "401 Unauthorized")
+      token_acesso.atualizar(t.id, {last_used_at: agora_iso()})
+      requisicao.escopos = dividir(t.scopes, ",")
+      definir u = usuario.buscar(t.usuario_id)
+    senao
+      definir dados = token.verificar(bruto)
+      se dados == nulo ou obter(dados, "tipo", "") != "oauth"
+        falhar(401, "401 Unauthorized")
+      requisicao.escopos = ["api", "read_api", "read_user", "read_repository", "write_repository"]
+      definir u = usuario.buscar(dados.usuario_id)
+    se u == nulo ou u.state != "active"
+      falhar(401, "401 Unauthorized")
+    retornar u
+
+  funcao exigir_usuario(requisicao)
+    definir u = usuario_atual(requisicao)
+    se u == nulo
+      falhar(401, "401 Unauthorized")
+    retornar u
+
+  # Escopos de token: api permite tudo; read_api só leitura.
+  funcao exigir_escopo(requisicao, escopo)
+    definir escopos = obter(requisicao, "escopos", [])
+    se indice_de(escopos, "api") >= 0
+      retornar verdadeiro
+    se escopo == "read_api" e indice_de(escopos, "read_api") >= 0
+      retornar verdadeiro
+    se indice_de(escopos, escopo) >= 0
+      retornar verdadeiro
+    falhar(403, {error: "insufficient_scope", error_description: "The request requires higher privileges than provided by the access token.", scope: escopo})
+
+  # Usuário opcional para leitura (projetos públicos aceitam anônimos).
+  funcao leitor(requisicao)
+    definir u = usuario_atual(requisicao)
+    se u != nulo
+      exigir_escopo(requisicao, "read_api")
+    retornar u
+
+  funcao escritor(requisicao)
+    definir u = exigir_usuario(requisicao)
+    exigir_escopo(requisicao, "api")
+    retornar u
+
+  funcao exigir_admin(requisicao)
+    definir u = escritor(requisicao)
+    se nao u.admin
+      falhar(403, "403 Forbidden")
+    retornar u
+
+  # Login por senha com bloqueio após tentativas (Devise lockable)
+  funcao autenticar_senha(login, senha)
+    definir u = usuario.encontrar({username: login})
+    se u == nulo
+      definir u = usuario.encontrar({email: minusculo(texto(login))})
+    se u == nulo
+      cripto.verificar_senha(senha, nulo)
+      retornar nulo
+    se u.locked_until != nulo e u.locked_until > agora_iso()
+      retornar nulo
+    se nao cripto.verificar_senha(senha, u.senha_hash)
+      definir falhas = u.failed_attempts + 1
+      se falhas >= TENTATIVAS_MAXIMAS
+        usuario.atualizar(u.id, {failed_attempts: 0, locked_until: daqui_a_segundos(600)})
+      senao
+        usuario.atualizar(u.id, {failed_attempts: falhas})
+      retornar nulo
+    se u.state != "active"
+      retornar nulo
+    retornar usuario.atualizar(u.id, {failed_attempts: 0, locked_until: nulo, last_sign_in_at: agora_iso()})

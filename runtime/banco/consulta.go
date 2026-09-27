@@ -210,7 +210,50 @@ func (b *Banco) Filtrar(modelo string, c Consulta) ([]map[string]any, int64, err
 	}
 	defer rows.Close()
 	list, err := scanRowsRaw(rows)
+	if err == nil {
+		b.tipar(modelo, list)
+	}
 	return list, total, err
+}
+
+// tipar converts driver values back to the declared field types: booleans
+// stored as 0/1 become booleans and timestamps become RFC 3339 text.
+func (b *Banco) tipar(modelo string, rows []map[string]any) {
+	model := b.Models[modelo]
+	kinds := map[string]string{"criado_em": "tempo", "atualizado_em": "tempo", "deletado_em": "tempo"}
+	for _, f := range model.Fields {
+		switch f.Type {
+		case "booleano":
+			kinds[strings.ToLower(f.Name)] = "bool"
+		case "data_hora":
+			kinds[strings.ToLower(f.Name)] = "tempo"
+		}
+	}
+	for _, row := range rows {
+		for col, kind := range kinds {
+			v, ok := row[col]
+			if !ok || v == nil {
+				continue
+			}
+			switch kind {
+			case "bool":
+				switch x := v.(type) {
+				case int64:
+					row[col] = x != 0
+				case float64:
+					row[col] = x != 0
+				case string:
+					row[col] = x == "1" || x == "true"
+				}
+			case "tempo":
+				if s, ok := v.(string); ok {
+					if t, err := time.Parse("2006-01-02 15:04:05", s); err == nil {
+						row[col] = t.UTC().Format(time.RFC3339)
+					}
+				}
+			}
+		}
+	}
 }
 
 // ContarFiltro counts rows matching filters.

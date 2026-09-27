@@ -12,7 +12,9 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -27,7 +29,8 @@ var builtinNames = []string{
 	"termina_com", "substring", "adicionar", "remover", "reverter", "chaves", "valores", "json",
 	"formato_data", "potencia", "raiz", "chamar", "uuid", "base64_codificar", "base64_decodificar",
 	"hash_sha256", "primeiro", "ultimo", "fatia", "ordenar_por", "unicos", "mesclar", "copiar", "vazio",
-	"indice_de", "repetir_texto", "codificar_url", "decodificar_url", "agora_iso",
+	"indice_de", "repetir_texto", "codificar_url", "decodificar_url", "agora_iso", "hoje", "somar_dias", "daqui_a_segundos",
+	"segundos_entre", "eh_numero", "eh_texto", "eh_lista", "eh_mapa", "obter", "tem",
 }
 
 var (
@@ -273,6 +276,58 @@ func registerStdlib(interp *Interpreter) {
 			return float64(v)
 		},
 	})
+	interp.RegisterModule("ambiente", map[string]ModuleFunc{
+		// ambiente.ler("NOME", padrao) reads an environment variable
+		"ler": func(c *Call, args []any) any {
+			if v, ok := os.LookupEnv(c.Str(args, 0, "nome")); ok {
+				return v
+			}
+			if len(args) > 1 {
+				return args[1]
+			}
+			return nil
+		},
+	})
+	regexCache := sync.Map{}
+	compile := func(c *Call, pattern string) *regexp.Regexp {
+		if re, ok := regexCache.Load(pattern); ok {
+			return re.(*regexp.Regexp)
+		}
+		re, err := regexp.Compile(pattern)
+		if err != nil {
+			panic(c.Fail(0, "expressão regular inválida %q: %s", pattern, err))
+		}
+		regexCache.Store(pattern, re)
+		return re
+	}
+	// regex uses RE2: linear time, no catastrophic backtracking.
+	interp.RegisterModule("regex", map[string]ModuleFunc{
+		"casa": func(c *Call, args []any) any {
+			return compile(c, c.Str(args, 0, "padrao")).MatchString(c.Str(args, 1, "texto"))
+		},
+		"encontrar": func(c *Call, args []any) any {
+			m := compile(c, c.Str(args, 0, "padrao")).FindStringSubmatch(c.Str(args, 1, "texto"))
+			if m == nil {
+				return nil
+			}
+			out := make([]any, len(m))
+			for i, x := range m {
+				out[i] = x
+			}
+			return out
+		},
+		"todos": func(c *Call, args []any) any {
+			ms := compile(c, c.Str(args, 0, "padrao")).FindAllString(c.Str(args, 1, "texto"), 1000)
+			out := make([]any, len(ms))
+			for i, x := range ms {
+				out[i] = x
+			}
+			return out
+		},
+		"substituir": func(c *Call, args []any) any {
+			return compile(c, c.Str(args, 0, "padrao")).ReplaceAllString(c.Str(args, 1, "texto"), c.Str(args, 2, "substituto"))
+		},
+	})
 	interp.RegisterModule("json", map[string]ModuleFunc{
 		"ler": func(c *Call, args []any) any {
 			var v any
@@ -424,6 +479,46 @@ func extraBuiltin(name string, args []any) (any, bool) {
 		return s, true
 	case "agora_iso":
 		return time.Now().UTC().Format(time.RFC3339), true
+	case "daqui_a_segundos":
+		return time.Now().UTC().Add(time.Duration(toNumber(arg(0)) * float64(time.Second))).Format(time.RFC3339), true
+	case "hoje":
+		return time.Now().UTC().Format("2006-01-02"), true
+	case "somar_dias":
+		// somar_dias("2026-01-31", 1) → "2026-02-01"; aceita data ou data-hora ISO
+		s := toString(arg(0))
+		t, err := time.Parse("2006-01-02", s)
+		if err != nil {
+			if t, err = time.Parse(time.RFC3339, s); err != nil {
+				return nil, true
+			}
+		}
+		return t.AddDate(0, 0, int(toNumber(arg(1)))).Format("2006-01-02"), true
+	case "segundos_entre":
+		// segundos_entre(inicio_iso, fim_iso) → número (fim - inicio)
+		a, err1 := time.Parse(time.RFC3339, toString(arg(0)))
+		b, err2 := time.Parse(time.RFC3339, toString(arg(1)))
+		if err1 != nil || err2 != nil {
+			return nil, true
+		}
+		return b.Sub(a).Seconds(), true
+	case "eh_numero":
+		switch v := arg(0).(type) {
+		case float64, int64, int:
+			return true, true
+		case string:
+			_, err := strconv.ParseFloat(strings.TrimSpace(v), 64)
+			return err == nil && strings.TrimSpace(v) != "", true
+		}
+		return false, true
+	case "eh_texto":
+		_, ok := arg(0).(string)
+		return ok, true
+	case "eh_lista":
+		_, ok := arg(0).([]any)
+		return ok, true
+	case "eh_mapa":
+		_, ok := arg(0).(map[string]any)
+		return ok, true
 	case "repetir_texto":
 		n := int(toNumber(arg(1)))
 		if n < 0 || n > 10000 {

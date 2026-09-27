@@ -1,0 +1,188 @@
+# API de projetos e membros de projeto (lib/api/projects.rb, members.rb)
+
+rotas
+  rota POST "/api/v4/projects"
+    definir u = escritor(requisicao)
+    definir p = criar_projeto(u, requisicao.corpo)
+    responder(201, apresentar_projeto(p, u))
+
+  # Lista projetos visíveis: públicos, internos (logado) e os que o usuário acessa.
+  rota GET "/api/v4/projects"
+    definir u = leitor(requisicao)
+    definir c = requisicao.consulta
+    definir filtros = {archived: falso}
+    se c.search != nulo
+      filtros.name__contem = c.search
+    se c.visibility != nulo
+      filtros.visibility_level = nivel_visibilidade(c.visibility)
+    se c.archived == "true"
+      filtros.archived = verdadeiro
+    definir itens = []
+    para cada p em projeto.filtrar(filtros, {ordenar: "-id", limite: 1000})
+      definir incluir = pode(u, p, "ler_projeto")
+      se incluir e (c.membership == "true" ou c.owned == "true")
+        definir nivel = nivel_no_projeto(u, p)
+        se c.owned == "true"
+          definir incluir = nivel >= NIVEL.owner e nivel < NIVEL.admin
+        senao
+          definir incluir = nivel >= NIVEL.guest e nivel < NIVEL.admin
+      se incluir
+        itens = adicionar(itens, apresentar_projeto(p, u))
+    definir pg = opcoes_paginacao(requisicao, "id")
+    definir inicio = (pg.pagina - 1) * pg.limite
+    responder(200, fatia(itens, inicio, inicio + pg.limite), {"X-Total": texto(tamanho(itens)), "X-Page": texto(pg.pagina), "X-Per-Page": texto(pg.limite)})
+
+  rota GET "/api/v4/projects/:id"
+    definir u = leitor(requisicao)
+    retornar apresentar_projeto(projeto_legivel(requisicao, u), u)
+
+  rota PUT "/api/v4/projects/:id"
+    definir u = escritor(requisicao)
+    definir p = projeto_legivel(requisicao, u)
+    exigir_permissao(u, p, "administrar_projeto")
+    definir c = requisicao.corpo
+    definir mudancas = {}
+    para cada campo em ["name", "description", "default_branch", "ci_config_path"]
+      se tem(c, campo)
+        mudancas[campo] = c[campo]
+    se tem(c, "visibility")
+      mudancas.visibility_level = nivel_visibilidade(c.visibility)
+    se tem(c, "only_allow_merge_if_pipeline_succeeds")
+      mudancas.only_allow_merge_if_pipeline_succeeds = c.only_allow_merge_if_pipeline_succeeds == verdadeiro
+    se tem(c, "public_jobs")
+      mudancas.public_builds = c.public_jobs == verdadeiro
+    se tem(c, "default_branch") e nao git.existe_branch(p.repo, c.default_branch)
+      erro_validacao("default_branch", "does not exist")
+    retornar apresentar_projeto(projeto.atualizar(p.id, mudancas), u)
+
+  rota POST "/api/v4/projects/:id/archive"
+    definir u = escritor(requisicao)
+    definir p = projeto_legivel(requisicao, u)
+    exigir_permissao(u, p, "administrar_projeto")
+    responder(201, apresentar_projeto(projeto.atualizar(p.id, {archived: verdadeiro}), u))
+
+  rota POST "/api/v4/projects/:id/unarchive"
+    definir u = escritor(requisicao)
+    definir p = projeto_legivel(requisicao, u)
+    exigir_permissao(u, p, "administrar_projeto")
+    responder(201, apresentar_projeto(projeto.atualizar(p.id, {archived: falso}), u))
+
+  rota DELETE "/api/v4/projects/:id"
+    definir u = escritor(requisicao)
+    definir p = projeto_legivel(requisicao, u)
+    exigir_permissao(u, p, "remover_projeto")
+    remover_projeto(p)
+    responder(202, {message: "202 Accepted"})
+
+  rota GET "/api/v4/projects/:id/members"
+    definir u = leitor(requisicao)
+    definir p = projeto_legivel(requisicao, u)
+    definir itens = []
+    para cada m em membro.filtrar({source_type: "Project", source_id: p.id}, {ordenar: "id"})
+      itens = adicionar(itens, apresentar_membro(m))
+    retornar itens
+
+  # Membros diretos + herdados dos grupos ancestrais
+  rota GET "/api/v4/projects/:id/members/all"
+    definir u = leitor(requisicao)
+    definir p = projeto_legivel(requisicao, u)
+    definir vistos = {}
+    definir itens = []
+    para cada m em membro.filtrar({source_type: "Project", source_id: p.id}, {ordenar: "id"})
+      vistos[texto(m.usuario_id)] = verdadeiro
+      itens = adicionar(itens, apresentar_membro(m))
+    definir ns = namespace.buscar(p.namespace_id)
+    enquanto ns != nulo
+      para cada m em membro.filtrar({source_type: "Namespace", source_id: ns.id}, {ordenar: "id"})
+        se nao tem(vistos, texto(m.usuario_id))
+          vistos[texto(m.usuario_id)] = verdadeiro
+          itens = adicionar(itens, apresentar_membro(m))
+      se ns.parent_id == nulo
+        definir ns = nulo
+      senao
+        definir ns = namespace.buscar(ns.parent_id)
+    retornar itens
+
+  rota POST "/api/v4/projects/:id/members"
+    definir u = escritor(requisicao)
+    definir p = projeto_legivel(requisicao, u)
+    exigir_permissao(u, p, "administrar_membros")
+    responder(201, apresentar_membro(adicionar_membro(u, nivel_no_projeto(u, p), "Project", p.id, requisicao.corpo)))
+
+  rota PUT "/api/v4/projects/:id/members/:user_id"
+    definir u = escritor(requisicao)
+    definir p = projeto_legivel(requisicao, u)
+    exigir_permissao(u, p, "administrar_membros")
+    definir m = membro.encontrar({source_type: "Project", source_id: p.id, usuario_id: inteiro(requisicao.parametros.user_id)})
+    se m == nulo
+      falhar(404, "404 Member Not Found")
+    definir nivel = inteiro(obter(requisicao.corpo, "access_level", 0))
+    se indice_de([10, 15, 20, 30, 40, 50], nivel) < 0
+      erro_validacao("access_level", "is not included in the list")
+    se nivel > nivel_no_projeto(u, p) ou m.access_level > nivel_no_projeto(u, p)
+      falhar(403, "403 Forbidden")
+    retornar apresentar_membro(membro.atualizar(m.id, {access_level: nivel}))
+
+  rota DELETE "/api/v4/projects/:id/members/:user_id"
+    definir u = escritor(requisicao)
+    definir p = projeto_legivel(requisicao, u)
+    definir m = membro.encontrar({source_type: "Project", source_id: p.id, usuario_id: inteiro(requisicao.parametros.user_id)})
+    se m == nulo
+      falhar(404, "404 Member Not Found")
+    se m.usuario_id != u.id
+      exigir_permissao(u, p, "administrar_membros")
+      se m.access_level > nivel_no_projeto(u, p)
+        falhar(403, "403 Forbidden")
+    membro.deletar(m.id)
+    responder(204, nulo)
+
+  rota GET "/api/v4/projects/:id/protected_branches"
+    definir u = leitor(requisicao)
+    definir p = projeto_legivel(requisicao, u)
+    definir itens = []
+    para cada b em branch_protegida.filtrar({projeto_id: p.id}, {ordenar: "name"})
+      itens = adicionar(itens, apresentar_branch_protegida(b))
+    retornar itens
+
+  rota POST "/api/v4/projects/:id/protected_branches"
+    definir u = escritor(requisicao)
+    definir p = projeto_legivel(requisicao, u)
+    exigir_permissao(u, p, "administrar_projeto")
+    definir c = requisicao.corpo
+    definir nome = texto(obter(c, "name", ""))
+    se nome == ""
+      erro_validacao("name", "can't be blank")
+    se branch_protegida.existe({projeto_id: p.id, name: nome})
+      falhar(409, "Protected branch '" + nome + "' already exists")
+    definir b = branch_protegida.criar({projeto_id: p.id, name: nome, push_access_level: inteiro(obter(c, "push_access_level", 40)), merge_access_level: inteiro(obter(c, "merge_access_level", 40)), allow_force_push: obter(c, "allow_force_push", falso) == verdadeiro})
+    responder(201, apresentar_branch_protegida(b))
+
+  rota DELETE "/api/v4/projects/:id/protected_branches/:name"
+    definir u = escritor(requisicao)
+    definir p = projeto_legivel(requisicao, u)
+    exigir_permissao(u, p, "administrar_projeto")
+    definir b = branch_protegida.encontrar({projeto_id: p.id, name: requisicao.parametros.name})
+    se b == nulo
+      falhar(404, "404 Not found")
+    branch_protegida.deletar(b.id)
+    responder(204, nulo)
+
+  rota GET "/api/v4/projects/:id/events"
+    definir u = leitor(requisicao)
+    definir p = projeto_legivel(requisicao, u)
+    definir itens = []
+    para cada e1 em evento.filtrar({projeto_id: p.id}, {ordenar: "-id", limite: 100})
+      itens = adicionar(itens, {id: e1.id, project_id: e1.projeto_id, action_name: e1.action, target_type: e1.target_type, target_id: e1.target_id, author_id: e1.autor_id, created_at: e1.criado_em})
+    retornar itens
+
+logica
+  funcao apresentar_branch_protegida(b)
+    retornar {id: b.id, name: b.name, push_access_levels: [{access_level: b.push_access_level, access_level_description: obter(NOME_NIVEL, texto(b.push_access_level), "Maintainers")}], merge_access_levels: [{access_level: b.merge_access_level, access_level_description: obter(NOME_NIVEL, texto(b.merge_access_level), "Maintainers")}], allow_force_push: b.allow_force_push == verdadeiro}
+
+  # Projects::DestroyService (o repositório também é apagado)
+  funcao remover_projeto(p)
+    membro.apagar_onde({source_type: "Project", source_id: p.id})
+    branch_protegida.apagar_onde({projeto_id: p.id})
+    evento.apagar_onde({projeto_id: p.id})
+    git.remover(p.repo)
+    projeto.deletar(p.id)
