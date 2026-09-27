@@ -241,6 +241,37 @@ func ResolveIntent(prog *ast.Program) error {
 		to.Children = appendUnique(to.Children, from.Singular)
 	}
 
+	// 3b. Numbering per parent and list targets.
+	for _, n := range app.Order {
+		e := app.Entities[n]
+		for _, f := range e.Model.Fields {
+			if f.NumberedBy != "" {
+				pe, err := r.entity(f.NumberedBy, f.Pos)
+				if err != nil {
+					return err
+				}
+				fk := ""
+				for field, target := range e.Parents {
+					if target == pe.Singular {
+						fk = field
+					}
+				}
+				if fk == "" {
+					return r.errAt(f.Pos, "%s numerado por %s: %s precisa pertencer a %s", f.Name, pe.Singular, e.Singular, pe.Singular)
+				}
+				f.NumberedBy = fk
+				e.Model.UniqueTogether = append(e.Model.UniqueTogether, []string{fk, strings.ToLower(f.Name)})
+			}
+			if f.Type == ast.FieldLista && f.ListOf != "texto" && f.ListOf != "numero" {
+				le, err := r.entity(f.ListOf, f.Pos)
+				if err != nil {
+					return err
+				}
+				f.ListOf = le.Singular
+			}
+		}
+	}
+
 	// 4. Login entity: the one with a senha field.
 	var withPassword []string
 	for _, n := range app.Order {
@@ -276,6 +307,19 @@ func ResolveIntent(prog *ast.Program) error {
 			if fieldByNameAST(le.Model, f) == nil {
 				return r.errAt(in.Login.Pos, "login usa %s, mas %s não tem esse campo", f, le.Singular)
 			}
+		}
+		for _, n := range app.Order {
+			e := app.Entities[n]
+			for field, target := range e.Parents {
+				if target != app.LoginEntity || e.Singular == app.MemberModel {
+					continue
+				}
+				switch field {
+				case app.LoginEntity + "_id", "autor_id", "criador_id", "dono_id":
+					e.OwnerFields = appendUnique(e.OwnerFields, field)
+				}
+			}
+			sort.Strings(e.OwnerFields)
 		}
 		if in.Login.LockAttempts > 0 {
 			le.Model.Fields = append(le.Model.Fields,
@@ -412,6 +456,8 @@ func ResolveIntent(prog *ast.Program) error {
 			rule.MinRole = "administrador"
 		case app.LoginEntity != "" && (role == app.LoginEntity || role == app.Entities[app.LoginEntity].Plural):
 			rule.SignedIn = true
+		case role == "autor" || role == "dono" || role == "criador":
+			rule.SignedIn, rule.Own = true, true
 		case role == "membro" || role == "membros":
 			if len(app.Roles) == 0 {
 				return r.errAt(g.Pos, "membro pode… exige tenha papeis")

@@ -13,10 +13,11 @@ cada projeto tem
 
 projeto tem repositório
 projeto pertence a grupo opcional
+projeto pertence a usuario como criador
 projeto tem membros com papel
 projeto herda membros do grupo
 
-usuario pode criar projetos
+usuario pode criar seus projetos
 developer pode criar projetos
 guest pode ver projetos
 reporter pode baixar código dos projetos

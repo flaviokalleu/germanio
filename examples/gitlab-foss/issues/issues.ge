@@ -1,0 +1,60 @@
+# Issues, comentários e labels (Issue, Note, Label)
+
+tenha issues, comentarios, labels
+
+projeto tem issues
+projeto tem labels
+issue tem comentarios
+
+cada issue tem
+    iid numerado por projeto
+    title obrigatório max 255
+    description
+    state começa com "opened"
+    confidential começa com falso
+    labels: lista de texto
+    responsaveis: lista de usuarios
+    closed_at
+    closed_by_id
+
+issue pertence a usuario como autor
+comentario pertence a usuario como autor
+
+cada comentario tem
+    body obrigatório
+
+cada label tem
+    name obrigatório
+    color começa com "#6699cc"
+    description
+
+usuario pode criar issues
+usuario pode criar comentarios
+guest pode ver issues
+guest pode ver labels
+autor ou planner pode editar issues
+autor ou planner pode fechar issues
+autor ou planner pode reabrir issues
+reporter pode administrar labels
+somente maintainer pode excluir issues
+
+permita pesquisar issues
+permita filtrar issues por state, autor_id, labels, responsaveis
+
+quando fechar issue
+    issue.atualizar(issue.id, {state: "closed", closed_at: agora_iso(), closed_by_id: atual.id})
+
+quando reabrir issue
+    issue.atualizar(issue.id, {state: "opened", closed_at: nulo, closed_by_id: nulo})
+
+# Issue confidencial: só autor, responsáveis e reporter+ enxergam.
+antes de ver issue
+    se issue.confidential
+        se atual == nulo
+            recuse "404 Issue Not Found"
+        se issue.autor_id != atual.id e nao contem(issue.responsaveis, atual.id) e acesso.nivel("issue", issue) < acesso.papel("reporter")
+            recuse "404 Issue Not Found"
+
+disponibilize issues para integração como "issues"
+disponibilize comentarios para integração como "notes"
+disponibilize labels para integração como "labels"

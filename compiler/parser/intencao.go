@@ -398,7 +398,33 @@ func (p *Parser) parsePode(head dline, body []dline, only bool) error {
 	if k == len(w) || k == i {
 		return p.errorf(head.toks[0], "use: <papel> pode <ação> <dados>")
 	}
-	role, _ := phrase(w[i:k])
+	// "autor ou planner pode" grants the same actions to each role.
+	var roles []string
+	cur := []string{}
+	for _, x := range w[i:k] {
+		if x == "ou" {
+			if len(cur) > 0 {
+				r, _ := phrase(cur)
+				roles = append(roles, r)
+			}
+			cur = nil
+			continue
+		}
+		cur = append(cur, x)
+	}
+	if len(cur) > 0 {
+		r, _ := phrase(cur)
+		roles = append(roles, r)
+	}
+	for _, role := range roles {
+		if err := p.grantsFor(in, role, only, head, body, k, w); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (p *Parser) grantsFor(in *ast.Intent, role string, only bool, head dline, body []dline, k int, w []string) error {
 	add := func(ws []string, tok lexer.Token) error {
 		if len(ws) < 1 {
 			return p.errorf(tok, "falta a ação depois de pode")
@@ -470,7 +496,7 @@ func (p *Parser) parsePermita(head dline, body []dline) error {
 	}
 	var fields []string
 	for _, b := range by {
-		if b != "e" {
+		if b != "e" && b != "," {
 			fields = append(fields, b)
 		}
 	}

@@ -862,6 +862,18 @@ func (interp *Interpreter) callBuiltin(name string, args []interface{}) (interfa
 		if len(args) < 2 {
 			return false, true
 		}
+		if list, ok := args[0].([]interface{}); ok {
+			for _, it := range list {
+				if isEqual(it, args[1]) {
+					return true, true
+				}
+			}
+			return false, true
+		}
+		if m, ok := args[0].(map[string]interface{}); ok {
+			_, has := m[toString(args[1])]
+			return has, true
+		}
 		return strings.Contains(toString(args[0]), toString(args[1])), true
 
 	case "dividir", "split":

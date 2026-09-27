@@ -47,38 +47,54 @@ func (s *Servidor) registerIntent(mux *http.ServeMux) error {
 }
 
 func (a *intentAPI) mount(mux *http.ServeMux, base string, e *ast.Entity, integration bool) {
-	h := func(op string, child *ast.Entity, verb string) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) { a.serve(w, r, e, op, child, verb) }
+	a.mountLevel(mux, base, []*ast.Entity{e}, integration)
+}
+
+// mountLevel mounts the collection at base for the last entity of chain
+// (earlier entities are its ancestors, each addressed by {rN}).
+func (a *intentAPI) mountLevel(mux *http.ServeMux, base string, chain []*ast.Entity, integration bool) {
+	e := chain[len(chain)-1]
+	item := base + "/{r" + strconv.Itoa(len(chain)-1) + "}"
+	h := func(op, verb string) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) { a.serve(w, r, chain, op, verb) }
 	}
-	mux.HandleFunc("GET "+base, h("listar", nil, ""))
-	mux.HandleFunc("POST "+base, h("criar", nil, ""))
-	mux.HandleFunc("GET "+base+"/{ref}", h("ver", nil, ""))
-	mux.HandleFunc("PUT "+base+"/{ref}", h("editar", nil, ""))
-	mux.HandleFunc("PATCH "+base+"/{ref}", h("editar", nil, ""))
-	mux.HandleFunc("DELETE "+base+"/{ref}", h("excluir", nil, ""))
+	mux.HandleFunc("GET "+base, h("listar", ""))
+	mux.HandleFunc("POST "+base, h("criar", ""))
+	mux.HandleFunc("GET "+item, h("ver", ""))
+	mux.HandleFunc("PUT "+item, h("editar", ""))
+	mux.HandleFunc("PATCH "+item, h("editar", ""))
+	mux.HandleFunc("DELETE "+item, h("excluir", ""))
 	for verb := range e.Rules {
-		if !isStandard(verb) && verb != "sair" && verb != "baixar_codigo" && verb != "enviar_codigo" {
-			mux.HandleFunc("POST "+base+"/{ref}/"+verb, h("acao", nil, verb))
+		if !isStandard(verb) && verb != "sair" {
+			mux.HandleFunc("POST "+item+"/"+verb, h("acao", verb))
 		}
 	}
 	if (e.HasMembers || e.InheritVia != "") && a.app.MemberModel != "" {
-		mux.HandleFunc("POST "+base+"/{ref}/sair", h("acao", nil, "sair"))
+		mux.HandleFunc("POST "+item+"/sair", h("acao", "sair"))
 	}
-	if e.Repository && a.s.Git != nil {
+	if len(chain) == 1 && e.Repository && a.s.Git != nil {
 		a.mountRepository(mux, base, e)
+	}
+	if len(chain) >= 3 {
+		return
 	}
 	for _, c := range a.childrenOf(e) {
 		name := c.Plural
 		if integration && c.Integrate != "" {
 			name = c.Integrate
 		}
-		cb := base + "/{ref}/" + name
-		mux.HandleFunc("GET "+cb, h("listar", c, ""))
-		mux.HandleFunc("POST "+cb, h("criar", c, ""))
-		mux.HandleFunc("GET "+cb+"/{cref}", h("ver", c, ""))
-		mux.HandleFunc("PUT "+cb+"/{cref}", h("editar", c, ""))
-		mux.HandleFunc("PATCH "+cb+"/{cref}", h("editar", c, ""))
-		mux.HandleFunc("DELETE "+cb+"/{cref}", h("excluir", c, ""))
+		next := append(append([]*ast.Entity{}, chain...), c)
+		if c == e { // subgrupos: one level, no further nesting
+			a.mountLevel(mux, item+"/"+name, next, integration)
+			continue
+		}
+		recursive := false
+		for _, anc := range chain {
+			recursive = recursive || anc == c
+		}
+		if !recursive {
+			a.mountLevel(mux, item+"/"+name, next, integration)
+		}
 	}
 }
 
@@ -244,6 +260,17 @@ func (a *intentAPI) find(ctx *interp.Context, e *ast.Entity, ref string, scope m
 		return row
 	}
 	if n, err := strconv.ParseInt(ref, 10, 64); err == nil {
+		// Inside a parent, numbered children are addressed by their number
+		// (/projects/1/issues/3 is issue #3 of project 1).
+		if len(scope) > 0 {
+			for _, f := range e.Model.Fields {
+				if f.NumberedBy != "" {
+					if _, ok := scope[strings.ToLower(f.NumberedBy)]; ok {
+						return try(map[string]any{strings.ToLower(f.Name): n})
+					}
+				}
+			}
+		}
 		if row := try(map[string]any{"id": n}); row != nil {
 			return row
 		}
@@ -299,9 +326,11 @@ func (a *intentAPI) writable(atual map[string]any, e *ast.Entity, body map[strin
 	}
 	// Something that belongs to a person is created in the name of whoever
 	// creates it; only administrators act in someone else's name.
-	if owner := a.app.LoginEntity + "_id"; atual != nil && e.Singular != a.app.LoginEntity && e.Singular != a.app.MemberModel && e.Parents[owner] != "" {
-		if _, given := out[owner]; !given || !a.in.IsAdmin(atual) {
-			out[owner] = atual["id"]
+	if atual != nil && e.Singular != a.app.LoginEntity && e.Singular != a.app.MemberModel {
+		for _, owner := range e.OwnerFields {
+			if _, given := out[owner]; !given || !a.in.IsAdmin(atual) {
+				out[owner] = atual["id"]
+			}
 		}
 	}
 	return out
@@ -309,7 +338,8 @@ func (a *intentAPI) writable(atual map[string]any, e *ast.Entity, body map[strin
 
 // ---------- operations ----------
 
-func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, root *ast.Entity, op string, child *ast.Entity, verb string) {
+func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.Entity, op string, verb string) {
+	root := chain[0]
 	ctx := &interp.Context{Request: r, Writer: w}
 	atual, err := a.s.identify(ctx, r)
 	if err != nil {
@@ -329,20 +359,18 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, root *ast.Enti
 			}
 		}
 	}
-	e := root
+	// Resolve each ancestor inside the previous one; invisible → 404.
 	scope := map[string]any{}
-	var parentRow map[string]any
-	ref := r.PathValue("ref")
-	if child != nil {
-		parentRow = a.find(ctx, root, ref, nil)
-		if parentRow == nil || !a.in.Can(ctx, atual, root, "ver", parentRow) {
-			a.fail(w, 404, a.msg("404", root))
+	for i, anc := range chain[:len(chain)-1] {
+		row := a.find(ctx, anc, r.PathValue("r"+strconv.Itoa(i)), scope)
+		if row == nil || !a.in.Can(ctx, atual, anc, "ver", row) {
+			a.fail(w, 404, a.msg("404", anc))
 			return
 		}
-		scope = a.parentScope(root, parentRow, child)
-		e = child
-		ref = r.PathValue("cref")
+		scope = a.parentScope(anc, row, chain[i+1])
 	}
+	e := chain[len(chain)-1]
+	ref := r.PathValue("r" + strconv.Itoa(len(chain)-1))
 	deny := func(row map[string]any) {
 		if atual == nil {
 			a.fail(w, 401, a.msg("401", e))
@@ -497,12 +525,15 @@ func (a *intentAPI) canCreate(ctx *interp.Context, atual map[string]any, e *ast.
 		return true
 	}
 	_, membered := a.memberedParentLevel(ctx, atual, e, data)
+	openParent := membered && a.visibleParent(ctx, atual, e, data)
 	for _, rule := range e.Rules["criar"] {
 		ok := false
 		switch {
 		case rule.Anyone || rule.SignedIn:
-			// Inside something that has members, only roles decide.
-			ok = !membered && (rule.Anyone || atual != nil)
+			// Inside something that has members, only roles decide — unless
+			// the thing is visible to everyone (public/internal) and the rule
+			// is not about owning what is created.
+			ok = (!membered || (openParent && !rule.Own)) && (rule.Anyone || atual != nil)
 		default:
 			ok = a.in.RulePasses(ctx, atual, e, rule, data)
 		}
@@ -668,9 +699,15 @@ func (a *intentAPI) list(w http.ResponseWriter, r *http.Request, ctx *interp.Con
 		filters[k] = v
 	}
 	for _, f := range e.Filters {
-		if v := q.Get(f); v != "" {
-			filters[f] = v
+		v := q.Get(f)
+		if v == "" {
+			continue
 		}
+		if fd := fieldOf(e, f); fd != nil && fd.Type == ast.FieldLista {
+			filters[f+"__contem"] = `"` + strings.ReplaceAll(v, `"`, "") + `"`
+			continue
+		}
+		filters[f] = v
 	}
 	opts := map[string]any{"ordenar": "-id"}
 	if s := first(q.Get("search"), q.Get("q"), q.Get("pesquisa")); s != "" && len(e.Search) > 0 {
@@ -681,14 +718,15 @@ func (a *intentAPI) list(w http.ResponseWriter, r *http.Request, ctx *interp.Con
 		}
 		opts["campos_busca"] = fields
 	}
-	if atual == nil && e.Visibility == "" && !anyoneMay(e) {
+	if atual == nil && e.Visibility == "" && !anyoneMay(e) && !interp.InheritsView(a.app, e) && !a.visibleThroughParents(e) {
 		a.fail(w, 401, a.msg("401", e))
 		return
 	}
 	var items []any
 	total := 0
-	if !interp.RecordDependent(e) {
-		if !a.in.Can(ctx, atual, e, "ver", nil) {
+	nestedInherit := interp.InheritsView(a.app, e) && len(scope) > 0 // parent already checked
+	if !interp.RecordDependent(e) && (nestedInherit || !interp.InheritsView(a.app, e)) {
+		if !nestedInherit && !a.in.Can(ctx, atual, e, "ver", nil) {
 			deny(nil)
 			return
 		}
@@ -773,4 +811,42 @@ func (a *intentAPI) hiddenParent(ctx *interp.Context, atual map[string]any, e *a
 		}
 	}
 	return nil
+}
+
+// visibleParent: the membered parent referenced by data is visible through
+// its visibility (public/internal), not through membership.
+func (a *intentAPI) visibleParent(ctx *interp.Context, atual map[string]any, e *ast.Entity, data map[string]any) bool {
+	for field, target := range e.Parents {
+		if data[field] == nil || target == a.app.LoginEntity {
+			continue
+		}
+		pe := a.app.Entities[target]
+		res, _ := a.in.Op(ctx, pe.Singular, "buscar", data[field])
+		if row, ok := res.(map[string]any); ok && a.in.VisibleByVisibility(atual, pe, row) {
+			return true
+		}
+	}
+	return false
+}
+
+func fieldOf(e *ast.Entity, name string) *ast.Field {
+	for _, f := range e.Model.Fields {
+		if strings.EqualFold(f.Name, name) {
+			return f
+		}
+	}
+	return nil
+}
+
+// visibleThroughParents: records may be public because a parent is.
+func (a *intentAPI) visibleThroughParents(e *ast.Entity) bool {
+	for _, t := range e.Parents {
+		if t != a.app.LoginEntity {
+			pe := a.app.Entities[t]
+			if pe.Visibility != "" || a.visibleThroughParents(pe) {
+				return true
+			}
+		}
+	}
+	return false
 }

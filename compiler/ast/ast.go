@@ -278,6 +278,7 @@ const (
 	FieldInteiro      FieldType = "inteiro"
 	FieldSegredo      FieldType = "segredo"
 	FieldVisibilidade FieldType = "visibilidade"
+	FieldLista        FieldType = "lista"
 	FieldData         FieldType = "data"
 	FieldBooleano     FieldType = "booleano"
 	FieldEmail        FieldType = "email"
@@ -318,6 +319,8 @@ type Field struct {
 	Protected    bool     // senha protegida: hashed, never readable
 	Hidden       bool     // oculto: never serialized
 	Private      bool     // privado: shown only to its owner and administrators
+	NumberedBy   string   // numerado por <entidade>: sequence per parent (holds the FK field after resolution)
+	ListOf       string   // lista de <texto|entidade>
 	Immutable    bool     // imutavel: cannot change after creation
 	Min, Max     *float64 // length for text, value for numbers
 	Format       string   // formato "regex" (RE2)

@@ -3,6 +3,7 @@ package interpreter
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"math"
 	"regexp"
@@ -150,6 +151,14 @@ func (interp *Interpreter) prepareWrite(c *Call, m *ast.Model, data map[string]a
 				out[key] = secret
 			case f.Type == ast.FieldVisibilidade:
 				out[key] = "private"
+			case f.NumberedBy != "" && out[strings.ToLower(f.NumberedBy)] != nil:
+				n, err := interp.DB.Sequencia(fmt.Sprintf("%s.%s:%v", strings.ToLower(m.Name), key, toString(out[strings.ToLower(f.NumberedBy)])))
+				if err != nil {
+					panic(c.Fail(0, "numeração de %s: %s", f.Name, err))
+				}
+				out[key] = float64(n)
+			case f.Type == ast.FieldLista:
+				out[key] = []any{}
 			}
 		}
 	}
@@ -176,6 +185,15 @@ func (interp *Interpreter) prepareWrite(c *Call, m *ast.Model, data map[string]a
 				errs.add(f.Name, "can't be blank")
 			}
 			out[key] = nil
+			continue
+		}
+		if f.Type == ast.FieldLista {
+			list, msg := interp.checkList(f, v)
+			if msg != "" {
+				errs.add(f.Name, msg)
+				continue
+			}
+			out[key] = list
 			continue
 		}
 		if msg := checkType(f, v); msg != "" {
@@ -413,4 +431,44 @@ func secretActive(m *ast.Model, row map[string]any) bool {
 		}
 	}
 	return true
+}
+
+// checkList normalizes a list field ("a, b" or [..]) and validates that
+// referenced records exist. It is stored as JSON text.
+func (interp *Interpreter) checkList(f *ast.Field, v any) (string, string) {
+	var items []any
+	switch x := v.(type) {
+	case []any:
+		items = x
+	case string:
+		for _, part := range strings.Split(x, ",") {
+			if p := strings.TrimSpace(part); p != "" {
+				items = append(items, p)
+			}
+		}
+	default:
+		items = []any{x}
+	}
+	seen := map[string]bool{}
+	out := []string{}
+	for _, it := range items {
+		sv := strings.TrimSpace(toString(it))
+		if sv == "" || seen[sv] {
+			continue
+		}
+		seen[sv] = true
+		if f.ListOf != "texto" && f.ListOf != "numero" {
+			id, ok := tryNumber(it)
+			if !ok {
+				return "", "must contain ids"
+			}
+			if row, _ := interp.DB.BuscarRegistro(f.ListOf, int64(id)); row == nil {
+				return "", "must exist"
+			}
+			sv = toString(id)
+		}
+		out = append(out, sv)
+	}
+	b, _ := json.Marshal(out)
+	return string(b), ""
 }

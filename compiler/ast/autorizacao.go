@@ -35,14 +35,15 @@ type Entity struct {
 	// count here (projeto herda membros do grupo).
 	InheritVia string
 	// Visibility: field holding privado/interno/publico, when present.
-	Visibility string
-	Rules      map[string][]*AccessRule // verb → alternatives (any grants)
-	Hooks      map[string]*Hook         // verb → hook
-	Integrate  string                   // exposed name for integration, "" = not exposed
-	Repository bool                     // X tem repositório
-	RepoKey    string                   // field whose value addresses the repository (<valor>.git)
-	Search     []string                 // fields searched by pesquisar
-	Filters    []string                 // fields accepted by filtrar
+	Visibility  string
+	Rules       map[string][]*AccessRule // verb → alternatives (any grants)
+	Hooks       map[string]*Hook         // verb → hook
+	Integrate   string                   // exposed name for integration, "" = not exposed
+	OwnerFields []string                 // fields pointing to the owner (usuario_id, autor_id, criador_id, dono_id)
+	Repository  bool                     // X tem repositório
+	RepoKey     string                   // field whose value addresses the repository (<valor>.git)
+	Search      []string                 // fields searched by pesquisar
+	Filters     []string                 // fields accepted by filtrar
 }
 
 // AccessRule says who may perform a verb on an entity.

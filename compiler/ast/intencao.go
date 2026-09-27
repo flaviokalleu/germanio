@@ -182,3 +182,11 @@ func mergeLogin(a, b *LoginDecl) {
 		a.ActiveField, a.ActiveValue = b.ActiveField, b.ActiveValue
 	}
 }
+
+// GetBody returns the statements of a hook (nil-safe).
+func (h *Hook) GetBody() []*Statement {
+	if h == nil {
+		return nil
+	}
+	return h.Body
+}

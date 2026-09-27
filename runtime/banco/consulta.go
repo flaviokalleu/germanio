@@ -2,9 +2,11 @@ package banco
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -227,6 +229,12 @@ func (b *Banco) tipar(modelo string, rows []map[string]any) {
 			kinds[strings.ToLower(f.Name)] = "bool"
 		case "data_hora":
 			kinds[strings.ToLower(f.Name)] = "tempo"
+		case "lista":
+			if f.ListOf == "texto" {
+				kinds[strings.ToLower(f.Name)] = "lista_texto"
+			} else {
+				kinds[strings.ToLower(f.Name)] = "lista_num"
+			}
 		}
 	}
 	for _, row := range rows {
@@ -245,6 +253,22 @@ func (b *Banco) tipar(modelo string, rows []map[string]any) {
 				case string:
 					row[col] = x == "1" || x == "true"
 				}
+			case "lista_texto", "lista_num":
+				var items []string
+				if str, ok := v.(string); ok {
+					json.Unmarshal([]byte(str), &items)
+				}
+				list := make([]any, 0, len(items))
+				for _, it := range items {
+					if kind == "lista_num" {
+						if n, err := strconv.ParseFloat(it, 64); err == nil {
+							list = append(list, n)
+							continue
+						}
+					}
+					list = append(list, it)
+				}
+				row[col] = list
 			case "tempo":
 				if s, ok := v.(string); ok {
 					if t, err := time.Parse("2006-01-02 15:04:05", s); err == nil {

@@ -204,8 +204,10 @@ func (interp *Interpreter) Owns(atual map[string]any, e *ast.Entity, record map[
 	case e.Singular == app.MemberModel:
 		return toNumber(record["pessoa_id"]) == uid
 	}
-	if v, ok := record[app.LoginEntity+"_id"]; ok && v != nil {
-		return toNumber(v) == uid
+	for _, f := range e.OwnerFields {
+		if v, ok := record[f]; ok && v != nil && toNumber(v) == uid {
+			return true
+		}
 	}
 	return false
 }
@@ -213,7 +215,29 @@ func (interp *Interpreter) Owns(atual map[string]any, e *ast.Entity, record map[
 // visible applies the visibilidade field: public → anyone, internal →
 // signed in; private falls through to the rules.
 func (interp *Interpreter) visible(atual map[string]any, e *ast.Entity, record map[string]any) bool {
-	if e.Visibility == "" || record == nil {
+	return interp.visibleDepth(atual, e, record, 0)
+}
+
+// visibleDepth: records without their own visibility take it from their
+// parent — what belongs to something public is public (issues of a public
+// project). Confidentiality is expressed with `antes de ver`.
+func (interp *Interpreter) visibleDepth(atual map[string]any, e *ast.Entity, record map[string]any, depth int) bool {
+	if record == nil || depth > 8 {
+		return false
+	}
+	if e.Visibility == "" {
+		if e.Singular == interp.App.MemberModel {
+			return false
+		}
+		for field, target := range e.Parents {
+			pe := interp.App.Entities[target]
+			if target == interp.App.LoginEntity || record[field] == nil || (pe.Visibility == "" && len(pe.Parents) == 0) {
+				continue
+			}
+			if interp.visibleDepth(atual, pe, interp.load(pe, record[field]), depth+1) {
+				return true
+			}
+		}
 		return false
 	}
 	switch toString(record[e.Visibility]) {
@@ -228,8 +252,26 @@ func (interp *Interpreter) visible(atual map[string]any, e *ast.Entity, record m
 // Can reports whether atual may perform verb on record (record may be the
 // data of a record being created, with its parent references).
 func (interp *Interpreter) Can(ctx *Context, atual map[string]any, e *ast.Entity, verb string, record map[string]any) bool {
+	if verb == "ver" && record != nil && record["id"] != nil {
+		if h := e.Hooks["antes_ver"]; h != nil {
+			// `antes de ver` may hide a record from this person (recuse).
+			if _, _, err := interp.RunHook(ctx, h, map[string]any{"atual": nilMap(atual), "registro": record, e.Singular: record}); err != nil {
+				return interp.IsAdmin(atual)
+			}
+		}
+	}
 	if interp.IsAdmin(atual) {
 		return true
+	}
+	if verb == "ver" && InheritsView(interp.App, e) && record != nil {
+		// No viewing rule of its own: whoever sees the parent sees it.
+		for field, target := range e.Parents {
+			if target == interp.App.LoginEntity || record[field] == nil {
+				continue
+			}
+			pe := interp.App.Entities[target]
+			return interp.Can(ctx, atual, pe, "ver", interp.load(pe, record[field]))
+		}
 	}
 	if (verb == "ver" || verb == "baixar_codigo") && interp.visible(atual, e, record) {
 		return true
@@ -267,7 +309,7 @@ func (interp *Interpreter) RulePasses(ctx *Context, atual map[string]any, e *ast
 // RecordDependent reports whether seeing records of e depends on each
 // record (visibility, roles or ownership) — lists must then be filtered.
 func RecordDependent(e *ast.Entity) bool {
-	if e.Visibility != "" {
+	if e.Visibility != "" || len(e.Hooks["antes_ver"].GetBody()) > 0 {
 		return true
 	}
 	for _, v := range []string{"ver", "editar", "excluir"} {
@@ -349,4 +391,30 @@ func registerAccess(interp *Interpreter) {
 			return interp.IsAdmin(atualOf(c))
 		},
 	})
+}
+
+func nilMap(m map[string]any) any {
+	if m == nil {
+		return nil
+	}
+	return m
+}
+
+// VisibleByVisibility reports visibility through the visibility field only.
+func (interp *Interpreter) VisibleByVisibility(atual map[string]any, e *ast.Entity, record map[string]any) bool {
+	return interp.visible(atual, e, record)
+}
+
+// InheritsView: the entity has no rule about seeing it and belongs to
+// something else, so visibility follows the parent.
+func InheritsView(app *ast.App, e *ast.Entity) bool {
+	if len(e.Rules["ver"])+len(e.Rules["editar"])+len(e.Rules["excluir"]) > 0 || e.Singular == app.MemberModel {
+		return false
+	}
+	for _, target := range e.Parents {
+		if target != app.LoginEntity {
+			return true
+		}
+	}
+	return false
 }

@@ -291,7 +291,13 @@ func (p *Parser) fieldFromTokens(t []lexer.Token) (*ast.Field, error) {
 	if i < len(t) && t[i].Type == lexer.TokenColon {
 		i++
 	}
-	if i < len(t) {
+	// lista de texto / lista de usuarios
+	if i+2 < len(t) && foldWord(strings.ToLower(t[i].Name())) == "lista" && t[i+1].Type == lexer.TokenDe {
+		f.Type = ast.FieldLista
+		f.ListOf = strings.ToLower(foldWord(t[i+2].Name()))
+		i += 3
+	}
+	if i < len(t) && f.Type == "" {
 		if ft, err := tokenToFieldType(t[i]); err == nil && t[i].Type != lexer.TokenUnico && t[i].Type != lexer.TokenIndice {
 			f.Type = ft
 			i++
@@ -397,6 +403,17 @@ func (p *Parser) fieldFromTokens(t []lexer.Token) (*ast.Field, error) {
 				f.Private = true
 			case "imutavel":
 				f.Immutable = true
+			case "numerado":
+				// numerado por projeto → 1, 2, 3… dentro de cada projeto
+				if i+2 >= len(t) || strings.ToLower(t[i+1].Name()) != "por" {
+					return nil, p.errorf(x, "use: numerado por <dado pai>")
+				}
+				f.NumberedBy = strings.ToLower(foldWord(t[i+2].Name()))
+				if f.Type == "" {
+					f.Type = ast.FieldInteiro
+				}
+				f.Immutable = true
+				i += 2
 			case "opcional":
 				f.Required = false
 			case "min":
