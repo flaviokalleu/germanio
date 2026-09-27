@@ -7,6 +7,7 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -27,6 +28,8 @@ type intentAPI struct {
 	// extern marks the integration surface: names and state values follow
 	// the integration vocabulary (vocabulário da integração).
 	extern bool
+	// exec runs steps of executions (nil when no local executor is enabled).
+	exec *executor
 }
 
 func (s *Servidor) registerIntent(mux *http.ServeMux) error {
@@ -35,6 +38,13 @@ func (s *Servidor) registerIntent(mux *http.ServeMux) error {
 		return nil
 	}
 	a := &intentAPI{s: s, app: app, in: s.Interpreter}
+	for _, name := range app.Order {
+		if x := app.Entities[name].Execution; x != nil && x.Role == "step" && s.Git != nil {
+			a.startExecutor()
+			break
+		}
+	}
+	s.intent = a
 	for _, name := range app.Order {
 		e := app.Entities[name]
 		if len(e.Rules) == 0 && e.Integrate == "" {
@@ -80,6 +90,19 @@ func (a *intentAPI) mountLevel(mux *http.ServeMux, base string, chain []*ast.Ent
 	}
 	if e.Approvals {
 		actions["aprovar"], actions["desaprovar"] = true, true
+	}
+	if e.Execution != nil {
+		actions["cancelar"] = true
+		if e.Execution.Role == "step" {
+			actions["repetir"], actions["executar"] = true, true
+			path := "log"
+			if integration {
+				path = a.ext("log")
+			}
+			mux.HandleFunc("GET "+item+"/"+path, h("log", ""))
+		} else {
+			actions["repetir"] = true
+		}
 	}
 	if e.Review != nil && e.Review.Target != "" {
 		for _, sub := range []string{"mudancas", "commits"} {
@@ -425,6 +448,13 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 	switch op {
 	case "listar":
 		a.list(w, r, ctx, atual, e, scope, deny)
+	case "log":
+		row := a.find(ctx, e, ref, scope)
+		if row == nil || !a.in.Can(ctx, atual, e, "ver", row) {
+			a.fail(w, 404, a.msg("404", e))
+			return
+		}
+		a.stepLog(w, row)
 	case "ver", "revisao_mudancas", "revisao_commits":
 		row := a.find(ctx, e, ref, scope)
 		if row == nil || !a.in.Can(ctx, atual, e, "ver", row) {
@@ -449,11 +479,15 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 			a.failErr(w, r, err)
 			return
 		}
-		body = a.inwardBody(body)
+		body = a.inwardBody(e, body)
 		if scope == nil {
 			scope = map[string]any{}
 		}
 		data := a.writable(atual, e, body, scope)
+		if e.Execution != nil && e.Execution.Role == "run" {
+			a.manualRun(w, r, ctx, atual, e, data)
+			return
+		}
 		if !a.canCreate(ctx, atual, e, data) {
 			if pe := a.hiddenParent(ctx, atual, e, data); pe != nil {
 				a.fail(w, 404, a.msg("404", pe))
@@ -478,7 +512,7 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 			a.failErr(w, r, err)
 			return
 		}
-		body = a.inwardBody(body)
+		body = a.inwardBody(e, body)
 		data := a.writable(atual, e, body, nil)
 		for k := range scope {
 			delete(data, k)
@@ -556,6 +590,15 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 		}
 		if !a.in.Can(ctx, atual, e, checkVerb, row) {
 			deny(row)
+			return
+		}
+		if e.Execution != nil && (verb == "cancelar" || verb == "repetir" || verb == "executar") {
+			updated, err := a.executionAction(ctx, atual, e, row, verb)
+			if err != nil {
+				a.failErr(w, r, err)
+				return
+			}
+			a.json(w, 200, serializeFor(a.in, atual, e, updated, false), nil)
 			return
 		}
 		if verb == "aprovar" || verb == "desaprovar" {
@@ -826,7 +869,7 @@ func (a *intentAPI) list(w http.ResponseWriter, r *http.Request, ctx *interp.Con
 		if a.extern {
 			v = q.Get(a.ext(f))
 			if states[f] {
-				v = a.inward(v)
+				v = a.inwardState(e, v)
 			}
 		}
 		if v == "" {
@@ -1025,20 +1068,66 @@ func (a *intentAPI) outward(v any) any {
 	return v
 }
 
-// inward translates incoming names and state values back to the domain.
+// inward translates incoming names back to the domain. Several domain
+// names may share one external name (aberta/aberto → opened); the choice is
+// deterministic (sorted) and inwardState prefers the states of the data.
 func (a *intentAPI) inward(name string) string {
 	if !a.extern {
 		return name
 	}
-	for k, v := range a.app.Vocabulary {
-		if v == name {
-			return k
-		}
+	for _, k := range a.candidates(name) {
+		return k
 	}
 	return name
 }
 
-func (a *intentAPI) inwardBody(body map[string]any) map[string]any {
+func (a *intentAPI) candidates(external string) []string {
+	var out []string
+	for k, v := range a.app.Vocabulary {
+		if v == external {
+			out = append(out, k)
+		}
+	}
+	sort.Strings(out)
+	return out
+}
+
+func statesOf(e *ast.Entity) map[string]bool {
+	out := map[string]bool{}
+	if e == nil {
+		return out
+	}
+	out[e.Initial] = true
+	for _, t := range e.Transitions {
+		out[t.Target] = true
+	}
+	if e.Execution != nil {
+		for _, st := range []string{stCreated, stPending, stRunning, stSuccess, stFailed, stCanceled, stSkipped, stManual} {
+			out[st] = true
+		}
+	}
+	return out
+}
+
+// inwardState translates an external state value for entity e.
+func (a *intentAPI) inwardState(e *ast.Entity, v string) string {
+	if !a.extern {
+		return v
+	}
+	own := statesOf(e)
+	cands := a.candidates(v)
+	for _, k := range cands {
+		if own[k] {
+			return k
+		}
+	}
+	if len(cands) > 0 {
+		return cands[0]
+	}
+	return v
+}
+
+func (a *intentAPI) inwardBody(e *ast.Entity, body map[string]any) map[string]any {
 	if !a.extern || len(a.app.Vocabulary) == 0 {
 		return body
 	}
@@ -1047,7 +1136,7 @@ func (a *intentAPI) inwardBody(body map[string]any) map[string]any {
 	for k, v := range body {
 		key := a.inward(k)
 		if s, ok := v.(string); ok && states[key] {
-			v = a.inward(s)
+			v = a.inwardState(e, s)
 		}
 		if n, ok := v.(float64); ok && key == "papel" {
 			for _, role := range a.app.Roles {
@@ -1108,4 +1197,52 @@ func (a *intentAPI) guards(ctx *interp.Context, atual map[string]any, e *ast.Ent
 		}
 	}
 	return nil
+}
+
+// manualRun: creating a run by hand (executar pipelines) runs the file of
+// the given branch at its current commit.
+func (a *intentAPI) manualRun(w http.ResponseWriter, r *http.Request, ctx *interp.Context, atual map[string]any, e *ast.Entity, data map[string]any) {
+	x := e.Execution
+	owner := a.app.Entities[x.Owner]
+	res, _ := a.in.Op(ctx, owner.Singular, "buscar", data[x.OwnerField])
+	ownerRow, _ := res.(map[string]any)
+	if ownerRow == nil || !a.in.Can(ctx, atual, owner, "ver", ownerRow) {
+		a.fail(w, 404, a.msg("404", owner))
+		return
+	}
+	allowed := a.in.IsAdmin(atual)
+	for _, rule := range append(append([]*ast.AccessRule{}, e.Rules["criar"]...), e.Rules["executar"]...) {
+		allowed = allowed || a.in.RulePasses(ctx, atual, e, rule, data)
+	}
+	if !allowed {
+		if atual == nil {
+			a.fail(w, 401, a.msg("401", e))
+		} else {
+			a.fail(w, 403, a.msg("403", e))
+		}
+		return
+	}
+	branch := toStr(data["branch"])
+	if branch == "" {
+		branch = defaultBranch(ownerRow)
+	}
+	sha, err := a.s.Git.Resolve(toStr(ownerRow["repositorio"]), "refs/heads/"+branch)
+	if err != nil {
+		a.fail(w, 400, map[string]any{"branch": []any{map[string]string{"pt": "não existe", "en": "does not exist"}[a.app.Messages]}})
+		return
+	}
+	row, found, err := a.createRun(ctx, atual, e, ownerRow, branch, sha)
+	if err != nil {
+		a.failErr(w, r, err)
+		return
+	}
+	if !found {
+		msg := fmt.Sprintf("O arquivo %s não existe em %s", x.File, branch)
+		if a.app.Messages == "en" {
+			msg = "Missing CI config file"
+		}
+		a.fail(w, 400, msg)
+		return
+	}
+	a.json(w, 201, serializeFor(a.in, atual, e, row, false), nil)
 }

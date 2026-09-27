@@ -90,7 +90,7 @@ func (p *Parser) isIntentLine() bool {
 		return true
 	}
 	for _, x := range w[1:] {
-		if x == "tem" || x == "pode" || x == "podem" || x == "pertence" || x == "herda" || x == "comeca" || x == "recebe" {
+		if x == "tem" || x == "pode" || x == "podem" || x == "pertence" || x == "herda" || x == "comeca" || x == "recebe" || x == "executa" {
 			return true
 		}
 	}
@@ -240,6 +240,25 @@ func (p *Parser) parseIntentLine() error {
 	}
 	for i, x := range w {
 		switch x {
+		case "executa":
+			// projeto executa pipelines a cada envio de código conforme ".gitlab-ci.yml"
+			owner, _ := phrase(w[:i])
+			k := i + 1
+			for k < len(w) && w[k] != "a" {
+				k++
+			}
+			runs, _ := phrase(w[i+1 : k])
+			file := ""
+			for _, t := range head.toks {
+				if t.Type == lexer.TokenString {
+					file = t.Value
+				}
+			}
+			if file == "" || !strings.Contains(strings.Join(w, " "), "envio de codigo") {
+				return p.errorf(head.toks[0], `use: <dado> executa <execuções> a cada envio de código conforme "arquivo"`)
+			}
+			in.Executions = append(in.Executions, &ast.ExecutionDecl{Owner: owner, Entity: runs, File: file, Pos: pos})
+			return nil
 		case "recebe":
 			// merge request recebe aprovações
 			subject, _ := phrase(w[:i])

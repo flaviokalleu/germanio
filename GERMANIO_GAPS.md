@@ -62,3 +62,8 @@ Motivo em AGENT_STATE.md › IMPORTANT_DECISIONS D1.
 | G49 | Revisão de mudanças (branches, diff, mesclagem, aprovações) | merge requests | sem capability | Git | MISSING | P0 | campos `branch`, par origem/destino, `recebe aprovações`, `mesclar` real | DONE — `TestFluxo4MergeRequest` |
 | G50 | Estado final (mesclado não reabre) | merge requests | transições voltavam de qualquer estado | Linguagem | MISSING | P1 | `X <estado> é final` | DONE |
 | G51 | Dado filho de dois pais independentes (comentário de issue ou de MR) | comentários | resolver exigia um dono | Linguagem | MISSING | P1 | cada registro pertence a um deles (referências opcionais) | DONE |
+| G52 | Execuções definidas por arquivo do repositório (pipelines/jobs) | CI/CD | sem capability | Execução | MISSING | P0 | `X executa Ys a cada envio de código conforme "arquivo"` + executor (`GERMANIO_EXECUTOR=local|docker`) | DONE — `TestFluxo5Pipelines` |
+| G53 | Isolamento forte de jobs | CI/CD | executor local roda como o usuário do servidor | Segurança | PARTIAL | P1 | executor `docker --network none` existe mas não foi testado aqui; recomendação: runners externos | OPEN |
+| G54 | Protocolo de runner externo (/jobs/request, trace, update) | CI/CD | não implementado | Integração | MISSING | P2 | expor fila de etapas para executores remotos com token | OPEN |
+| G55 | Artefatos de job | CI/CD | sem capability de armazenamento de arquivos | Arquivos | MISSING | P2 | capability de arquivos (uploads) + `artifacts: paths` | OPEN |
+| G56 | Vocabulário não injetivo (aberta/aberto → opened) escolhia ao acaso | fluxo 3 sob -race | tradução reversa por mapa Go | Integração | BUG | P1 | tradução reversa determinística e pelo contexto do dado | DONE — `-race -count=3` |

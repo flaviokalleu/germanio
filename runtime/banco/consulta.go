@@ -511,3 +511,41 @@ func scanRowsRaw(rows *sql.Rows) ([]map[string]any, error) {
 	}
 	return results, rows.Err()
 }
+
+// AtualizarOnde updates rows matching filters and returns how many changed.
+// With filters that include the current state it is an atomic claim
+// (estado = pendente → executando happens once, whoever asks first).
+func (b *Banco) AtualizarOnde(modelo string, c Consulta, dados map[string]any) (int64, error) {
+	if len(c.Filtros) == 0 {
+		return 0, fmt.Errorf("atualizar sem filtro não é permitido")
+	}
+	whereSQL, args, err := b.where(modelo, c)
+	if err != nil {
+		return 0, err
+	}
+	keys, err := b.dataColumns(modelo, dados)
+	if err != nil {
+		return 0, err
+	}
+	sets := make([]string, 0, len(keys)+1)
+	vals := make([]any, 0, len(keys)+len(args))
+	n := len(args) + 1
+	for _, k := range keys {
+		sets = append(sets, q(strings.ToLower(k))+" = "+b.ph(n))
+		vals = append(vals, normalizeArg(dados[k]))
+		n++
+	}
+	sets = append(sets, q("atualizado_em")+" = CURRENT_TIMESTAMP")
+	// Placeholders: WHERE args come first for PostgreSQL numbering.
+	query := fmt.Sprintf("UPDATE %s SET %s%s", q(modelo), strings.Join(sets, ", "), whereSQL)
+	all := append(append([]any{}, args...), vals...)
+	if b.Driver != "postgres" && b.Driver != "postgresql" {
+		// '?' placeholders are positional in textual order: SET values first.
+		all = append(append([]any{}, vals...), args...)
+	}
+	res, err := b.DB.Exec(query, all...)
+	if err != nil {
+		return 0, classify(err)
+	}
+	return res.RowsAffected()
+}

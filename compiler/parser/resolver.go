@@ -640,6 +640,58 @@ func ResolveIntent(prog *ast.Program) error {
 		e.Finals = appendUnique(e.Finals, f.Initial)
 	}
 
+	// 7g. Executions: runs (pipelines) of steps (jobs) defined by a file.
+	for _, x := range in.Executions {
+		owner, err := r.entity(x.Owner, x.Pos)
+		if err != nil {
+			return err
+		}
+		run, err := r.entity(x.Entity, x.Pos)
+		if err != nil {
+			return err
+		}
+		if !owner.Repository {
+			return r.errAt(x.Pos, "%s executa %s: %s precisa ter repositório", owner.Singular, run.Plural, owner.Singular)
+		}
+		ownerField := ""
+		for f, t := range run.Parents {
+			if t == owner.Singular {
+				ownerField = f
+			}
+		}
+		if ownerField == "" || len(run.Children) == 0 {
+			return r.errAt(x.Pos, "%s precisa pertencer a %s e ter etapas (ex.: pipeline tem jobs)", run.Singular, owner.Singular)
+		}
+		step := app.Entities[run.Children[0]]
+		runField := ""
+		for f, t := range step.Parents {
+			if t == run.Singular {
+				runField = f
+			}
+		}
+		run.Execution = &ast.Execution{Role: "run", File: x.File, Owner: owner.Singular, OwnerField: ownerField, Step: step.Singular}
+		step.Execution = &ast.Execution{Role: "step", File: x.File, Owner: owner.Singular, Run: run.Singular, RunField: runField}
+		sys := func(name string, t ast.FieldType) *ast.Field {
+			return &ast.Field{Name: name, Type: t, System: true, Pos: x.Pos}
+		}
+		run.StateField, run.Initial = "estado", "pendente"
+		run.Model.Fields = append(run.Model.Fields,
+			&ast.Field{Name: "estado", Type: ast.FieldTexto, HasDefault: true, DefaultValue: "pendente", System: true, Index: true},
+			&ast.Field{Name: "branch", Type: ast.FieldTexto, Pos: x.Pos}, sys("versao", ast.FieldTexto),
+			sys("iniciado_em", ast.FieldTexto), sys("terminado_em", ast.FieldTexto), sys("duracao", ast.FieldNumero),
+			sys("erro_configuracao", ast.FieldTextoLongo))
+		run.Model.Fields = append(run.Model.Fields, &ast.Field{Name: app.LoginEntity + "_id", Type: ast.FieldInteiro, Reference: app.LoginEntity, System: true})
+		step.StateField, step.Initial = "estado", "criado"
+		step.Model.Fields = append(step.Model.Fields,
+			&ast.Field{Name: "estado", Type: ast.FieldTexto, HasDefault: true, DefaultValue: "criado", System: true, Index: true},
+			sys("nome", ast.FieldTexto), sys("etapa", ast.FieldTexto), sys("ordem", ast.FieldInteiro),
+			&ast.Field{Name: "script", Type: ast.FieldTextoLongo, System: true, Hidden: true},
+			sys("quando", ast.FieldTexto), sys("permitir_falha", ast.FieldBooleano),
+			&ast.Field{Name: "log", Type: ast.FieldTextoLongo, System: true, Hidden: true},
+			sys("iniciado_em", ast.FieldTexto), sys("terminado_em", ast.FieldTexto), sys("duracao", ast.FieldNumero),
+			sys("repetido", ast.FieldBooleano), sys("imagem", ast.FieldTexto))
+	}
+
 	// 7d. Restricted visibility
 	for _, vr := range in.Visibility {
 		words := strings.Fields(vr.Entity)
@@ -840,7 +892,8 @@ func ResolveIntent(prog *ast.Program) error {
 		for verb, rules := range e.Rules {
 			if !standardVerb(verb) {
 				builtin := (verb == "sair" && (e.HasMembers || e.InheritVia != "")) || (verb == "revogar" && e.Model.Revocable) || e.Transitions[verb] != nil ||
-					((verb == "aprovar" || verb == "desaprovar") && e.Approvals)
+					((verb == "aprovar" || verb == "desaprovar") && e.Approvals) ||
+					(e.Execution != nil && (verb == "cancelar" || verb == "repetir" || verb == "executar"))
 				if _, ok := e.Hooks[verb]; !ok && !builtin {
 					return fmt.Errorf("a ação %q sobre %s não tem definição. Escreva:\n\nquando %s %s\n    ...", verb, e.Plural, verb, e.Singular)
 				}

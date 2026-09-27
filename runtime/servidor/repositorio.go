@@ -170,6 +170,7 @@ func (a *intentAPI) serveGit(w http.ResponseWriter, r *http.Request, entities []
 		return
 	}
 	if service == "receive-pack" && !advertise && len(applied) > 0 {
+		a.startRuns(ctx, atual, e, row, updatesToMaps(applied))
 		if h := e.Hooks["enviar_codigo"]; h != nil {
 			if _, _, err := a.in.RunHook(ctx, h, vars(applied)); err != nil {
 				// The push already happened; report the failure in the log.

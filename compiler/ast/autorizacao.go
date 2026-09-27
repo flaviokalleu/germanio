@@ -56,7 +56,9 @@ type Entity struct {
 	// Approvals: `X recebe aprovações` (aprovar/desaprovar, people list).
 	Approvals bool
 	// Finals: states no transition leaves (mesclado é final).
-	Finals     []string
+	Finals []string
+	// Execution: this entity is a run of steps (pipelines) or a step (jobs).
+	Execution  *Execution
 	Repository bool     // X tem repositório
 	RepoKey    string   // field whose value addresses the repository (<valor>.git)
 	Search     []string // fields searched by pesquisar
@@ -102,4 +104,15 @@ type Restriction struct {
 type Review struct {
 	Source, Target string // field names
 	RepoVia        string // parent field leading to the record with the repository
+}
+
+// Execution describes runs defined by a file in the repository.
+type Execution struct {
+	Role       string // "run" (pipeline) or "step" (job)
+	File       string // configuration file in the repository
+	Owner      string // entity with the repository
+	OwnerField string // run → owner reference field
+	Run        string // step → run entity
+	Step       string // run → step entity
+	RunField   string // step → run reference field
 }

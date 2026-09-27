@@ -279,6 +279,7 @@ func Carregar(arquivo string, porta string) (*App, error) {
 		app.Fechar()
 		return nil, err
 	}
+	app.OnClose(srv.Fechar)
 	app.Handler = handler
 	return app, nil
 }

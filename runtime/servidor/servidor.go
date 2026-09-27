@@ -51,6 +51,17 @@ type Servidor struct {
 	Render Renderer
 	// Git stores repositories for entities declared with `tem repositório`.
 	Git *git.Store
+	// intent is the running intent layer; onClose stops background work.
+	intent  *intentAPI
+	onClose []func()
+}
+
+// Fechar stops background work (executors).
+func (s *Servidor) Fechar() {
+	for _, f := range s.onClose {
+		f()
+	}
+	s.onClose = nil
 }
 
 // Novo creates a new server.
