@@ -279,6 +279,7 @@ const (
 	FieldSegredo      FieldType = "segredo"
 	FieldVisibilidade FieldType = "visibilidade"
 	FieldLista        FieldType = "lista"
+	FieldBranch       FieldType = "branch"
 	FieldData         FieldType = "data"
 	FieldBooleano     FieldType = "booleano"
 	FieldEmail        FieldType = "email"

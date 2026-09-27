@@ -447,3 +447,176 @@ func (a *intentAPI) protectedBranch(ctx *interp.Context, atual map[string]any, e
 	}
 	return nil
 }
+
+// ---------- code review (records with origem/destino branches) ----------
+
+func (a *intentAPI) reviewRepo(ctx *interp.Context, e *ast.Entity, row map[string]any) (string, map[string]any) {
+	pe := a.app.Entities[e.Parents[e.Review.RepoVia]]
+	res, _ := a.in.Op(ctx, pe.Singular, "buscar", row[e.Review.RepoVia])
+	parent, _ := res.(map[string]any)
+	if parent == nil {
+		return "", nil
+	}
+	repo, _ := parent["repositorio"].(string)
+	return repo, parent
+}
+
+func (a *intentAPI) mergeCheck(ctx *interp.Context, e *ast.Entity, row map[string]any) map[string]any {
+	if a.s.Git == nil {
+		return nil
+	}
+	repo, _ := a.reviewRepo(ctx, e, row)
+	m, err := a.s.Git.CheckMerge(repo, "refs/heads/"+fmt.Sprint(row[e.Review.Target]), "refs/heads/"+fmt.Sprint(row[e.Review.Source]))
+	if err != nil {
+		return map[string]any{"pode": false, "conflitos": []any{}}
+	}
+	conf := make([]any, len(m.Conflicts))
+	for i, c := range m.Conflicts {
+		conf[i] = c
+	}
+	return map[string]any{"pode": m.CanMerge, "conflitos": conf}
+}
+
+// checkBranches: branch fields must name existing branches of the
+// repository the record belongs to, and origem ≠ destino.
+func (a *intentAPI) checkBranches(ctx *interp.Context, e *ast.Entity, data map[string]any) error {
+	if e.Review == nil || a.s.Git == nil {
+		return nil
+	}
+	repo, _ := a.reviewRepo(ctx, e, data)
+	errs := map[string]any{}
+	for _, f := range []string{e.Review.Source, e.Review.Target} {
+		if f == "" || data[f] == nil {
+			continue
+		}
+		if !a.s.Git.BranchExists(repo, fmt.Sprint(data[f])) {
+			errs[f] = []any{map[string]string{"pt": "não existe", "en": "does not exist"}[a.app.Messages]}
+		}
+	}
+	if e.Review.Target != "" && data[e.Review.Source] != nil && fmt.Sprint(data[e.Review.Source]) == fmt.Sprint(data[e.Review.Target]) {
+		errs[e.Review.Target] = []any{map[string]string{"pt": "deve ser diferente da origem", "en": "must be different from the source"}[a.app.Messages]}
+	}
+	if len(errs) > 0 {
+		return &interp.RuntimeError{Status: 400, Message: "branches inválidas", Payload: errs}
+	}
+	return nil
+}
+
+// merge joins origem into destino in the repository. Merging into the main
+// branch counts as sending code to it (protected branch rules apply);
+// drafts (rascunho) cannot be merged; conflicts refuse with the file list.
+func (a *intentAPI) merge(ctx *interp.Context, atual map[string]any, e *ast.Entity, row map[string]any) error {
+	en := a.app.Messages == "en"
+	for _, final := range e.Finals {
+		if fmt.Sprint(row[e.StateField]) == final {
+			return &interp.RuntimeError{Status: 405, Message: map[string]string{"pt": e.Label + " não muda mais", "en": "405 Method Not Allowed"}[a.app.Messages]}
+		}
+	}
+	if fmt.Sprint(row[e.StateField]) != e.Initial {
+		msg := fmt.Sprintf("%s não está %s", e.Label, e.Initial)
+		if en {
+			msg = "405 Method Not Allowed"
+		}
+		return &interp.RuntimeError{Status: 405, Message: msg}
+	}
+	if b, _ := row["rascunho"].(bool); b {
+		msg := "Rascunhos não podem ser mesclados"
+		if en {
+			msg = "Draft merge requests cannot be merged"
+		}
+		return &interp.RuntimeError{Status: 406, Message: msg}
+	}
+	repo, parent := a.reviewRepo(ctx, e, row)
+	pe := a.app.Entities[e.Parents[e.Review.RepoVia]]
+	target := fmt.Sprint(row[e.Review.Target])
+	if err := a.protectedBranch(ctx, atual, pe, parent, []git.RefUpdate{{Old: "(atual)", New: "(mescla)", Ref: "refs/heads/" + target}}); err != nil {
+		return err
+	}
+	title := fmt.Sprint(first(toStr(row["titulo"]), toStr(row["title"])))
+	msg := fmt.Sprintf("Merge branch '%s' into '%s'\n\n%s\n", row[e.Review.Source], target, title)
+	author := git.Signature{Name: toStr(atual["nome"]), Email: toStr(atual["email"])}
+	if author.Name == "" {
+		author.Name = toStr(atual["username"])
+	}
+	sha, err := a.s.Git.Merge(repo, target, "refs/heads/"+fmt.Sprint(row[e.Review.Source]), msg, author)
+	if err != nil {
+		var conf *git.ErrConflict
+		if errorsAs(err, &conf) {
+			m := "Há conflitos entre as branches: " + strings.Join(conf.Files, ", ")
+			if en {
+				m = "Branch cannot be merged"
+			}
+			return &interp.RuntimeError{Status: 406, Message: m}
+		}
+		return err
+	}
+	_, err = a.in.Op(ctx, e.Singular, "atualizar", row["id"], map[string]any{"commit_mesclagem": sha})
+	return err
+}
+
+func (a *intentAPI) approve(ctx *interp.Context, atual map[string]any, e *ast.Entity, row map[string]any, add bool) (map[string]any, error) {
+	list, _ := row["aprovacoes"].([]any)
+	uid := atual["id"]
+	var out []any
+	has := false
+	for _, v := range list {
+		if fmt.Sprint(v) == fmt.Sprint(uid) {
+			has = true
+			if add {
+				out = append(out, v)
+			}
+			continue
+		}
+		out = append(out, v)
+	}
+	if add && !has {
+		out = append(out, uid)
+	}
+	if out == nil {
+		out = []any{}
+	}
+	res, err := a.in.Op(ctx, e.Singular, "atualizar", row["id"], map[string]any{"aprovacoes": out})
+	if err != nil {
+		return nil, err
+	}
+	return res.(map[string]any), nil
+}
+
+// reviewView answers the changes (diff from the merge base) and commits.
+func (a *intentAPI) reviewView(w http.ResponseWriter, r *http.Request, ctx *interp.Context, e *ast.Entity, row map[string]any, op string) {
+	repo, _ := a.reviewRepo(ctx, e, row)
+	src := "refs/heads/" + fmt.Sprint(row[e.Review.Source])
+	dst := "refs/heads/" + fmt.Sprint(row[e.Review.Target])
+	if sha, ok := row["commit_mesclagem"].(string); ok && sha != "" {
+		// after merging, compare the merge commit with its first parent
+		if c, err := a.s.Git.GetCommit(repo, sha); err == nil && len(c.ParentIDs) == 2 {
+			dst, src = c.ParentIDs[0], c.ParentIDs[1]
+		}
+	}
+	base, err := a.s.Git.MergeBase(repo, dst, src)
+	if err != nil {
+		a.fail(w, 404, err.Error())
+		return
+	}
+	if op == "revisao_commits" {
+		list, err := a.s.Git.Log(repo, src, base, "", 250, 0)
+		if err != nil {
+			a.fail(w, 400, err.Error())
+			return
+		}
+		out := []any{}
+		for i := range list {
+			out = append(out, commitJSON(&list[i]))
+		}
+		a.json(w, 200, out, nil)
+		return
+	}
+	files, _, err := a.s.Git.Diff(repo, base, src, 1000)
+	if err != nil {
+		a.fail(w, 400, err.Error())
+		return
+	}
+	out := serialize(e, row)
+	out["mudancas"] = diffJSON(files)
+	a.json(w, 200, out, nil)
+}

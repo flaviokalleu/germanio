@@ -1,0 +1,41 @@
+# Merge requests: propor, revisar e juntar mudanças de código.
+
+tenha merge requests
+
+projeto tem merge requests
+
+merge request tem
+    numero por projeto
+    titulo obrigatório até 255
+    descrição
+    autor
+    revisores
+    origem: branch
+    destino: branch
+    comentarios
+
+merge request começa aberto
+merge request mesclado é final
+
+merge request pode
+    fechar
+    reabrir
+    mesclar
+    ser rascunho
+
+merge request recebe aprovações
+
+reporter pode ver merge requests
+usuario pode comentar merge requests
+
+developer pode
+    criar merge requests
+    aprovar merge requests
+    mesclar merge requests
+
+autor ou developer pode
+    editar merge requests
+    fechar merge requests
+    reabrir merge requests
+
+disponibilize merge requests para integração como "merge_requests"

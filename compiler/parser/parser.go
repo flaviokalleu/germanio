@@ -341,6 +341,7 @@ func tokenToFieldType(tok lexer.Token) (ast.FieldType, error) {
 		"inteiro": ast.FieldInteiro, "integer": ast.FieldInteiro,
 		"visibilidade": ast.FieldVisibilidade, "visibility": ast.FieldVisibilidade,
 		"segredo":  ast.FieldSegredo,
+		"branch":   ast.FieldBranch,
 		"booleano": ast.FieldBooleano, "email": ast.FieldEmail, "telefone": ast.FieldTelefone,
 		"imagem": ast.FieldImagem, "arquivo": ast.FieldArquivo, "upload": ast.FieldUpload,
 		"link": ast.FieldLink, "status": ast.FieldStatus, "dinheiro": ast.FieldDinheiro,

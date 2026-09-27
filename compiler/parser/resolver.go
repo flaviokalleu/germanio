@@ -268,7 +268,13 @@ func ResolveIntent(prog *ast.Program) error {
 			}
 		}
 		if owner == nil {
-			return r.errAt(list[1].pos, "%s aparece em mais de um \"tem\"; diga a quem pertence com: %s pertence a <dado>", child.Plural, child.Singular)
+			// Unrelated owners (issue tem comentarios; merge request tem
+			// comentarios): each record belongs to one of them.
+			for _, t := range list {
+				r.hasMany(t.owner, child, t.pos)
+				fieldByNameAST(child.Model, t.owner.Singular+"_id").Required = false
+			}
+			continue
 		}
 		r.hasMany(owner.owner, child, owner.pos)
 		for _, t := range list {
@@ -573,6 +579,67 @@ func ResolveIntent(prog *ast.Program) error {
 		e.CreatorRole = c.Role
 	}
 
+	// 7f. Code review: two branch fields (origem/destino).
+	for _, n := range app.Order {
+		e := app.Entities[n]
+		var branches []string
+		for _, f := range e.Model.Fields {
+			if f.Type == ast.FieldBranch {
+				branches = append(branches, strings.ToLower(f.Name))
+			}
+		}
+		if len(branches) == 0 {
+			continue
+		}
+		via := ""
+		for field, t := range e.Parents {
+			if app.Entities[t].Repository {
+				via = field
+			}
+		}
+		if via == "" {
+			return r.errAt(e.Model.Pos, "%s tem branch, mas não pertence a algo que tem repositório", e.Plural)
+		}
+		if len(branches) >= 2 {
+			src, dst := branches[0], branches[1]
+			for _, b := range branches {
+				switch b {
+				case "origem", "source":
+					src = b
+				case "destino", "target":
+					dst = b
+				}
+			}
+			e.Review = &ast.Review{Source: src, Target: dst, RepoVia: via}
+			e.Model.Fields = append(e.Model.Fields, &ast.Field{Name: "commit_mesclagem", Type: ast.FieldTexto, System: true})
+		} else {
+			e.Review = &ast.Review{Source: branches[0], RepoVia: via}
+		}
+	}
+	for _, name := range in.Approvals {
+		e, err := r.entity(name, diagnostics.Position{})
+		if err != nil {
+			return err
+		}
+		e.Approvals = true
+		e.Model.Fields = append(e.Model.Fields, &ast.Field{Name: "aprovacoes", Type: ast.FieldLista, ListOf: app.LoginEntity, System: true})
+	}
+
+	for _, f := range in.Finals {
+		e, err := r.entity(f.Entity, f.Pos)
+		if err != nil {
+			return err
+		}
+		known := f.Initial == e.Initial
+		for _, tr := range e.Transitions {
+			known = known || tr.Target == f.Initial
+		}
+		if !known {
+			return r.errAt(f.Pos, "%s não chega ao estado %q; estados: começa %s e as ações de \"pode\"", e.Singular, f.Initial, e.Initial)
+		}
+		e.Finals = appendUnique(e.Finals, f.Initial)
+	}
+
 	// 7d. Restricted visibility
 	for _, vr := range in.Visibility {
 		words := strings.Fields(vr.Entity)
@@ -772,7 +839,8 @@ func ResolveIntent(prog *ast.Program) error {
 		e := app.Entities[n]
 		for verb, rules := range e.Rules {
 			if !standardVerb(verb) {
-				builtin := (verb == "sair" && (e.HasMembers || e.InheritVia != "")) || (verb == "revogar" && e.Model.Revocable) || e.Transitions[verb] != nil
+				builtin := (verb == "sair" && (e.HasMembers || e.InheritVia != "")) || (verb == "revogar" && e.Model.Revocable) || e.Transitions[verb] != nil ||
+					((verb == "aprovar" || verb == "desaprovar") && e.Approvals)
 				if _, ok := e.Hooks[verb]; !ok && !builtin {
 					return fmt.Errorf("a ação %q sobre %s não tem definição. Escreva:\n\nquando %s %s\n    ...", verb, e.Plural, verb, e.Singular)
 				}

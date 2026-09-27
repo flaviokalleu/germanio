@@ -464,6 +464,15 @@ func (interp *Interpreter) restrictedAllows(ctx *Context, atual map[string]any, 
 // by whom (fechada_em, fechada_por_id). Returning to the initial state
 // clears the stamps.
 func (interp *Interpreter) Transition(ctx *Context, atual map[string]any, e *ast.Entity, tr *ast.Transition, record map[string]any) (map[string]any, error) {
+	for _, final := range e.Finals {
+		if toString(record[e.StateField]) == final {
+			msg := fmt.Sprintf("%s está %s e não muda mais", e.Label, final)
+			if interp.App.Messages == "en" {
+				msg = fmt.Sprintf("%s is already %s", e.Label, interp.external(final))
+			}
+			return nil, &RuntimeError{Status: 405, Message: msg}
+		}
+	}
 	if toString(record[e.StateField]) == tr.Target {
 		msg := fmt.Sprintf("%s já está %s", e.Label, tr.Target)
 		if interp.App.Messages == "en" {

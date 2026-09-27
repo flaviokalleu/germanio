@@ -30,6 +30,8 @@ type Intent struct {
 	Vocabulary        map[string]string
 	Ceilings          []*VisibilityCeiling
 	Creators          []*CreatorRole
+	Approvals         []string     // X recebe aprovações
+	Finals            []*StateDecl // X <estado> é final
 }
 
 // EntityDecl: `tenha clientes` plus the fields from `cada cliente tem`.
@@ -158,6 +160,8 @@ func MergeIntent(a, b *Intent) *Intent {
 	a.States = append(a.States, b.States...)
 	a.Ceilings = append(a.Ceilings, b.Ceilings...)
 	a.Creators = append(a.Creators, b.Creators...)
+	a.Approvals = append(a.Approvals, b.Approvals...)
+	a.Finals = append(a.Finals, b.Finals...)
 	a.Visibility = append(a.Visibility, b.Visibility...)
 	if a.Vocabulary == nil {
 		a.Vocabulary = b.Vocabulary

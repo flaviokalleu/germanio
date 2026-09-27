@@ -78,6 +78,18 @@ func (a *intentAPI) mountLevel(mux *http.ServeMux, base string, chain []*ast.Ent
 	for verb := range e.Transitions {
 		actions[verb] = true
 	}
+	if e.Approvals {
+		actions["aprovar"], actions["desaprovar"] = true, true
+	}
+	if e.Review != nil && e.Review.Target != "" {
+		for _, sub := range []string{"mudancas", "commits"} {
+			path := sub
+			if integration {
+				path = a.ext(sub)
+			}
+			mux.HandleFunc("GET "+item+"/"+path, h("revisao_"+sub, ""))
+		}
+	}
 	for verb := range actions {
 		path := verb
 		if integration {
@@ -413,13 +425,24 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 	switch op {
 	case "listar":
 		a.list(w, r, ctx, atual, e, scope, deny)
-	case "ver":
+	case "ver", "revisao_mudancas", "revisao_commits":
 		row := a.find(ctx, e, ref, scope)
 		if row == nil || !a.in.Can(ctx, atual, e, "ver", row) {
 			a.fail(w, 404, a.msg("404", e))
 			return
 		}
-		a.json(w, 200, serializeFor(a.in, atual, e, row, false), nil)
+		if op != "ver" {
+			a.reviewView(w, r, ctx, e, row, op)
+			return
+		}
+		out := serializeFor(a.in, atual, e, row, false)
+		if e.Review != nil && e.Review.Target != "" && fmt.Sprint(row[e.StateField]) == e.Initial {
+			if check := a.mergeCheck(ctx, e, row); check != nil {
+				out["pode_mesclar"] = check["pode"]
+				out["conflitos"] = check["conflitos"]
+			}
+		}
+		a.json(w, 200, out, nil)
 	case "criar":
 		body, err := readBody(r)
 		if err != nil {
@@ -527,9 +550,35 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 			a.leave(w, r, ctx, atual, e, row)
 			return
 		}
-		if !a.in.Can(ctx, atual, e, verb, row) {
+		checkVerb := verb
+		if verb == "desaprovar" && len(e.Rules[verb]) == 0 {
+			checkVerb = "aprovar"
+		}
+		if !a.in.Can(ctx, atual, e, checkVerb, row) {
 			deny(row)
 			return
+		}
+		if verb == "aprovar" || verb == "desaprovar" {
+			if len(e.Rules[verb]) > 0 || verb == "aprovar" {
+				if !a.in.Can(ctx, atual, e, "aprovar", row) {
+					deny(row)
+					return
+				}
+			}
+			updated, err := a.approve(ctx, atual, e, row, verb == "aprovar")
+			if err != nil {
+				a.failErr(w, r, err)
+				return
+			}
+			a.json(w, 200, serializeFor(a.in, atual, e, updated, false), nil)
+			return
+		}
+		if tr := e.Transitions[verb]; tr != nil && verb == "mesclar" && e.Review != nil && e.Review.Target != "" {
+			if err := a.merge(ctx, atual, e, row); err != nil {
+				a.failErr(w, r, err)
+				return
+			}
+			row = a.find(ctx, e, fmt.Sprint(row["id"]), nil)
 		}
 		if tr := e.Transitions[verb]; tr != nil {
 			updated, err := a.in.Transition(ctx, atual, e, tr, row)
@@ -1016,6 +1065,9 @@ func (a *intentAPI) inwardBody(body map[string]any) map[string]any {
 //   - visibility ceilings (never more visible than the parent);
 //   - nobody grants a role above their own (memberships).
 func (a *intentAPI) guards(ctx *interp.Context, atual map[string]any, e *ast.Entity, data, before map[string]any) error {
+	if err := a.checkBranches(ctx, e, data); err != nil {
+		return err
+	}
 	order := map[string]int{"private": 0, "internal": 1, "public": 2}
 	for _, field := range e.CeilingFields {
 		if data[field] == nil {

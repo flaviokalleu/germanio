@@ -86,8 +86,11 @@ func (p *Parser) isIntentLine() bool {
 	case "quando":
 		return len(w) >= 3 && !legacyTrigger[w[1]]
 	}
+	if len(w) >= 4 && w[len(w)-1] == "final" && w[len(w)-2] == "e" {
+		return true
+	}
 	for _, x := range w[1:] {
-		if x == "tem" || x == "pode" || x == "podem" || x == "pertence" || x == "herda" || x == "comeca" {
+		if x == "tem" || x == "pode" || x == "podem" || x == "pertence" || x == "herda" || x == "comeca" || x == "recebe" {
 			return true
 		}
 	}
@@ -204,6 +207,12 @@ func (p *Parser) parseIntentLine() error {
 	case "somente":
 		return p.parsePode(head, body, true)
 	}
+	// merge request mesclado é final
+	if len(w) >= 4 && w[len(w)-1] == "final" && w[len(w)-2] == "e" {
+		subject, _ := phrase(w[:len(w)-3])
+		in.Finals = append(in.Finals, &ast.StateDecl{Entity: subject, Initial: w[len(w)-3], Pos: pos})
+		return nil
+	}
 	// X não pode ser mais visível que [o] Y
 	for i := 0; i+5 < len(w); i++ {
 		if w[i] == "nao" && w[i+1] == "pode" && w[i+2] == "ser" && w[i+3] == "mais" && strings.HasPrefix(w[i+4], "visive") && w[i+5] == "que" {
@@ -231,6 +240,14 @@ func (p *Parser) parseIntentLine() error {
 	}
 	for i, x := range w {
 		switch x {
+		case "recebe":
+			// merge request recebe aprovações
+			subject, _ := phrase(w[:i])
+			if i != len(w)-2 || !strings.HasPrefix(w[i+1], "aprovac") {
+				return p.errorf(head.toks[0], "use: <dado> recebe aprovações")
+			}
+			in.Approvals = append(in.Approvals, subject)
+			return nil
 		case "comeca":
 			// issue começa aberta
 			if i == 0 || i != len(w)-2 {

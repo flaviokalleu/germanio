@@ -1,7 +1,7 @@
 # AGENT_STATE
 
 ## CURRENT_PHASE
-Fase 3 — GitLab em linguagem de intenção; próximo: `ge explain` sobre intenção, depois Merge Requests (fluxo 4).
+Fase 3 — GitLab em linguagem de intenção; próximo: CI/CD (fluxo 5), depois páginas (UI).
 
 ## CURRENT_GOAL
 Continuar o GitLab por intenção: issues → merge requests → CI/CD → páginas (UI),
@@ -18,15 +18,15 @@ evoluindo o Germanio a cada parede encontrada.
   permissões, hooks `antes de`/`quando`, integração, repositórios Git.
 - Capability Git (runtime/git): CLI sem shell, smart HTTP com verificação antes de atualizar refs.
 - GitLab `.ge`: identidade, tokens, grupos, subgrupos, membros, projetos, repositórios, navegação.
-- E2E: fluxo 1, fluxo 2 (git real), grupos/papéis, fluxo 3 (issues) — PASS.
+- E2E: fluxos 1–4 (git real, issues, merge requests), grupos/papéis, vazamento de issues privadas — PASS.
+- `ge explain <dado>` / `ge check` entendem a camada de intenção.
 - Skill de simplicidade em `skills/germanio-simplicity/SKILL.md` (gate no CLAUDE.md); issues refeitas por ela.
 - Domínio GitLab em português; nomes da API v4 em `compatibilidade.ge`.
 
 ## IN_PROGRESS
-- `ge explain` para a camada de intenção.
+- CI/CD.
 
 ## NEXT
-2. Merge requests: origem/destino, diff, aprovação, merge, conflito.
 3. CI/CD: pipelines, etapas, jobs, runner, logs (tarefas + processo + yaml).
 4. Páginas (`crie página`) — UI conectada, sem botões zumbis.
 5. `ge explain`/`ge check`/`ge graph` sobre a camada de intenção.

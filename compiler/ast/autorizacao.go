@@ -49,11 +49,18 @@ type Entity struct {
 	CeilingFields []string
 	// ProtectedBranchRole: minimum role to change the main branch directly.
 	ProtectedBranchRole string
-	CreatorRole         string   // quem cria X vira <papel>
-	Repository          bool     // X tem repositório
-	RepoKey             string   // field whose value addresses the repository (<valor>.git)
-	Search              []string // fields searched by pesquisar
-	Filters             []string // fields accepted by filtrar
+	CreatorRole         string // quem cria X vira <papel>
+	// Review: two branch fields make the record a proposal of changes
+	// (changes, commits, mergeability, mesclar performs the merge).
+	Review *Review
+	// Approvals: `X recebe aprovações` (aprovar/desaprovar, people list).
+	Approvals bool
+	// Finals: states no transition leaves (mesclado é final).
+	Finals     []string
+	Repository bool     // X tem repositório
+	RepoKey    string   // field whose value addresses the repository (<valor>.git)
+	Search     []string // fields searched by pesquisar
+	Filters    []string // fields accepted by filtrar
 }
 
 // AccessRule says who may perform a verb on an entity.
@@ -89,4 +96,10 @@ type Restriction struct {
 	Owners  []string // owner fields (autor_id…)
 	Lists   []string // list fields of people (responsaveis)
 	MinRole string
+}
+
+// Review ties a record to a repository through two branches.
+type Review struct {
+	Source, Target string // field names
+	RepoVia        string // parent field leading to the record with the repository
 }
