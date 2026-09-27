@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"mime"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -217,23 +218,36 @@ func (s *Servidor) middleware(next http.Handler) http.Handler {
 		w.Header().Set("X-Frame-Options", "DENY")
 		w.Header().Set("X-XSS-Protection", "1; mode=block")
 		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		w.Header().Set("Content-Security-Policy", "default-src 'self' https: data: 'unsafe-inline' 'unsafe-eval'; frame-ancestors 'none';")
+
+		// CORS configurável via env CORS_ALLOWED_ORIGINS
+		allowedOrigins := os.Getenv("CORS_ALLOWED_ORIGINS")
+		if allowedOrigins == "" {
+			allowedOrigins = "*"
+		}
 
 		if strings.HasPrefix(r.URL.Path, "/api/") {
-			w.Header().Set("Access-Control-Allow-Origin", "*")
+			origin := r.Header.Get("Origin")
+			if allowedOrigins == "*" || (origin != "" && strings.Contains(allowedOrigins, origin)) {
+				if origin != "" {
+					w.Header().Set("Access-Control-Allow-Origin", origin)
+				} else {
+					w.Header().Set("Access-Control-Allow-Origin", allowedOrigins)
+				}
+			}
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
 			if r.Method == http.MethodOptions {
 				w.WriteHeader(http.StatusOK)
 				return
 			}
 		}
 
-		// Rate limiting for POST requests to API
+		// Rate limiting inteligente por IP real
 		if strings.HasPrefix(r.URL.Path, "/api/") && r.Method == http.MethodPost {
-			ip := r.RemoteAddr
+			ip := getRealIP(r)
 			s.rateMu.Lock()
 			now := time.Now()
-			// Clean old entries
 			var recent []time.Time
 			for _, t := range s.rateLimiter[ip] {
 				if now.Sub(t) < time.Minute {
@@ -243,15 +257,42 @@ func (s *Servidor) middleware(next http.Handler) http.Handler {
 			s.rateLimiter[ip] = append(recent, now)
 			count := len(s.rateLimiter[ip])
 			s.rateMu.Unlock()
-			if count > 100 { // 100 POST requests per minute
+
+			// Limite mais restrito para login (brute-force defense: 10/min) e geral (100/min)
+			limit := 100
+			if r.URL.Path == "/api/login" || r.URL.Path == "/api/auth/login" {
+				limit = 10
+			}
+			if count > limit {
 				w.WriteHeader(http.StatusTooManyRequests)
-				w.Write([]byte(`{"erro":"Muitas requisições. Tente novamente em breve."}`))
+				w.Write([]byte(`{"erro":"Muitas requisições. Bloqueio temporário ativado por segurança."}`))
 				return
 			}
 		}
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+// getRealIP extrai o IP real do cliente considerando proxies confiáveis (Cloudflare, Nginx, etc.)
+func getRealIP(r *http.Request) string {
+	if cfIP := r.Header.Get("CF-Connecting-IP"); cfIP != "" {
+		return strings.TrimSpace(cfIP)
+	}
+	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+		parts := strings.Split(xff, ",")
+		if len(parts) > 0 && strings.TrimSpace(parts[0]) != "" {
+			return strings.TrimSpace(parts[0])
+		}
+	}
+	if xrip := r.Header.Get("X-Real-IP"); xrip != "" {
+		return strings.TrimSpace(xrip)
+	}
+	ip, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+	return ip
 }
 
 func (s *Servidor) getCachedHTML() string {

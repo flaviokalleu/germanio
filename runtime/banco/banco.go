@@ -795,6 +795,10 @@ func scanRows(rows *sql.Rows) ([]map[string]any, error) {
 		}
 		row := map[string]any{}
 		for i, col := range columns {
+			// Mascarar campos sensíveis de senha em leituras de API
+			if col == "senha" || col == "password" {
+				continue
+			}
 			row[col] = values[i]
 		}
 		results = append(results, row)
