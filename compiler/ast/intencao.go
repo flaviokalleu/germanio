@@ -33,6 +33,7 @@ type Intent struct {
 	Approvals         []string     // X recebe aprovações
 	Finals            []*StateDecl // X <estado> é final
 	Executions        []*ExecutionDecl
+	Subscriptions     []*SubscriptionDecl
 }
 
 // EntityDecl: `tenha clientes` plus the fields from `cada cliente tem`.
@@ -164,6 +165,7 @@ func MergeIntent(a, b *Intent) *Intent {
 	a.Approvals = append(a.Approvals, b.Approvals...)
 	a.Finals = append(a.Finals, b.Finals...)
 	a.Executions = append(a.Executions, b.Executions...)
+	a.Subscriptions = append(a.Subscriptions, b.Subscriptions...)
 	a.Visibility = append(a.Visibility, b.Visibility...)
 	if a.Vocabulary == nil {
 		a.Vocabulary = b.Vocabulary
@@ -250,4 +252,11 @@ type CreatorRole struct {
 type ExecutionDecl struct {
 	Owner, Entity, File string
 	Pos                 diagnostics.Position
+}
+
+// SubscriptionDecl: `webhook recebe eventos do projeto` + kinds.
+type SubscriptionDecl struct {
+	Subscriber, Owner string
+	Kinds             []string
+	Pos               diagnostics.Position
 }

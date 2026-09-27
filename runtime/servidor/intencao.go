@@ -45,6 +45,8 @@ func (s *Servidor) registerIntent(mux *http.ServeMux) error {
 		}
 	}
 	s.intent = a
+	s.registerTaskModule()
+	s.tasks().handle("entrega", a.deliver)
 	for _, name := range app.Order {
 		e := app.Entities[name]
 		if len(e.Rules) == 0 && e.Integrate == "" {
@@ -368,8 +370,8 @@ func (a *intentAPI) writable(atual map[string]any, e *ast.Entity, body map[strin
 		if !ok {
 			v, ok = body[key]
 		}
-		if !ok || f.Hidden || f.System || f.Type == ast.FieldSegredo {
-			continue
+		if !ok || f.System || f.Type == ast.FieldSegredo {
+			continue // hidden fields can be set (a webhook token), never read
 		}
 		if _, isFixed := fixed[key]; isFixed {
 			continue
@@ -553,6 +555,7 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 			}
 			urow = a.find(ctx, e, fmt.Sprint(row["id"]), nil)
 		}
+		a.emit(ctx, e, "editar", urow, atual)
 		a.json(w, 200, serializeFor(a.in, atual, e, urow, false), nil)
 	case "excluir":
 		row := a.find(ctx, e, ref, scope)
@@ -564,6 +567,7 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 			deny(row)
 			return
 		}
+		a.emit(ctx, e, "excluir", row, atual) // before removal: the owner must still exist
 		if err := a.remove(ctx, atual, e, row); err != nil {
 			a.failErr(w, r, err)
 			return
@@ -636,6 +640,7 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 				}
 				updated = a.find(ctx, e, fmt.Sprint(row["id"]), nil)
 			}
+			a.emit(ctx, e, verb, updated, atual)
 			a.json(w, 200, serializeFor(a.in, atual, e, updated, false), nil)
 			return
 		}
@@ -781,6 +786,7 @@ func (a *intentAPI) create(w http.ResponseWriter, r *http.Request, ctx *interp.C
 			out[k] = v
 		}
 	}
+	a.emit(ctx, e, "criar", row, atual)
 	a.json(w, 201, out, nil)
 }
 
@@ -1060,6 +1066,10 @@ func (a *intentAPI) outward(v any) any {
 			// Roles renamed in the vocabulary travel as their levels (30 = developer).
 			if s, ok := val.(string); ok && k == "papel" && a.ext("papel") != "papel" && a.app.Level(s) > 0 {
 				val = a.app.Level(s)
+			}
+			switch val.(type) {
+			case map[string]any, []any:
+				val = a.outward(val) // nested objects (webhook payloads)
 			}
 			out[a.ext(k)] = val
 		}

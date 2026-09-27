@@ -207,7 +207,7 @@ func ResolveIntent(prog *ast.Program) error {
 				}
 			case joined == "repositorio" || joined == "repositorio_git":
 				e.Repository = true
-				e.Model.Fields = append(e.Model.Fields, &ast.Field{Name: "repositorio", Type: ast.FieldTexto, Hidden: true, Pos: b.Pos})
+				e.Model.Fields = append(e.Model.Fields, &ast.Field{Name: "repositorio", Type: ast.FieldTexto, Hidden: true, System: true, Pos: b.Pos})
 			case joined == "sub"+e.Plural || joined == "sub_"+e.Plural:
 				e.HierarchyField = "pai_id"
 				e.Model.Fields = append(e.Model.Fields, &ast.Field{Name: "pai_id", Type: ast.FieldInteiro, Reference: e.Singular, Index: true, Pos: b.Pos})
@@ -414,8 +414,8 @@ func ResolveIntent(prog *ast.Program) error {
 		}
 		if in.Login.LockAttempts > 0 {
 			le.Model.Fields = append(le.Model.Fields,
-				&ast.Field{Name: "tentativas_falhas", Type: ast.FieldInteiro, HasDefault: true, DefaultValue: 0.0, Hidden: true},
-				&ast.Field{Name: "bloqueado_ate", Type: ast.FieldTexto, Hidden: true})
+				&ast.Field{Name: "tentativas_falhas", Type: ast.FieldInteiro, HasDefault: true, DefaultValue: 0.0, Hidden: true, System: true},
+				&ast.Field{Name: "bloqueado_ate", Type: ast.FieldTexto, Hidden: true, System: true})
 		}
 		if in.Login.TokenEntity != "" {
 			te, err := r.entity(in.Login.TokenEntity, in.Login.Pos)
@@ -690,6 +690,40 @@ func ResolveIntent(prog *ast.Program) error {
 			&ast.Field{Name: "log", Type: ast.FieldTextoLongo, System: true, Hidden: true},
 			sys("iniciado_em", ast.FieldTexto), sys("terminado_em", ast.FieldTexto), sys("duracao", ast.FieldNumero),
 			sys("repetido", ast.FieldBooleano), sys("imagem", ast.FieldTexto))
+	}
+
+	// 7h. Subscriptions: webhooks receive events of their owner.
+	for _, sd := range in.Subscriptions {
+		sub, err := r.entity(sd.Subscriber, sd.Pos)
+		if err != nil {
+			return err
+		}
+		owner, err := r.entity(sd.Owner, sd.Pos)
+		if err != nil {
+			return err
+		}
+		field := ""
+		for f, t := range sub.Parents {
+			if t == owner.Singular {
+				field = f
+			}
+		}
+		if field == "" || fieldByNameAST(sub.Model, "url") == nil {
+			return r.errAt(sd.Pos, "%s recebe eventos de %s: %s precisa pertencer a %s e ter url", sub.Singular, owner.Singular, sub.Singular, owner.Singular)
+		}
+		var kinds []string
+		for _, k := range sd.Kinds {
+			if k != "enviar_codigo" {
+				ke, err := r.entity(k, sd.Pos)
+				if err != nil {
+					return err
+				}
+				k = ke.Plural
+			}
+			kinds = append(kinds, k)
+			sub.Model.Fields = append(sub.Model.Fields, &ast.Field{Name: "eventos_" + k, Type: ast.FieldBooleano, HasDefault: true, DefaultValue: true, Pos: sd.Pos})
+		}
+		sub.Subscription = &ast.Subscription{Owner: owner.Singular, OwnerField: field, Kinds: kinds}
 	}
 
 	// 7d. Restricted visibility

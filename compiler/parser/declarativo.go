@@ -267,6 +267,8 @@ func inferType(name string) ast.FieldType {
 		return ast.FieldTextoLongo
 	case "visibilidade", "visibility":
 		return ast.FieldVisibilidade
+	case "url", "site", "endereco_web", "link":
+		return ast.FieldURL
 	case "preco", "valor", "price", "total":
 		return ast.FieldDinheiro
 	case "quantidade", "estoque", "idade", "posicao", "numero":

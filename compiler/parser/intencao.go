@@ -260,8 +260,27 @@ func (p *Parser) parseIntentLine() error {
 			in.Executions = append(in.Executions, &ast.ExecutionDecl{Owner: owner, Entity: runs, File: file, Pos: pos})
 			return nil
 		case "recebe":
-			// merge request recebe aprovações
 			subject, _ := phrase(w[:i])
+			// webhook recebe eventos do projeto + tipos de evento
+			if i+1 < len(w) && w[i+1] == "eventos" {
+				owner, _ := phrase(w[i+2:])
+				sub := &ast.SubscriptionDecl{Subscriber: subject, Owner: owner, Pos: pos}
+				for _, l := range body {
+					kw := wordsOf(l.toks)
+					if len(kw) >= 2 && kw[0] == "enviar" && kw[1] == "codigo" {
+						sub.Kinds = append(sub.Kinds, "enviar_codigo")
+						continue
+					}
+					k, _ := phrase(kw)
+					sub.Kinds = append(sub.Kinds, k)
+				}
+				if len(sub.Kinds) == 0 {
+					return p.errorf(head.toks[0], "liste os eventos abaixo, por exemplo: enviar código, issues")
+				}
+				in.Subscriptions = append(in.Subscriptions, sub)
+				return nil
+			}
+			// merge request recebe aprovações
 			if i != len(w)-2 || !strings.HasPrefix(w[i+1], "aprovac") {
 				return p.errorf(head.toks[0], "use: <dado> recebe aprovações")
 			}

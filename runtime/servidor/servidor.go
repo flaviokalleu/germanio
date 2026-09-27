@@ -55,6 +55,7 @@ type Servidor struct {
 	intent  *intentAPI
 	onClose []func()
 	mux     *http.ServeMux
+	queue   *taskQueue
 }
 
 // Fechar stops background work (executors).

@@ -58,11 +58,13 @@ type Entity struct {
 	// Finals: states no transition leaves (mesclado é final).
 	Finals []string
 	// Execution: this entity is a run of steps (pipelines) or a step (jobs).
-	Execution  *Execution
-	Repository bool     // X tem repositório
-	RepoKey    string   // field whose value addresses the repository (<valor>.git)
-	Search     []string // fields searched by pesquisar
-	Filters    []string // fields accepted by filtrar
+	Execution *Execution
+	// Subscription: records of this entity receive events of an owner (webhooks).
+	Subscription *Subscription
+	Repository   bool     // X tem repositório
+	RepoKey      string   // field whose value addresses the repository (<valor>.git)
+	Search       []string // fields searched by pesquisar
+	Filters      []string // fields accepted by filtrar
 }
 
 // AccessRule says who may perform a verb on an entity.
@@ -115,4 +117,11 @@ type Execution struct {
 	Run        string // step → run entity
 	Step       string // run → step entity
 	RunField   string // step → run reference field
+}
+
+// Subscription delivers events of Owner records to the URL of each record.
+type Subscription struct {
+	Owner      string
+	OwnerField string
+	Kinds      []string // enviar_codigo, issues, merge_requests…
 }

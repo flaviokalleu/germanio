@@ -1,0 +1,20 @@
+# Webhooks: avisar outros sistemas quando algo acontece no projeto.
+
+tenha webhooks
+
+projeto tem webhooks
+
+webhook tem
+    url obrigatório
+    token oculto
+
+webhook recebe eventos do projeto
+    enviar código
+    issues
+    merge requests
+    pipelines
+    comentarios
+
+maintainer pode administrar webhooks
+
+disponibilize webhooks para integração como "hooks"

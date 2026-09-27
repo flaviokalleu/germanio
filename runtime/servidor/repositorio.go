@@ -170,6 +170,13 @@ func (a *intentAPI) serveGit(w http.ResponseWriter, r *http.Request, entities []
 		return
 	}
 	if service == "receive-pack" && !advertise && len(applied) > 0 {
+		pushed := map[string]any{"atualizacoes": updatesToMaps(applied), "id": row["id"]}
+		for k, v := range row {
+			if _, taken := pushed[k]; !taken {
+				pushed[k] = v
+			}
+		}
+		a.emit(ctx, e, "enviar_codigo", pushed, atual)
 		a.startRuns(ctx, atual, e, row, updatesToMaps(applied))
 		if h := e.Hooks["enviar_codigo"]; h != nil {
 			if _, _, err := a.in.RunHook(ctx, h, vars(applied)); err != nil {

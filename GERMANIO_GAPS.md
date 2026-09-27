@@ -25,7 +25,7 @@ Motivo em AGENT_STATE.md › IMPORTANT_DECISIONS D1.
 | G12 | Identificadores reescritos pelo léxico multilíngue | `issue.state`, `projeto.estado` | léxico troca palavra-chave/tradução pelo canônico mesmo após `.` | Léxico | BUG | P0 | preservar texto original (`Raw`) e usá-lo em nomes de campo/variável/chave | DONE — `Token.Raw`/`Name()`; teste fullstack usa `title`/`state` |
 | G13 | Git: bare repo, refs, árvore, blob, commits, diff, merge, commit via web | repositórios, MRs | inexistente | Git | MISSING | P0 | `runtime/git` (CLI git sem shell, caminhos confinados) exposto como `git.*` | OPEN |
 | G14 | Git smart HTTP (clone/push) com autorização na app | fluxo 2 | inexistente | Git/HTTP | MISSING | P0 | `git.servir_http(repo, servico)` entrega a conexão ao protocolo e devolve refs atualizadas | OPEN |
-| G15 | Fila de tarefas persistente com retry/backoff/dead | CI, webhooks, notificações | `runtime/jobs` só em memória, não exposto a `.ge` | Jobs | PARTIAL | P1 | `tarefas.enfileirar("funcao", dados)` + tabela `_germanio_tarefas` | OPEN |
+| G15 | Fila de tarefas persistente com retry/backoff/dead | CI, webhooks, notificações | `runtime/jobs` só em memória, não exposto a `.ge` | Jobs | PARTIAL | P1 | `tarefas.enfileirar("funcao", dados)` + tabela `_germanio_tarefas` | DONE — `TestWebhooks` (repetição após falha) |
 | G16 | Execução de processo segura | runner de CI | inexistente | Processo | MISSING | P1 | `processo.executar(prog, args, opcoes)` sem shell, timeout, dir confinado | OPEN |
 | G17 | YAML | `.gitlab-ci.yml` | inexistente | Serialização | MISSING | P1 | `yaml.ler(texto)` | OPEN |
 | G18 | Markdown seguro | issues, MRs, notas, README | inexistente | Texto | MISSING | P2 | `markdown.html(texto)` sanitizado | OPEN |
@@ -68,3 +68,5 @@ Motivo em AGENT_STATE.md › IMPORTANT_DECISIONS D1.
 | G55 | Artefatos de job | CI/CD | sem capability de armazenamento de arquivos | Arquivos | MISSING | P2 | capability de arquivos (uploads) + `artifacts: paths` | OPEN |
 | G56 | Vocabulário não injetivo (aberta/aberto → opened) escolhia ao acaso | fluxo 3 sob -race | tradução reversa por mapa Go | Integração | BUG | P1 | tradução reversa determinística e pelo contexto do dado | DONE — `-race -count=3` |
 | G57 | Nomes de campo sem acento na tela (Descricao) | UI | nomes normalizados para casar vocabulário | UI | BUG | P3 | rótulo guarda a grafia original | DONE |
+| G58 | Eventos e assinantes (webhooks) | webhooks | sem capability | Integração | MISSING | P1 | `X recebe eventos do Y` + entregas assinadas pela fila | DONE — `TestWebhooks` |
+| G59 | Requisições de saída sem proteção SSRF | webhooks | httpclient aceitava qualquer destino | Segurança | BUG | P0 | dialer verifica o IP resolvido; rede local só com `GERMANIO_PERMITIR_REDE_LOCAL=1` | DONE — `TestSafeHTTPClientBlocksLocalNetwork` |
