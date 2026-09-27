@@ -101,6 +101,8 @@ type Interpreter struct {
 	}
 	// Modules are capability namespaces callable as modulo.funcao(...).
 	Modules map[string]map[string]ModuleFunc
+	// App is the resolved intent layer (entities, roles, rules).
+	App *ast.App
 }
 
 // New creates a new interpreter.

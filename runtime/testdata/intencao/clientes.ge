@@ -1,0 +1,21 @@
+crie sistema Clientes
+
+tenha clientes
+
+cada cliente tem
+    nome obrigatório
+    email obrigatório e único
+    telefone
+    cidade
+
+crie página Clientes
+    mostre clientes
+    permita
+        cadastrar
+        editar
+        excluir
+
+permita pesquisar clientes
+
+permita filtrar clientes por
+    cidade

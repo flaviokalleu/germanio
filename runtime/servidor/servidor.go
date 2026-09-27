@@ -122,6 +122,9 @@ func (s *Servidor) Handler() (http.Handler, error) {
 	if err := s.registerRoutes(mux); err != nil {
 		return nil, err
 	}
+	if err := s.registerIntent(mux); err != nil {
+		return nil, err
+	}
 
 	// Prompt Events routes (quando receber / quando chamar)
 	for _, evt := range s.Program.Events {

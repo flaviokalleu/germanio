@@ -86,7 +86,8 @@ func directChildren(lines []dline, i int) []int {
 // subParser parses statements that live in a range of tokens (bodies of
 // actions and startup blocks) with the ordinary statement grammar.
 func (p *Parser) subParser(from, to int) *Parser {
-	toks := make([]lexer.Token, 0, to-from+1)
+	toks := make([]lexer.Token, 0, to-from+3)
+	toks = append(toks, lexer.Token{Type: lexer.TokenNewline})
 	toks = append(toks, p.tokens[from:to]...)
 	toks = append(toks, lexer.Token{Type: lexer.TokenNewline}, lexer.Token{Type: lexer.TokenEOF})
 	sp := New(toks)
@@ -248,12 +249,33 @@ func (p *Parser) modelMember(m *ast.Model, t []lexer.Token) error {
 }
 
 // Type inference for fields declared without a type (documented table).
+// The table is part of the language definition (docs/INTENCAO.md).
 func inferType(name string) ast.FieldType {
-	switch strings.ToLower(name) {
+	n := strings.ToLower(foldWord(name))
+	switch n {
 	case "email", "e_mail":
 		return ast.FieldEmail
 	case "senha", "password":
 		return ast.FieldSenha
+	case "telefone", "celular", "phone":
+		return ast.FieldTelefone
+	case "foto", "imagem", "avatar", "logo", "image", "photo":
+		return ast.FieldImagem
+	case "arquivo", "anexo", "file", "attachment":
+		return ast.FieldArquivo
+	case "descricao", "description", "conteudo", "observacoes", "bio", "body":
+		return ast.FieldTextoLongo
+	case "visibilidade", "visibility":
+		return ast.FieldVisibilidade
+	case "preco", "valor", "price", "total":
+		return ast.FieldDinheiro
+	case "quantidade", "estoque", "idade", "posicao":
+		return ast.FieldInteiro
+	case "admin", "ativo", "active", "bloqueado", "arquivado", "archived", "publicado", "confidencial", "confidential":
+		return ast.FieldBooleano
+	}
+	if strings.HasPrefix(n, "pode_") || strings.HasPrefix(n, "is_") || strings.HasPrefix(n, "tem_") || strings.HasPrefix(n, "can_") {
+		return ast.FieldBooleano
 	}
 	return ast.FieldTexto
 }
@@ -301,6 +323,19 @@ func (p *Parser) fieldFromTokens(t []lexer.Token) (*ast.Field, error) {
 	}
 	for ; i < len(t); i++ {
 		x := t[i]
+		if x.Type == lexer.TokenE || x.Type == lexer.TokenComma {
+			continue // "obrigatório e único"
+		}
+		if strings.ToLower(x.Name()) == "sem" {
+			if i+1 < len(t) && strings.HasPrefix(foldWord(strings.ToLower(t[i+1].Name())), "cripto") {
+				return nil, p.errorf(x, "senhas nunca são guardadas sem criptografia; remova \"sem criptografia\"")
+			}
+			return nil, p.errorf(x, "\"sem\" só é usado em \"sem criptografia\", que não é permitido")
+		}
+		if foldWord(strings.ToLower(x.Name())) == "comeca" && i+2 < len(t) && strings.ToLower(t[i+1].Name()) == "com" {
+			t = append(append(append([]lexer.Token{}, t[:i]...), lexer.Token{Type: lexer.TokenEquals, Value: "=", Line: x.Line, Column: x.Column}), t[i+2:]...)
+			x = t[i]
+		}
 		switch {
 		case x.Type == lexer.TokenObrigatorio:
 			f.Required = true
@@ -335,7 +370,7 @@ func (p *Parser) fieldFromTokens(t []lexer.Token) (*ast.Field, error) {
 				}
 			case lexer.TokenString:
 				f.DefaultValue = v.Value
-			case lexer.TokenVerdadeiro, lexer.TokenFalso:
+			case lexer.TokenVerdadeiro, lexer.TokenFalso, lexer.TokenNao:
 				f.DefaultValue = v.Type == lexer.TokenVerdadeiro
 				if f.Type == "" {
 					f.Type = ast.FieldBooleano

@@ -215,7 +215,16 @@ func (s *Servidor) serveRoute(w http.ResponseWriter, req *http.Request, route *a
 		return
 	}
 	ctx := &interp.Context{Request: req, Writer: w}
-	resp, output, err := s.Interpreter.ExecRoute(route.Handler, ctx, map[string]any{"requisicao": requisicao})
+	vars := map[string]any{"requisicao": requisicao}
+	if s.Program.App != nil && s.Program.App.Login != nil {
+		atual, err := s.identify(ctx, req)
+		if err != nil {
+			s.writeRouteError(w, req, route, &interp.RuntimeError{Status: http.StatusUnauthorized, Message: "401 Unauthorized"})
+			return
+		}
+		vars["atual"] = nilIfEmpty(atual)
+	}
+	resp, output, err := s.Interpreter.ExecRoute(route.Handler, ctx, vars)
 	for _, c := range ctx.SetCookies {
 		http.SetCookie(w, c)
 	}

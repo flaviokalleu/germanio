@@ -339,6 +339,8 @@ func tokenToFieldType(tok lexer.Token) (ast.FieldType, error) {
 	typeMap := map[string]ast.FieldType{
 		"texto": ast.FieldTexto, "numero": ast.FieldNumero, "data": ast.FieldData,
 		"inteiro": ast.FieldInteiro, "integer": ast.FieldInteiro,
+		"visibilidade": ast.FieldVisibilidade, "visibility": ast.FieldVisibilidade,
+		"segredo":  ast.FieldSegredo,
 		"booleano": ast.FieldBooleano, "email": ast.FieldEmail, "telefone": ast.FieldTelefone,
 		"imagem": ast.FieldImagem, "arquivo": ast.FieldArquivo, "upload": ast.FieldUpload,
 		"link": ast.FieldLink, "status": ast.FieldStatus, "dinheiro": ast.FieldDinheiro,
@@ -1923,6 +1925,31 @@ func (p *Parser) parseIdentStmt() (*ast.Statement, error) {
 		return &ast.Statement{Type: "assign", Assign: &ast.Assignment{Target: nameTok.Name(), Value: *expr}}, nil
 	}
 
+	// Command form: recuse "mensagem", avise "texto", 1 — a name followed by
+	// a text, number or map on the same line is a call with those arguments.
+	if (nameTok.Type == lexer.TokenIdentifier || p.isNameToken(nameTok)) && p.peek(1).Line == nameTok.Line {
+		switch p.peek(1).Type {
+		case lexer.TokenString, lexer.TokenNumber, lexer.TokenLBrace:
+			p.advance()
+			var args []*ast.Expression
+			for {
+				arg, err := p.parseExpression()
+				if err != nil {
+					return nil, err
+				}
+				args = append(args, arg)
+				if p.current().Type != lexer.TokenComma {
+					break
+				}
+				p.advance()
+			}
+			canon := ""
+			if nameTok.Value != nameTok.Name() {
+				canon = nameTok.Value
+			}
+			return &ast.Statement{Type: "expr", Expr: &ast.Expression{Type: "call", Name: nameTok.Name(), Canon: canon, Args: args, Pos: p.at(nameTok)}}, nil
+		}
+	}
 	x, err := p.parseExpression()
 	if err != nil {
 		return nil, err

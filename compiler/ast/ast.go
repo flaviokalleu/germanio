@@ -34,6 +34,8 @@ type Program struct {
 	SidebarItems             []*SidebarItem
 	// Intent layer (compiler/ast/intencao.go)
 	Intent *Intent
+	// App is the resolved intent (nil for programs without intent phrases).
+	App *App
 }
 
 func (p *Program) NodeType() string { return "Program" }
@@ -257,6 +259,7 @@ type Model struct {
 	ExpiresDays int
 	// Revocable adds revoked (booleano) and modelo.revogar(id).
 	Revocable  bool
+	Label      string // name used in messages ("Project")
 	Pos        diagnostics.Position
 	IsAuth     bool     // is this the auth user model?
 	HasMany    []string // model names for 1:N relationships
@@ -270,33 +273,34 @@ func (m *Model) NodeType() string { return "Model" }
 type FieldType string
 
 const (
-	FieldTexto      FieldType = "texto"
-	FieldNumero     FieldType = "numero"
-	FieldInteiro    FieldType = "inteiro"
-	FieldSegredo    FieldType = "segredo"
-	FieldData       FieldType = "data"
-	FieldBooleano   FieldType = "booleano"
-	FieldEmail      FieldType = "email"
-	FieldTelefone   FieldType = "telefone"
-	FieldImagem     FieldType = "imagem"
-	FieldArquivo    FieldType = "arquivo"
-	FieldUpload     FieldType = "upload"
-	FieldLink       FieldType = "link"
-	FieldStatus     FieldType = "status"
-	FieldDinheiro   FieldType = "dinheiro"
-	FieldSenha      FieldType = "senha"
-	FieldTextoLongo FieldType = "texto_longo"
-	FieldEnum       FieldType = "enum"
-	FieldCPF        FieldType = "cpf"
-	FieldCEP        FieldType = "cep"
-	FieldCor        FieldType = "cor"
-	FieldEstrelas   FieldType = "estrelas"
-	FieldHora       FieldType = "hora"
-	FieldDataHora   FieldType = "data_hora"
-	FieldPercentual FieldType = "percentual"
-	FieldTags       FieldType = "tags"
-	FieldURL        FieldType = "url"
-	FieldMoeda      FieldType = "moeda"
+	FieldTexto        FieldType = "texto"
+	FieldNumero       FieldType = "numero"
+	FieldInteiro      FieldType = "inteiro"
+	FieldSegredo      FieldType = "segredo"
+	FieldVisibilidade FieldType = "visibilidade"
+	FieldData         FieldType = "data"
+	FieldBooleano     FieldType = "booleano"
+	FieldEmail        FieldType = "email"
+	FieldTelefone     FieldType = "telefone"
+	FieldImagem       FieldType = "imagem"
+	FieldArquivo      FieldType = "arquivo"
+	FieldUpload       FieldType = "upload"
+	FieldLink         FieldType = "link"
+	FieldStatus       FieldType = "status"
+	FieldDinheiro     FieldType = "dinheiro"
+	FieldSenha        FieldType = "senha"
+	FieldTextoLongo   FieldType = "texto_longo"
+	FieldEnum         FieldType = "enum"
+	FieldCPF          FieldType = "cpf"
+	FieldCEP          FieldType = "cep"
+	FieldCor          FieldType = "cor"
+	FieldEstrelas     FieldType = "estrelas"
+	FieldHora         FieldType = "hora"
+	FieldDataHora     FieldType = "data_hora"
+	FieldPercentual   FieldType = "percentual"
+	FieldTags         FieldType = "tags"
+	FieldURL          FieldType = "url"
+	FieldMoeda        FieldType = "moeda"
 )
 
 type Field struct {

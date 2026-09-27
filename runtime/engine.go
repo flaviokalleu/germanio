@@ -168,8 +168,11 @@ func Carregar(arquivo string, porta string) (*App, error) {
 		return nil, err
 	}
 
+	if err := parser.ResolveIntent(program); err != nil {
+		return nil, err
+	}
 	if program.System == nil {
-		return nil, fmt.Errorf("declaração 'sistema' não encontrada")
+		return nil, fmt.Errorf("declaração 'sistema' não encontrada (use: crie sistema Nome)")
 	}
 	if err := checarDuplicatas(program); err != nil {
 		return nil, err
@@ -241,6 +244,7 @@ func Carregar(arquivo string, porta string) (*App, error) {
 	srv.HTTPClient = httpClient
 
 	interpreter := interp.New(db)
+	interpreter.App = program.App
 	interpreter.HTTPClient = httpClient
 	if waClient != nil {
 		interpreter.WAClient = waClient
@@ -256,6 +260,9 @@ func Carregar(arquivo string, porta string) (*App, error) {
 		}
 	}
 
+	if program.App != nil {
+		program.Scripts = append(program.Scripts, program.App.Init...)
+	}
 	if len(program.Functions) > 0 || len(program.Scripts) > 0 {
 		interpreter.Run(program)
 	}
@@ -309,6 +316,9 @@ func Verificar(arquivo string) error {
 
 	baseDir := filepath.Dir(arquivo)
 	if err := resolveImports(program, baseDir, nil); err != nil {
+		return err
+	}
+	if err := parser.ResolveIntent(program); err != nil {
 		return err
 	}
 

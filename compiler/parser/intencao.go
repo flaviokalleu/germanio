@@ -69,6 +69,8 @@ func (p *Parser) isIntentLine() bool {
 	switch w[0] {
 	case "crie", "tenha", "permita", "disponibilize", "integracao", "somente":
 		return true
+	case "mensagens":
+		return len(w) == 3 && w[1] == "em"
 	case "cada":
 		return len(w) >= 3 && w[len(w)-1] == "tem"
 	case "login":
@@ -119,6 +121,16 @@ func (p *Parser) parseIntentLine() error {
 		return nil
 	case "login":
 		return p.parseLoginConfig(head)
+	case "mensagens":
+		switch w[2] {
+		case "ingles", "english":
+			in.Messages = "en"
+		case "portugues":
+			in.Messages = "pt"
+		default:
+			return p.errorf(head.toks[2], "use: mensagens em português ou mensagens em inglês")
+		}
+		return nil
 	case "ao":
 		stmts, err := p.statementsIn(body)
 		in.Init = append(in.Init, stmts...)

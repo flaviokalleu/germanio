@@ -253,10 +253,10 @@ func (interp *Interpreter) evalCall(expr *ast.Expression, scope *Scope) any {
 	}
 	obj := expr.Object
 	c.Name = obj + "." + expr.Name
+	// Records are plain maps without methods, so modelo.operação always
+	// means the database even when a variable holds a record of that model.
 	if interp.isModel(obj) && dbMethods[expr.Name] {
-		if _, shadow := scope.Get(obj); !shadow {
-			return interp.dbCall(c, strings.ToLower(obj), expr.Name, args)
-		}
+		return interp.dbCall(c, strings.ToLower(obj), expr.Name, args)
 	}
 	if v, ok := scope.Get(obj); ok {
 		return interp.valueMethod(c, v, expr.Name, args)
@@ -654,6 +654,10 @@ func (interp *Interpreter) globalFuncs() map[string]ModuleFunc {
 				}
 			}
 			panic(e)
+		},
+		// recuse("mensagem") refuses the current action with a message for people.
+		"recuse": func(c *Call, args []any) any {
+			panic(&RuntimeError{Status: 400, Message: toString(c.Arg(args, 0, "mensagem")), Pos: c.Pos})
 		},
 		// obter(mapa, chave, padrao) reads an optional key.
 		"obter": func(c *Call, args []any) any {

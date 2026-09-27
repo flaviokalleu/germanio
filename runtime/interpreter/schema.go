@@ -26,6 +26,45 @@ type fieldErrors map[string][]string
 
 func (e fieldErrors) add(field, msg string) { e[field] = append(e[field], msg) }
 
+// ptMessages translates validation messages when the app speaks Portuguese.
+var ptMessages = []struct{ en, pt string }{
+	{"can't be blank", "é obrigatório"},
+	{"has already been taken", "já está em uso"},
+	{"is invalid", "é inválido"},
+	{"cannot be changed", "não pode ser alterado"},
+	{"must be an integer", "deve ser um número inteiro"},
+	{"is not a number", "deve ser um número"},
+	{"must be true or false", "deve ser sim ou não"},
+	{"is not included in the list", "não é uma opção válida"},
+	{"is not a valid date", "não é uma data válida"},
+	{"is not a valid URL", "não é um endereço válido"},
+	{"must exist", "não existe"},
+	{"is too short (minimum is ", "é muito curto (mínimo de "},
+	{"is too long (maximum is ", "é muito longo (máximo de "},
+	{" characters)", " caracteres)"},
+	{"must be greater than or equal to ", "deve ser pelo menos "},
+	{"must be less than or equal to ", "deve ser no máximo "},
+}
+
+// Lang is the language of messages: "pt" for apps with intent (unless
+// `mensagens em inglês`), "en" otherwise (API-compatible default).
+func (interp *Interpreter) Lang() string {
+	if interp.App != nil {
+		return interp.App.Messages
+	}
+	return "en"
+}
+
+func translate(lang, msg string) string {
+	if lang != "pt" {
+		return msg
+	}
+	for _, t := range ptMessages {
+		msg = strings.ReplaceAll(msg, t.en, t.pt)
+	}
+	return msg
+}
+
 func (e fieldErrors) payload() map[string]any {
 	out := map[string]any{}
 	keys := make([]string, 0, len(e))
@@ -41,6 +80,22 @@ func (e fieldErrors) payload() map[string]any {
 		out[k] = list
 	}
 	return out
+}
+
+// sentence renders errors for people: "email já está em uso".
+func (e fieldErrors) sentence() string {
+	keys := make([]string, 0, len(e))
+	for k := range e {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	var parts []string
+	for _, k := range keys {
+		for _, m := range e[k] {
+			parts = append(parts, k+" "+m)
+		}
+	}
+	return strings.Join(parts, "; ")
 }
 
 func (interp *Interpreter) modelAST(name string) *ast.Model {
@@ -93,6 +148,8 @@ func (interp *Interpreter) prepareWrite(c *Call, m *ast.Model, data map[string]a
 			case f.Type == ast.FieldSegredo:
 				secret := f.Prefix + randomToken(20)
 				out[key] = secret
+			case f.Type == ast.FieldVisibilidade:
+				out[key] = "private"
 			}
 		}
 	}
@@ -171,7 +228,14 @@ func (interp *Interpreter) prepareWrite(c *Call, m *ast.Model, data map[string]a
 		out[key] = v
 	}
 	if len(errs) > 0 {
-		panic(&RuntimeError{Status: 400, Message: "validação falhou", Payload: errs.payload(), Pos: c.Pos})
+		lang := interp.Lang()
+		for k, list := range errs {
+			for i := range list {
+				list[i] = translate(lang, list[i])
+			}
+			errs[k] = list
+		}
+		panic(&RuntimeError{Status: 400, Message: errs.sentence(), Payload: errs.payload(), Pos: c.Pos})
 	}
 	// Secrets are transformed only after every rule passed.
 	for _, f := range m.Fields {
@@ -212,6 +276,17 @@ func normalizeValue(f *ast.Field, v any) any {
 				return n
 			}
 		}
+	case ast.FieldVisibilidade:
+		if isText {
+			switch strings.ToLower(strings.TrimSpace(s)) {
+			case "public", "publico", "público", "publica", "pública":
+				return "public"
+			case "internal", "interno", "interna":
+				return "internal"
+			case "private", "privado", "privada":
+				return "private"
+			}
+		}
 	case ast.FieldBooleano:
 		if isText {
 			switch strings.ToLower(s) {
@@ -250,6 +325,12 @@ func checkType(f *ast.Field, v any) string {
 		if _, ok := v.(bool); !ok {
 			return "must be true or false"
 		}
+	case ast.FieldVisibilidade:
+		switch toString(v) {
+		case "public", "internal", "private":
+			return ""
+		}
+		return "is not included in the list"
 	case ast.FieldEnum:
 		for _, e := range f.EnumValues {
 			if e == toString(v) {

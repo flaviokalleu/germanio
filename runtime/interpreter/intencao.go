@@ -1,0 +1,293 @@
+package interpreter
+
+import (
+	"errors"
+	"fmt"
+	"strings"
+
+	"github.com/flaviokalleu/germanio/compiler/ast"
+	"github.com/flaviokalleu/germanio/compiler/diagnostics"
+)
+
+// Runtime of the intent layer: who can do what (derived from `pode`,
+// `permita`, papéis, membros, visibilidade) and operations callable from Go
+// that run through the same schema rules and hooks as .ge code.
+
+// Op performs a database operation as .ge code would, returning a
+// RuntimeError instead of panicking.
+func (interp *Interpreter) Op(ctx *Context, model, method string, args ...any) (res any, err error) {
+	scope := NewScope(interp.Global)
+	if ctx == nil {
+		ctx = &Context{}
+	}
+	scope.ctx = ctx
+	defer func() {
+		if r := recover(); r != nil {
+			err = asRuntimeError(r)
+		}
+	}()
+	c := &Call{Interp: interp, Scope: scope, Name: model + "." + method}
+	return interp.dbCall(c, model, method, args), nil
+}
+
+func asRuntimeError(r any) *RuntimeError {
+	switch x := r.(type) {
+	case *RuntimeError:
+		return x
+	case signal:
+		if x.Type == signalRespond {
+			return &RuntimeError{Status: 0, Message: "responder dentro de operação", Payload: x.Value}
+		}
+		return &RuntimeError{Message: "sinal de controle fora de lugar"}
+	case error:
+		return &RuntimeError{Message: x.Error()}
+	}
+	return &RuntimeError{Message: fmt.Sprint(r)}
+}
+
+// RunHook executes a `quando` block with the given bindings. Its value is
+// what the block returned with retornar (nil otherwise).
+func (interp *Interpreter) RunHook(ctx *Context, h *ast.Hook, vars map[string]any) (result any, resp *Response, err error) {
+	scope := NewScope(interp.Global)
+	scope.ctx = ctx
+	for k, v := range vars {
+		scope.SetLocal(k, v)
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			if sig, ok := r.(signal); ok {
+				switch sig.Type {
+				case signalReturn:
+					result = sig.Value
+					return
+				case signalRespond:
+					resp = sig.Value.(*Response)
+					return
+				}
+			}
+			err = asRuntimeError(r)
+		}
+	}()
+	interp.ExecStatements(h.Body, scope)
+	return nil, nil, nil
+}
+
+// IsAdmin: the person has admin verdadeiro or papel "administrador".
+func (interp *Interpreter) IsAdmin(atual map[string]any) bool {
+	if atual == nil {
+		return false
+	}
+	if b, ok := atual["admin"].(bool); ok && b {
+		return true
+	}
+	return toString(atual["papel"]) == "administrador"
+}
+
+const adminLevel = 1 << 20
+
+type levelKey struct {
+	model string
+	id    int64
+}
+
+// Level returns the access level of atual on a record: its own
+// membership, the membership inherited from parents (herda membros,
+// subgrupos) or, for records without members, the level on the parent
+// that has them.
+func (interp *Interpreter) Level(ctx *Context, atual map[string]any, e *ast.Entity, record map[string]any) int {
+	if atual == nil || record == nil || interp.App == nil {
+		return 0
+	}
+	if interp.IsAdmin(atual) {
+		return adminLevel
+	}
+	var memo map[levelKey]int
+	if ctx != nil {
+		if ctx.Values == nil {
+			ctx.Values = map[string]any{}
+		}
+		if m, ok := ctx.Values["__niveis"].(map[levelKey]int); ok {
+			memo = m
+		} else {
+			memo = map[levelKey]int{}
+			ctx.Values["__niveis"] = memo
+		}
+	}
+	return interp.level(ctx, memo, atual, e, record, 0)
+}
+
+func (interp *Interpreter) level(ctx *Context, memo map[levelKey]int, atual map[string]any, e *ast.Entity, record map[string]any, depth int) int {
+	if depth > 32 || record == nil {
+		return 0
+	}
+	id := int64(toNumber(record["id"]))
+	key := levelKey{e.Singular, id}
+	if id > 0 && memo != nil {
+		if v, ok := memo[key]; ok {
+			return v
+		}
+	}
+	app := interp.App
+	lv := 0
+	if e.Singular == app.MemberModel {
+		if target, ok := app.Entities[toString(record["recurso"])]; ok {
+			lv = interp.level(ctx, memo, atual, target, interp.load(target, record["recurso_id"]), depth+1)
+		}
+	} else {
+		if e.HasMembers && id > 0 {
+			m, _ := interp.Op(ctx, app.MemberModel, "encontrar", map[string]any{"recurso": e.Singular, "recurso_id": id, "pessoa_id": atual["id"]})
+			if row, ok := m.(map[string]any); ok {
+				lv = app.Level(toString(row["papel"]))
+			}
+		}
+		if e.HierarchyField != "" && record[e.HierarchyField] != nil {
+			lv = max(lv, interp.level(ctx, memo, atual, e, interp.load(e, record[e.HierarchyField]), depth+1))
+		}
+		via := e.InheritVia
+		if via == "" && !e.HasMembers {
+			// Records without members take the level of their first parent
+			// that (transitively) has members.
+			for field, target := range e.Parents {
+				if interp.hasMembersChain(app.Entities[target], 0) {
+					via = field
+					break
+				}
+			}
+		}
+		if via != "" && record[via] != nil {
+			parent := app.Entities[e.Parents[via]]
+			lv = max(lv, interp.level(ctx, memo, atual, parent, interp.load(parent, record[via]), depth+1))
+		}
+	}
+	if id > 0 && memo != nil {
+		memo[key] = lv
+	}
+	return lv
+}
+
+func (interp *Interpreter) hasMembersChain(e *ast.Entity, depth int) bool {
+	if e == nil || depth > 16 {
+		return false
+	}
+	if e.HasMembers {
+		return true
+	}
+	for _, t := range e.Parents {
+		if interp.hasMembersChain(interp.App.Entities[t], depth+1) {
+			return true
+		}
+	}
+	return false
+}
+
+func (interp *Interpreter) load(e *ast.Entity, id any) map[string]any {
+	if e == nil || id == nil {
+		return nil
+	}
+	row, err := interp.DB.BuscarRegistro(e.Singular, int64(toNumber(id)))
+	if err != nil {
+		return nil
+	}
+	return stripSecrets(e.Model, row)
+}
+
+// Owns: the record is the person, or belongs to the person.
+func (interp *Interpreter) Owns(atual map[string]any, e *ast.Entity, record map[string]any) bool {
+	if atual == nil || record == nil || interp.App == nil {
+		return false
+	}
+	app := interp.App
+	uid := toNumber(atual["id"])
+	switch {
+	case e.Singular == app.LoginEntity:
+		return toNumber(record["id"]) == uid
+	case e.Singular == app.MemberModel:
+		return toNumber(record["pessoa_id"]) == uid
+	}
+	if v, ok := record[app.LoginEntity+"_id"]; ok && v != nil {
+		return toNumber(v) == uid
+	}
+	return false
+}
+
+// visible applies the visibilidade field: public → anyone, internal →
+// signed in; private falls through to the rules.
+func (interp *Interpreter) visible(atual map[string]any, e *ast.Entity, record map[string]any) bool {
+	if e.Visibility == "" || record == nil {
+		return false
+	}
+	switch toString(record[e.Visibility]) {
+	case "public":
+		return true
+	case "internal":
+		return atual != nil
+	}
+	return false
+}
+
+// Can reports whether atual may perform verb on record (record may be the
+// data of a record being created, with its parent references).
+func (interp *Interpreter) Can(ctx *Context, atual map[string]any, e *ast.Entity, verb string, record map[string]any) bool {
+	if interp.IsAdmin(atual) {
+		return true
+	}
+	if verb == "ver" && interp.visible(atual, e, record) {
+		return true
+	}
+	rules := e.Rules[verb]
+	if verb == "ver" {
+		// Whoever may change a record may also see it.
+		rules = append(append(append([]*ast.AccessRule{}, rules...), e.Rules["editar"]...), e.Rules["excluir"]...)
+	}
+	for _, r := range rules {
+		if interp.rulePasses(ctx, atual, e, r, record) {
+			return true
+		}
+	}
+	return false
+}
+
+func (interp *Interpreter) rulePasses(ctx *Context, atual map[string]any, e *ast.Entity, r *ast.AccessRule, record map[string]any) bool {
+	if r.Own && !interp.Owns(atual, e, record) {
+		return false
+	}
+	switch {
+	case r.Anyone:
+		return true
+	case r.SignedIn:
+		return atual != nil
+	case r.MinRole == "administrador":
+		return interp.IsAdmin(atual)
+	case r.MinRole != "":
+		return interp.Level(ctx, atual, e, record) >= interp.App.Level(r.MinRole)
+	}
+	return r.Own && atual != nil
+}
+
+// RecordDependent reports whether seeing records of e depends on each
+// record (visibility, roles or ownership) — lists must then be filtered.
+func RecordDependent(e *ast.Entity) bool {
+	if e.Visibility != "" {
+		return true
+	}
+	for _, v := range []string{"ver", "editar", "excluir"} {
+		for _, r := range e.Rules[v] {
+			if r.Own || (r.MinRole != "" && r.MinRole != "administrador") {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// Friendly converts a runtime error into a message for people.
+func Friendly(err error) string {
+	var re *RuntimeError
+	if errors.As(err, &re) {
+		return re.Message
+	}
+	return err.Error()
+}
+
+var _ = diagnostics.Position{}
+var _ = strings.ToLower

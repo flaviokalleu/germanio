@@ -24,6 +24,7 @@ type Intent struct {
 	Pages             []*PageDecl
 	Init              []*Statement
 	FieldBlocks       []*FieldsDecl
+	Messages          string // mensagens em inglês → "en"
 }
 
 // EntityDecl: `tenha clientes` plus the fields from `cada cliente tem`.
@@ -148,6 +149,9 @@ func MergeIntent(a, b *Intent) *Intent {
 	a.Pages = append(a.Pages, b.Pages...)
 	a.Init = append(a.Init, b.Init...)
 	a.FieldBlocks = append(a.FieldBlocks, b.FieldBlocks...)
+	if a.Messages == "" {
+		a.Messages = b.Messages
+	}
 	if a.IntegrationPrefix == "" {
 		a.IntegrationPrefix = b.IntegrationPrefix
 	}
