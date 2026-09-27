@@ -241,7 +241,7 @@ func (p *Parser) parseIntentLine() error {
 	for i, x := range w {
 		switch x {
 		case "executa":
-			// projeto executa pipelines a cada envio de código conforme ".gitlab-ci.yml"
+			// projeto executa pipelines a cada envio de código conforme "pipeline.yml"
 			owner, _ := phrase(w[:i])
 			k := i + 1
 			for k < len(w) && w[k] != "a" {

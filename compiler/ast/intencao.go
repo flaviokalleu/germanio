@@ -246,7 +246,7 @@ type CreatorRole struct {
 }
 
 // ExecutionDecl: `projeto executa pipelines a cada envio de código conforme
-// ".gitlab-ci.yml"` — each push creates a run whose steps come from the file.
+// "pipeline.yml"` — each push creates a run whose steps come from the file.
 type ExecutionDecl struct {
 	Owner, Entity, File string
 	Pos                 diagnostics.Position
