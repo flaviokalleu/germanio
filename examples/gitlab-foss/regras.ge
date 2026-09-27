@@ -3,7 +3,6 @@
 logica
   definir FORMATO_CAMINHO = "^[a-zA-Z0-9_.][a-zA-Z0-9_.-]*[a-zA-Z0-9_-]$|^[a-zA-Z0-9_]$"
   definir RESERVADOS = ["-", "admin", "api", "assets", "dashboard", "explore", "groups", "help", "oauth", "projects", "public", "search", "uploads", "users"]
-  definir ORDEM_VISIBILIDADE = ["private", "internal", "public"]
 
   funcao caminho_de_projeto(caminho)
     retornar tamanho(caminho) <= 255 e regex.casa(FORMATO_CAMINHO, caminho) e nao termina_com(caminho, ".git") e nao termina_com(caminho, ".atom")
@@ -12,17 +11,11 @@ logica
   funcao caminho_valido(caminho)
     retornar caminho_de_projeto(caminho) e nao contem(RESERVADOS, minusculo(caminho))
 
-  funcao mais_visivel(a, b)
-    retornar indice_de(ORDEM_VISIBILIDADE, a) > indice_de(ORDEM_VISIBILIDADE, b)
-
-# O endereço de um grupo inclui o do grupo pai; um subgrupo não é mais visível que o pai.
+# O endereço de um grupo inclui o do grupo pai.
 antes de criar grupo
     dados.caminho_completo = dados.caminho
     se dados.pai_id != nulo
-        definir pai = grupo.buscar(dados.pai_id)
-        dados.caminho_completo = pai.caminho_completo + "/" + dados.caminho
-        se mais_visivel(dados.visibilidade, pai.visibilidade)
-            recuse "Visibility level is not allowed since the parent group has a more restrictive visibility"
+        dados.caminho_completo = grupo.buscar(dados.pai_id).caminho_completo + "/" + dados.caminho
     se usuario.existe({username: dados.caminho_completo})
         recuse "Path has already been taken"
 
@@ -34,10 +27,7 @@ antes de criar projeto
     se dados.grupo_id == nulo
         dados.caminho_completo = atual.username + "/" + dados.caminho
     senao
-        definir g = grupo.buscar(dados.grupo_id)
-        dados.caminho_completo = g.caminho_completo + "/" + dados.caminho
-        se mais_visivel(dados.visibilidade, g.visibilidade)
-            recuse "Visibility level is not allowed in a more restrictive group"
+        dados.caminho_completo = grupo.buscar(dados.grupo_id).caminho_completo + "/" + dados.caminho
     se grupo.existe({caminho_completo: dados.caminho_completo})
         recuse "Path has already been taken"
 
@@ -47,21 +37,7 @@ quando criar projeto
     se obter(entrada, "initialize_with_readme", falso) == verdadeiro
         git.commitar(projeto.repositorio, {branch: projeto.branch_padrao, mensagem: "Initial commit", autor: {nome: atual.nome, email: atual.email}, acoes: [{acao: "criar", caminho: "README.md", conteudo: "# " + projeto.nome + "\n"}]})
 
-# A branch padrão é protegida: só maintainers enviam direto para ela.
-antes de enviar código para projeto
-    para cada mudanca em atualizacoes
-        se mudanca.branch == projeto.branch_padrao e acesso.nivel("projeto", projeto) < acesso.papel("maintainer")
-            recuse "You are not allowed to push code to protected branches on this project."
-
-# Ninguém concede papel acima do próprio (a API do GitLab fala em user_id e access_level).
-antes de criar membro
-    se dados.pessoa_id == nulo
-        dados.pessoa_id = obter(entrada, "user_id", nulo)
-    se dados.papel == nulo e obter(entrada, "access_level", nulo) != nulo
-        dados.papel = acesso.nome_papel(entrada.access_level)
-    se acesso.papel(dados.papel) > acesso.nivel("membro", dados)
-        recuse "403 Forbidden"
-
+# O grupo precisa manter pelo menos um owner.
 antes de excluir membro
     se membro.papel == "owner" e membro.contar({recurso: membro.recurso, recurso_id: membro.recurso_id, papel: "owner"}) == 1
         recuse "The last owner cannot leave or be removed"

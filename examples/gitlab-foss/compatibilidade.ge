@@ -15,6 +15,8 @@ vocabulário da integração
     grupo_id é "namespace_id"
     pai_id é "parent_id"
     criador_id é "creator_id"
+    pessoa_id é "user_id"
+    papel é "access_level"
     pode_criar_grupos é "can_create_group"
     estado é "state"
     ativo é "active"

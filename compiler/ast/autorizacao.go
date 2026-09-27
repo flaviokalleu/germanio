@@ -45,10 +45,15 @@ type Entity struct {
 	Initial      string
 	Transitions  map[string]*Transition
 	Restrictions []*Restriction
-	Repository   bool     // X tem repositório
-	RepoKey      string   // field whose value addresses the repository (<valor>.git)
-	Search       []string // fields searched by pesquisar
-	Filters      []string // fields accepted by filtrar
+	// VisibilityCeiling: parent fields whose visibility bounds this record's.
+	CeilingFields []string
+	// ProtectedBranchRole: minimum role to change the main branch directly.
+	ProtectedBranchRole string
+	CreatorRole         string   // quem cria X vira <papel>
+	Repository          bool     // X tem repositório
+	RepoKey             string   // field whose value addresses the repository (<valor>.git)
+	Search              []string // fields searched by pesquisar
+	Filters             []string // fields accepted by filtrar
 }
 
 // AccessRule says who may perform a verb on an entity.

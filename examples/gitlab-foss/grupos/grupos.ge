@@ -19,6 +19,8 @@ grupo tem
     subgrupos
     membros com papel
 
+grupo não pode ser mais visível que o grupo pai
+
 usuario pode criar grupos
 maintainer pode criar grupos
 

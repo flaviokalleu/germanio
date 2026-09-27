@@ -73,6 +73,8 @@ func (p *Parser) isIntentLine() bool {
 		return len(w) == 3 && w[1] == "em"
 	case "vocabulario":
 		return true
+	case "quem":
+		return len(w) >= 5 && w[1] == "cria"
 	case "cada":
 		return len(w) >= 3 && w[len(w)-1] == "tem"
 	case "login":
@@ -138,6 +140,15 @@ func (p *Parser) parseIntentLine() error {
 		return nil
 	case "login":
 		return p.parseLoginConfig(head)
+	case "quem":
+		// quem cria grupo vira owner
+		k := len(w) - 2
+		if w[k] != "vira" {
+			return p.errorf(head.toks[0], "use: quem cria <dado> vira <papel>")
+		}
+		target, _ := phrase(w[2:k])
+		in.Creators = append(in.Creators, &ast.CreatorRole{Entity: target, Role: w[k+1], Pos: pos})
+		return nil
 	case "vocabulario":
 		// vocabulário da integração + linhas `nome é "externo"`
 		if in.Vocabulary == nil {
@@ -192,6 +203,15 @@ func (p *Parser) parseIntentLine() error {
 		return nil
 	case "somente":
 		return p.parsePode(head, body, true)
+	}
+	// X não pode ser mais visível que [o] Y
+	for i := 0; i+5 < len(w); i++ {
+		if w[i] == "nao" && w[i+1] == "pode" && w[i+2] == "ser" && w[i+3] == "mais" && strings.HasPrefix(w[i+4], "visive") && w[i+5] == "que" {
+			subject, _ := phrase(w[:i])
+			parent, _ := phrase(w[i+6:])
+			in.Ceilings = append(in.Ceilings, &ast.VisibilityCeiling{Entity: subject, Parent: parent, Pos: pos})
+			return nil
+		}
 	}
 	// X [condição] pode ser vista por ...
 	for i := 0; i+3 < len(w)+1; i++ {

@@ -535,6 +535,44 @@ func ResolveIntent(prog *ast.Program) error {
 	}
 	in.Grants = grants
 
+	// 7e. Visibility ceilings: a record is never more visible than its parent.
+	for _, c := range in.Ceilings {
+		e, err := r.entity(c.Entity, c.Pos)
+		if err != nil {
+			return err
+		}
+		field := ""
+		if strings.HasSuffix(c.Parent, "_pai") && e.HierarchyField != "" {
+			field = e.HierarchyField
+		} else if pe := r.byName[c.Parent]; pe != nil {
+			for f, t := range e.Parents {
+				if t == pe.Singular {
+					field = f
+				}
+			}
+		}
+		for _, f := range e.Model.Fields {
+			if f.Type == ast.FieldVisibilidade {
+				e.Visibility = strings.ToLower(f.Name)
+			}
+		}
+		if field == "" || e.Visibility == "" {
+			return r.errAt(c.Pos, "%s não pode ser mais visível que %s: é preciso que %s tenha visibilidade e pertença a %s", e.Singular, c.Parent, e.Singular, c.Parent)
+		}
+		e.CeilingFields = appendUnique(e.CeilingFields, field)
+	}
+
+	for _, c := range in.Creators {
+		e, err := r.entity(c.Entity, c.Pos)
+		if err != nil {
+			return err
+		}
+		if !e.HasMembers || app.Level(c.Role) == 0 {
+			return r.errAt(c.Pos, "quem cria %s vira %s: %s precisa ter membros com papel e %s precisa ser um papel", e.Singular, c.Role, e.Singular, c.Role)
+		}
+		e.CreatorRole = c.Role
+	}
+
 	// 7d. Restricted visibility
 	for _, vr := range in.Visibility {
 		words := strings.Fields(vr.Entity)
@@ -629,6 +667,16 @@ func ResolveIntent(prog *ast.Program) error {
 		}
 		target := g.Target
 		verb := CanonVerb(g.Verb)
+		if verb == "enviar_codigo" && strings.HasPrefix(target, "branch_padrao") {
+			rest := strings.TrimPrefix(target, "branch_padrao")
+			for _, p := range []string{"_dos_", "_das_", "_do_", "_da_", "_de_", "_"} {
+				if strings.HasPrefix(rest, p) {
+					rest = strings.TrimPrefix(rest, p)
+					break
+				}
+			}
+			target = rest
+		}
 		if target == "perfil" && app.LoginEntity != "" {
 			target, rule.Own = app.LoginEntity, true
 		}
@@ -636,7 +684,7 @@ func ResolveIntent(prog *ast.Program) error {
 		if err != nil {
 			return err
 		}
-		if g.Only {
+		if g.Only && !(verb == "enviar_codigo" && strings.HasPrefix(g.Target, "branch_padrao")) {
 			key := e.Singular + ":" + verb
 			if !onlyCleared[key] {
 				delete(e.Rules, verb)
@@ -656,6 +704,14 @@ func ResolveIntent(prog *ast.Program) error {
 					addRule(child, &cp)
 				}
 			}
+			continue
+		}
+		if verb == "enviar_codigo" && strings.HasPrefix(g.Target, "branch_padrao") {
+			// somente maintainer pode enviar código para a branch padrão dos projetos
+			if rule.MinRole == "" {
+				return r.errAt(g.Pos, "a branch padrão é protegida por um papel, por exemplo: somente maintainer pode enviar código para a branch padrão dos projetos")
+			}
+			e.ProtectedBranchRole = rule.MinRole
 			continue
 		}
 		if child := r.derivedChild(e, verb); child != nil {

@@ -28,6 +28,8 @@ type Intent struct {
 	States            []*StateDecl
 	Visibility        []*VisibilityRule
 	Vocabulary        map[string]string
+	Ceilings          []*VisibilityCeiling
+	Creators          []*CreatorRole
 }
 
 // EntityDecl: `tenha clientes` plus the fields from `cada cliente tem`.
@@ -154,6 +156,8 @@ func MergeIntent(a, b *Intent) *Intent {
 	a.Init = append(a.Init, b.Init...)
 	a.FieldBlocks = append(a.FieldBlocks, b.FieldBlocks...)
 	a.States = append(a.States, b.States...)
+	a.Ceilings = append(a.Ceilings, b.Ceilings...)
+	a.Creators = append(a.Creators, b.Creators...)
 	a.Visibility = append(a.Visibility, b.Visibility...)
 	if a.Vocabulary == nil {
 		a.Vocabulary = b.Vocabulary
@@ -218,5 +222,19 @@ type VisibilityRule struct {
 	Entity string
 	Flag   string
 	Who    []string
+	Pos    diagnostics.Position
+}
+
+// VisibilityCeiling: `grupo não pode ser mais visível que o grupo pai`.
+type VisibilityCeiling struct {
+	Entity string
+	Parent string // entity name, or "pai" for the hierarchy parent
+	Pos    diagnostics.Position
+}
+
+// CreatorRole: `quem cria grupo vira owner`.
+type CreatorRole struct {
+	Entity string
+	Role   string
 	Pos    diagnostics.Position
 }

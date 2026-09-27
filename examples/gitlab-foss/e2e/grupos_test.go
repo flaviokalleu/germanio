@@ -22,7 +22,7 @@ func TestGruposMembrosPapeis(t *testing.T) {
 	}
 	// Quem cria vira owner
 	ms := ada.list("/api/v4/groups/" + id(g) + "/members")
-	if len(ms) != 1 || ms[0].(map[string]any)["papel"] != "owner" {
+	if len(ms) != 1 || ms[0].(map[string]any)["access_level"] != float64(50) {
 		t.Fatalf("owner inicial: %v", ms)
 	}
 	// Subgrupo herda o caminho e não pode ser mais visível que o pai

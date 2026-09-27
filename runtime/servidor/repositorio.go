@@ -151,11 +151,15 @@ func (a *intentAPI) serveGit(w http.ResponseWriter, r *http.Request, entities []
 		return map[string]any{"atual": nilIfEmpty(atual), "registro": row, e.Singular: row, "atualizacoes": updatesToMaps(list)}
 	}
 	var check func([]git.RefUpdate) error
-	if h := e.Hooks["antes_enviar_codigo"]; h != nil && service == "receive-pack" {
+	if service == "receive-pack" {
 		check = func(list []git.RefUpdate) error {
-			_, _, err := a.in.RunHook(ctx, h, vars(list))
-			if err != nil {
+			if err := a.protectedBranch(ctx, atual, e, row, list); err != nil {
 				return fmt.Errorf("%s", interp.Friendly(err))
+			}
+			if h := e.Hooks["antes_enviar_codigo"]; h != nil {
+				if _, _, err := a.in.RunHook(ctx, h, vars(list)); err != nil {
+					return fmt.Errorf("%s", interp.Friendly(err))
+				}
 			}
 			return nil
 		}
@@ -374,6 +378,9 @@ func (a *intentAPI) mountRepository(mux *http.ServeMux, base string, e *ast.Enti
 
 // pushCheck runs `antes de enviar código` for changes made through the API.
 func (a *intentAPI) pushCheck(ctx *interp.Context, atual map[string]any, e *ast.Entity, row map[string]any, updates []git.RefUpdate) error {
+	if err := a.protectedBranch(ctx, atual, e, row, updates); err != nil {
+		return err
+	}
 	h := e.Hooks["antes_enviar_codigo"]
 	if h == nil {
 		return nil
@@ -421,4 +428,22 @@ func defaultBranch(row map[string]any) string {
 		}
 	}
 	return "main"
+}
+
+// protectedBranch: `somente <papel> pode enviar código para a branch padrão`.
+func (a *intentAPI) protectedBranch(ctx *interp.Context, atual map[string]any, e *ast.Entity, row map[string]any, updates []git.RefUpdate) error {
+	if e.ProtectedBranchRole == "" || a.in.IsAdmin(atual) {
+		return nil
+	}
+	main := "refs/heads/" + defaultBranch(row)
+	for _, u := range updates {
+		if u.Ref == main && a.in.Level(ctx, atual, e, row) < a.app.Level(e.ProtectedBranchRole) {
+			msg := fmt.Sprintf("Somente %s pode enviar código para a branch padrão", e.ProtectedBranchRole)
+			if a.app.Messages == "en" {
+				msg = "You are not allowed to push code to protected branches on this project."
+			}
+			return &interp.RuntimeError{Status: 403, Message: msg}
+		}
+	}
+	return nil
 }

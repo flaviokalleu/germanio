@@ -16,12 +16,14 @@ projeto tem
 
 projeto pertence a grupo opcional
 projeto herda membros do grupo
+projeto não pode ser mais visível que o grupo
 
 usuario pode criar seus projetos
 developer pode criar projetos
 guest pode ver projetos
 reporter pode baixar código dos projetos
 developer pode enviar código para projetos
+somente maintainer pode enviar código para a branch padrão dos projetos
 maintainer pode administrar projeto
 somente owner pode excluir projetos
 

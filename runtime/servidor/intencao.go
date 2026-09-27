@@ -466,6 +466,17 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 				return
 			}
 		}
+		merged := map[string]any{}
+		for k, v := range row {
+			merged[k] = v
+		}
+		for k, v := range data {
+			merged[k] = v
+		}
+		if err := a.guards(ctx, atual, e, merged, row); err != nil {
+			a.failErr(w, r, err)
+			return
+		}
 		updated, err := a.in.Op(ctx, e.Singular, "atualizar", row["id"], data)
 		if err != nil {
 			a.failErr(w, r, err)
@@ -638,12 +649,23 @@ func (a *intentAPI) create(w http.ResponseWriter, r *http.Request, ctx *interp.C
 			return
 		}
 	}
+	if err := a.guards(ctx, atual, e, data, nil); err != nil {
+		a.failErr(w, r, err)
+		return
+	}
 	res, err := a.in.Op(ctx, e.Singular, "criar", data)
 	if err != nil {
 		a.failErr(w, r, err)
 		return
 	}
 	row := res.(map[string]any)
+	if e.CreatorRole != "" && atual != nil {
+		if _, err := a.in.Op(ctx, a.app.MemberModel, "criar", map[string]any{"recurso": e.Singular, "recurso_id": row["id"], "pessoa_id": atual["id"], "papel": e.CreatorRole}); err != nil {
+			a.in.Op(ctx, e.Singular, "deletar", row["id"])
+			a.failErr(w, r, err)
+			return
+		}
+	}
 	if err := a.createRepository(ctx, e, row); err != nil {
 		a.in.Op(ctx, e.Singular, "deletar", row["id"])
 		a.failErr(w, r, err)
@@ -943,6 +965,10 @@ func (a *intentAPI) outward(v any) any {
 			if s, ok := val.(string); ok && states[k] {
 				val = a.ext(s)
 			}
+			// Roles renamed in the vocabulary travel as their levels (30 = developer).
+			if s, ok := val.(string); ok && k == "papel" && a.ext("papel") != "papel" && a.app.Level(s) > 0 {
+				val = a.app.Level(s)
+			}
 			out[a.ext(k)] = val
 		}
 		return out
@@ -974,7 +1000,60 @@ func (a *intentAPI) inwardBody(body map[string]any) map[string]any {
 		if s, ok := v.(string); ok && states[key] {
 			v = a.inward(s)
 		}
+		if n, ok := v.(float64); ok && key == "papel" {
+			for _, role := range a.app.Roles {
+				if float64(role.Level) == n {
+					v = role.Name
+				}
+			}
+		}
 		out[key] = v
 	}
 	return out
+}
+
+// guards applies built-in safety rules before a record is saved:
+//   - visibility ceilings (never more visible than the parent);
+//   - nobody grants a role above their own (memberships).
+func (a *intentAPI) guards(ctx *interp.Context, atual map[string]any, e *ast.Entity, data, before map[string]any) error {
+	order := map[string]int{"private": 0, "internal": 1, "public": 2}
+	for _, field := range e.CeilingFields {
+		if data[field] == nil {
+			continue
+		}
+		pe := a.app.Entities[e.Parents[field]]
+		res, _ := a.in.Op(ctx, pe.Singular, "buscar", data[field])
+		parent, _ := res.(map[string]any)
+		if parent == nil {
+			continue
+		}
+		mine := fmt.Sprint(data[e.Visibility])
+		if mine == "<nil>" || mine == "" {
+			mine = "private"
+		}
+		if order[mine] > order[fmt.Sprint(parent[pe.Visibility])] {
+			msg := fmt.Sprintf("A visibilidade não pode ser maior que a de %s", pe.Label)
+			if a.app.Messages == "en" {
+				msg = fmt.Sprintf("Visibility level %s is not allowed since the %s has a more restrictive visibility", mine, strings.ToLower(pe.Label))
+			}
+			return &interp.RuntimeError{Status: 400, Message: msg, Payload: map[string]any{e.Visibility: []any{msg}}}
+		}
+	}
+	if e.Singular == a.app.MemberModel && !a.in.IsAdmin(atual) {
+		target := a.app.Entities[fmt.Sprint(data["recurso"])]
+		if target != nil {
+			res, _ := a.in.Op(ctx, target.Singular, "buscar", data["recurso_id"])
+			rec, _ := res.(map[string]any)
+			mine := a.in.Level(ctx, atual, target, rec)
+			want := a.app.Level(fmt.Sprint(data["papel"]))
+			had := 0
+			if before != nil {
+				had = a.app.Level(fmt.Sprint(before["papel"]))
+			}
+			if want > mine || had > mine {
+				return &interp.RuntimeError{Status: 403, Message: a.msg("403", e)}
+			}
+		}
+	}
+	return nil
 }
