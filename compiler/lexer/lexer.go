@@ -617,6 +617,37 @@ func (l *Lexer) scanToken() error {
 func (l *Lexer) scanString() error {
 	startLine := l.line
 	startCol := l.col
+
+	// Multiline string support with """
+	if l.pos+2 < len(l.source) && l.source[l.pos] == '"' && l.source[l.pos+1] == '"' && l.source[l.pos+2] == '"' {
+		l.pos += 3
+		l.col += 3
+		var buf strings.Builder
+		for l.pos < len(l.source) {
+			if l.pos+2 < len(l.source) && l.source[l.pos] == '"' && l.source[l.pos+1] == '"' && l.source[l.pos+2] == '"' {
+				break
+			}
+			ch := l.source[l.pos]
+			if ch == '\n' {
+				l.line++
+				l.col = 1
+				l.pos++
+				buf.WriteByte('\n')
+				continue
+			}
+			buf.WriteRune(ch)
+			l.pos++
+			l.col++
+		}
+		if l.pos >= len(l.source) {
+			return fmt.Errorf("unterminated multiline string at line %d, column %d", startLine, startCol)
+		}
+		l.pos += 3
+		l.col += 3
+		l.tokens = append(l.tokens, Token{Type: TokenString, Value: buf.String(), Line: startLine, Column: startCol})
+		return nil
+	}
+
 	l.advance() // skip opening quote
 	var buf strings.Builder
 	for l.pos < len(l.source) && l.peek() != '"' {
