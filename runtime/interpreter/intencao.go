@@ -306,6 +306,12 @@ func (interp *Interpreter) RulePasses(ctx *Context, atual map[string]any, e *ast
 	if r.Own && !interp.Owns(atual, e, record) {
 		return false
 	}
+	// Inside something that has members, generic rules (anyone, any signed-in
+	// person) only count when that thing is public/internal; otherwise only
+	// roles decide. Ownership rules keep their own meaning.
+	if (r.Anyone || r.SignedIn) && !r.Own && record != nil && interp.hiddenMemberedAncestor(atual, e, record, 0) {
+		return false
+	}
 	switch {
 	case r.Anyone:
 		return true
@@ -491,4 +497,36 @@ func (interp *Interpreter) external(name string) string {
 		return v
 	}
 	return name
+}
+
+// hiddenMemberedAncestor: the nearest ancestor that has members (or the
+// record itself when it has members) is not visible through visibility.
+func (interp *Interpreter) hiddenMemberedAncestor(atual map[string]any, e *ast.Entity, record map[string]any, depth int) bool {
+	if depth > 8 || record == nil || interp.App == nil {
+		return false
+	}
+	app := interp.App
+	if e.Singular == app.MemberModel {
+		if target, ok := app.Entities[toString(record["recurso"])]; ok {
+			return interp.hiddenMemberedAncestor(atual, target, interp.load(target, record["recurso_id"]), depth+1)
+		}
+		return false
+	}
+	if e.HasMembers || e.InheritVia != "" {
+		if record["id"] == nil && depth == 0 {
+			// being created: judged by its parent below
+		} else {
+			return !interp.visible(atual, e, record)
+		}
+	}
+	for field, target := range e.Parents {
+		if target == app.LoginEntity || record[field] == nil {
+			continue
+		}
+		pe := app.Entities[target]
+		if interp.hasMembersChain(pe, 0) {
+			return interp.hiddenMemberedAncestor(atual, pe, interp.load(pe, record[field]), depth+1)
+		}
+	}
+	return false
 }

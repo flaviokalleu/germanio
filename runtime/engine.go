@@ -378,3 +378,30 @@ func checarDuplicatas(program *ast.Program) error {
 	}
 	return nil
 }
+
+// Compilar parses a program with its imports and resolves the intent layer
+// without opening a database or starting anything (ge check / ge explain).
+func Compilar(arquivo string) (*ast.Program, error) {
+	program, err := parseFG(arquivo)
+	if err != nil {
+		return nil, err
+	}
+	if err := resolveImportsQuiet(program, filepath.Dir(arquivo)); err != nil {
+		return nil, err
+	}
+	if err := parser.ResolveIntent(program); err != nil {
+		return nil, err
+	}
+	if err := checarDuplicatas(program); err != nil {
+		return nil, err
+	}
+	return program, nil
+}
+
+func resolveImportsQuiet(program *ast.Program, dir string) error {
+	stdout := os.Stdout
+	devnull, _ := os.Open(os.DevNull)
+	os.Stdout = devnull
+	defer func() { os.Stdout = stdout; devnull.Close() }()
+	return resolveImports(program, dir, nil)
+}

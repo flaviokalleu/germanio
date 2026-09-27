@@ -286,7 +286,8 @@ func (p *Parser) fieldFromTokens(t []lexer.Token) (*ast.Field, error) {
 	if !p.isNameToken(name) && !lexer.IsBlockKeyword(name.Type) {
 		return nil, p.errorf(name, "nome de campo esperado, encontrado %q", name.Value)
 	}
-	f := &ast.Field{Name: name.Name(), Pos: p.at(name)}
+	// Names are accent-folded so "descrição" and "descricao" are the same field.
+	f := &ast.Field{Name: foldWord(name.Name()), Pos: p.at(name)}
 	i := 1
 	if i < len(t) && t[i].Type == lexer.TokenColon {
 		i++

@@ -11,7 +11,9 @@ import (
 	legacy "github.com/flaviokalleu/germanio/cli"
 	"github.com/flaviokalleu/germanio/compiler/diagnostics"
 	"github.com/flaviokalleu/germanio/compiler/semantic"
+	germanioRuntime "github.com/flaviokalleu/germanio/runtime"
 	"github.com/flaviokalleu/germanio/runtime/germanio"
+	"github.com/flaviokalleu/germanio/tooling/explicar"
 	"github.com/flaviokalleu/germanio/tooling/formatter"
 	"github.com/flaviokalleu/germanio/tooling/intelligence"
 )
@@ -81,8 +83,22 @@ func Run(args []string, in io.Reader, out, stderr io.Writer) int {
 		fmt.Fprint(out, graph.RenderTextTree())
 		return 0
 	case "explain":
-		if len(rest) < 2 || (rest[0] != "pagina" && rest[0] != "tela") {
-			return fail(fmt.Errorf("Uso: ge explain pagina <nome>"))
+		if len(rest) >= 1 && rest[0] != "pagina" && rest[0] != "tela" {
+			// ge explain <dado> [app.ge]
+			file := findEntry(rest[1:])
+			prog, err := germanioRuntime.Compilar(file)
+			if err != nil {
+				return fail(err)
+			}
+			text, err := explicar.Entidade(prog, rest[0])
+			if err != nil {
+				return fail(err)
+			}
+			fmt.Fprint(out, text)
+			return 0
+		}
+		if len(rest) < 2 {
+			return fail(fmt.Errorf("Uso: ge explain <dado> [app.ge] ou ge explain pagina <nome>"))
 		}
 		cwd, _ := os.Getwd()
 		graph, err := intelligence.NewProjectAnalyzer(cwd).Analyze()
@@ -196,6 +212,20 @@ func Run(args []string, in io.Reader, out, stderr io.Writer) int {
 			}
 		}
 		m, err := semantic.Load(path)
+		if err != nil && cmd == "check" {
+			// Programas de aplicação (intenção / full-stack)
+			prog, cerr := germanioRuntime.Compilar(path)
+			if cerr != nil {
+				return fail(cerr)
+			}
+			if prog.App != nil {
+				for _, w := range explicar.Verificar(prog) {
+					fmt.Fprintln(out, "aviso:", w)
+				}
+				fmt.Fprintf(out, "Germanio: %s verificado — %d dados, %d papéis.\n", prog.System.Name, len(prog.App.Entities), len(prog.App.Roles))
+				return 0
+			}
+		}
 		if err != nil {
 			// Fallback: se não for modo semântico estrito, tentar com o engine Germanio
 			oldcmd := cmd
@@ -466,4 +496,17 @@ func replace(path string, data []byte) error {
 		return closeErr
 	}
 	return os.Rename(f.Name(), path)
+}
+
+// findEntry picks the program file: the argument, or app.ge / inicio.ge.
+func findEntry(args []string) string {
+	if len(args) > 0 {
+		return args[0]
+	}
+	for _, f := range []string{"app.ge", "inicio.ge"} {
+		if _, err := os.Stat(f); err == nil {
+			return f
+		}
+	}
+	return "app.ge"
 }

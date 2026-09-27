@@ -63,6 +63,43 @@ erros de validação reunidos por campo (`{"message": {"email": ["já está em u
 excluir remove o que pertence ao registro; nada fica pela metade se `antes de`/`quando`
 falhar em uma criação.
 
+## Estados, condições e pessoas
+
+```ge
+issue tem
+    numero por projeto          # 1, 2, 3… dentro de cada projeto
+    titulo obrigatório até 255
+    autor                       # uma pessoa (dona do registro)
+    responsaveis                # várias pessoas
+    labels                      # dados já conhecidos (do projeto)
+    comentarios                 # o que pertence à issue
+
+issue começa aberta
+issue pode
+    fechar                      # → fechada; registra fechada_em e fechada_por
+    reabrir                     # re-/des- voltam ao estado inicial
+    ser confidencial            # condição sim/não
+
+issue confidencial pode ser vista por
+    autor
+    responsaveis
+    reporter ou superior
+
+grupo não pode ser mais visível que o grupo pai
+quem cria grupo vira owner
+somente maintainer pode enviar código para a branch padrão dos projetos
+```
+
+- `X pode <verbo>` **sem objeto** é capacidade do dado; **com objeto** (`usuario pode criar issues`) é permissão.
+- Estados mudam só por ação; editar não altera `estado` nem carimbos.
+- Particípio segue o gênero do estado inicial (aberta → fechada; ativo → bloqueado).
+- Pessoas reconhecidas em `tem`: autor, dono, criador, responsavel, revisor, aprovador… (uma);
+  responsaveis, revisores, participantes, seguidores… (várias).
+- Quando dois `tem` citam o mesmo dado (`projeto tem labels`, `issue tem labels`), o ancestral é o dono
+  e o descendente guarda uma lista.
+- `comentar issues` = criar comentarios da issue (o verbo começa o nome do dado filho).
+- Nomes de campos ignoram acento (`descrição` = `descricao`).
+
 ## Quem pode fazer o quê
 
 ```ge
@@ -96,7 +133,10 @@ todos podem ver produtos
   Embutidas: `sair` (deixa de ser membro), `revogar` (dados revogáveis), `baixar código`/`enviar código`.
 - Um campo `visibility` (`private`/`internal`/`public`) libera ver e baixar código para todos
   (público) ou para quem está conectado (interno).
-- Dentro de algo que tem membros, só papéis decidem (ser conectado não basta para criar projeto em grupo).
+- Dentro de algo que tem membros, regras genéricas (todos, qualquer pessoa conectada) só valem se esse algo
+  for público ou interno; caso contrário só papéis decidem — para ver, criar, editar ou excluir.
+- Pesquisa e filtros mudam como se encontra, nunca quem vê.
+- Ninguém concede papel acima do próprio.
 - Nada que pertence a uma pessoa é criado em nome de outra, exceto por administradores.
 - Registros invisíveis respondem "não encontrado", nunca "proibido".
 
@@ -146,7 +186,27 @@ login aceita oauth por 2 horas
 O runtime oferece `entrar`, `sair`, `cadastro`, sessão com CSRF, tokens (cabeçalho, `Bearer`,
 HTTP Basic para git) e `oauth/token`. O cadastro nunca aceita campos como `admin`.
 
-## Integração
+## Integração e compatibilidade
+
+```ge
+disponibilize para integração
+    issues
+    comentarios como "notes"
+
+vocabulário da integração        # só nomes externos; o domínio segue em português
+    titulo é "title"
+    aberta é "opened"
+    fechar é "close"
+    papel é "access_level"       # papéis viajam como seus níveis
+```
+
+## Inspeção
+
+`ge explain issue` mostra campos (declarados e internos), relações, estados, visibilidade,
+quem pode cada ação, regras explícitas e endereços. `ge check app.ge` valida e avisa sobre dados
+que ninguém pode usar e ações que seguem o padrão de edição.
+
+## Integração (detalhes)
 
 `disponibilize projetos para integração como "projects"` + `integração em "/api/v4"`
 publica listar (busca, filtros, paginação com `X-Total`), ver (por id ou campo único),

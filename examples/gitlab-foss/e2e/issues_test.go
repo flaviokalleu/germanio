@@ -91,3 +91,21 @@ func TestFluxo3Issues(t *testing.T) {
 	bob.must("DELETE", "/api/v4/projects/"+pid+"/issues/2", nil, 403)
 	ada.must("DELETE", "/api/v4/projects/"+pid+"/issues/2", nil, 204)
 }
+
+// Issues de projeto privado nunca aparecem para quem não é membro,
+// mesmo com pesquisa liberada.
+func TestIssuesPrivadasNaoVazam(t *testing.T) {
+	base := gitlab(t)
+	ada := signup(t, base, "ada")
+	eve := signup(t, base, "eve")
+	priv := ada.must("POST", "/api/v4/projects", map[string]any{"name": "Secret", "path": "secret"}, 201)
+	ada.must("POST", "/api/v4/projects/"+id(priv)+"/issues", map[string]any{"title": "plano secreto"}, 201)
+	eve.must("GET", "/api/v4/projects/"+id(priv)+"/issues", nil, 404)
+	eve.must("GET", "/api/v4/projects/"+id(priv)+"/issues/1", nil, 404)
+	for _, it := range eve.list("/api/v4/issues?search=plano") {
+		t.Fatalf("issue privada vazou na listagem geral: %v", it)
+	}
+	if l := ada.list("/api/v4/issues?search=plano"); len(l) != 1 {
+		t.Fatalf("dona deve encontrar sua issue: %v", l)
+	}
+}

@@ -621,8 +621,8 @@ func ResolveIntent(prog *ast.Program) error {
 		verb := CanonVerb(pm.Verb)
 		switch verb {
 		case "pesquisar":
+			// Search changes how people find records, never who sees them.
 			e.Search = searchable(e)
-			addRule(e, &ast.AccessRule{Verb: "ver", SignedIn: app.LoginEntity != "", Anyone: app.LoginEntity == ""})
 		case "filtrar":
 			for i, f := range pm.By {
 				if fieldByNameAST(e.Model, f) == nil && fieldByNameAST(e.Model, f+"_id") != nil {
@@ -634,7 +634,6 @@ func ResolveIntent(prog *ast.Program) error {
 				}
 				e.Filters = appendUnique(e.Filters, f)
 			}
-			addRule(e, &ast.AccessRule{Verb: "ver", SignedIn: app.LoginEntity != "", Anyone: app.LoginEntity == ""})
 		default:
 			if err := r.checkVerb(e, verb, pm.Pos); err != nil {
 				return err
@@ -867,7 +866,7 @@ func (r *resolver) membership(e *ast.Entity, member string, pos diagnostics.Posi
 func searchable(e *ast.Entity) []string {
 	var out []string
 	for _, f := range e.Model.Fields {
-		if (f.Type == ast.FieldTexto || f.Type == ast.FieldEmail || f.Type == ast.FieldTextoLongo) && !f.IsSecret() && !f.Hidden {
+		if (f.Type == ast.FieldTexto || f.Type == ast.FieldEmail || f.Type == ast.FieldTextoLongo) && !f.IsSecret() && !f.Hidden && !f.System && !f.Private {
 			out = append(out, strings.ToLower(f.Name))
 		}
 	}
