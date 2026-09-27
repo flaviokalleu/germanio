@@ -69,3 +69,13 @@ Commands: `run`, `check`, `new`, `init`, `build`, `docker`, `version`, `help`.
 - **Security**: Auth bypass fixed, SSRF blocked, eval requires admin, XSS escaped, path traversal prevented, uploads whitelisted, body limited, JWT from env, CSV injection protected.
 - **Async**: Go goroutines exposed to the scripting engine via `paralelo()`, `timeout()`, etc.
 - **Validation rules**: `validar` statements in logic blocks are enforced in `banco.Validar()` on create and update.
+
+## Germanio Simplicity Gate
+
+Antes de criar, modificar ou revisar qualquer arquivo `.ge`, leia obrigatoriamente
+`skills/germanio-simplicity/SKILL.md`. Nenhum `.ge` é considerado concluído sem passar pelo
+checklist dessa skill. Quando `.ge` não conseguir expressar algo de forma simples: não
+implemente a regra da aplicação em Go; identifique a capability genérica faltante,
+implemente o mecanismo no Germanio, exponha uma interface simples para `.ge`, teste, volte à
+aplicação e refatore o `.ge` obsoleto. A aplicação descreve intenção; Go implementa mecanismos.
+Referência da linguagem de intenção: `docs/INTENCAO.md`.

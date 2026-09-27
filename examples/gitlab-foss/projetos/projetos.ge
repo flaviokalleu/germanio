@@ -1,20 +1,20 @@
-# Projetos e seus repositórios (Project, ProjectMember)
+# Projetos e seus repositórios.
 
 tenha projetos
 
-cada projeto tem
-    name obrigatório
-    path obrigatório valida caminho_de_projeto
-    full_path único
-    description
-    visibility
-    default_branch começa com "main"
-    archived começa com falso
+projeto tem
+    nome obrigatório
+    caminho obrigatório valida caminho_de_projeto
+    caminho_completo único
+    descrição
+    visibilidade
+    branch_padrao começa com "main"
+    arquivado começa com falso
+    repositório
+    criador
+    membros com papel
 
-projeto tem repositório
 projeto pertence a grupo opcional
-projeto pertence a usuario como criador
-projeto tem membros com papel
 projeto herda membros do grupo
 
 usuario pode criar seus projetos

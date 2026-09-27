@@ -144,7 +144,7 @@ func (interp *Interpreter) prepareWrite(c *Call, m *ast.Model, data map[string]a
 			switch {
 			case f.HasDefault:
 				out[key] = f.DefaultValue
-			case f.Name == "expires_at" && m.ExpiresDays > 0:
+			case f.Name == "expira_em" && m.ExpiresDays > 0:
 				out[key] = time.Now().UTC().AddDate(0, 0, m.ExpiresDays).Format("2006-01-02")
 			case f.Type == ast.FieldSegredo:
 				secret := f.Prefix + randomToken(20)
@@ -421,12 +421,12 @@ func checkSecretFilters(c *Call, m *ast.Model, filtros map[string]any) {
 // secretActive reports whether a record found by secret may authenticate.
 func secretActive(m *ast.Model, row map[string]any) bool {
 	if m.Revocable {
-		if b, ok := row["revoked"].(bool); ok && b {
+		if b, ok := row["revogado"].(bool); ok && b {
 			return false
 		}
 	}
-	if m.ExpiresDays > 0 || fieldByName(m, "expires_at") != nil {
-		if exp, ok := row["expires_at"].(string); ok && exp != "" && exp[:min(10, len(exp))] < time.Now().UTC().Format("2006-01-02") {
+	if m.ExpiresDays > 0 || fieldByName(m, "expira_em") != nil {
+		if exp, ok := row["expira_em"].(string); ok && exp != "" && exp[:min(10, len(exp))] < time.Now().UTC().Format("2006-01-02") {
 			return false
 		}
 	}

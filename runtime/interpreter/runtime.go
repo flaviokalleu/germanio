@@ -589,7 +589,7 @@ func (interp *Interpreter) dbCall(c *Call, model, method string, args []any) any
 		if !m.Revocable {
 			panic(c.Fail(0, "%s: o modelo não é revogavel", c.Name))
 		}
-		row, err := db.AtualizarMapa(model, int64(c.Num(args, 0, "id")), map[string]any{"revoked": true})
+		row, err := db.AtualizarMapa(model, int64(c.Num(args, 0, "id")), map[string]any{"revogado": true})
 		if err != nil {
 			fail(err)
 		}

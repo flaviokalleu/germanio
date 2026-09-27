@@ -1,13 +1,11 @@
 # GitLab FOSS reimplementado em Germanio.
-# O que existe, quem pode fazer o quê e o que deve acontecer.
+# O que existe, quem pode fazer o quê, o que deve acontecer.
 
 crie sistema gitlab
-
-mensagens em inglês
-integração em "/api/v4"
 
 importar "identidade/usuarios.ge"
 importar "grupos/grupos.ge"
 importar "projetos/projetos.ge"
 importar "issues/issues.ge"
 importar "regras.ge"
+importar "compatibilidade.ge"

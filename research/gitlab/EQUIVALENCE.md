@@ -10,8 +10,9 @@ PARTIAL não significa concluído. Cada PASS aponta para um teste executável
 | Grupos, subgrupos, membros e papéis | Group, GroupMember, ProjectPolicy | `tenha papeis`, `membros com papel`, `herda membros`, `administrar` | `TestGruposMembrosPapeis` | PASS | membros usam `papel` e `pessoa_id`; aceita `user_id`/`access_level` na entrada |
 | Branch padrão protegida (push) | ProtectedBranch, pre-receive | `antes de enviar código para projeto` | `TestGruposMembrosPapeis` | PASS | force-push não é distinguido (ver G34) |
 | Último owner não sai | Members::DestroyService | `antes de excluir membro` + `recuse` | `TestGruposMembrosPapeis` | PASS | |
+| Bloquear/desbloquear usuário | Users::BlockService | `usuario começa ativo` + `usuario pode bloquear/desbloquear` | (coberto pela máquina de estados) | PARTIAL | falta teste E2E dedicado |
 | Tokens de acesso: criar, listar sem segredo, revogar, expirar | PersonalAccessToken | `segredo prefixo`, `expira em`, `revogavel` | `TestFluxo2CloneCommitPush` | PARTIAL | escopos não restringem ainda (G33); rota `/personal_access_tokens` (GitLab: `/user/personal_access_tokens`) |
-| Fluxo 3: issue → comment → assign → close | Issues::*Service | — | — | NOT_STARTED | próximo |
+| Fluxo 3: issue → comment → assign → close | Issues::*Service, Notes, Labels | `issue começa aberta`, `issue pode fechar/reabrir/ser confidencial`, `issue confidencial pode ser vista por`, `numero por projeto` | `TestFluxo3Issues` | PASS | fechar/reabrir via `POST …/close|reopen` (GitLab: `PUT state_event`); labels por id (GitLab: por nome) |
 | Fluxo 4: branch → push → MR → diff → review → merge | MergeRequests::*Service | capability git pronta (merge-tree, merge) | — | NOT_STARTED | |
 | Fluxo 5: pipeline → job → runner → logs → result | Ci::* + runner API | — | — | NOT_STARTED | |
 | Negativos: acesso proibido, input inválido, repo/branch inexistente, token inválido, grupo privado | policies/validações | automáticos do runtime + regras | fluxos 1/2/grupos | PARTIAL | faltam: conflito, job falhando, upload inválido |

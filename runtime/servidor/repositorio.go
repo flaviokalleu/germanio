@@ -30,12 +30,7 @@ func (a *intentAPI) createRepository(ctx *interp.Context, e *ast.Entity, row map
 		return nil
 	}
 	path := RepoPath(e.Singular, row["id"])
-	branch := "main"
-	if b, ok := row["default_branch"].(string); ok && b != "" {
-		branch = b
-	} else if b, ok := row["branch_principal"].(string); ok && b != "" {
-		branch = b
-	}
+	branch := defaultBranch(row)
 	if err := a.s.Git.Init(path, branch); err != nil {
 		return err
 	}
@@ -235,10 +230,7 @@ func (a *intentAPI) mountRepository(mux *http.ServeMux, base string, e *ast.Enti
 				return v
 			}
 		}
-		if b, ok := row["default_branch"].(string); ok && b != "" {
-			return b
-		}
-		return "main"
+		return defaultBranch(row)
 	}
 	mux.HandleFunc("GET "+root+"/"+names["branches"], h(func(w http.ResponseWriter, r *http.Request, ctx *interp.Context, atual, row map[string]any, repo string) {
 		list, err := a.s.Git.Branches(repo)
@@ -249,7 +241,7 @@ func (a *intentAPI) mountRepository(mux *http.ServeMux, base string, e *ast.Enti
 		out := []any{}
 		for _, b := range list {
 			c := b.Commit
-			out = append(out, map[string]any{"name": b.Name, "default": b.Name == row["default_branch"], "commit": commitJSON(&c)})
+			out = append(out, map[string]any{"name": b.Name, "default": b.Name == defaultBranch(row), "commit": commitJSON(&c)})
 		}
 		a.json(w, 200, out, nil)
 	}, false))
@@ -270,7 +262,7 @@ func (a *intentAPI) mountRepository(mux *http.ServeMux, base string, e *ast.Enti
 	}, true))
 	mux.HandleFunc("DELETE "+root+"/"+names["branches"]+"/{branch...}", h(func(w http.ResponseWriter, r *http.Request, ctx *interp.Context, atual, row map[string]any, repo string) {
 		name := r.PathValue("branch")
-		if name == row["default_branch"] {
+		if name == defaultBranch(row) {
 			a.fail(w, 400, "Cannot remove the default branch")
 			return
 		}
@@ -419,3 +411,14 @@ func diffJSON(files []git.FileDiff) []any {
 
 var errorsIs = errors.Is
 var errorsAs = errors.As
+
+// defaultBranch reads the record's main branch (branch_padrao,
+// branch_principal or default_branch), "main" when absent.
+func defaultBranch(row map[string]any) string {
+	for _, k := range []string{"branch_padrao", "branch_principal", "default_branch"} {
+		if b, ok := row[k].(string); ok && b != "" {
+			return b
+		}
+	}
+	return "main"
+}

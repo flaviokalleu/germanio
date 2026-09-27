@@ -15,6 +15,7 @@ type App struct {
 	Init        []*Statement
 	MemberModel string // model holding memberships (polymorphic)
 	Messages    string // "pt" (default) or "en"
+	Vocabulary  map[string]string
 }
 
 // Entity is one kind of data the application has.
@@ -35,15 +36,19 @@ type Entity struct {
 	// count here (projeto herda membros do grupo).
 	InheritVia string
 	// Visibility: field holding privado/interno/publico, when present.
-	Visibility  string
-	Rules       map[string][]*AccessRule // verb → alternatives (any grants)
-	Hooks       map[string]*Hook         // verb → hook
-	Integrate   string                   // exposed name for integration, "" = not exposed
-	OwnerFields []string                 // fields pointing to the owner (usuario_id, autor_id, criador_id, dono_id)
-	Repository  bool                     // X tem repositório
-	RepoKey     string                   // field whose value addresses the repository (<valor>.git)
-	Search      []string                 // fields searched by pesquisar
-	Filters     []string                 // fields accepted by filtrar
+	Visibility   string
+	Rules        map[string][]*AccessRule // verb → alternatives (any grants)
+	Hooks        map[string]*Hook         // verb → hook
+	Integrate    string                   // exposed name for integration, "" = not exposed
+	OwnerFields  []string                 // fields pointing to the owner (usuario_id, autor_id, criador_id, dono_id)
+	StateField   string
+	Initial      string
+	Transitions  map[string]*Transition
+	Restrictions []*Restriction
+	Repository   bool     // X tem repositório
+	RepoKey      string   // field whose value addresses the repository (<valor>.git)
+	Search       []string // fields searched by pesquisar
+	Filters      []string // fields accepted by filtrar
 }
 
 // AccessRule says who may perform a verb on an entity.
@@ -64,4 +69,19 @@ func (a *App) Level(role string) int {
 		}
 	}
 	return 0
+}
+
+// Transition moves a record to Target; Stamp records when and by whom.
+type Transition struct {
+	Verb   string
+	Target string
+	Stamp  bool // target is not the initial state: records <alvo>_em / <alvo>_por_id
+}
+
+// Restriction limits who sees records whose Flag is true.
+type Restriction struct {
+	Flag    string
+	Owners  []string // owner fields (autor_id…)
+	Lists   []string // list fields of people (responsaveis)
+	MinRole string
 }

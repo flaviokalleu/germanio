@@ -71,6 +71,8 @@ func (p *Parser) isIntentLine() bool {
 		return true
 	case "mensagens":
 		return len(w) == 3 && w[1] == "em"
+	case "vocabulario":
+		return true
 	case "cada":
 		return len(w) >= 3 && w[len(w)-1] == "tem"
 	case "login":
@@ -83,7 +85,7 @@ func (p *Parser) isIntentLine() bool {
 		return len(w) >= 3 && !legacyTrigger[w[1]]
 	}
 	for _, x := range w[1:] {
-		if x == "tem" || x == "pode" || x == "podem" || x == "pertence" || x == "herda" {
+		if x == "tem" || x == "pode" || x == "podem" || x == "pertence" || x == "herda" || x == "comeca" {
 			return true
 		}
 	}
@@ -111,8 +113,21 @@ func (p *Parser) parseIntentLine() error {
 		in.FieldBlocks = append(in.FieldBlocks, &ast.FieldsDecl{Entity: name, Lines: tokenLines(body), Pos: pos})
 		return nil
 	case "permita":
+		if len(head.toks) == 1 {
+			return p.eachItem(head, body, p.parsePermita)
+		}
 		return p.parsePermita(head, body)
 	case "disponibilize":
+		if len(w) >= 2 && w[1] == "para" {
+			// disponibilize para integração + itens `dados [como "nome"]`
+			for _, l := range body {
+				synthetic := dline{toks: append(append([]lexer.Token{head.toks[0]}, l.toks...), head.toks[1:]...)}
+				if err := p.parseDisponibilize(synthetic); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
 		return p.parseDisponibilize(head)
 	case "integracao":
 		// integração em "/api/v4"
@@ -123,6 +138,19 @@ func (p *Parser) parseIntentLine() error {
 		return nil
 	case "login":
 		return p.parseLoginConfig(head)
+	case "vocabulario":
+		// vocabulário da integração + linhas `nome é "externo"`
+		if in.Vocabulary == nil {
+			in.Vocabulary = map[string]string{}
+		}
+		for _, l := range body {
+			t := l.toks
+			if len(t) != 3 || t[1].Type != lexer.TokenE || t[2].Type != lexer.TokenString {
+				return p.errorf(t[0], `use: <nome> é "nome externo"`)
+			}
+			in.Vocabulary[strings.ToLower(foldWord(t[0].Name()))] = t[2].Value
+		}
+		return nil
 	case "mensagens":
 		switch w[2] {
 		case "ingles", "english":
@@ -165,8 +193,32 @@ func (p *Parser) parseIntentLine() error {
 	case "somente":
 		return p.parsePode(head, body, true)
 	}
+	// X [condição] pode ser vista por ...
+	for i := 0; i+3 < len(w)+1; i++ {
+		if i+3 < len(w) && (w[i] == "pode" || w[i] == "podem") && w[i+1] == "ser" && strings.HasPrefix(w[i+2], "vist") && w[i+3] == "por" {
+			rule := &ast.VisibilityRule{Entity: strings.Join(w[:i], " "), Pos: pos}
+			for _, it := range splitItems(head.toks[i+4:]) {
+				rule.Who = append(rule.Who, strings.Join(it, "_"))
+			}
+			for _, l := range body {
+				for _, it := range splitItems(l.toks) {
+					rule.Who = append(rule.Who, strings.Join(it, "_"))
+				}
+			}
+			in.Visibility = append(in.Visibility, rule)
+			return nil
+		}
+	}
 	for i, x := range w {
 		switch x {
+		case "comeca":
+			// issue começa aberta
+			if i == 0 || i != len(w)-2 {
+				return p.errorf(head.toks[0], "use: <dado> começa <estado>, por exemplo pedido começa aberto")
+			}
+			subject, _ := phrase(w[:i])
+			in.States = append(in.States, &ast.StateDecl{Entity: subject, Initial: w[i+1], Pos: pos})
+			return nil
 		case "pode", "podem":
 			return p.parsePode(head, body, false)
 		case "tem":
@@ -512,7 +564,10 @@ func (p *Parser) parseDisponibilize(head dline) error {
 	as := ""
 	end := len(w)
 	for k, x := range w {
-		if x == "para" {
+		if x == "para" && end == len(w) {
+			end = k
+		}
+		if x == "como" && k < end {
 			end = k
 		}
 		if x == "como" && k+1 < len(head.toks) && head.toks[k+1].Type == lexer.TokenString {
@@ -605,4 +660,18 @@ func unitSeconds(u string) int {
 		return 86400
 	}
 	return 1
+}
+
+// eachItem applies fn to every top-level line of body as if it followed
+// the header word (permita + indented list).
+func (p *Parser) eachItem(head dline, body []dline, fn func(dline, []dline) error) error {
+	for i := 0; i < len(body); i++ {
+		kids := children(body, i)
+		synthetic := dline{toks: append([]lexer.Token{head.toks[0]}, body[i].toks...)}
+		if err := fn(synthetic, kids); err != nil {
+			return err
+		}
+		i += len(kids)
+	}
+	return nil
 }

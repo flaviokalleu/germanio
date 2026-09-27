@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/flaviokalleu/germanio/compiler/ast"
 	"github.com/flaviokalleu/germanio/compiler/diagnostics"
@@ -263,6 +264,15 @@ func (interp *Interpreter) Can(ctx *Context, atual map[string]any, e *ast.Entity
 	if interp.IsAdmin(atual) {
 		return true
 	}
+	if verb == "ver" && record != nil {
+		// `X confidencial pode ser vista por …`: when the flag is set, only
+		// those listed see it, whatever else would allow it.
+		for _, rs := range e.Restrictions {
+			if b, _ := record[rs.Flag].(bool); b {
+				return interp.restrictedAllows(ctx, atual, e, rs, record)
+			}
+		}
+	}
 	if verb == "ver" && InheritsView(interp.App, e) && record != nil {
 		// No viewing rule of its own: whoever sees the parent sees it.
 		for field, target := range e.Parents {
@@ -277,6 +287,9 @@ func (interp *Interpreter) Can(ctx *Context, atual map[string]any, e *ast.Entity
 		return true
 	}
 	rules := e.Rules[verb]
+	if len(rules) == 0 && e.Transitions[verb] != nil {
+		rules = e.Rules["editar"] // who may edit may move it between states
+	}
 	if verb == "ver" {
 		// Whoever may change a record may also see it.
 		rules = append(append(append([]*ast.AccessRule{}, rules...), e.Rules["editar"]...), e.Rules["excluir"]...)
@@ -417,4 +430,65 @@ func InheritsView(app *ast.App, e *ast.Entity) bool {
 		}
 	}
 	return false
+}
+
+func (interp *Interpreter) restrictedAllows(ctx *Context, atual map[string]any, e *ast.Entity, rs *ast.Restriction, record map[string]any) bool {
+	if atual == nil {
+		return false
+	}
+	uid := toNumber(atual["id"])
+	for _, f := range rs.Owners {
+		if record[f] != nil && toNumber(record[f]) == uid {
+			return true
+		}
+	}
+	for _, f := range rs.Lists {
+		if list, ok := record[f].([]any); ok {
+			for _, it := range list {
+				if toNumber(it) == uid {
+					return true
+				}
+			}
+		}
+	}
+	return rs.MinRole != "" && interp.Level(ctx, atual, e, record) >= interp.App.Level(rs.MinRole)
+}
+
+// Transition moves a record through its state machine and stamps when and
+// by whom (fechada_em, fechada_por_id). Returning to the initial state
+// clears the stamps.
+func (interp *Interpreter) Transition(ctx *Context, atual map[string]any, e *ast.Entity, tr *ast.Transition, record map[string]any) (map[string]any, error) {
+	if toString(record[e.StateField]) == tr.Target {
+		msg := fmt.Sprintf("%s já está %s", e.Label, tr.Target)
+		if interp.App.Messages == "en" {
+			msg = fmt.Sprintf("%s is already %s", e.Label, interp.external(tr.Target))
+		}
+		return nil, &RuntimeError{Status: 400, Message: msg}
+	}
+	change := map[string]any{e.StateField: tr.Target}
+	if tr.Stamp {
+		change[tr.Target+"_em"] = time.Now().UTC().Format(time.RFC3339)
+		if atual != nil {
+			change[tr.Target+"_por_id"] = atual["id"]
+		}
+	} else {
+		for _, other := range e.Transitions {
+			if other.Stamp {
+				change[other.Target+"_em"] = nil
+				change[other.Target+"_por_id"] = nil
+			}
+		}
+	}
+	res, err := interp.Op(ctx, e.Singular, "atualizar", record["id"], change)
+	if err != nil {
+		return nil, err
+	}
+	return res.(map[string]any), nil
+}
+
+func (interp *Interpreter) external(name string) string {
+	if v, ok := interp.App.Vocabulary[name]; ok {
+		return v
+	}
+	return name
 }

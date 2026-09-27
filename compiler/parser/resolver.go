@@ -124,6 +124,7 @@ func ResolveIntent(prog *ast.Program) error {
 	if in.Messages != "" {
 		app.Messages = in.Messages
 	}
+	app.Vocabulary = in.Vocabulary
 	r := &resolver{app: app, byName: map[string]*ast.Entity{}}
 	prog.App = app
 
@@ -175,8 +176,21 @@ func ResolveIntent(prog *ast.Program) error {
 	}
 
 	// 2. Field blocks: each line is a relation (names another entity,
-	// "membros com papel", "sub<plural>") or a field.
+	// "membros com papel", "sub<plural>"), a person (autor, responsaveis)
+	// or a field.
 	fp := &Parser{}
+	type pendingTem struct {
+		owner, child *ast.Entity
+		pos          diagnostics.Position
+	}
+	type pendingPerson struct {
+		e    *ast.Entity
+		name string
+		many bool
+		pos  diagnostics.Position
+	}
+	var tems []pendingTem
+	var people []pendingPerson
 	for _, b := range in.FieldBlocks {
 		e, err := r.entity(b.Entity, b.Pos)
 		if err != nil {
@@ -199,8 +213,9 @@ func ResolveIntent(prog *ast.Program) error {
 				e.Model.Fields = append(e.Model.Fields, &ast.Field{Name: "pai_id", Type: ast.FieldInteiro, Reference: e.Singular, Index: true, Pos: b.Pos})
 				e.Parents["pai_id"] = e.Singular
 			case r.byName[joined] != nil && len(w) >= 1 && !strings.Contains(joined, "="):
-				child := r.byName[joined]
-				r.hasMany(e, child, b.Pos)
+				tems = append(tems, pendingTem{e, r.byName[joined], b.Pos})
+			case len(w) == 1 && personRoles[w[0]] != "":
+				people = append(people, pendingPerson{e, w[0], personRoles[w[0]] == "muitos", b.Pos})
 			default:
 				fp.File = b.Pos.File
 				before := len(e.Model.Fields)
@@ -214,6 +229,51 @@ func ResolveIntent(prog *ast.Program) error {
 						}
 					}
 				}
+			}
+		}
+	}
+
+	// 2b. "X tem Ys": Y belongs to X, unless Y is claimed by an ancestor of X
+	// too — then the ancestor owns Y and X keeps a list of them
+	// (projeto tem labels; issue tem labels → labels of the project).
+	claimers := map[*ast.Entity][]pendingTem{}
+	var order []*ast.Entity
+	for _, t := range tems {
+		if len(claimers[t.child]) == 0 {
+			order = append(order, t.child)
+		}
+		claimers[t.child] = append(claimers[t.child], t)
+	}
+	for _, child := range order {
+		if len(claimers[child]) == 1 {
+			t := claimers[child][0]
+			r.hasMany(t.owner, t.child, t.pos)
+		}
+	}
+	for _, child := range order {
+		list := claimers[child]
+		if len(list) < 2 {
+			continue
+		}
+		var owner *pendingTem
+		for i := range list {
+			ok := true
+			for j := range list {
+				if i != j && !r.isAncestor(list[i].owner, list[j].owner) {
+					ok = false
+				}
+			}
+			if ok {
+				owner = &list[i]
+			}
+		}
+		if owner == nil {
+			return r.errAt(list[1].pos, "%s aparece em mais de um \"tem\"; diga a quem pertence com: %s pertence a <dado>", child.Plural, child.Singular)
+		}
+		r.hasMany(owner.owner, child, owner.pos)
+		for _, t := range list {
+			if t.owner != owner.owner {
+				t.owner.Model.Fields = append(t.owner.Model.Fields, &ast.Field{Name: child.Plural, Type: ast.FieldLista, ListOf: child.Singular, Pos: t.pos})
 			}
 		}
 	}
@@ -272,6 +332,16 @@ func ResolveIntent(prog *ast.Program) error {
 		}
 	}
 
+	// 7b. States: `issue começa aberta`
+	for _, st := range in.States {
+		e, err := r.entity(st.Entity, st.Pos)
+		if err != nil {
+			return err
+		}
+		e.StateField, e.Initial = "estado", st.Initial
+		e.Transitions = map[string]*ast.Transition{}
+		e.Model.Fields = append(e.Model.Fields, &ast.Field{Name: "estado", Type: ast.FieldTexto, HasDefault: true, DefaultValue: st.Initial, System: true, Index: true, Pos: st.Pos})
+	}
 	// 4. Login entity: the one with a senha field.
 	var withPassword []string
 	for _, n := range app.Order {
@@ -281,6 +351,9 @@ func ResolveIntent(prog *ast.Program) error {
 				break
 			}
 		}
+	}
+	if in.Login == nil && len(people) > 0 {
+		return r.errAt(people[0].pos, "%s é uma pessoa: declare tenha login para que o sistema saiba quem são as pessoas", people[0].name)
 	}
 	if in.Login != nil {
 		if len(withPassword) != 1 {
@@ -307,6 +380,18 @@ func ResolveIntent(prog *ast.Program) error {
 			if fieldByNameAST(le.Model, f) == nil {
 				return r.errAt(in.Login.Pos, "login usa %s, mas %s não tem esse campo", f, le.Singular)
 			}
+		}
+		// People named in `tem` blocks: autor → autor_id, responsaveis → list.
+		for _, pp := range people {
+			if pp.many {
+				pp.e.Model.Fields = append(pp.e.Model.Fields, &ast.Field{Name: pp.name, Type: ast.FieldLista, ListOf: app.LoginEntity, Pos: pp.pos})
+				continue
+			}
+			field := pp.name + "_id"
+			if fieldByNameAST(pp.e.Model, field) == nil {
+				pp.e.Model.Fields = append(pp.e.Model.Fields, &ast.Field{Name: field, Type: ast.FieldInteiro, Reference: app.LoginEntity, Index: true, Pos: pp.pos})
+			}
+			pp.e.Parents[field] = app.LoginEntity
 		}
 		for _, n := range app.Order {
 			e := app.Entities[n]
@@ -419,6 +504,76 @@ func ResolveIntent(prog *ast.Program) error {
 		e.Hooks[verb] = h
 	}
 
+	// 7c. Capabilities: `issue pode fechar / ser confidencial` (subject is data, not a role)
+	var grants []*ast.Grant
+	for _, g := range in.Grants {
+		// A capability has no object: "issue pode fechar", "issue pode ser
+		// confidencial". With an object it is a permission for people.
+		e := r.byName[g.Role]
+		if e == nil || app.Level(g.Role) > 0 || reservedRoles[g.Role] || (g.Target != "" && g.Verb != "ser") {
+			grants = append(grants, g)
+			continue
+		}
+		if g.Verb == "ser" {
+			flag := g.Target
+			if fieldByNameAST(e.Model, flag) == nil {
+				e.Model.Fields = append(e.Model.Fields, &ast.Field{Name: flag, Type: ast.FieldBooleano, HasDefault: true, DefaultValue: false, Pos: g.Pos})
+			}
+			continue
+		}
+		if e.Transitions == nil {
+			return r.errAt(g.Pos, "%s pode %s: diga como %s começa, por exemplo: %s começa aberto", e.Singular, g.Verb, e.Singular, e.Singular)
+		}
+		target := transitionTarget(g.Verb, e.Initial)
+		tr := &ast.Transition{Verb: g.Verb, Target: target, Stamp: target != e.Initial}
+		e.Transitions[g.Verb] = tr
+		if tr.Stamp && fieldByNameAST(e.Model, target+"_em") == nil {
+			e.Model.Fields = append(e.Model.Fields,
+				&ast.Field{Name: target + "_em", Type: ast.FieldTexto, System: true, Pos: g.Pos},
+				&ast.Field{Name: target + "_por_id", Type: ast.FieldInteiro, Reference: app.LoginEntity, System: true, Pos: g.Pos})
+		}
+	}
+	in.Grants = grants
+
+	// 7d. Restricted visibility
+	for _, vr := range in.Visibility {
+		words := strings.Fields(vr.Entity)
+		var e *ast.Entity
+		flag := ""
+		for k := len(words); k > 0; k-- {
+			if cand := r.byName[strings.Join(words[:k], "_")]; cand != nil {
+				e, flag = cand, strings.Join(words[k:], "_")
+				break
+			}
+		}
+		if e == nil || flag == "" {
+			return r.errAt(vr.Pos, "use: <dado> <condição> pode ser visto por …, por exemplo: issue confidencial pode ser vista por autor")
+		}
+		if f := fieldByNameAST(e.Model, flag); f == nil || f.Type != ast.FieldBooleano {
+			return r.errAt(vr.Pos, "%s não tem a condição %q; declare: %s pode ser %s", e.Singular, flag, e.Singular, flag)
+		}
+		rs := &ast.Restriction{Flag: flag}
+		for _, who := range vr.Who {
+			switch {
+			case strings.HasSuffix(who, "_ou_superior"):
+				role := strings.TrimSuffix(who, "_ou_superior")
+				if app.Level(role) == 0 {
+					return r.errAt(vr.Pos, "papel %q não declarado", role)
+				}
+				rs.MinRole = role
+			case app.Level(who) > 0:
+				rs.MinRole = who
+			case fieldByNameAST(e.Model, who+"_id") != nil:
+				rs.Owners = append(rs.Owners, who+"_id")
+			case fieldByNameAST(e.Model, who) != nil && fieldByNameAST(e.Model, who).Type == ast.FieldLista:
+				rs.Lists = append(rs.Lists, who)
+			default:
+				return r.errAt(vr.Pos, "quem é %q? use uma pessoa do dado (autor, responsaveis) ou um papel (reporter ou superior)", who)
+			}
+		}
+		e.Restrictions = append(e.Restrictions, rs)
+	}
+
 	// 8. Permits and grants
 	for _, pm := range in.Permits {
 		e, err := r.entity(pm.Target, pm.Pos)
@@ -431,7 +586,11 @@ func ResolveIntent(prog *ast.Program) error {
 			e.Search = searchable(e)
 			addRule(e, &ast.AccessRule{Verb: "ver", SignedIn: app.LoginEntity != "", Anyone: app.LoginEntity == ""})
 		case "filtrar":
-			for _, f := range pm.By {
+			for i, f := range pm.By {
+				if fieldByNameAST(e.Model, f) == nil && fieldByNameAST(e.Model, f+"_id") != nil {
+					f = f + "_id"
+					pm.By[i] = f
+				}
 				if fieldByNameAST(e.Model, f) == nil {
 					return r.errAt(pm.Pos, "permita filtrar %s por %s: %s não tem esse campo", pm.Target, f, e.Singular)
 				}
@@ -499,6 +658,12 @@ func ResolveIntent(prog *ast.Program) error {
 			}
 			continue
 		}
+		if child := r.derivedChild(e, verb); child != nil {
+			// comentar issues → criar comentarios (que pertencem a issues)
+			rule.Verb = "criar"
+			addRule(child, rule)
+			continue
+		}
 		if err := r.checkVerb(e, verb, g.Pos); err != nil {
 			return err
 		}
@@ -552,7 +717,7 @@ func ResolveIntent(prog *ast.Program) error {
 		e := app.Entities[n]
 		for verb, rules := range e.Rules {
 			if !standardVerb(verb) {
-				builtin := (verb == "sair" && (e.HasMembers || e.InheritVia != "")) || (verb == "revogar" && e.Model.Revocable)
+				builtin := (verb == "sair" && (e.HasMembers || e.InheritVia != "")) || (verb == "revogar" && e.Model.Revocable) || e.Transitions[verb] != nil
 				if _, ok := e.Hooks[verb]; !ok && !builtin {
 					return fmt.Errorf("a ação %q sobre %s não tem definição. Escreva:\n\nquando %s %s\n    ...", verb, e.Plural, verb, e.Singular)
 				}
@@ -676,3 +841,79 @@ func fieldByNameAST(m *ast.Model, name string) *ast.Field {
 }
 
 var _ = lexer.TokenEOF
+
+// personRoles: nouns that name people in `tem` blocks ("um" = one person,
+// "muitos" = several).
+var personRoles = map[string]string{
+	"autor": "um", "dono": "um", "criador": "um", "responsavel": "um", "revisor": "um", "aprovador": "um",
+	"relator": "um", "solicitante": "um", "atendente": "um", "vendedor": "um", "cliente_responsavel": "um",
+	"responsaveis": "muitos", "revisores": "muitos", "aprovadores": "muitos", "participantes": "muitos",
+	"seguidores": "muitos", "atendentes": "muitos", "interessados": "muitos",
+}
+
+func (r *resolver) isAncestor(a, b *ast.Entity) bool {
+	seen := map[*ast.Entity]bool{}
+	var walk func(x *ast.Entity) bool
+	walk = func(x *ast.Entity) bool {
+		if x == nil || seen[x] {
+			return false
+		}
+		seen[x] = true
+		for _, t := range x.Parents {
+			p := r.app.Entities[t]
+			if p == a || walk(p) {
+				return true
+			}
+		}
+		return false
+	}
+	return walk(b)
+}
+
+// derivedChild: `comentar issues` → comentarios that belong to issues. The
+// verb stem (comentar → coment) must start the child's name.
+func (r *resolver) derivedChild(e *ast.Entity, verb string) *ast.Entity {
+	if standardVerb(verb) || len(verb) < 5 || e.Transitions[verb] != nil || e.Hooks[verb] != nil {
+		return nil
+	}
+	stem := verb[:len(verb)-2]
+	for _, c := range e.Children {
+		if strings.HasPrefix(c, stem) {
+			return r.app.Entities[c]
+		}
+	}
+	return nil
+}
+
+// transitionTarget: the state a verb leads to. re-/des- verbs return to the
+// initial state (reabrir, desbloquear); others use the past participle with
+// the gender of the initial state (aberta → fechada, aberto → fechado).
+func transitionTarget(verb, initial string) string {
+	if strings.HasPrefix(verb, "re") || strings.HasPrefix(verb, "des") {
+		return initial
+	}
+	fem := strings.HasSuffix(initial, "a")
+	irregular := map[string]string{"abrir": "abert", "fazer": "feit", "pagar": "pag", "aceitar": "aceit", "escrever": "escrit",
+		"cobrir": "cobert", "ganhar": "ganh", "gastar": "gast", "entregar": "entregu", "por": "post", "ver": "vist"}
+	base, ok := irregular[verb]
+	switch {
+	case ok:
+	case strings.HasSuffix(verb, "ar"):
+		base = verb[:len(verb)-2] + "ad"
+	case strings.HasSuffix(verb, "er"), strings.HasSuffix(verb, "ir"):
+		base = verb[:len(verb)-2] + "id"
+	default:
+		base = verb
+	}
+	if base == "entregu" {
+		return "entregue"
+	}
+	if fem {
+		return base + "a"
+	}
+	return base + "o"
+}
+
+// reservedRoles always name people, never data.
+var reservedRoles = map[string]bool{"membro": true, "membros": true, "administrador": true, "admin": true, "todos": true,
+	"qualquer_pessoa": true, "visitante": true, "autor": true, "dono": true, "criador": true}

@@ -1,7 +1,7 @@
 # AGENT_STATE
 
 ## CURRENT_PHASE
-Fase 3 — GitLab em linguagem de intenção; próximo: Issues (fluxo 3).
+Fase 3 — GitLab em linguagem de intenção; próximo: `ge explain` sobre intenção, depois Merge Requests (fluxo 4).
 
 ## CURRENT_GOAL
 Continuar o GitLab por intenção: issues → merge requests → CI/CD → páginas (UI),
@@ -18,13 +18,14 @@ evoluindo o Germanio a cada parede encontrada.
   permissões, hooks `antes de`/`quando`, integração, repositórios Git.
 - Capability Git (runtime/git): CLI sem shell, smart HTTP com verificação antes de atualizar refs.
 - GitLab `.ge`: identidade, tokens, grupos, subgrupos, membros, projetos, repositórios, navegação.
-- E2E: fluxo 1, fluxo 2 (git real), grupos/papéis — PASS.
+- E2E: fluxo 1, fluxo 2 (git real), grupos/papéis, fluxo 3 (issues) — PASS.
+- Skill de simplicidade em `skills/germanio-simplicity/SKILL.md` (gate no CLAUDE.md); issues refeitas por ela.
+- Domínio GitLab em português; nomes da API v4 em `compatibilidade.ge`.
 
 ## IN_PROGRESS
-- Issues.
+- `ge explain` para a camada de intenção.
 
 ## NEXT
-1. Issues: `projeto tem issues`, labels, comentários, responsáveis, fechar/reabrir, confidencial.
 2. Merge requests: origem/destino, diff, aprovação, merge, conflito.
 3. CI/CD: pipelines, etapas, jobs, runner, logs (tarefas + processo + yaml).
 4. Páginas (`crie página`) — UI conectada, sem botões zumbis.
@@ -51,3 +52,6 @@ teste de arquitetura: `grep -ri gitlab runtime compiler tooling cli` vazio.
 - D6 — Hooks em duas fases: `antes de` (pode ajustar `dados` e recusar) e `quando` (depois).
 - D7 — Mensagens em português por padrão; `mensagens em inglês` para compatibilidade de API.
 - D8 — Registro invisível responde 404; dentro de algo com membros só papéis autorizam criação.
+- D9 — Capability × permissão: `X pode <verbo>` sem objeto é capability do dado; com objeto é permissão.
+- D10 — Domínio sempre em português; compatibilidade externa só por vocabulário.
+- D11 — Pendências de simplificação em regras.ge: endereço hierárquico (caminho_completo), teto de visibilidade, teto de papel ao adicionar membro, branch protegida declarativa (G41–G44).

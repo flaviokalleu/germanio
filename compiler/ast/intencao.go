@@ -25,6 +25,9 @@ type Intent struct {
 	Init              []*Statement
 	FieldBlocks       []*FieldsDecl
 	Messages          string // mensagens em inglês → "en"
+	States            []*StateDecl
+	Visibility        []*VisibilityRule
+	Vocabulary        map[string]string
 }
 
 // EntityDecl: `tenha clientes` plus the fields from `cada cliente tem`.
@@ -150,6 +153,15 @@ func MergeIntent(a, b *Intent) *Intent {
 	a.Pages = append(a.Pages, b.Pages...)
 	a.Init = append(a.Init, b.Init...)
 	a.FieldBlocks = append(a.FieldBlocks, b.FieldBlocks...)
+	a.States = append(a.States, b.States...)
+	a.Visibility = append(a.Visibility, b.Visibility...)
+	if a.Vocabulary == nil {
+		a.Vocabulary = b.Vocabulary
+	} else {
+		for k, v := range b.Vocabulary {
+			a.Vocabulary[k] = v
+		}
+	}
 	if a.Messages == "" {
 		a.Messages = b.Messages
 	}
@@ -189,4 +201,22 @@ func (h *Hook) GetBody() []*Statement {
 		return nil
 	}
 	return h.Body
+}
+
+// StateDecl: `issue começa aberta` — the entity has a state machine whose
+// transitions come from `issue pode fechar / reabrir`.
+type StateDecl struct {
+	Entity  string
+	Initial string
+	Pos     diagnostics.Position
+}
+
+// VisibilityRule: `issue confidencial pode ser vista por autor,
+// responsaveis, reporter ou superior` — when the flag is set, only these
+// may see the record (administrators always may).
+type VisibilityRule struct {
+	Entity string
+	Flag   string
+	Who    []string
+	Pos    diagnostics.Position
 }

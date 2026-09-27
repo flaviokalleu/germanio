@@ -1,4 +1,4 @@
-# Grupos, subgrupos e membros (Group, GroupMember)
+# Grupos, subgrupos e membros.
 
 tenha grupos, membros
 
@@ -10,24 +10,30 @@ tenha papeis
     maintainer 40
     owner 50
 
-cada grupo tem
-    name obrigatório
-    path obrigatório valida caminho_valido
-    full_path único
-    description
-    visibility
-
-grupo tem subgrupos
-grupo tem membros com papel
+grupo tem
+    nome obrigatório
+    caminho obrigatório valida caminho_valido
+    caminho_completo único
+    descrição
+    visibilidade
+    subgrupos
+    membros com papel
 
 usuario pode criar grupos
 maintainer pode criar grupos
-guest pode ver grupos
-guest pode ver membros
+
+guest pode
+    ver grupos
+    ver membros
+
 owner pode administrar grupo
-maintainer pode adicionar membros
-maintainer pode editar membros
+
+maintainer pode
+    adicionar membros
+    editar membros
+
 membro pode sair do grupo
 
-disponibilize grupos para integração como "groups"
-disponibilize membros para integração como "members"
+disponibilize para integração
+    grupos como "groups"
+    membros como "members"

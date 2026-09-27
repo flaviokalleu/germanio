@@ -24,6 +24,9 @@ type intentAPI struct {
 	s   *Servidor
 	app *ast.App
 	in  *interp.Interpreter
+	// extern marks the integration surface: names and state values follow
+	// the integration vocabulary (vocabulário da integração).
+	extern bool
 }
 
 func (s *Servidor) registerIntent(mux *http.ServeMux) error {
@@ -39,7 +42,9 @@ func (s *Servidor) registerIntent(mux *http.ServeMux) error {
 		}
 		a.mount(mux, "/_ge/api/"+e.Plural, e, false)
 		if e.Integrate != "" {
-			a.mount(mux, app.Integration+"/"+e.Integrate, e, true)
+			ext := *a
+			ext.extern = true
+			ext.mount(mux, app.Integration+"/"+e.Integrate, e, true)
 		}
 	}
 	a.mountIdentity(mux)
@@ -64,10 +69,21 @@ func (a *intentAPI) mountLevel(mux *http.ServeMux, base string, chain []*ast.Ent
 	mux.HandleFunc("PUT "+item, h("editar", ""))
 	mux.HandleFunc("PATCH "+item, h("editar", ""))
 	mux.HandleFunc("DELETE "+item, h("excluir", ""))
+	actions := map[string]bool{}
 	for verb := range e.Rules {
 		if !isStandard(verb) && verb != "sair" {
-			mux.HandleFunc("POST "+item+"/"+verb, h("acao", verb))
+			actions[verb] = true
 		}
+	}
+	for verb := range e.Transitions {
+		actions[verb] = true
+	}
+	for verb := range actions {
+		path := verb
+		if integration {
+			path = a.ext(verb)
+		}
+		mux.HandleFunc("POST "+item+"/"+path, h("acao", verb))
 	}
 	if (e.HasMembers || e.InheritVia != "") && a.app.MemberModel != "" {
 		mux.HandleFunc("POST "+item+"/sair", h("acao", "sair"))
@@ -149,6 +165,9 @@ func (a *intentAPI) msg(kind string, e *ast.Entity) string {
 }
 
 func (a *intentAPI) fail(w http.ResponseWriter, status int, msg any) {
+	if a.extern && len(a.app.Vocabulary) > 0 {
+		msg = a.outward(msg)
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(map[string]any{"message": msg})
@@ -168,6 +187,9 @@ func (a *intentAPI) failErr(w http.ResponseWriter, r *http.Request, err error) {
 }
 
 func (a *intentAPI) json(w http.ResponseWriter, status int, v any, headers map[string]string) {
+	if a.extern && len(a.app.Vocabulary) > 0 {
+		v = a.outward(v)
+	}
 	for k, x := range headers {
 		w.Header().Set(k, x)
 	}
@@ -303,6 +325,7 @@ func (a *intentAPI) parentScope(parent *ast.Entity, parentRow map[string]any, ch
 
 // writable filters a payload to the fields people may set.
 func (a *intentAPI) writable(atual map[string]any, e *ast.Entity, body map[string]any, fixed map[string]any) map[string]any {
+	creating := fixed != nil
 	out := map[string]any{}
 	for _, f := range e.Model.Fields {
 		key := strings.ToLower(f.Name)
@@ -310,7 +333,7 @@ func (a *intentAPI) writable(atual map[string]any, e *ast.Entity, body map[strin
 		if !ok {
 			v, ok = body[key]
 		}
-		if !ok || f.Hidden || f.Type == ast.FieldSegredo {
+		if !ok || f.Hidden || f.System || f.Type == ast.FieldSegredo {
 			continue
 		}
 		if _, isFixed := fixed[key]; isFixed {
@@ -328,7 +351,14 @@ func (a *intentAPI) writable(atual map[string]any, e *ast.Entity, body map[strin
 	// creates it; only administrators act in someone else's name.
 	if atual != nil && e.Singular != a.app.LoginEntity && e.Singular != a.app.MemberModel {
 		for _, owner := range e.OwnerFields {
-			if _, given := out[owner]; !given || !a.in.IsAdmin(atual) {
+			_, given := out[owner]
+			switch {
+			case !creating:
+				// Authorship never changes by editing (except by administrators).
+				if !a.in.IsAdmin(atual) {
+					delete(out, owner)
+				}
+			case !given || !a.in.IsAdmin(atual):
 				out[owner] = atual["id"]
 			}
 		}
@@ -396,6 +426,10 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 			a.failErr(w, r, err)
 			return
 		}
+		body = a.inwardBody(body)
+		if scope == nil {
+			scope = map[string]any{}
+		}
 		data := a.writable(atual, e, body, scope)
 		if !a.canCreate(ctx, atual, e, data) {
 			if pe := a.hiddenParent(ctx, atual, e, data); pe != nil {
@@ -421,6 +455,7 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 			a.failErr(w, r, err)
 			return
 		}
+		body = a.inwardBody(body)
 		data := a.writable(atual, e, body, nil)
 		for k := range scope {
 			delete(data, k)
@@ -483,6 +518,22 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 		}
 		if !a.in.Can(ctx, atual, e, verb, row) {
 			deny(row)
+			return
+		}
+		if tr := e.Transitions[verb]; tr != nil {
+			updated, err := a.in.Transition(ctx, atual, e, tr, row)
+			if err != nil {
+				a.failErr(w, r, err)
+				return
+			}
+			if h := e.Hooks[verb]; h != nil {
+				if _, _, err := a.in.RunHook(ctx, h, a.hookVars(atual, e, updated, body)); err != nil {
+					a.failErr(w, r, err)
+					return
+				}
+				updated = a.find(ctx, e, fmt.Sprint(row["id"]), nil)
+			}
+			a.json(w, 200, serializeFor(a.in, atual, e, updated, false), nil)
 			return
 		}
 		if verb == "revogar" && e.Hooks[verb] == nil {
@@ -698,8 +749,15 @@ func (a *intentAPI) list(w http.ResponseWriter, r *http.Request, ctx *interp.Con
 	for k, v := range scope {
 		filters[k] = v
 	}
+	states := a.stateFields()
 	for _, f := range e.Filters {
 		v := q.Get(f)
+		if a.extern {
+			v = q.Get(a.ext(f))
+			if states[f] {
+				v = a.inward(v)
+			}
+		}
 		if v == "" {
 			continue
 		}
@@ -849,4 +907,74 @@ func (a *intentAPI) visibleThroughParents(e *ast.Entity) bool {
 		}
 	}
 	return false
+}
+
+// ext translates a domain name to the integration vocabulary.
+func (a *intentAPI) ext(name string) string {
+	if v, ok := a.app.Vocabulary[name]; ok {
+		return v
+	}
+	return name
+}
+
+func (a *intentAPI) stateFields() map[string]bool {
+	out := map[string]bool{}
+	for _, e := range a.app.Entities {
+		if e.StateField != "" {
+			out[e.StateField] = true
+		}
+	}
+	return out
+}
+
+// outward renames keys (and state values) to the integration vocabulary.
+func (a *intentAPI) outward(v any) any {
+	states := a.stateFields()
+	switch x := v.(type) {
+	case []any:
+		out := make([]any, len(x))
+		for i, it := range x {
+			out[i] = a.outward(it)
+		}
+		return out
+	case map[string]any:
+		out := make(map[string]any, len(x))
+		for k, val := range x {
+			if s, ok := val.(string); ok && states[k] {
+				val = a.ext(s)
+			}
+			out[a.ext(k)] = val
+		}
+		return out
+	}
+	return v
+}
+
+// inward translates incoming names and state values back to the domain.
+func (a *intentAPI) inward(name string) string {
+	if !a.extern {
+		return name
+	}
+	for k, v := range a.app.Vocabulary {
+		if v == name {
+			return k
+		}
+	}
+	return name
+}
+
+func (a *intentAPI) inwardBody(body map[string]any) map[string]any {
+	if !a.extern || len(a.app.Vocabulary) == 0 {
+		return body
+	}
+	states := a.stateFields()
+	out := make(map[string]any, len(body))
+	for k, v := range body {
+		key := a.inward(k)
+		if s, ok := v.(string); ok && states[key] {
+			v = a.inward(s)
+		}
+		out[key] = v
+	}
+	return out
 }

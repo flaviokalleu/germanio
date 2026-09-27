@@ -51,3 +51,8 @@ Motivo em AGENT_STATE.md › IMPORTANT_DECISIONS D1.
 | G38 | Plural português × inglês (`tokens`→`tokem`) | tokens de acesso | regra -ns→-m | Linguagem | BUG | P2 | singular alternativo; a forma usada em `cada … tem` decide | DONE |
 | G39 | Transação real para criação + hooks | criar projeto/grupo | interpretador não propaga tx | Banco | PARTIAL | P1 | compensação (desfaz a criação) implementada; `faça tudo junto` pendente | OPEN |
 | G40 | Listas com visibilidade por registro paginam em memória (até 1000) | GET /projects | autorização por registro não vira SQL | Performance | PARTIAL | P2 | traduzir regras de visibilidade/papéis para filtros SQL | OPEN |
+| G41 | Endereço hierárquico (`caminho_completo` = pai + caminho) escrito à mão | grupos/projetos | não há capability de caminho hierárquico | Linguagem | MISSING | P2 | `X tem endereço dentro de <pai>` | OPEN |
+| G42 | Teto de visibilidade (filho não mais visível que o pai) escrito à mão | grupos/projetos | idem | Autorização | MISSING | P2 | `X não pode ser mais visível que <pai>` | OPEN |
+| G43 | Ninguém concede papel acima do próprio escrito à mão | membros | deveria ser padrão seguro | Autorização | MISSING | P1 | embutir no runtime de membros | OPEN |
+| G44 | Branch protegida escrita como regra de push | projetos | capability git não conhece proteção | Git | PARTIAL | P2 | `branch padrão protegida para maintainer` | OPEN |
+| G45 | Editar reatribuía o autor | issues | valor padrão de dono aplicado também em edição | Segurança | BUG | P0 | dono só é definido na criação | DONE — `TestFluxo3Issues` |

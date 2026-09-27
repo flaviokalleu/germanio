@@ -233,11 +233,11 @@ func (p *Parser) modelMember(m *ast.Model, t []lexer.Token) error {
 	case word(0) == "expira" && len(t) == 4 && t[1].Type == lexer.TokenEm && t[2].Type == lexer.TokenNumber && (word(3) == "dias" || word(3) == "dia"):
 		n, _ := strconv.Atoi(t[2].Value)
 		m.ExpiresDays = n
-		m.Fields = append(m.Fields, &ast.Field{Name: "expires_at", Type: ast.FieldData, Pos: p.at(first)})
+		m.Fields = append(m.Fields, &ast.Field{Name: "expira_em", Type: ast.FieldData, Pos: p.at(first)})
 		return nil
 	case word(0) == "revogavel" && len(t) == 1:
 		m.Revocable = true
-		m.Fields = append(m.Fields, &ast.Field{Name: "revoked", Type: ast.FieldBooleano, HasDefault: true, DefaultValue: false, Pos: p.at(first)})
+		m.Fields = append(m.Fields, &ast.Field{Name: "revogado", Type: ast.FieldBooleano, HasDefault: true, DefaultValue: false, Pos: p.at(first)})
 		return nil
 	}
 	f, err := p.fieldFromTokens(t)
@@ -263,13 +263,13 @@ func inferType(name string) ast.FieldType {
 		return ast.FieldImagem
 	case "arquivo", "anexo", "file", "attachment":
 		return ast.FieldArquivo
-	case "descricao", "description", "conteudo", "observacoes", "bio", "body":
+	case "descricao", "description", "conteudo", "observacoes", "bio", "body", "texto", "mensagem", "comentario":
 		return ast.FieldTextoLongo
 	case "visibilidade", "visibility":
 		return ast.FieldVisibilidade
 	case "preco", "valor", "price", "total":
 		return ast.FieldDinheiro
-	case "quantidade", "estoque", "idade", "posicao":
+	case "quantidade", "estoque", "idade", "posicao", "numero":
 		return ast.FieldInteiro
 	case "admin", "ativo", "active", "bloqueado", "arquivado", "archived", "publicado", "confidencial", "confidential":
 		return ast.FieldBooleano
@@ -349,6 +349,13 @@ func (p *Parser) fieldFromTokens(t []lexer.Token) (*ast.Field, error) {
 			f.Unique = true
 		case x.Type == lexer.TokenIndice:
 			f.Index = true
+		case x.Type == lexer.TokenAte:
+			// titulo até 255 → no máximo 255 caracteres
+			var err error
+			if f.Max, err = num(i + 1); err != nil {
+				return nil, err
+			}
+			i++
 		case x.Type == lexer.TokenPertenceA:
 			if i+1 >= len(t) {
 				return nil, p.errorf(x, "pertence_a exige um modelo")
@@ -403,6 +410,17 @@ func (p *Parser) fieldFromTokens(t []lexer.Token) (*ast.Field, error) {
 				f.Private = true
 			case "imutavel":
 				f.Immutable = true
+			case "por":
+				// numero por projeto → 1, 2, 3… dentro de cada projeto
+				if i+1 >= len(t) {
+					return nil, p.errorf(x, "use: numero por <dado pai>")
+				}
+				f.NumberedBy = strings.ToLower(foldWord(t[i+1].Name()))
+				if f.Type == "" {
+					f.Type = ast.FieldInteiro
+				}
+				f.Immutable = true
+				i++
 			case "numerado":
 				// numerado por projeto → 1, 2, 3… dentro de cada projeto
 				if i+2 >= len(t) || strings.ToLower(t[i+1].Name()) != "por" {

@@ -1,60 +1,63 @@
-# Issues, comentários e labels (Issue, Note, Label)
+# Issues: o que são, quem pode fazer o quê, como aparecem para integrações.
 
 tenha issues, comentarios, labels
 
-projeto tem issues
-projeto tem labels
-issue tem comentarios
+projeto tem
+    issues
+    labels
 
-cada issue tem
-    iid numerado por projeto
-    title obrigatório max 255
-    description
-    state começa com "opened"
-    confidential começa com falso
-    labels: lista de texto
-    responsaveis: lista de usuarios
-    closed_at
-    closed_by_id
+issue tem
+    numero por projeto
+    titulo obrigatório até 255
+    descrição
+    autor
+    labels
+    responsaveis
+    comentarios
 
-issue pertence a usuario como autor
-comentario pertence a usuario como autor
+issue começa aberta
 
-cada comentario tem
-    body obrigatório
+issue pode
+    fechar
+    reabrir
+    ser confidencial
 
-cada label tem
-    name obrigatório
-    color começa com "#6699cc"
-    description
+comentario tem
+    autor
+    texto obrigatório
 
-usuario pode criar issues
-usuario pode criar comentarios
-guest pode ver issues
-guest pode ver labels
-autor ou planner pode editar issues
-autor ou planner pode fechar issues
-autor ou planner pode reabrir issues
+label tem
+    nome obrigatório
+    cor padrão "#6699cc"
+    descrição
+
+usuario pode
+    criar issues
+    comentar issues
+
+guest pode
+    ver issues
+    ver labels
+
+autor ou planner pode
+    editar issues
+    fechar issues
+    reabrir issues
+
 reporter pode administrar labels
+
 somente maintainer pode excluir issues
 
-permita pesquisar issues
-permita filtrar issues por state, autor_id, labels, responsaveis
+issue confidencial pode ser vista por
+    autor
+    responsaveis
+    reporter ou superior
 
-quando fechar issue
-    issue.atualizar(issue.id, {state: "closed", closed_at: agora_iso(), closed_by_id: atual.id})
+permita
+    pesquisar issues
+    filtrar issues por estado, autor, labels e responsaveis
 
-quando reabrir issue
-    issue.atualizar(issue.id, {state: "opened", closed_at: nulo, closed_by_id: nulo})
-
-# Issue confidencial: só autor, responsáveis e reporter+ enxergam.
-antes de ver issue
-    se issue.confidential
-        se atual == nulo
-            recuse "404 Issue Not Found"
-        se issue.autor_id != atual.id e nao contem(issue.responsaveis, atual.id) e acesso.nivel("issue", issue) < acesso.papel("reporter")
-            recuse "404 Issue Not Found"
-
-disponibilize issues para integração como "issues"
-disponibilize comentarios para integração como "notes"
-disponibilize labels para integração como "labels"
+disponibilize para integração
+    issues
+    comentarios como "notes"
+    labels

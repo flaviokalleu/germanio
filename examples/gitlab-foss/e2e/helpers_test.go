@@ -89,7 +89,7 @@ func (a *api) list(path string) []any {
 // signup registers through the sign-up form and logs in with OAuth.
 func signup(t *testing.T, base, username string) *api {
 	anon := &api{t: t, base: base}
-	anon.must("POST", "/cadastro", map[string]any{"username": username, "name": strings.ToUpper(username[:1]) + username[1:], "email": username + "@example.com", "senha": "password123"}, 201)
+	anon.must("POST", "/cadastro", map[string]any{"username": username, "nome": strings.ToUpper(username[:1]) + username[1:], "email": username + "@example.com", "senha": "password123"}, 201)
 	tok := anon.must("POST", "/oauth/token", map[string]any{"grant_type": "password", "username": username, "password": "password123"}, 200)
 	return &api{t: t, base: base, token: tok["access_token"].(string)}
 }

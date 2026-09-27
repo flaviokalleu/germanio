@@ -26,14 +26,14 @@ func TestGruposMembrosPapeis(t *testing.T) {
 		t.Fatalf("owner inicial: %v", ms)
 	}
 	// Subgrupo herda o caminho e não pode ser mais visível que o pai
-	ada.must("POST", "/api/v4/groups", map[string]any{"name": "Web", "path": "web", "pai_id": g["id"], "visibility": "public"}, 400)
-	sub := ada.must("POST", "/api/v4/groups", map[string]any{"name": "Web", "path": "web", "pai_id": g["id"]}, 201)
+	ada.must("POST", "/api/v4/groups", map[string]any{"name": "Web", "path": "web", "parent_id": g["id"], "visibility": "public"}, 400)
+	sub := ada.must("POST", "/api/v4/groups", map[string]any{"name": "Web", "path": "web", "parent_id": g["id"]}, 201)
 	if sub["full_path"] != "platform/web" {
 		t.Fatalf("subgrupo: %v", sub)
 	}
 	// Não-membro não vê grupo privado nem cria projeto nele
 	bob.must("GET", "/api/v4/groups/"+id(g), nil, 404)
-	bob.must("POST", "/api/v4/projects", map[string]any{"name": "X", "path": "x", "grupo_id": g["id"]}, 404)
+	bob.must("POST", "/api/v4/projects", map[string]any{"name": "X", "path": "x", "namespace_id": g["id"]}, 404)
 
 	// Owner adiciona bob como developer (API no formato GitLab: user_id + access_level)
 	ada.must("POST", "/api/v4/groups/"+id(g)+"/members", map[string]any{"user_id": bob.must("GET", "/api/v4/user", nil, 200)["id"], "access_level": 30}, 201)
@@ -41,7 +41,7 @@ func TestGruposMembrosPapeis(t *testing.T) {
 	// Developer não adiciona membros
 	bob.must("POST", "/api/v4/groups/"+id(g)+"/members", map[string]any{"user_id": eveID, "access_level": 10}, 403)
 	// Developer cria projeto no grupo; o acesso ao projeto vem do grupo
-	p := bob.must("POST", "/api/v4/projects", map[string]any{"name": "API", "path": "api", "grupo_id": g["id"], "initialize_with_readme": true}, 201)
+	p := bob.must("POST", "/api/v4/projects", map[string]any{"name": "API", "path": "api", "namespace_id": g["id"], "initialize_with_readme": true}, 201)
 	if p["full_path"] != "platform/api" {
 		t.Fatalf("projeto do grupo: %v", p)
 	}
