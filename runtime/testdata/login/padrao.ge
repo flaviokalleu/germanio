@@ -1,0 +1,11 @@
+crie sistema Contas
+
+usuarios
+    tem
+        nome obrigatório
+        email obrigatório e único
+        senha min 8
+
+tenha login
+tenha cadastro
+login usa email

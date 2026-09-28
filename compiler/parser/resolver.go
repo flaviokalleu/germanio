@@ -471,6 +471,11 @@ func ResolveIntent(prog *ast.Program) error {
 			}
 			sort.Strings(e.OwnerFields)
 		}
+		if in.Login.LockAttempts == 0 {
+			// Safe default: guessing passwords is stopped even when the app does
+			// not say how (docs/INTENCAO.md › Login).
+			in.Login.LockAttempts, in.Login.LockMinutes = 10, 10
+		}
 		if in.Login.LockAttempts > 0 {
 			le.Model.Fields = append(le.Model.Fields,
 				&ast.Field{Name: "tentativas_falhas", Type: ast.FieldInteiro, HasDefault: true, DefaultValue: 0.0, Hidden: true, System: true},

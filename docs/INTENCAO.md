@@ -574,6 +574,10 @@ login exige state "active"
 login bloqueia após 10 tentativas por 10 minutos
 ```
 
+Por padrão, o login bloqueia a conta por 10 minutos depois de 10 senhas erradas seguidas, e a
+senha certa é recusada enquanto o bloqueio dura; `login bloqueia após N tentativas por M
+minutos` só ajusta os números. Nenhuma aplicação com login fica sem essa proteção.
+
 `tenha administrador inicial "root"` cria a primeira pessoa administradora (login `root`)
 quando ainda não existe ninguém e o servidor recebeu `GERMANIO_ADMIN_SENHA`
 (e, opcionalmente, `GERMANIO_ADMIN_EMAIL`); a senha nunca aparece no `.ge`.
