@@ -70,7 +70,7 @@ type Entity struct {
 }
 
 // Address: the record's address is its container's address + "/" + its
-// own segment (grupo pai "gitlab-org" + caminho "api" → "gitlab-org/api").
+// own segment (grupo pai "empresa" + caminho "web" → "empresa/web").
 // The first container set, in order, is used; without one the segment
 // alone is the address. Addresses (and, when people contain records, the
 // people's names) form one namespace: none repeats.
