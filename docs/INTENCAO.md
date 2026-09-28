@@ -576,7 +576,9 @@ login bloqueia após 10 tentativas por 10 minutos
 
 Por padrão, o login bloqueia a conta por 10 minutos depois de 10 senhas erradas seguidas, e a
 senha certa é recusada enquanto o bloqueio dura; `login bloqueia após N tentativas por M
-minutos` só ajusta os números. Nenhuma aplicação com login fica sem essa proteção.
+minutos` só ajusta os números. Além disso, um mesmo endereço que erra 50 logins em 10
+minutos, em quaisquer contas, espera antes de tentar de novo (resposta 429); logins certos não
+contam. Nenhuma aplicação com login fica sem essas proteções.
 
 `tenha administrador inicial "root"` cria a primeira pessoa administradora (login `root`)
 quando ainda não existe ninguém e o servidor recebeu `GERMANIO_ADMIN_SENHA`

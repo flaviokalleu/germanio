@@ -47,6 +47,7 @@ type Servidor struct {
 	Interpreter *interp.Interpreter
 	Jobs        *jobs.Queue
 	rateLimiter map[string][]time.Time
+	loginFails  map[string][]time.Time
 	rateMu      sync.Mutex
 	presence    map[string]map[string]any
 	presenceMu  sync.RWMutex
@@ -261,6 +262,23 @@ func (s *Servidor) middleware(next http.Handler) http.Handler {
 		}
 
 		// Rate limiting inteligente por IP real
+		loginPath := r.URL.Path == "/api/login" || r.URL.Path == "/api/auth/login"
+		if (r.URL.Path == "/entrar" || r.URL.Path == "/oauth/token") && r.Method == http.MethodPost {
+			// Password spraying across many accounts: count the failed logins
+			// of an address; the per-account lock handles a single account.
+			ip := getRealIP(r)
+			if s.loginFailures(ip, false) >= maxLoginFailures {
+				w.WriteHeader(http.StatusTooManyRequests)
+				w.Write([]byte(`{"erro":"Muitas tentativas de login deste endereço. Tente de novo em alguns minutos."}`))
+				return
+			}
+			sw := &statusWriter{ResponseWriter: w, status: http.StatusOK}
+			next.ServeHTTP(sw, r)
+			if sw.status == http.StatusUnauthorized || sw.status == http.StatusBadRequest && r.URL.Path == "/oauth/token" {
+				s.loginFailures(ip, true)
+			}
+			return
+		}
 		if strings.HasPrefix(r.URL.Path, "/api/") && r.Method == http.MethodPost {
 			ip := getRealIP(r)
 			s.rateMu.Lock()
@@ -277,7 +295,7 @@ func (s *Servidor) middleware(next http.Handler) http.Handler {
 
 			// Limite mais restrito para login (brute-force defense: 10/min) e geral (100/min)
 			limit := 100
-			if r.URL.Path == "/api/login" || r.URL.Path == "/api/auth/login" {
+			if loginPath {
 				limit = 10
 			}
 			if count > limit {
@@ -735,6 +753,50 @@ func (s *Servidor) handleAPI(w http.ResponseWriter, r *http.Request) {
 }
 
 // accountWriteAllowed guards writes to the table of people (older dialect).
+// maxLoginFailures is how many failed logins an address may make in
+// loginFailureWindow before it has to wait.
+const (
+	maxLoginFailures   = 50
+	loginFailureWindow = 10 * time.Minute
+)
+
+// loginFailures counts (and, with record, adds) the recent failed logins of
+// an address.
+func (s *Servidor) loginFailures(ip string, record bool) int {
+	s.rateMu.Lock()
+	defer s.rateMu.Unlock()
+	if s.loginFails == nil {
+		s.loginFails = map[string][]time.Time{}
+	}
+	now := time.Now()
+	var recent []time.Time
+	for _, t := range s.loginFails[ip] {
+		if now.Sub(t) < loginFailureWindow {
+			recent = append(recent, t)
+		}
+	}
+	if record {
+		recent = append(recent, now)
+	}
+	if len(recent) == 0 {
+		delete(s.loginFails, ip)
+	} else {
+		s.loginFails[ip] = recent
+	}
+	return len(recent)
+}
+
+// statusWriter remembers the status a handler answered with.
+type statusWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (w *statusWriter) WriteHeader(code int) {
+	w.status = code
+	w.ResponseWriter.WriteHeader(code)
+}
+
 func (s *Servidor) accountWriteAllowed(w http.ResponseWriter, r *http.Request, parts []string) bool {
 	if r.Header.Get("X-User-Role") == "admin" {
 		return true

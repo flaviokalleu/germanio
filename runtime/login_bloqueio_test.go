@@ -33,3 +33,14 @@ func TestLoginBloqueiaPorPadrao(t *testing.T) {
 		})
 	}
 }
+
+// Guessing passwords across many accounts is limited per address too: after
+// 50 failed logins in 10 minutes from the same address, the next attempt is
+// refused (429), whatever the account; successful logins do not count.
+func TestLoginLimitadoPorEndereco(t *testing.T) {
+	_, c := loadApp(t, "testdata/login/padrao.ge")
+	for i := 0; i < 50; i++ {
+		c.expect("POST", "/entrar", map[string]any{"login": "ninguem" + itoa(i) + "@x.com", "senha": "errada"}, 401)
+	}
+	c.expect("POST", "/entrar", map[string]any{"login": "outro@x.com", "senha": "errada"}, 429)
+}
