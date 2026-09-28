@@ -1,0 +1,25 @@
+crie sistema Pastas
+
+tenha usuarios, pastas, membros
+
+cada usuario tem
+    nome obrigatório
+    email obrigatório e único
+    senha
+
+tenha login
+tenha cadastro
+login usa email
+
+tenha papeis
+    leitor 10
+    dono 50
+
+pasta tem
+    nome obrigatório
+    visibilidade
+    membros com papel
+
+usuario pode criar pastas
+quem cria pasta vira dono
+leitor pode ver pastas

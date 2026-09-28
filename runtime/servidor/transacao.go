@@ -19,6 +19,7 @@ import (
 type txState struct {
 	db         *banco.Banco
 	onRollback []func()
+	onCommit   []func()
 }
 
 type txKey struct{}
@@ -39,6 +40,18 @@ func newContext(w http.ResponseWriter, r *http.Request) *interp.Context {
 		ctx.DB = st.db
 	}
 	return ctx
+}
+
+// afterCommit runs fn once the request's change is kept (immediately when
+// there is no transaction). Irreversible work — deleting files — waits here.
+func afterCommit(ctx *interp.Context, fn func()) {
+	if ctx != nil {
+		if st := txOf(ctx.Request); st != nil {
+			st.onCommit = append(st.onCommit, fn)
+			return
+		}
+	}
+	fn()
 }
 
 // undoOnRollback registers fn to run if the request's transaction is undone.
@@ -95,6 +108,10 @@ func (s *Servidor) transactional(w http.ResponseWriter, r *http.Request, serve f
 		if err != errUndo {
 			http.Error(w, `{"message":"não foi possível salvar"}`, http.StatusInternalServerError)
 			return
+		}
+	} else {
+		for _, fn := range st.onCommit {
+			fn()
 		}
 	}
 	for k, v := range held.header {

@@ -828,20 +828,26 @@ func (a *intentAPI) cascade(ctx *interp.Context, e *ast.Entity, row map[string]a
 		if len(sc) == 0 {
 			continue
 		}
-		kids, err := a.in.Op(ctx, c.Singular, "filtrar", sc, map[string]any{"limite": 1000})
-		if err != nil {
-			return err
-		}
-		for _, k := range kids.([]any) {
-			if err := a.cascade(ctx, c, k.(map[string]any), depth+1); err != nil {
+		// Each pass deletes what it read, so the first batch is always the next one.
+		for {
+			kids, err := a.in.Op(ctx, c.Singular, "filtrar", sc, map[string]any{"limite": 500, "ordenar": "id"})
+			if err != nil {
 				return err
+			}
+			if len(kids.([]any)) == 0 {
+				break
+			}
+			for _, k := range kids.([]any) {
+				if err := a.cascade(ctx, c, k.(map[string]any), depth+1); err != nil {
+					return err
+				}
 			}
 		}
 	}
 	if _, err := a.in.Op(ctx, e.Singular, "deletar", row["id"]); err != nil {
 		return err
 	}
-	a.removeRepository(e, row)
+	afterCommit(ctx, func() { a.removeRepository(e, row) })
 	return nil
 }
 
@@ -930,29 +936,47 @@ func (a *intentAPI) list(w http.ResponseWriter, r *http.Request, ctx *interp.Con
 		}
 		total = int(m["total"].(float64))
 	} else {
-		// Visibility depends on each record: filter, then paginate.
-		opts["limite"] = 1000
-		res, err := a.in.Op(ctx, e.Singular, "filtrar", filters, opts)
-		if err != nil {
-			a.failErr(w, r, err)
-			return
-		}
-		var visible []any
-		for _, it := range res.([]any) {
-			row := it.(map[string]any)
-			if a.in.Can(ctx, atual, e, "ver", row) {
-				visible = append(visible, serializeFor(a.in, atual, e, row, false))
+		// Visibility depends on each record: read in batches, keep what this
+		// person may see, count all of it and keep the requested page.
+		a.narrowVisible(ctx, atual, e, filters)
+		start := (page - 1) * per
+		for batch := 1; ; batch++ {
+			opts["limite"], opts["pagina"] = 500, batch
+			res, err := a.in.Op(ctx, e.Singular, "filtrar", filters, opts)
+			if err != nil {
+				a.failErr(w, r, err)
+				return
+			}
+			rows := res.([]any)
+			for _, it := range rows {
+				row := it.(map[string]any)
+				if !a.in.Can(ctx, atual, e, "ver", row) {
+					continue
+				}
+				if total >= start && total < start+per {
+					items = append(items, serializeFor(a.in, atual, e, row, false))
+				}
+				total++
+			}
+			if len(rows) < 500 {
+				break
 			}
 		}
-		total = len(visible)
-		start := min((page-1)*per, total)
-		items = visible[start:min(start+per, total)]
 	}
 	if items == nil {
 		items = []any{}
 	}
 	pages := (total + per - 1) / per
 	a.json(w, 200, items, map[string]string{"X-Total": strconv.Itoa(total), "X-Page": strconv.Itoa(page), "X-Per-Page": strconv.Itoa(per), "X-Total-Pages": strconv.Itoa(pages)})
+}
+
+// narrowVisible adds SQL filters that follow exactly from the rules, so
+// fewer records are read: a person who is not signed in only ever sees the
+// public records of data that has members.
+func (a *intentAPI) narrowVisible(ctx *interp.Context, atual map[string]any, e *ast.Entity, filters map[string]any) {
+	if atual == nil && e.Visibility != "" && (e.HasMembers || e.InheritVia != "") {
+		filters[e.Visibility] = "public"
+	}
 }
 
 func first(vals ...string) string {

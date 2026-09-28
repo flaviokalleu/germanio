@@ -49,3 +49,14 @@ func TestCriacaoDesfeitaRemoveRepositorio(t *testing.T) {
 	c.expect("POST", "/_ge/api/lojas", map[string]any{"nome": "Centro"}, 201)
 	c.expect("GET", "/_ge/api/lojas/1/repositorio/branches", nil, 200)
 }
+
+// Exclusão desfeita: o registro volta e o repositório nunca saiu do disco.
+func TestExclusaoDesfeitaMantemRepositorio(t *testing.T) {
+	_, c := loadApp(t, "testdata/intencao/transacao.ge")
+	c.expect("POST", "/_ge/api/lojas", map[string]any{"nome": "protegida"}, 201)
+	c.expect("POST", "/_ge/api/lojas/1/pedidos", map[string]any{"cliente": "Ana"}, 201)
+	c.expect("DELETE", "/_ge/api/lojas/1", nil, 400)
+	c.expect("GET", "/_ge/api/lojas/1", nil, 200)
+	c.expect("GET", "/_ge/api/lojas/1/pedidos/1", nil, 200)
+	c.expect("GET", "/_ge/api/lojas/1/repositorio/branches", nil, 200)
+}

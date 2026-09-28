@@ -39,3 +39,9 @@ quando criar pedido
 quando criar loja
     se loja.nome == "falha"
         recuse "Loja recusada"
+
+permita excluir lojas
+
+quando excluir loja
+    se loja.nome == "protegida"
+        recuse "Loja protegida"
