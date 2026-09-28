@@ -43,6 +43,22 @@ func TestFluxo3Issues(t *testing.T) {
 	}
 	// Atribuir e filtrar
 	ada.must("PUT", "/api/v4/projects/"+pid+"/issues/1", map[string]any{"assignee_ids": []any{bobID}}, 200)
+	// Pendências (GEP 0009): quem foi atribuído recebe uma; quem atribuiu, não
+	pend := func(who *api) []any {
+		t.Helper()
+		code, body, _ := who.call("GET", "/_ge/api/pendencias", nil)
+		l, _ := body.([]any)
+		if code != 200 {
+			t.Fatalf("pendências: %d %v", code, body)
+		}
+		return l
+	}
+	if l := pend(bob); len(l) != 1 || l[0].(map[string]any)["recurso"] != "issue" || l[0].(map[string]any)["estado"] != "aberta" {
+		t.Fatalf("o responsável deveria ter uma pendência aberta da issue: %v", l)
+	}
+	if l := pend(ada); len(l) != 0 {
+		t.Fatalf("quem atribui não recebe pendência para si: %v", l)
+	}
 	if l := ada.list("/api/v4/projects/" + pid + "/issues?assignee_ids=" + jsonNum(bobID)); len(l) != 1 {
 		t.Fatalf("filtro por responsável: %v", l)
 	}
@@ -105,6 +121,14 @@ func TestFluxo3Issues(t *testing.T) {
 	// Só maintainer exclui
 	bob.must("DELETE", "/api/v4/projects/"+pid+"/issues/2", nil, 403)
 	ada.must("DELETE", "/api/v4/projects/"+pid+"/issues/2", nil, 204)
+	// Quem sai dos responsáveis perde a pendência aberta; eve não vê a de bob
+	if l := pend(eve); len(l) != 0 {
+		t.Fatalf("pendências são privadas: %v", l)
+	}
+	ada.must("PUT", "/api/v4/projects/"+pid+"/issues/1", map[string]any{"assignee_ids": []any{}}, 200)
+	if l := pend(bob); len(l) != 0 {
+		t.Fatalf("quem saiu dos responsáveis mantém a pendência: %v", l)
+	}
 }
 
 // Issues de projeto privado nunca aparecem para quem não é membro,

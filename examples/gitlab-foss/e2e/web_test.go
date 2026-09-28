@@ -72,6 +72,12 @@ func TestInterfaceWeb(t *testing.T) {
 	}
 	csrf := csrfOf(t, page)
 
+	// seções da página (GEP 0002): título, rótulo da ação e estado vazio declarados
+	for _, want := range []string{"Projetos", "Novo projeto", "Nenhum projeto ainda", "Criar projeto"} {
+		if !strings.Contains(page, want) {
+			t.Fatalf("página de projetos sem %q:\n%s", want, page)
+		}
+	}
 	// criar projeto pelo formulário
 	if !strings.Contains(page, `action="/projetos/novo"`) {
 		t.Fatalf("página de projetos sem formulário de criação:\n%s", page)

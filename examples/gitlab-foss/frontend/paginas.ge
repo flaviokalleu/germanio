@@ -4,6 +4,18 @@ importar projetos e grupos do backend
 
 página Projetos
     mostre projetos
+    topo
+        título "Projetos"
+        ações
+            criar "Novo projeto"
+    colunas
+        nome
+        descrição
+        visibilidade
+    vazio
+        título "Nenhum projeto ainda"
+        texto "Crie um projeto para guardar código, issues e merge requests."
+        ação criar "Criar projeto"
     permita
         pesquisar
         criar
