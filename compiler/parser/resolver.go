@@ -657,6 +657,7 @@ func ResolveIntent(prog *ast.Program) error {
 			grants = append(grants, g)
 			continue
 		}
+		in.Capabilities = append(in.Capabilities, g)
 		if g.Verb == "ser" {
 			flag := g.Target
 			if fieldByNameAST(e.Model, flag) == nil {

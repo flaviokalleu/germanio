@@ -12,6 +12,12 @@ import (
 
 func Format(filename, source string) (string, error) {
 	if _, err := parser.ParseGermanio(filename, source); err != nil {
+		// Application files (intent layer) have their own canonical form.
+		if out, aerr := formatApplication(filename, source); aerr == nil {
+			return out, nil
+		} else if aerr != errNotApplication {
+			return "", aerr
+		}
 		return "", err
 	}
 	source = strings.ReplaceAll(source, "\r\n", "\n")

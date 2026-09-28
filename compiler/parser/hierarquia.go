@@ -261,8 +261,20 @@ func (p *Parser) parseDataBlock() error {
 	return nil
 }
 
-func (p *Parser) dataSection(name string, subject []lexer.Token, sec *node) error {
+// placed returns the data's name tokens positioned at a section line, so
+// facts point to the line that says them, not to the block header.
+func placed(subject []lexer.Token, at lexer.Token) []lexer.Token {
+	out := make([]lexer.Token, len(subject))
+	for i, t := range subject {
+		t.Line, t.Column = at.Line, at.Column
+		out[i] = t
+	}
+	return out
+}
+
+func (p *Parser) dataSection(name string, header []lexer.Token, sec *node) error {
 	toks := sec.line.toks
+	subject := placed(header, toks[0])
 	w := wordsOf(toks)
 	kind := sectionOf(w)
 	path := name + " › " + strings.Join(strings.Fields(lineText(sec.line)), " ")
@@ -349,8 +361,9 @@ func (p *Parser) dataSection(name string, subject []lexer.Token, sec *node) erro
 }
 
 // rule reduces one line of `regras`.
-func (p *Parser) rule(name string, subject []lexer.Token, path string, r *node) error {
+func (p *Parser) rule(_ string, header []lexer.Token, path string, r *node) error {
 	t := r.line.toks
+	subject := placed(header, t[0])
 	w := wordsOf(t)
 	at := t[0]
 	var head []lexer.Token
@@ -370,7 +383,7 @@ func (p *Parser) rule(name string, subject []lexer.Token, path string, r *node) 
 }
 
 // access reduces `acesso` › actor › actions to `<actor> pode <action> <dado>`.
-func (p *Parser) access(name string, subject []lexer.Token, path string, actor *node) error {
+func (p *Parser) access(name string, header []lexer.Token, path string, actor *node) error {
 	at := actor.line.toks[0]
 	actorPath := path + " › " + lineText(actor.line)
 	if len(actor.children) == 0 {
@@ -393,6 +406,7 @@ func (p *Parser) access(name string, subject []lexer.Token, path string, actor *
 		}
 		rest := aw[k:]
 		toks := a.line.toks
+		subject := placed(header, a.line.toks[0])
 		switch {
 		case len(rest) == 0:
 			toks = join(toks, subject) // no target: the data itself

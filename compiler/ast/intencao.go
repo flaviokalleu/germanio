@@ -37,11 +37,14 @@ type Intent struct {
 	RemoteExecutors   []*RemoteExecutorDecl
 	Translators       map[string]string // traduza <ponto> com <função> (integracoes/)
 	InitialFiles      []*InitialFileDecl
-	ReservedAddresses []string          // endereços reservados
-	InitialAdmin      string            // tenha administrador inicial "root"
-	GlobalSearch      []string          // tenha busca geral em projetos, issues
-	ReadOnly          []*VisibilityRule // projeto arquivado é somente leitura (Flag; Who unused)
-	MinRoles          []*CreatorRole    // todo grupo precisa ter pelo menos um owner
+	ReservedAddresses []string // endereços reservados
+	InitialAdmin      string   // tenha administrador inicial "root"
+	// Capabilities: the grants that turned out to be capabilities of data
+	// (`issue pode fechar`), kept for ge explain after resolution.
+	Capabilities []*Grant
+	GlobalSearch []string          // tenha busca geral em projetos, issues
+	ReadOnly     []*VisibilityRule // projeto arquivado é somente leitura (Flag; Who unused)
+	MinRoles     []*CreatorRole    // todo grupo precisa ter pelo menos um owner
 }
 
 // EntityDecl: `tenha clientes` plus the fields from `cada cliente tem`.
