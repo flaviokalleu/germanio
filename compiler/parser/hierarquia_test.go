@@ -190,6 +190,14 @@ func TestHierarquiaErros(t *testing.T) {
 		{"linha desconhecida", "tenha issues\n\ncada issue tem\n    titulo\n\nissue podee fechar\n", []string{"não entendi a linha", "você quis dizer \"pode\""}},
 		{"tab", "tenha issues\n\ncada issue tem\n\ttitulo\n", []string{"tab na indentação", "Como corrigir"}},
 		{"estado inicial em conflito", "projetos\n    tem\n        nome\n    começa aberto\n\nprojeto começa fechado\n", []string{"já começa aberto", "(projetos › começa aberto)"}},
+		{"linha sob uma ação de acesso", "projetos\n    tem\n        nome\n    acesso\n        guest\n            ver\n                criar\n",
+			[]string{"\"criar\" está recuada abaixo de \"ver\"", "Como corrigir"}},
+		{"linha sob um campo", "projetos\n    tem\n        nome\n            descrição\n",
+			[]string{"\"descrição\" está recuada abaixo de \"nome\""}},
+		{"linha sob uma ação de pode", "projetos\n    tem\n        nome\n    começa aberto\n    pode\n        fechar\n            reabrir\n",
+			[]string{"\"reabrir\" está recuada abaixo de \"fechar\""}},
+		{"linha sob o alvo de pertence a", "tenha grupos\n\ncada grupo tem\n    nome\n\nprojetos\n    tem\n        nome\n    pertence a\n        grupo\n            opcional\n",
+			[]string{"\"opcional\" está recuada abaixo de \"grupo\""}},
 		{"integração em conflito", "projetos\n    tem\n        nome\n    integração\n        nome \"projects\"\n\ndisponibilize projetos para integração como \"repos\"\n", []string{"já é \"projects\""}},
 	}
 	for _, c := range cases {

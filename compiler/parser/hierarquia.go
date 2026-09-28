@@ -104,6 +104,20 @@ func (p *Parser) teach(tok lexer.Token, what, why, fix, context string) error {
 	return p.errorf(tok, "%s", msg)
 }
 
+// leaf: in a list section each line is one item. A line indented under an
+// item has no meaning there; it used to be dropped or read as a sibling
+// (G67). No line is ever ignored.
+func (p *Parser) leaf(item *node, section, path string) error {
+	if len(item.children) == 0 {
+		return nil
+	}
+	c := item.children[0]
+	return p.teach(c.line.toks[0],
+		"\""+lineText(c.line)+"\" está recuada abaixo de \""+lineText(item.line)+"\", mas um item de "+section+" não tem itens dentro dele",
+		"em "+section+", cada linha é um item; uma linha abaixo de um item não teria significado",
+		"alinhe \""+lineText(c.line)+"\" com os outros itens de "+section+", ou junte as duas na mesma linha", path)
+}
+
 // flattenLines returns every line under n, in order (children before siblings).
 func flattenLines(n *node) []dline {
 	var out []dline
@@ -291,10 +305,22 @@ func (p *Parser) dataSection(name string, header []lexer.Token, sec *node) error
 		if kind == "tem" && len(toks) == 1 && len(sec.children) == 0 {
 			return p.teach(at, "a seção tem está vazia", "tem lista campos, relações e pessoas do dado", "escreva um item por linha, recuado abaixo de tem", name)
 		}
+		if kind == "tem" {
+			for _, c := range sec.children {
+				if err := p.leaf(c, "tem", path); err != nil {
+					return err
+				}
+			}
+		}
 		return flat(join(subject, toks), flattenLines(sec))
 	case "pode":
 		if len(toks) == 1 && len(sec.children) == 0 {
 			return p.teach(at, "a seção pode está vazia", "pode lista ações e condições do dado", "escreva uma ação por linha, recuada abaixo de pode (ex.: fechar, reabrir, ser confidencial)", name)
+		}
+		for _, c := range sec.children {
+			if err := p.leaf(c, "pode", path); err != nil {
+				return err
+			}
 		}
 		return flat(join(subject, toks), flattenLines(sec))
 	case "pertence a":
@@ -302,6 +328,9 @@ func (p *Parser) dataSection(name string, header []lexer.Token, sec *node) error
 			return flat(join(subject, toks), nil)
 		}
 		for _, c := range sec.children {
+			if err := p.leaf(c, "pertence a", path); err != nil {
+				return err
+			}
 			if err := p.withContext(path+" › "+lineText(c.line), func() error {
 				return p.intentFrom(dline{toks: join(subject, synth(c.line.toks[0], "pertence", "a"), c.line.toks)}, nil)
 			}); err != nil {
@@ -399,6 +428,9 @@ func (p *Parser) access(name string, header []lexer.Token, path string, actor *n
 	}
 	var body []dline
 	for _, a := range actor.children {
+		if err := p.leaf(a, "acesso › "+lineText(actor.line), actorPath); err != nil {
+			return err
+		}
 		aw := wordsOf(a.line.toks)
 		k := 1
 		if len(aw) > 1 && (aw[0] == "enviar" || aw[0] == "baixar") && aw[1] == "codigo" {
