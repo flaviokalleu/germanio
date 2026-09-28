@@ -1,5 +1,7 @@
 # Model Context Protocol (MCP) — Germanio
 
+> **Escopo desta referência:** Agentes que usam MCP devem ler [INTENCAO.md](INTENCAO.md), a [skill de simplicidade](../skills/germanio-simplicity/SKILL.md) e [AGENTS.md](../AGENTS.md). Geração assistida por IA é ferramenta de autoria: o programa gerado continua formal e determinístico, sem interpretação por IA em runtime. Confira as ferramentas realmente anunciadas pelo servidor antes de usar exemplos deste guia.
+
 O **Germanio MCP Server** permite que LLMs e agentes de IA (Claude Desktop, Cursor, Hermes, Cline, Roo Code, VS Code Copilot) criem, verifiquem, compilem, executem e manipulem sistemas inteiros escritos em Germanio (`.ge`) diretamente via protocolo MCP.
 
 ---

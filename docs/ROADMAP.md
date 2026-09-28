@@ -1,21 +1,31 @@
 # Roadmap do Germanio
 
-Este é o plano de entregas da linguagem `.ge`, baseado no prompt mestre do
-projeto. [SPEC.md](../SPEC.md) descreve a gramática e o comportamento que
-funcionam hoje. O [roadmap original do Germanio](GERMANIO_ROADMAP_LEGACY.md) permanece
-como histórico do modo `.ge`; suas funcionalidades não passam automaticamente
-para `.ge`. Não há data de lançamento anunciada para as fases futuras.
+O contrato da camada de intenção está em [INTENCAO.md](INTENCAO.md). Este roadmap
+separa capacidades encontradas no código de critérios ainda exigidos; não é um relatório
+de testes executados nesta revisão. A [SPEC da fundação](../SPEC.md) cobre seu subconjunto,
+não todo o full-stack. Não há data de lançamento anunciada.
 
-## Estado verificado
+## Estado e evidências
 
-| Fase | Estado | Entrega comprovável |
+| Área | Estado documental | Onde conferir |
 | --- | --- | --- |
-| 1. Fundação | Implementada no escopo da SPEC | `ge`, `.ge`, lexer/parser/AST, análise inicial, interpretador, exemplos, formatter inicial e compatibilidade `.ge` |
-| 2. Tipos e semântica | Em andamento | Opcionais com junção de fluxo, genéricos explícitos com restrição `numero`, funções privadas, inferência monomórfica fora de genéricos e imports locais |
-| 3. Full-stack `.ge` | Pendente | Apenas HTML estático limitado; servidor/banco/auth do Germanio continuam em `.ge` |
-| 4. Toolchain | Em andamento | CLI/formatter/CI iniciais, testes nativos `ge testar` e cobertura de instruções; manifesto, dependências e LSP ainda não |
-| 5. Performance | Pendente | Limites de execução existem; HIR/MIR e compilação incremental ainda não |
-| 6. Poder avançado | Pendente | Nenhum backend FFI/WASM/JIT/SIMD/GPU `.ge` anunciado |
+| Fundação, tipos e módulos | subconjunto implementado, evolução em andamento | `../SPEC.md`, `compiler/semantic/` |
+| Camada de intenção full-stack | existe; não está limitada a HTML estático | `compiler/parser/intencao.go`, `resolver.go`, `runtime/servidor/intencao.go`, `paginas.go`, `runtime/intencao_test.go` |
+| Relações, login, papéis, estados | mecanismos presentes; cobertura deve ser validada por caso | `compiler/ast/intencao.go`, `runtime/interpreter/intencao.go`, testes do runtime |
+| Trabalho remoto genérico | mecanismo e testes presentes | `runtime/servidor/trabalho_remoto.go`, `runtime/trabalho_remoto_test.go` |
+| `ge explain` e `ge check` | suporte parcial ao contrato normativo ampliado | `tooling/explicar/explicar.go`, `tooling/gecli/` |
+| HIR/MIR, FFI, WASM, JIT, SIMD e GPU | não anunciados como entregues por este documento | exigir evidência por backend |
+
+## Prioridade: conformidade da intenção
+
+1. Completar proveniência e motivos das inferências em `ge explain`.
+2. Expandir `ge check` para contradições, ambiguidades e capabilities incompletas.
+3. Comprovar invariantes de papel mínimo em criação, herança, concorrência e alterações indiretas.
+4. Testar transições, metadados, permissões e generalidade entre domínios.
+5. Manter protocolos de produtos externos nos adaptadores e refatorar boilerplate antigo.
+
+As etapas abaixo preservam frentes de evolução; não autorizam reimplementar capacidades
+que já existem nem trocar intenção por uma API manual.
 
 ## Próxima sequência de trabalho
 
@@ -39,17 +49,14 @@ para `.ge`. Não há data de lançamento anunciada para as fases futuras.
 - Critério de saída: programa multifile executável, dependências inválidas
   rejeitadas e nenhuma mudança de comportamento silenciosa para `.ge`.
 
-### 3 — Aplicações full-stack em `.ge`
+### 3 — Consolidar aplicações full-stack por intenção
 
-- Definir domínios `cliente`, `servidor` e `compartilhado` no compilador, com
-  checagem de acessos proibidos e tipos serializáveis na fronteira.
-- Ligar rotas, APIs, modelos, banco e autenticação a programas `.ge` reais,
-  reaproveitando servidor e componentes Germanio quando fizer sentido.
-- Evoluir a UI natural com eventos e navegação executáveis; testar no navegador
-  a ida e a volta entre cliente e servidor, incluindo permissões e dados secretos.
-- Critério de saída: exemplo `.ge` completo com frontend e backend, testes de
-  autorização e isolamento, API funcionando e nenhum botão decorativo anunciado
-  como interativo.
+- Consolidar a separação já existente entre `backend/`, `frontend/` e `integracoes/`.
+- Verificar isolamento, relações, permissões, transições e invariantes em todas as entradas.
+- Evoluir páginas e eventos sem exigir rotas ou CRUD manuais do autor do domínio.
+- Garantir que interface e integrações usem as mesmas regras de negócio e autorização.
+- Critério de saída por capability: exemplo real, teste genérico em outro domínio,
+  teste de erro, inspeção, documentação e refatoração do código redundante.
 
 ### 4 — Ferramentas de desenvolvimento
 

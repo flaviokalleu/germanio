@@ -1,5 +1,12 @@
 # CLAUDE.md
 
+## Leitura obrigatória e autoridade
+
+Leia `AGENTS.md`, `docs/INTENCAO.md` e `skills/germanio-simplicity/SKILL.md` antes de trabalhar.
+A camada de intenção é normativa; `docs/README.md` distingue guias técnicos e histórico.
+Contagens e descrições antigas abaixo não provam o estado atual: confira código e testes.
+
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## What is Germanio

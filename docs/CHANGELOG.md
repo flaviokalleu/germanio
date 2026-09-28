@@ -1,8 +1,30 @@
 # CHANGELOG - Germanio
 
+> **Escopo desta referência:** Histórico de versões; não substitui a especificação normativa [INTENCAO.md](INTENCAO.md). Esta revisão documental não altera compiler/runtime nem comprova todas as funcionalidades históricas.
+
 Historico completo de versoes e mudancas do Germanio.
 
 O formato segue [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+
+## Revisão documental — 2026-09-28
+
+- `INTENCAO.md` elevado a especificação normativa, preservando o caminho existente.
+- Adicionados: autoridade documental, três mundos arquiteturais, testes do leigo e do
+  profissional, evolução de capabilities, refatoração retroativa e checklist de design.
+- Ampliados: quatro níveis, inferência explícita, estados, trabalho remoto, `ge explain`,
+  `ge check`, erros educativos e testes normativos.
+- Corrigidos: hooks manuais para último owner e bloqueio de usuário; exigência de hook para
+  toda ação própria; roadmap que confundia a fundação com ausência de full-stack.
+- Preservados: relações, login, papéis e herança, páginas, configuração, primitivas,
+  adaptadores, transações, repositórios e trabalho remoto genérico.
+- Pendências arquiteturais identificadas na norma: proveniência completa de inferências,
+  diagnósticos, transições fora das convenções e cobertura de invariantes indiretos.
+- Criados índice de documentação e `AGENTS.md`; `CLAUDE.md` aponta a ordem obrigatória.
+- Removidos dois documentos legados redundantes; referências corrigidas. Guias técnicos
+  mantidos com escopo explícito, sem promover exemplos antigos a norma da intenção.
+- Validação: links locais dos documentos alterados, cercas de código e `git diff --check`.
+  Não executados testes Go: toolchain indisponível no ambiente desta revisão.
+  Nenhum compiler, runtime ou arquivo `.ge` foi modificado.
 
 ---
 

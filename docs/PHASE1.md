@@ -1,5 +1,7 @@
 # Entrega da fundação Germanio
 
+> **Escopo desta referência:** Registro histórico da fundação. Limitações e resultados abaixo são daquela etapa, não um retrato completo da camada de intenção atual. Consulte [ROADMAP.md](ROADMAP.md) e [INTENCAO.md](INTENCAO.md).
+
 ## Auditoria inicial
 
 Base: `36ef40513d25f1398faada3ce8e7f652bbcab79b`.
@@ -38,7 +40,7 @@ de varredura léxica. Nenhum recurso web foi reescrito por aparência.
 - UI natural mínima executável: navbar e botão estáticos, escape de texto,
   arredondamento com unidades verificadas. Não conecta ações nem inicia servidor.
 - Sete exemplos `.ge`, documentação atual, logo fornecida pelo usuário e referência
-  histórica Germanio preservada em `docs/GERMANIO_LEGACY.md`.
+  histórica Germanio então preservada em arquivo legado (removido na limpeza documental; consulte o histórico Git).
 - Highlighting `.ge` na extensão existente, mantendo `.ge`. Sem alegar suporte LSP.
 - CI com testes, vet, race checks, builds e exemplos de ambos os modos.
 

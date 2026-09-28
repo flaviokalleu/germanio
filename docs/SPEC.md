@@ -1,5 +1,7 @@
 # Germanio — Especificação da Linguagem (Language Specification)
 
+> **Escopo desta referência:** Referência técnica da sintaxe anterior (v0.5). Para a semântica normativa da camada de intenção, leia [INTENCAO.md](INTENCAO.md). Estes blocos de baixo nível não são o ponto de partida para aplicações novas.
+
 > Versao 0.5.0 | Ultima atualizacao: 2026-04-10
 
 ---
