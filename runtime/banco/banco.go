@@ -162,7 +162,7 @@ func buildDSN(config *ast.DatabaseConfig, appName string) (driver string, dsn st
 
 // q quotes a SQL identifier.
 func q(name string) string {
-	return `"` + name + `"`
+	return `"` + strings.ReplaceAll(name, `"`, `""`) + `"`
 }
 
 // placeholder returns the correct placeholder for the driver.
@@ -332,6 +332,9 @@ type ListarParams struct {
 	Filtros map[string]string
 }
 
+// maxListar is the most rows one page of a list may ask for.
+const maxListar = 1000
+
 func (b *Banco) Listar(modelo string, params *ListarParams) ([]map[string]any, int64, error) {
 	if _, ok := b.Models[modelo]; !ok {
 		return nil, 0, fmt.Errorf("modelo '%s' não encontrado", modelo)
@@ -347,11 +350,27 @@ func (b *Banco) Listar(modelo string, params *ListarParams) ([]map[string]any, i
 	if params.Pagina <= 0 {
 		params.Pagina = 1
 	}
-	if params.Ordem == "" {
+	if params.Limite > maxListar {
+		params.Limite = maxListar
+	}
+	// The order comes from the request: only a known column and ASC/DESC ever
+	// reach the SQL.
+	switch strings.ToUpper(strings.TrimSpace(params.Ordem)) {
+	case "", "DESC":
 		params.Ordem = "DESC"
+	case "ASC":
+		params.Ordem = "ASC"
+	default:
+		return nil, 0, fmt.Errorf("ordem inválida %q: use asc ou desc", params.Ordem)
 	}
 	if params.Ordenar == "" {
 		params.Ordenar = "id"
+	}
+	params.Ordenar = strings.ToLower(params.Ordenar)
+	if cols, err := b.columns(modelo); err != nil {
+		return nil, 0, err
+	} else if !cols[params.Ordenar] {
+		return nil, 0, &ErrCampo{modelo, params.Ordenar}
 	}
 
 	var where []string
@@ -451,6 +470,9 @@ func (b *Banco) Criar(modelo string, dados json.RawMessage) (map[string]any, err
 	if err := b.Validar(modelo, input); err != nil {
 		return nil, err
 	}
+	if err := protectPasswords(model, input); err != nil {
+		return nil, err
+	}
 
 	var cols []string
 	var phs []string
@@ -505,6 +527,9 @@ func (b *Banco) Atualizar(modelo string, id int64, dados json.RawMessage) (map[s
 	}
 
 	if err := b.Validar(modelo, input); err != nil {
+		return nil, err
+	}
+	if err := protectPasswords(model, input); err != nil {
 		return nil, err
 	}
 

@@ -31,3 +31,19 @@ func (f filesOnly) Open(name string) (http.File, error) {
 	}
 	return file, nil
 }
+
+// uploadsServer serves what people sent. Those files are never trusted as
+// part of the site: the sandbox policy keeps a script inside an SVG (or any
+// file a browser might render) from running with the site's cookies, nosniff
+// stops the browser from guessing a dangerous type, and SVG is a download.
+func uploadsServer(dir string) http.Handler {
+	files := fileServer(dir)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Security-Policy", "sandbox; default-src 'none'; img-src 'self'; style-src 'unsafe-inline'")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		if strings.HasSuffix(strings.ToLower(r.URL.Path), ".svg") {
+			w.Header().Set("Content-Disposition", "attachment")
+		}
+		files.ServeHTTP(w, r)
+	})
+}

@@ -352,6 +352,9 @@ func (b *Banco) CriarMapa(modelo string, dados map[string]any) (map[string]any, 
 	if err := b.Validar(modelo, dados); err != nil {
 		return nil, err
 	}
+	if err := protectPasswords(b.Models[modelo], dados); err != nil {
+		return nil, err
+	}
 	cols := make([]string, len(keys))
 	phs := make([]string, len(keys))
 	vals := make([]any, len(keys))
@@ -392,6 +395,9 @@ func (b *Banco) AtualizarMapa(modelo string, id int64, dados map[string]any) (ma
 		return nil, err
 	}
 	if err := b.ValidarParcial(modelo, dados); err != nil {
+		return nil, err
+	}
+	if err := protectPasswords(b.Models[modelo], dados); err != nil {
 		return nil, err
 	}
 	sets := make([]string, 0, len(keys)+1)

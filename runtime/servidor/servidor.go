@@ -1,8 +1,10 @@
 package servidor
 
 import (
+	"bytes"
 	"encoding/csv"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/flaviokalleu/germanio/runtime/git"
 	"html"
@@ -112,7 +114,7 @@ func (s *Servidor) Handler() (http.Handler, error) {
 	mux.HandleFunc("/api/", s.handleAPI)
 	mux.HandleFunc("/upload", s.handleUpload)
 	mux.Handle("/assets/", http.StripPrefix("/assets/", fileServer(s.assetsDir())))
-	mux.Handle("/uploads/", http.StripPrefix("/uploads/", fileServer("uploads")))
+	mux.Handle("/uploads/", http.StripPrefix("/uploads/", uploadsServer("uploads")))
 	mux.HandleFunc("/media/stream", s.handleMediaStream)
 	mux.HandleFunc("/ws", s.WS.HandleWS)
 	mux.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
@@ -590,6 +592,15 @@ func (s *Servidor) handleAPI(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// People's accounts: only the person or an administrator changes an
+	// account; nobody but an administrator creates one here (sign-up is
+	// /api/registro) or changes a role.
+	if s.Auth != nil && modelo == s.Auth.Table && r.Method != http.MethodGet {
+		if !s.accountWriteAllowed(w, r, parts) {
+			return
+		}
+	}
+
 	// Handle /api/{model}/export/csv and /api/{model}/export/json
 	if len(parts) >= 2 && parts[1] == "export" {
 		format := "json"
@@ -723,6 +734,42 @@ func (s *Servidor) handleAPI(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// accountWriteAllowed guards writes to the table of people (older dialect).
+func (s *Servidor) accountWriteAllowed(w http.ResponseWriter, r *http.Request, parts []string) bool {
+	if r.Header.Get("X-User-Role") == "admin" {
+		return true
+	}
+	if len(parts) < 2 || parts[1] == "" {
+		s.jsonError(w, "Permissão negada", http.StatusForbidden)
+		return false
+	}
+	if parts[1] != r.Header.Get("X-User-ID") {
+		s.jsonError(w, "Permissão negada", http.StatusForbidden)
+		return false
+	}
+	if r.Method == http.MethodPut || r.Method == http.MethodPatch {
+		body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+		if err != nil {
+			s.jsonError(w, "erro ao ler dados", http.StatusBadRequest)
+			return false
+		}
+		var fields map[string]any
+		if err := json.Unmarshal(body, &fields); err != nil {
+			s.jsonError(w, "JSON inválido", http.StatusBadRequest)
+			return false
+		}
+		for k := range fields {
+			switch strings.ToLower(k) {
+			case "role", "papel", "admin", "id":
+				delete(fields, k)
+			}
+		}
+		clean, _ := json.Marshal(fields)
+		r.Body = io.NopCloser(bytes.NewReader(clean))
+	}
+	return true
+}
+
 func (s *Servidor) handleAPIComID(w http.ResponseWriter, r *http.Request, modelo string, id int64) {
 	switch r.Method {
 	case http.MethodGet:
@@ -762,6 +809,9 @@ func (s *Servidor) handleAPIComID(w http.ResponseWriter, r *http.Request, modelo
 	}
 }
 
+// maxUpload is the largest file the older upload endpoint accepts.
+const maxUpload = 64 << 20
+
 func (s *Servidor) handleUpload(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodOptions {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -776,7 +826,11 @@ func (s *Servidor) handleUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Limit to 128MB for audio/video attachments
-	r.ParseMultipartForm(128 << 20)
+	r.Body = http.MaxBytesReader(w, r.Body, maxUpload)
+	if err := r.ParseMultipartForm(32 << 20); err != nil {
+		s.jsonError(w, "arquivo grande demais ou envio inválido", http.StatusRequestEntityTooLarge)
+		return
+	}
 	file, header, err := r.FormFile("file")
 	if err != nil {
 		s.jsonError(w, "erro ao ler arquivo: "+err.Error(), http.StatusBadRequest)
@@ -1084,15 +1138,8 @@ func (s *Servidor) handleWASend(w http.ResponseWriter, r *http.Request) {
 // POST /api/_proxy
 // Body: {"method": "GET", "url": "https://...", "body": "..."}
 func (s *Servidor) handleProxy(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-
-	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
+	// No CORS: the proxy serves this application's own pages, never other
+	// sites (it would turn the server into an open relay for them).
 	if r.Method != http.MethodPost {
 		s.jsonError(w, "método não permitido", http.StatusMethodNotAllowed)
 		return
@@ -1103,68 +1150,53 @@ func (s *Servidor) handleProxy(w http.ResponseWriter, r *http.Request) {
 		URL    string `json:"url"`
 		Body   string `json:"body"`
 	}
-
-	body, err := io.ReadAll(r.Body)
+	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
 	if err != nil {
 		s.jsonError(w, "erro ao ler requisição", http.StatusBadRequest)
 		return
 	}
-
 	if err := json.Unmarshal(body, &req); err != nil {
 		s.jsonError(w, "JSON inválido", http.StatusBadRequest)
 		return
 	}
-
-	if req.URL == "" {
-		s.jsonError(w, "URL é obrigatória", http.StatusBadRequest)
-		return
-	}
-
-	// SSRF protection: block private/internal URLs
 	parsedURL, err := url.Parse(req.URL)
-	if err != nil {
+	if err != nil || req.URL == "" {
 		s.jsonError(w, "URL inválida", http.StatusBadRequest)
-		return
-	}
-	host := parsedURL.Hostname()
-	// Block private IP ranges and dangerous hosts
-	blockedPrefixes := []string{"127.", "10.", "192.168.", "172.16.", "172.17.", "172.18.", "172.19.", "172.20.", "172.21.", "172.22.", "172.23.", "172.24.", "172.25.", "172.26.", "172.27.", "172.28.", "172.29.", "172.30.", "172.31.", "169.254.", "0."}
-	for _, prefix := range blockedPrefixes {
-		if strings.HasPrefix(host, prefix) {
-			s.jsonError(w, "URL bloqueada por segurança", http.StatusForbidden)
-			return
-		}
-	}
-	if host == "localhost" || host == "" || parsedURL.Scheme == "file" {
-		s.jsonError(w, "URL bloqueada por segurança", http.StatusForbidden)
 		return
 	}
 	if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
 		s.jsonError(w, "Apenas HTTP/HTTPS permitido", http.StatusBadRequest)
 		return
 	}
-
 	if req.Method == "" {
 		req.Method = "GET"
 	}
-
-	if s.HTTPClient == nil {
-		s.HTTPClient = httpclient.Novo()
-	}
-
-	var reqBody []byte
-	if req.Body != "" {
-		reqBody = []byte(req.Body)
-	}
-
-	resp, err := s.HTTPClient.Chamar(req.Method, req.URL, reqBody)
+	// The destination is checked when the connection is made, on the resolved
+	// address (every spelling of an IP, IPv6, DNS rebinding), and redirects are
+	// not followed: safeHTTPClient refuses the server's own networks.
+	out, err := http.NewRequestWithContext(r.Context(), req.Method, req.URL, strings.NewReader(req.Body))
 	if err != nil {
-		s.jsonError(w, err.Error(), http.StatusBadGateway)
+		s.jsonError(w, "requisição inválida", http.StatusBadRequest)
 		return
 	}
-
+	resp, err := safeHTTPClient().Do(out)
+	if err != nil {
+		if errors.Is(err, errLocalNetwork) {
+			s.jsonError(w, "URL bloqueada por segurança", http.StatusForbidden)
+			return
+		}
+		s.jsonError(w, "falha ao chamar o destino", http.StatusBadGateway)
+		return
+	}
+	defer resp.Body.Close()
+	data, err := io.ReadAll(io.LimitReader(resp.Body, 10<<20))
+	if err != nil {
+		s.jsonError(w, "falha ao ler o destino", http.StatusBadGateway)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(resp)
+	w.WriteHeader(resp.StatusCode)
+	w.Write(data)
 }
 
 // resolveField gets a value from data, supports dotted paths.

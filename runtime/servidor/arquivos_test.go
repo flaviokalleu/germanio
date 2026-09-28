@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -31,5 +32,23 @@ func TestPastaServidaNaoListaNemEntregaOcultos(t *testing.T) {
 		if w.Code != want {
 			t.Errorf("%s: status %d, esperado %d (%q)", path, w.Code, want, w.Body.String())
 		}
+	}
+}
+
+// An SVG sent by someone can carry a script: it is served as a download,
+// inside a sandbox, never sniffed.
+func TestUploadSVGNaoExecuta(t *testing.T) {
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "x.svg"), []byte(`<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>`), 0o644)
+	w := httptest.NewRecorder()
+	http.StripPrefix("/uploads/", uploadsServer(dir)).ServeHTTP(w, httptest.NewRequest("GET", "/uploads/x.svg", nil))
+	if w.Code != http.StatusOK {
+		t.Fatalf("status %d", w.Code)
+	}
+	if csp := w.Header().Get("Content-Security-Policy"); !strings.Contains(csp, "sandbox") {
+		t.Errorf("sem sandbox: %q", csp)
+	}
+	if w.Header().Get("Content-Disposition") != "attachment" || w.Header().Get("X-Content-Type-Options") != "nosniff" {
+		t.Errorf("cabeçalhos: %v", w.Header())
 	}
 }

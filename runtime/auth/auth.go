@@ -85,18 +85,28 @@ func (a *Auth) Registrar(w http.ResponseWriter, r *http.Request) {
 	}
 	input[a.PassField] = string(hash)
 
-	// Set default role
-	if _, ok := input["role"]; !ok {
-		input["role"] = "usuario"
+	// Sign-up never chooses its own role or system fields, and only real
+	// columns of the table reach the INSERT (keys are never trusted as SQL).
+	columns, err := a.columns()
+	if err != nil {
+		jsonErr(w, "Erro interno", 500)
+		return
 	}
-
-	// Build INSERT
 	var cols, phs []string
 	var vals []any
 	for k, v := range input {
+		if !columns[k] || protectedField(k) {
+			continue
+		}
 		cols = append(cols, fmt.Sprintf(`"%s"`, k))
 		phs = append(phs, "?")
 		vals = append(vals, v)
+	}
+	input["role"] = "usuario"
+	if columns["role"] {
+		cols = append(cols, `"role"`)
+		phs = append(phs, "?")
+		vals = append(vals, "usuario")
 	}
 
 	query := fmt.Sprintf(`INSERT INTO "%s" (%s) VALUES (%s)`, a.Table, strings.Join(cols, ","), strings.Join(phs, ","))
@@ -118,6 +128,33 @@ func (a *Auth) Registrar(w http.ResponseWriter, r *http.Request) {
 		"id":      id,
 		"message": "Conta criada com sucesso",
 	})
+}
+
+// protectedField: fields a person never sets for themselves.
+func protectedField(name string) bool {
+	switch strings.ToLower(name) {
+	case "id", "role", "papel", "admin", "criado_em", "atualizado_em", "deletado_em", "created_at", "updated_at":
+		return true
+	}
+	return false
+}
+
+// columns lists the real columns of the user table.
+func (a *Auth) columns() (map[string]bool, error) {
+	rows, err := a.DB.Query(fmt.Sprintf(`SELECT * FROM "%s" LIMIT 0`, strings.ReplaceAll(a.Table, `"`, `""`)))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	names, err := rows.Columns()
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[string]bool, len(names))
+	for _, n := range names {
+		out[n] = true
+	}
+	return out, nil
 }
 
 // Login authenticates a user and returns a JWT.
@@ -206,6 +243,12 @@ func (a *Auth) Me(w http.ResponseWriter, r *http.Request) {
 // Middleware checks JWT token and adds claims to context.
 func (a *Auth) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Identity headers are set here from a verified token, never taken
+		// from the client.
+		r.Header.Del("X-User-ID")
+		r.Header.Del("X-User-Login")
+		r.Header.Del("X-User-Role")
+
 		// Skip auth for login/register endpoints
 		if r.URL.Path == "/api/login" || r.URL.Path == "/api/registro" ||
 			r.URL.Path == "/api/register" ||
@@ -229,10 +272,9 @@ func (a *Auth) Middleware(next http.Handler) http.Handler {
 				next.ServeHTTP(w, r)
 				return
 			}
-			// Allow GET on API only if no auth is configured (backwards compat)
-			if r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/api/") {
-				// Set a flag so servidor can check screen-level public access
-				r.Header.Set("X-User-Role", "anonymous")
+			// With authentication configured, data is not readable anonymously;
+			// only the API description stays public.
+			if r.Method == http.MethodGet && (r.URL.Path == "/api/docs" || r.URL.Path == "/api/openapi.json") {
 				next.ServeHTTP(w, r)
 				return
 			}
