@@ -217,6 +217,28 @@ func TestHierarquiaErros(t *testing.T) {
 
 // Fusão: o mesmo dado em dois blocos (e em frase plana) soma os fatos; o
 // mesmo fato repetido não muda nada.
+// Repeating the same field in another block changes nothing; two different
+// definitions of the same field are a conflict that shows both origins.
+func TestHierarquiaFusaoDeCampos(t *testing.T) {
+	once := canonical(t, resolved(t, base+"\nprojetos\n    tem\n        nome obrigatório\n"))
+	twice := canonical(t, resolved(t, base+"\nprojetos\n    tem\n        nome obrigatório\n\nprojetos\n    tem\n        nome obrigatório\n"))
+	if !reflect.DeepEqual(once, twice) {
+		t.Fatal("repetir o mesmo campo mudou o programa")
+	}
+	err := resolveErr(base + "\nprojetos\n    tem\n        nome obrigatório\n\nprojetos\n    tem\n        nome até 10\n")
+	if err == nil {
+		t.Fatal("duas definições diferentes do mesmo campo foram aceitas")
+	}
+	for _, want := range []string{"nome", "já foi definido", "linha"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("mensagem sem %q: %v", want, err)
+		}
+	}
+	if strings.Count(err.Error(), "linha") < 2 && strings.Count(err.Error(), ":") < 2 {
+		t.Fatalf("a mensagem não mostra as duas origens: %v", err)
+	}
+}
+
 func TestHierarquiaFusao(t *testing.T) {
 	one := canonical(t, resolved(t, base+"\nprojetos\n    tem\n        nome\n    começa aberto\n    pode\n        fechar\n    acesso\n        guest\n            ver\n"))
 	split := canonical(t, resolved(t, base+"\nprojetos\n    tem\n        nome\n    começa aberto\n\nprojetos\n    pode\n        fechar\n\nprojeto começa aberto\nguest pode ver projetos\n"))

@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"reflect"
 	"sort"
 	"strings"
 
@@ -255,13 +256,25 @@ func ResolveIntent(prog *ast.Program) error {
 				if err := fp.modelMember(e.Model, line); err != nil {
 					return err
 				}
+				// Blocks merge: the same field written again changes nothing;
+				// a different definition is a conflict showing both origins.
+				kept := e.Model.Fields[:before]
 				for _, f := range e.Model.Fields[before:] {
+					dup := false
 					for _, g := range e.Model.Fields[:before] {
-						if strings.EqualFold(f.Name, g.Name) {
-							return r.errAt(f.Pos, "%s já tem o campo %s", e.Singular, f.Name)
+						if !strings.EqualFold(f.Name, g.Name) {
+							continue
 						}
+						if !sameField(f, g) {
+							return r.errAt(f.Pos, "o campo %s de %s já foi definido de outro jeito em %s; aqui a definição é diferente. Deixe uma só definição", f.Name, e.Plural, where(g.Pos))
+						}
+						dup = true
+					}
+					if !dup {
+						kept = append(kept, f)
 					}
 				}
+				e.Model.Fields = kept
 			}
 		}
 	}
@@ -1389,6 +1402,13 @@ func (r *resolver) addressRef(app *ast.App, e *ast.Entity, name string, pos diag
 }
 
 // where shows a declaration's origin: file:line and, inside a block, its path.
+// sameField: two declarations of a field that mean the same (position aside).
+func sameField(a, b *ast.Field) bool {
+	x, y := *a, *b
+	x.Pos, y.Pos = diagnostics.Position{}, diagnostics.Position{}
+	return reflect.DeepEqual(x, y)
+}
+
 func where(p diagnostics.Position) string {
 	out := fmt.Sprintf("%s:%d", p.File, p.Line)
 	if p.File == "" {
