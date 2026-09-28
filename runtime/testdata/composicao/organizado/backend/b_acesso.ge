@@ -1,0 +1,8 @@
+tenha cadastro
+tenha recuperação de senha
+login usa email
+login bloqueia após 5 tentativas por 15 minutos
+
+tenha papeis
+    leitor 10
+    editor 30

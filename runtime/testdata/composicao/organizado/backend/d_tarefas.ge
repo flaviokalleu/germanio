@@ -1,0 +1,10 @@
+tarefas
+    tem
+        titulo obrigatório
+        responsaveis
+    começa aberta
+    pode
+        concluir
+        reabrir
+    pendência para
+        responsaveis

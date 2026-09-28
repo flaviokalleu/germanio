@@ -1,0 +1,14 @@
+times
+    tem
+        nome obrigatório
+        membros com papel
+        tarefas
+    acesso
+        usuario
+            criar
+        leitor
+            ver
+        editor
+            editar
+
+quem cria time vira editor

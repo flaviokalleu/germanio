@@ -1,0 +1,62 @@
+crie sistema Composicao
+
+usuarios
+    tem
+        nome obrigatório
+        email obrigatório e único
+        senha min 8
+    acesso
+        usuario
+            editar seu perfil
+
+tenha login
+
+tenha cadastro
+tenha recuperação de senha
+login usa email
+login bloqueia após 5 tentativas por 15 minutos
+
+tenha papeis
+    leitor 10
+    editor 30
+
+times
+    tem
+        nome obrigatório
+        membros com papel
+        tarefas
+    acesso
+        usuario
+            criar
+        leitor
+            ver
+        editor
+            editar
+
+quem cria time vira editor
+
+tarefas
+    tem
+        titulo obrigatório
+        responsaveis
+    começa aberta
+    pode
+        concluir
+        reabrir
+    pendência para
+        responsaveis
+
+
+página Times
+    mostre times
+    topo
+        título "Times"
+        ações
+            criar "Novo time"
+    vazio
+        título "Nenhum time"
+    permita
+        criar
+
+página Pendências
+    mostre pendências

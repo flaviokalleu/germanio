@@ -1,0 +1,15 @@
+importar times do backend
+
+página Times
+    mostre times
+    topo
+        título "Times"
+        ações
+            criar "Novo time"
+    vazio
+        título "Nenhum time"
+    permita
+        criar
+
+página Pendências
+    mostre pendências

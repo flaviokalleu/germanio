@@ -228,6 +228,7 @@ func MergeIntent(a, b *Intent) *Intent {
 		a.Translators[k] = v
 	}
 	a.MinRoles = append(a.MinRoles, b.MinRoles...)
+	a.Capabilities = append(a.Capabilities, b.Capabilities...)
 	a.PendingItems = append(a.PendingItems, b.PendingItems...)
 	a.InitialFiles = append(a.InitialFiles, b.InitialFiles...)
 	a.ReservedAddresses = append(a.ReservedAddresses, b.ReservedAddresses...)
@@ -265,16 +266,25 @@ func mergeLogin(a, b *LoginDecl) {
 	a.Signup = a.Signup || b.Signup
 	a.Recovery = a.Recovery || b.Recovery
 	if b.TokenEntity != "" {
-		a.TokenEntity, a.TokenHeader = b.TokenEntity, b.TokenHeader
+		a.TokenEntity = b.TokenEntity
+	}
+	if b.TokenHeader != "" {
+		a.TokenHeader = b.TokenHeader
 	}
 	if b.OAuthSeconds > 0 {
 		a.OAuthSeconds = b.OAuthSeconds
 	}
 	if b.LockAttempts > 0 {
-		a.LockAttempts, a.LockMinutes = b.LockAttempts, b.LockMinutes
+		a.LockAttempts = b.LockAttempts
+	}
+	if b.LockMinutes > 0 {
+		a.LockMinutes = b.LockMinutes
 	}
 	if b.ActiveField != "" {
-		a.ActiveField, a.ActiveValue = b.ActiveField, b.ActiveValue
+		a.ActiveField = b.ActiveField
+	}
+	if b.ActiveValue != nil {
+		a.ActiveValue = b.ActiveValue
 	}
 	for k, v := range b.Scopes {
 		if a.Scopes == nil {
