@@ -126,6 +126,7 @@ func (a *intentAPI) mountLevel(mux *routeMux, base string, chain []*ast.Entity, 
 			mux.HandleFunc("GET "+item+"/"+path, h("revisao_"+sub, ""))
 		}
 	}
+	a.mountFiles(mux, item, chain, integration)
 	for verb := range actions {
 		path := verb
 		if integration {
@@ -307,8 +308,14 @@ func serializeFor(ctx *interp.Context, in *interp.Interpreter, atual map[string]
 			namesOut(ctx, in, e, out)
 		}
 	}()
+	files := map[string]bool{}
+	for _, f := range fileFields(e) {
+		files[strings.ToLower(f.Name)] = true
+	}
 	for k, v := range row {
 		switch {
+		case files[k]:
+			out[k] = publicMeta(v)
 		case hidden[k]:
 		case k == "criado_em":
 			out["created_at"] = v
@@ -388,6 +395,9 @@ func (a *intentAPI) writable(atual map[string]any, e *ast.Entity, body map[strin
 		}
 		if !ok || f.System || f.Type == ast.FieldSegredo {
 			continue // hidden fields can be set (a webhook token), never read
+		}
+		if isFileField(f) {
+			continue // a file is sent to its own address (GEP 0014), never set as text
 		}
 		if _, isFixed := fixed[key]; isFixed {
 			continue
@@ -472,6 +482,8 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 		}
 	}
 	switch op {
+	case "arquivo_ver", "arquivo_enviar", "arquivo_remover":
+		a.fileOp(w, r, ctx, atual, e, a.find(ctx, e, ref, scope), op, deny)
 	case "listar":
 		a.list(w, r, ctx, atual, e, scope, deny)
 	case "log":
@@ -508,6 +520,10 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 		body = a.inwardBody(e, body)
 		if scope == nil {
 			scope = map[string]any{}
+		}
+		if f := fileIn(e, body); f != "" {
+			a.fail(w, 400, fmt.Sprintf("%s é um arquivo: envie-o para o endereço do registro (PUT …/%s, com o arquivo no corpo), não como texto", f, f))
+			return
 		}
 		data := a.writable(atual, e, body, scope)
 		if err := a.namesIn(ctx, atual, e, data, nil); err != nil {
@@ -547,6 +563,10 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 			return
 		}
 		body = a.inwardBody(e, body)
+		if f := fileIn(e, body); f != "" {
+			a.fail(w, 400, fmt.Sprintf("%s é um arquivo: envie-o para o endereço do registro (PUT …/%s, com o arquivo no corpo), não como texto", f, f))
+			return
+		}
 		data := a.writable(atual, e, body, nil)
 		for k := range scope {
 			delete(data, k)
@@ -1108,7 +1128,7 @@ func (a *intentAPI) cascade(ctx *interp.Context, e *ast.Entity, row map[string]a
 	if _, err := a.in.Op(ctx, e.Singular, "deletar", row["id"]); err != nil {
 		return err
 	}
-	afterCommit(ctx, func() { a.removeRepository(e, row) })
+	afterCommit(ctx, func() { a.removeRepository(e, row); a.removeFiles(e, row) })
 	return nil
 }
 

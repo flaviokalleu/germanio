@@ -42,6 +42,8 @@ logica
         definir job = {id: t.id, token: t.token, allow_git_fetch: verdadeiro, job_info: {id: t.id, name: t.dados.nome, stage: t.dados.etapa, project_id: t.dono.id, project_name: t.dono.nome}, git_info: {repo_url: repo, ref: ref, sha: t.execucao.versao, before_sha: "0000000000000000000000000000000000000000", ref_type: "branch", refspecs: ["+refs/heads/" + ref + ":refs/remotes/origin/" + ref], depth: 20}, runner_info: {timeout: t.limite_segundos}, variables: variaveis, steps: passos, services: [], artifacts: [], cache: [], credentials: [], dependencies: [], features: {trace_sections: verdadeiro}}
         se t.dados.imagem != nulo
             job.image = {name: t.dados.imagem}
+        se tamanho(t.artefatos) > 0
+            job.artifacts = [{name: "artifacts", untracked: falso, paths: t.artefatos, when: "on_success", artifact_type: "archive", artifact_format: "zip", expire_in: ""}]
         retornar job
 
     funcao situacao_do_job(token, id)
@@ -75,6 +77,12 @@ rotas
         senao
             s = trabalho_remoto.renovar(token)
         responder(200, nulo, {"Job-Status": estado_gitlab(s)})
+
+    rota POST "/api/v4/jobs/:id/artifacts"
+        definir token = obter(requisicao.cabecalhos, "job-token", "")
+        situacao_do_job(token, requisicao.parametros.id)
+        trabalho_remoto.guardar_arquivo(token, "artefatos", "file")
+        responder(201, {})
 
     rota PATCH "/api/v4/jobs/:id/trace"
         definir token = obter(requisicao.cabecalhos, "job-token", "")

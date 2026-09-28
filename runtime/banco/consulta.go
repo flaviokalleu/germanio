@@ -702,10 +702,15 @@ func (b *Banco) AnexarTexto(modelo string, id int64, campo, texto string, tamanh
 		return false, &ErrCampo{modelo, campo}
 	}
 	concat := "COALESCE(" + q(campo) + ", '') || " + b.ph(1)
-	length := "LENGTH(COALESCE(" + q(campo) + ", ''))"
-	if b.Driver == "mysql" {
+	// the length is in bytes, like the caller's offset (a log's byte range):
+	// counting characters refused every chunk after the first accented one
+	length := "LENGTH(CAST(COALESCE(" + q(campo) + ", '') AS BLOB))"
+	switch b.Driver {
+	case "mysql":
 		concat = "CONCAT(COALESCE(" + q(campo) + ", ''), " + b.ph(1) + ")"
-		length = "CHAR_LENGTH(COALESCE(" + q(campo) + ", ''))"
+		length = "LENGTH(COALESCE(" + q(campo) + ", ''))"
+	case "postgres", "postgresql":
+		length = "OCTET_LENGTH(COALESCE(" + q(campo) + ", ''))"
 	}
 	res, err := b.x().Exec(fmt.Sprintf("UPDATE %s SET %s = %s, %s = CURRENT_TIMESTAMP WHERE %s = %s AND %s = %s",
 		q(modelo), q(campo), concat, q("atualizado_em"), q("id"), b.ph(2), length, b.ph(3)), texto, id, tamanho)

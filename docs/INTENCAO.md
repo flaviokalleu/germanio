@@ -461,7 +461,7 @@ Equivale a: developer pode enviar código para projetos
 | `tenha busca geral em projetos, issues e merge requests` | um único ponto de busca (`/_ge/api/busca?tipo_busca=issues&q=…`; nomes externos pelo vocabulário) responde com a listagem do tipo escolhido: mesma pesquisa, filtros, páginas e regra de quem vê. Cada tipo precisa de `permita pesquisar` |
 | `labels por nome` (linha de `issue tem`) | lista escrita e lida pelo nome (`"bug,ux"` → `["bug","ux"]`), procurado entre os itens do mesmo pai (labels do projeto); nome novo cria o item quando a pessoa pode criá-lo ali; `?labels=bug` filtra pelo nome. Itens de outro pai nunca entram |
 | `runners executam jobs` | trabalho remoto: cada runner (um `token secreto`, `ativo`, opcionalmente `pode pertencer a projeto`) pega trabalhos pendentes com reserva renovável; reserva vencida devolve o trabalho à fila (3 tentativas, depois falha); cancelamento visível ao executor; token temporário (só do próprio trabalho, lê o repositório só enquanto executa). Vale para qualquer dado: `trabalhadores executam conversoes`. Protocolos externos falam com isso por um adaptador em `integracoes/` usando `trabalho_remoto.*` |
-| `projeto executa pipelines a cada envio de código conforme "arquivo.yml"` | o arquivo, no formato nativo (`estagios`, `etapas` com `comandos`, `depois`, `quando: automatico / manual / sempre`, `pode_falhar`, `imagem`), vira uma execução por envio; um adaptador pode ler outro formato com `traduza arquivos de execução com f` e dar variáveis às etapas com `traduza variáveis das etapas com f` (só em `integracoes/`) |
+| `projeto executa pipelines a cada envio de código conforme "arquivo.yml"` | o arquivo, no formato nativo (`estagios`, `etapas` com `comandos`, `depois`, `quando: automatico / manual / sempre`, `pode_falhar`, `imagem`, `artefatos`), vira uma execução por envio; um adaptador pode ler outro formato com `traduza arquivos de execução com f` e dar variáveis às etapas com `traduza variáveis das etapas com f` (só em `integracoes/`) |
 | `quem cria projeto vira owner` | quem cria vira membro com esse papel — exceto quando o dado herda membros de um pai e foi criado dentro dele (os membros já vêm do pai) |
 | `todo grupo precisa ter pelo menos um owner` | ninguém remove nem rebaixa o último membro com esse papel (ou superior) |
 | `repositório do projeto pode começar com "README.md" contendo "# {nome}"` | ao criar com `iniciar_repositorio` (nome externo pelo vocabulário), o repositório nasce com esse arquivo; `{campo}` vira o valor do registro |
@@ -471,6 +471,9 @@ Equivale a: developer pode enviar código para projetos
 `telefone`→telefone · `foto`/`avatar`/`imagem`→imagem · `descricao`/`description`→texto longo ·
 `visibilidade`/`visibility`→visibilidade · `preco`/`valor`→dinheiro · `quantidade`/`estoque`→inteiro ·
 `admin`/`ativo`/`arquivado`/`confidencial`/`pode_*`/`is_*`→booleano · demais→texto.
+`arquivo`/`anexo`→arquivo. Um campo só guarda um arquivo de verdade (envio, download para quem vê
+o registro, limites, remoção) quando o tipo é declarado — `anexo arquivo`, `foto imagem` —, em
+teste na [GEP 0014](gep/0014-arquivos.md); pelo nome sozinho, continua guardando texto.
 `começa com 10` → inteiro; `começa com verdadeiro` → booleano.
 
 **Inferência é conveniência, não verdade absoluta.** Uma declaração explícita sempre

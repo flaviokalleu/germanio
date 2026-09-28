@@ -322,14 +322,17 @@ const (
 )
 
 type Field struct {
-	Name       string
-	Type       FieldType
-	Required   bool
-	Unique     bool
-	Default    string
-	Reference  string   // pertence_a model
-	EnumValues []string // for enum type
-	Index      bool
+	Name string
+	Type FieldType
+	// TypeInferred: the type came from the name (docs/INTENCAO.md › Tipo pelo
+	// nome), not from a declaration.
+	TypeInferred bool
+	Required     bool
+	Unique       bool
+	Default      string
+	Reference    string   // pertence_a model
+	EnumValues   []string // for enum type
+	Index        bool
 
 	// Declarative schema (nível 1/2). All are enforced by the runtime on
 	// every create/update, whatever route or function performs it.

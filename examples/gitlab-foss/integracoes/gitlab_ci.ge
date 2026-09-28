@@ -42,6 +42,7 @@ logica
                 falhar(400, "o job " + nome + " usa a etapa \"" + estagio + "\", que não está em stages")
             definir momento = obter(job, "when", "on_success")
             definir etapa = {estagio: estagio, comandos: mesclar_listas(linhas(obter(job, "before_script", antes)), script), depois: linhas(obter(job, "after_script", depois)), imagem: obter(job, "image", imagem), pode_falhar: obter(job, "allow_failure", momento == "manual")}
+            etapa.artefatos = linhas(obter(obter(job, "artifacts", {}), "paths", nulo))
             etapa.quando = "automatico"
             se momento == "manual"
                 etapa.quando = "manual"

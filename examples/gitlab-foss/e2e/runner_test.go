@@ -1,7 +1,10 @@
 package e2e
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -45,7 +48,7 @@ func TestRunnerOficial(t *testing.T) {
 	work := filepath.Join(dir, "app")
 	run(t, work, "git", "config", "user.email", "ada@example.com")
 	run(t, work, "git", "config", "user.name", "Ada")
-	os.WriteFile(filepath.Join(work, ".gitlab-ci.yml"), []byte("stages: [build, test]\nbuild:\n  stage: build\n  script:\n    - echo compilando $CI_COMMIT_REF_NAME em $CI_PROJECT_PATH\n    - test -f README.md\ntest:\n  stage: test\n  script:\n    - echo falhando de propósito\n    - exit 3\n"), 0o644)
+	os.WriteFile(filepath.Join(work, ".gitlab-ci.yml"), []byte("stages: [build, test]\nbuild:\n  stage: build\n  script:\n    - echo compilando $CI_COMMIT_REF_NAME em $CI_PROJECT_PATH\n    - test -f README.md\n    - echo resultado do build > saida.txt\n  artifacts:\n    paths:\n      - saida.txt\ntest:\n  stage: test\n  script:\n    - echo falhando de propósito\n    - exit 3\n"), 0o644)
 	run(t, work, "git", "add", ".")
 	run(t, work, "git", "commit", "--quiet", "-m", "ci")
 	run(t, work, "git", "push", "--quiet", "origin", "main")
@@ -80,6 +83,32 @@ func TestRunnerOficial(t *testing.T) {
 	}
 	if log := trace(t, ada, "/api/v4/jobs/"+id(b)+"/trace"); !strings.Contains(log, "compilando main em ada/app") || !strings.Contains(log, "Job succeeded") {
 		t.Fatalf("log do build:\n%s", log)
+	}
+	// CI-08: the runner uploads the artifacts (GEP 0014); they come back as a
+	// zip to whoever may see the job, never to anyone else
+	code, zipped := download(t, ada, "/api/v4/jobs/"+id(b)+"/artifacts")
+	if code != 200 {
+		t.Fatalf("artefatos do build: %d", code)
+	}
+	zr, err := zip.NewReader(bytes.NewReader(zipped), int64(len(zipped)))
+	if err != nil {
+		t.Fatalf("artefatos não são um zip: %v", err)
+	}
+	found := false
+	for _, zf := range zr.File {
+		if zf.Name == "saida.txt" {
+			rc, _ := zf.Open()
+			content, _ := io.ReadAll(rc)
+			rc.Close()
+			found = strings.Contains(string(content), "resultado do build")
+		}
+	}
+	if !found {
+		t.Fatalf("saida.txt não está nos artefatos: %v", zr.File)
+	}
+	eve := signup(t, base, "eve")
+	if code, _ := download(t, eve, "/api/v4/jobs/"+id(b)+"/artifacts"); code != 404 {
+		t.Fatalf("artefatos de projeto privado para quem não é membro: %d", code)
 	}
 	f := jobByName(t, ada, pid, pipe, "test")
 	if f["state"] != "failed" {
@@ -181,4 +210,17 @@ func TestProtocoloRunner(t *testing.T) {
 	if c := trace(8, "tarde\n", jobToken); c == 202 {
 		t.Fatal("log aceito depois de concluído")
 	}
+}
+
+func download(t *testing.T, who *api, path string) (int, []byte) {
+	t.Helper()
+	req, _ := http.NewRequest("GET", who.base+path, nil)
+	req.Header.Set("Authorization", "Bearer "+who.token)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	b, _ := io.ReadAll(resp.Body)
+	return resp.StatusCode, b
 }

@@ -24,7 +24,7 @@ func TestAvisosPorEmail(t *testing.T) {
 
 	mails(t, mail, 2)
 	time.Sleep(200 * time.Millisecond) // an extra e-mail, if any, would be here by now
-	files, _ := filepath.Glob(filepath.Join(mail, "*"))
+	files, _ := filepath.Glob(filepath.Join(mail, "*.txt"))
 	var bodies []string
 	for _, f := range files {
 		b, _ := os.ReadFile(f)

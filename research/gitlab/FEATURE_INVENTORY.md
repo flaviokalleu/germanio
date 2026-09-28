@@ -90,7 +90,7 @@ Escopo núcleo v1 = features marcadas **[N]** (fluxos 1–5 da missão + testes 
 | CI-05 [N] | Resultado do job | `PUT /jobs/:id state=success|failed`; avança stages; status agregado | pipeline graph | API | | | | | PASS | TestFluxo5 |
 | CI-06 [N] | Retry / cancel | novo build / estado canceled | job | `/jobs/:id/retry|cancel` | | Developer+ | | | PASS | TestFluxo5 |
 | CI-07 | Variáveis de CI | projeto; mascaradas | settings | `/variables` | ci_variables | Maintainer+ | cripto | | NOT_STARTED | |
-| CI-08 | Artefatos | upload/download | job | `/jobs/:id/artifacts` | ci_job_artifacts | | uploads | | NOT_STARTED | |
+| CI-08 | Artefatos | upload/download | job | `/jobs/:id/artifacts` | ci_job_artifacts | | uploads | SUPPORTED (GEP 0014, em teste) | PARTIAL (o `gitlab-runner` oficial envia `artifacts: paths` e o zip volta para quem vê o job; o executor local ainda não junta artefatos; expiração e navegação dentro do zip não) | TestRunnerOficial, TestArquivos |
 | CI-09 | needs/DAG, rules/only/except, when:manual, allow_failure | | | | | | | | NOT_STARTED | |
 | CI-10 | Isolamento de execução (containers) | runner docker executor | | | | | docker | MISSING | NOT_STARTED | |
 

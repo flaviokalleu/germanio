@@ -15,7 +15,7 @@ func mails(t *testing.T, dir string, n int) []string {
 	t.Helper()
 	deadline := time.Now().Add(5 * time.Second)
 	for {
-		files, _ := filepath.Glob(filepath.Join(dir, "*"))
+		files, _ := filepath.Glob(filepath.Join(dir, "*.txt"))
 		if len(files) >= n || time.Now().After(deadline) {
 			return files
 		}
@@ -45,7 +45,7 @@ func TestRecuperacaoDeSenha(t *testing.T) {
 	}
 	files := mails(t, mail, 1)
 	time.Sleep(100 * time.Millisecond) // a second e-mail, if any, would be here by now
-	files, _ = filepath.Glob(filepath.Join(mail, "*"))
+	files, _ = filepath.Glob(filepath.Join(mail, "*.txt"))
 	if len(files) != 1 {
 		t.Fatalf("esperado 1 e-mail, vieram %d", len(files))
 	}

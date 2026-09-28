@@ -90,6 +90,14 @@ func TestAnexarTexto(t *testing.T) {
 	if got["log"] != "linha 1\nlinha 2\n" {
 		t.Fatalf("log: %q", got["log"])
 	}
+	// the length is in bytes: an accented chunk does not refuse the next one
+	accented := "Repositório vazio\n" // 19 bytes, 18 characters
+	if ok, _ := b.AnexarTexto("job", id, "log", accented, 16); !ok {
+		t.Fatal("pedaço com acento recusado")
+	}
+	if ok, _ := b.AnexarTexto("job", id, "log", "seguinte\n", 16+len(accented)); !ok {
+		t.Fatal("o pedaço depois de um acento foi recusado: o tamanho foi contado em caracteres, não em bytes")
+	}
 }
 
 // Ou: at least one group must hold, besides the other filters.

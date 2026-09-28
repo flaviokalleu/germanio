@@ -1,0 +1,39 @@
+crie sistema Anexos
+
+usuarios
+    tem
+        nome obrigatório
+        email obrigatório e único
+        senha min 8
+
+tenha login
+tenha cadastro
+
+chamados
+    tem
+        titulo obrigatório
+        autor
+        anexo arquivo
+        foto imagem
+    pode
+        ser confidencial
+    regras
+        confidencial pode ser vista por
+            autor
+    acesso
+        usuario
+            ver
+            criar
+        autor
+            editar
+            excluir
+
+quando editar chamado
+    se chamado.titulo == "trava"
+        recuse "Chamado travado"
+
+página Chamados
+    mostre chamados
+    permita
+        criar
+        editar

@@ -42,7 +42,12 @@ func mailerFromEnv() (mailer, string) {
 			}
 			name := fmt.Sprintf("%d-%s.txt", time.Now().UnixNano(), strings.NewReplacer("@", "_", "/", "_").Replace(to))
 			msg := "Para: " + to + "\nAssunto: " + subject + "\n\n" + body
-			return os.WriteFile(filepath.Join(dir, name), []byte(msg), 0o600)
+			// written whole or not at all: a reader never sees half a message
+			final := filepath.Join(dir, name)
+			if err := os.WriteFile(final+".parcial", []byte(msg), 0o600); err != nil {
+				return err
+			}
+			return os.Rename(final+".parcial", final)
 		}, ""
 	}
 	host := os.Getenv("GERMANIO_SMTP_HOST")

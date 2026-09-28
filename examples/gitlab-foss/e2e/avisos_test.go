@@ -23,10 +23,10 @@ func TestAvisosPorEmail(t *testing.T) {
 
 	var files []string
 	for deadline := time.Now().Add(5 * time.Second); len(files) == 0 && time.Now().Before(deadline); time.Sleep(20 * time.Millisecond) {
-		files, _ = filepath.Glob(filepath.Join(mail, "*"))
+		files, _ = filepath.Glob(filepath.Join(mail, "*.txt"))
 	}
 	time.Sleep(200 * time.Millisecond)
-	files, _ = filepath.Glob(filepath.Join(mail, "*"))
+	files, _ = filepath.Glob(filepath.Join(mail, "*.txt"))
 	if len(files) != 1 {
 		t.Fatalf("esperado 1 e-mail (para bob), vieram %d", len(files))
 	}

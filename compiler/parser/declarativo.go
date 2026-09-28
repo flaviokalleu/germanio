@@ -469,7 +469,7 @@ func (p *Parser) fieldFromTokens(t []lexer.Token) (*ast.Field, error) {
 		}
 	}
 	if f.Type == "" {
-		f.Type = inferType(f.Name)
+		f.Type, f.TypeInferred = inferType(f.Name), true
 	}
 	// Things are active until someone turns them off.
 	if f.Type == ast.FieldBooleano && !f.HasDefault {

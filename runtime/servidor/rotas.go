@@ -170,15 +170,13 @@ func buildRequest(req *http.Request, route *ast.CustomRoute) (map[string]any, er
 			if len(data) > 0 {
 				body = string(data)
 			}
-		case "application/x-www-form-urlencoded", "multipart/form-data":
+		case "multipart/form-data":
+			// not read here: a multipart body carries files, streamed by the
+			// capability that consumes it (trabalho_remoto.guardar_arquivo),
+			// never buffered in memory (GEP 0014)
+		case "application/x-www-form-urlencoded":
 			req.Body = http.MaxBytesReader(nil, req.Body, maxRouteBody)
-			var err error
-			if ct == "multipart/form-data" {
-				err = req.ParseMultipartForm(maxRouteBody)
-			} else {
-				err = req.ParseForm()
-			}
-			if err != nil {
+			if err := req.ParseForm(); err != nil {
 				return nil, &interp.RuntimeError{Status: http.StatusBadRequest, Message: "formulário inválido: " + err.Error()}
 			}
 			form := map[string]any{}

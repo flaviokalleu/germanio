@@ -40,6 +40,15 @@ hierarchical syntax. Nothing below is in a tagged release yet.
   in the change's transaction, with the names of changed fields and never their values; each
   activity is seen only by whoever sees the record it describes. A vocabulary that translates
   the same name twice with different values is now an error instead of a silent override (G105).
+- Files of a record (GEP 0014, in test): fields declared `arquivo` or `imagem` (`anexo arquivo`,
+  `foto imagem`; a type that comes only from the name keeps storing text) are sent to
+  `…/<registro>/<campo>` (streamed, outside the transaction, with a size limit), downloaded only by
+  whoever may see the record (images inline, anything else as an attachment) and removed with it.
+  Remote work can keep a file (`trabalho_remoto.guardar_arquivo`); the native run file gains
+  `artefatos`; GitLab job artifacts come from the official runner (CI-08).
+- Routes no longer buffer multipart bodies; a multipart form's fields are no longer in
+  `requisicao.corpo` (G110). Appending to a log measures bytes, so an accented chunk no longer
+  stalls a job's log (G109).
 - Notices by e-mail (GEP 0013, in test): `tenha avisos por e-mail` sends each new pending item to
   its owner after the change is saved. `tenha` now refuses impossible data names instead of
   creating phantom data (G108).

@@ -37,6 +37,10 @@ func describeField(f *ast.Field) string {
 		t = "referência a " + f.Reference
 	}
 	parts = append(parts, t)
+	if f.TypeInferred && (f.Type == ast.FieldArquivo || f.Type == ast.FieldImagem) {
+		// GEP 0014: only a declared type turns a field into a stored file
+		parts = append(parts, fmt.Sprintf("tipo pelo nome, guardado como texto (para enviar e baixar o arquivo, declare: %s %s)", strings.ToLower(f.Name), f.Type))
+	}
 	if f.Required {
 		parts = append(parts, "obrigatório")
 	}

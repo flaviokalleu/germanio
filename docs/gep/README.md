@@ -67,6 +67,7 @@ Rules:
 | [0011](0011-historico.md) | History (`guarda histórico`) | Em teste |
 | [0012](0012-indicadores.md) | Indicators (`indicadores` › `total de issues abertas`) | Em teste |
 | [0013](0013-avisos-por-email.md) | Notices by e-mail (`tenha avisos por e-mail`) | Em teste |
+| [0014](0014-arquivos.md) | Files of a record (`anexo`, `foto`, `<campo> arquivo`) | Em teste |
 
 Pending decisions that will become GEPs are listed in
 [`docs/INTENCAO.md` › Pendências da sintaxe hierárquica](../INTENCAO.md#pendências-da-sintaxe-hierárquica)

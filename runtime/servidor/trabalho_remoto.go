@@ -259,9 +259,13 @@ func (a *intentAPI) payload(ctx *interp.Context, w *ast.Entity, id any, token st
 		or, _ := a.in.Op(ctx, owner.Singular, "buscar", runRow[run.Execution.OwnerField])
 		ownerRow, _ = or.(map[string]any)
 	}
-	var spec struct{ Script, After []string }
+	var spec struct{ Script, After, Artifacts []string }
 	json.Unmarshal([]byte(toStr(row["script"])), &spec)
-	commands, after := []any{}, []any{}
+	commands, after, artifacts := []any{}, []any{}, []any{}
+	for _, l := range spec.Artifacts {
+		artifacts = append(artifacts, l)
+	}
+	out["artefatos"] = artifacts
 	for _, l := range spec.Script {
 		commands = append(commands, l)
 	}
@@ -479,6 +483,9 @@ func (a *intentAPI) startLeases() {
 //	trabalho_remoto.estado(token)                    → situação | nulo
 //	trabalho_remoto.adicionar_log(token, texto, inicio) → situação + {aceito, tamanho} | nulo
 //	trabalho_remoto.concluir(token, resultado)       → situação | nulo
+//	trabalho_remoto.guardar_arquivo(token, campo, parte) → {nome, tamanho, tipo} | nulo
+//	    (the file in the multipart part `parte` of this request goes, streamed,
+//	    to the work's file field `campo`; GEP 0014)
 //
 // situação = {id, estado, cancelado, terminado, reserva_ate}; nulo = token inválido.
 func (a *intentAPI) registerRemoteModule() {
@@ -493,6 +500,15 @@ func (a *intentAPI) registerRemoteModule() {
 		return fn(w, row)
 	}
 	a.in.RegisterModule("trabalho_remoto", map[string]interp.ModuleFunc{
+		"guardar_arquivo": func(c *interp.Call, args []any) any {
+			return withToken(c, args, func(w *ast.Entity, row map[string]any) any {
+				out, err := a.storeWorkFile(c.Ctx(), w, row, c.Str(args, 1, "campo"), c.Str(args, 2, "parte"))
+				if err != nil {
+					panic(c.Fail(400, "%v", err))
+				}
+				return out
+			})
+		},
 		"executor": func(c *interp.Call, args []any) any {
 			_, row := a.executorByCredential(c.Ctx(), c.Str(args, 0, "credencial"))
 			if row == nil {

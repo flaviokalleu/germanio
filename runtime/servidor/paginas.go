@@ -277,7 +277,7 @@ func htmlOf(t *template.Template, data any) template.HTML {
 func columns(e *ast.Entity) []*ast.Field {
 	var cols []*ast.Field
 	for _, f := range e.Model.Fields {
-		if f.Hidden || f.IsSecret() || f.Private || f.Type == ast.FieldTextoLongo || f.Type == ast.FieldLista {
+		if f.Hidden || f.IsSecret() || f.Private || f.Type == ast.FieldTextoLongo || f.Type == ast.FieldLista || isFileField(f) {
 			continue
 		}
 		if f.System && strings.ToLower(f.Name) != "estado" {
@@ -487,6 +487,9 @@ func (ps *pageSite) inputs(r *http.Request, chain []step, e *ast.Entity, values 
 		}
 		if values != nil && f.Immutable {
 			continue
+		}
+		if isFileField(f) {
+			continue // files are sent in their own form, on the record's page
 		}
 		in := input{Name: key, Label: fieldLabel(f), Type: "text", Required: f.Required && values == nil}
 		v := values[key]
@@ -790,6 +793,7 @@ func (ps *pageSite) serve(w http.ResponseWriter, r *http.Request) {
 	body.WriteString(string(htmlOf(detailTpl, ps.details(ctx, last.e, row))))
 	base := strings.TrimSuffix(r.URL.Path, "/")
 	body.WriteString(string(ps.actions(ctx, atual, last.e, record, base, v.CSRF)))
+	body.WriteString(string(ps.fileViews(ctx, atual, last.e, record, row, api, base, v.CSRF)))
 	body.WriteString(string(ps.capabilityViews(r, last.e, record, api, base)))
 	if atual != nil && ps.a.in.Can(ctx, atual, last.e, "editar", record) {
 		body.WriteString(string(ps.form(base+"/editar", "Salvar", v.CSRF, "Editar", ps.inputs(r, chain, last.e, row, nil))))
@@ -843,8 +847,8 @@ func (ps *pageSite) details(ctx *interp.Context, e *ast.Entity, row map[string]a
 	for _, f := range e.Model.Fields {
 		key := strings.ToLower(f.Name)
 		v, ok := row[key]
-		if !ok || f.Hidden || f.IsSecret() {
-			continue
+		if !ok || f.Hidden || f.IsSecret() || isFileField(f) {
+			continue // files have their own section (fileViews)
 		}
 		text := display(v)
 		// References show who/what they point to, not a number.
@@ -1044,6 +1048,10 @@ func (ps *pageSite) post(w http.ResponseWriter, r *http.Request) {
 	pg, parts := ps.pageOf(r)
 	if pg == nil || len(parts) == 0 && r.URL.Path != "/"+slug(pg.Name) || pg.Show == "" {
 		http.NotFound(w, r) // a dashboard has nothing to change
+		return
+	}
+	if len(parts) >= 3 && parts[len(parts)-2] == "arquivo" && strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data") {
+		ps.uploadFromPage(w, r, pg, parts)
 		return
 	}
 	if err := r.ParseForm(); err != nil {

@@ -50,6 +50,7 @@ type executor struct {
 type stepSpec struct {
 	Name, Stage, When, Image string
 	Script, After            []string
+	Artifacts                []string // files the step keeps (artefatos), for executors that collect them
 	AllowFailure             bool
 	Order                    int
 }
@@ -183,7 +184,7 @@ func parseNativeRun(doc map[string]any) ([]stepSpec, error) {
 		default:
 			return nil, fmt.Errorf("configuração inválida: a etapa %s tem quando %q (use automatico, manual ou sempre)", name, when)
 		}
-		sp := stepSpec{Name: name, Stage: stage, When: when, Order: idx + 1, Script: commands, After: lines(job["depois"])}
+		sp := stepSpec{Name: name, Stage: stage, When: when, Order: idx + 1, Script: commands, After: lines(job["depois"]), Artifacts: lines(job["artefatos"])}
 		sp.Image, _ = job["imagem"].(string)
 		sp.AllowFailure, _ = job["pode_falhar"].(bool)
 		specs = append(specs, sp)
@@ -243,7 +244,7 @@ func (a *intentAPI) createRun(ctx *interp.Context, atual map[string]any, run *as
 	}
 	step := a.app.Entities[x.Step]
 	for _, sp := range specs {
-		body, _ := json.Marshal(map[string]any{"script": sp.Script, "after": sp.After})
+		body, _ := json.Marshal(map[string]any{"script": sp.Script, "after": sp.After, "artifacts": sp.Artifacts})
 		if _, err := a.in.Op(ctx, step.Singular, "criar", map[string]any{
 			step.Execution.RunField: row["id"], "nome": sp.Name, "etapa": sp.Stage, "ordem": float64(sp.Order),
 			"script": string(body), "quando": sp.When, "permitir_falha": sp.AllowFailure, "imagem": sp.Image,
