@@ -51,6 +51,9 @@ type EntityDecl struct {
 	Label    string // `chamado "Project"` — name used in messages
 	Fields   []*Field
 	Internal bool
+	// Implicit: declared by a data block (the block names the data); it
+	// merges with other blocks and with an explicit tenha.
+	Implicit bool
 	Pos      diagnostics.Position
 }
 
@@ -95,7 +98,10 @@ type Grant struct {
 	Verb   string
 	Target string
 	Own    bool // seu/sua/seus/suas
-	Pos    diagnostics.Position
+	// Context: the data block the grant was written in (acesso); its target
+	// must be that data or something that belongs to it.
+	Context string
+	Pos     diagnostics.Position
 }
 
 // Permit: `permita VERBO ALVO [por campos]` — enabled for any signed-in

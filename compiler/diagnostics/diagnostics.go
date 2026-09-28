@@ -9,6 +9,9 @@ import (
 type Position struct {
 	File         string
 	Line, Column int
+	// Context is the hierarchical path of the block the fact came from
+	// ("projetos › acesso › developer"); empty for flat phrases.
+	Context string
 }
 type Diagnostic struct {
 	Code                                  string

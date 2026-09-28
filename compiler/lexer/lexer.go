@@ -456,6 +456,11 @@ func (l *Lexer) scanToken() error {
 		indent := 0
 		for l.pos < len(l.source) && (l.peek() == ' ' || l.peek() == '\t') {
 			if l.peek() == '\t' {
+				if !l.germanio {
+					// Only spaces give structure (docs/INTENCAO.md › Layout): a tab's
+					// width depends on the editor, so it would decide the block silently.
+					return fmt.Errorf("linha %d: tab na indentação\nPor quê: a indentação define a que bloco a linha pertence, e a largura de um tab muda de editor para editor\nComo corrigir: use espaços (4 por nível); ge fmt troca os tabs", l.line)
+				}
 				indent += 2
 			} else {
 				indent++

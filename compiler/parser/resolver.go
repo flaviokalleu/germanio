@@ -129,14 +129,28 @@ func ResolveIntent(prog *ast.Program) error {
 	prog.App = app
 
 	// 1. Entities
+	declared := map[string]*ast.EntityDecl{}
 	for _, d := range in.Entities {
 		sing := d.Singular
 		if sing == "" {
 			sing = Singular(d.Name)
 		}
-		if _, dup := r.byName[d.Name]; dup {
+		if e, dup := r.byName[d.Name]; dup {
+			// A data block declares its data; several blocks (and an explicit
+			// tenha) describing the same data merge. Two explicit tenha conflict.
+			if prev := declared[d.Name]; d.Implicit || (prev != nil && prev.Implicit) {
+				if !d.Implicit {
+					if d.Label != "" {
+						e.Label, e.Model.Label = d.Label, d.Label
+					}
+					e.Model.Internal = e.Model.Internal || d.Internal
+					declared[d.Name] = d
+				}
+				continue
+			}
 			return r.errAt(d.Pos, "%q declarado mais de uma vez", d.Name)
 		}
+		declared[d.Name] = d
 		if _, dup := r.byName[sing]; dup {
 			return r.errAt(d.Pos, "%q conflita com outro dado de mesmo singular %q", d.Name, sing)
 		}
@@ -375,11 +389,20 @@ func ResolveIntent(prog *ast.Program) error {
 	}
 
 	// 7b. States: `issue começa aberta`
+	stateOrigin := map[*ast.Entity]*ast.StateDecl{}
 	for _, st := range in.States {
 		e, err := r.entity(st.Entity, st.Pos)
 		if err != nil {
 			return err
 		}
+		if prev := stateOrigin[e]; prev != nil {
+			// one value only: the same fact again changes nothing; two values are a conflict
+			if prev.Initial == st.Initial {
+				continue
+			}
+			return r.errAt(st.Pos, "%s começa %s, mas já começa %s em %s\nPor quê: um dado tem um único estado inicial\nComo corrigir: mantenha só uma das declarações", e.Singular, st.Initial, prev.Initial, where(prev.Pos))
+		}
+		stateOrigin[e] = st
 		e.StateField, e.Initial = "estado", st.Initial
 		e.Transitions = map[string]*ast.Transition{}
 		e.Model.Fields = append(e.Model.Fields, &ast.Field{Name: "estado", Type: ast.FieldTexto, HasDefault: true, DefaultValue: st.Initial, System: true, Index: true, Pos: st.Pos})
@@ -598,6 +621,7 @@ func ResolveIntent(prog *ast.Program) error {
 		if _, dup := e.Hooks[verb]; dup {
 			return r.errAt(h.Pos, "quando %s %s declarado duas vezes", h.Verb, h.Target)
 		}
+		h.Target = e.Singular // the resolved name, whatever form was written
 		e.Hooks[verb] = h
 	}
 
@@ -1020,6 +1044,14 @@ func ResolveIntent(prog *ast.Program) error {
 		if err != nil {
 			return err
 		}
+		// Inside a data block (acesso), an action speaks of that data or of
+		// what belongs to it; a rule about other data goes in that data's block.
+		if g.Context != "" {
+			if c, cerr := r.entity(g.Context, g.Pos); cerr == nil && !r.belongsTo(e, c) {
+				return r.errAt(g.Pos, "a ação \"%s %s\" está no bloco de %s, mas fala de %s\nOnde: %s\nPor quê: dentro de um dado, acesso trata desse dado ou do que pertence a ele\nComo corrigir: escreva essa regra no bloco de %s (ou como frase: %s pode %s %s)",
+					g.Verb, strings.ReplaceAll(g.Target, "_", " "), c.Plural, e.Plural, g.Pos.Context, e.Plural, g.Role, g.Verb, e.Plural)
+			}
+		}
 		if g.Only && !(verb == "enviar_codigo" && strings.HasPrefix(g.Target, "branch_padrao")) {
 			key := e.Singular + ":" + verb
 			if !onlyCleared[key] {
@@ -1140,15 +1172,24 @@ func ResolveIntent(prog *ast.Program) error {
 	}
 
 	// 10. Integration
+	integOrigin := map[*ast.Entity]*ast.Integration{}
 	for _, it := range in.Integrations {
 		e, err := r.entity(it.Target, it.Pos)
 		if err != nil {
 			return err
 		}
-		e.Integrate = e.Plural
+		name := e.Plural
 		if it.As != "" {
-			e.Integrate = it.As
+			name = it.As
 		}
+		if prev := integOrigin[e]; prev != nil {
+			if e.Integrate == name {
+				continue // the same fact again
+			}
+			return r.errAt(it.Pos, "%s é integrado como %q, mas já é %q em %s\nPor quê: um dado tem um único nome na integração\nComo corrigir: mantenha só um nome", e.Plural, name, e.Integrate, where(prev.Pos))
+		}
+		integOrigin[e] = it
+		e.Integrate = name
 	}
 
 	// Custom verbs must have a definition.
@@ -1339,6 +1380,31 @@ func (r *resolver) addressRef(app *ast.App, e *ast.Entity, name string, pos diag
 		return ast.AddressRef{}, r.errAt(pos, "%s: endereço dentro do %s precisa de \"%s pertence a %s\"", e.Singular, target.Singular, e.Singular, target.Singular)
 	}
 	return ast.AddressRef{Field: found[0], Entity: target.Singular}, nil
+}
+
+// where shows a declaration's origin: file:line and, inside a block, its path.
+func where(p diagnostics.Position) string {
+	out := fmt.Sprintf("%s:%d", p.File, p.Line)
+	if p.File == "" {
+		out = fmt.Sprintf("linha %d", p.Line)
+	}
+	if p.Context != "" {
+		out += " (" + p.Context + ")"
+	}
+	return out
+}
+
+// belongsTo: e is c, belongs to c, or is c's membership.
+func (r *resolver) belongsTo(e, c *ast.Entity) bool {
+	if e == c {
+		return true
+	}
+	for _, t := range e.Parents {
+		if t == c.Singular {
+			return true
+		}
+	}
+	return e.Singular == r.app.MemberModel && c.HasMembers
 }
 
 func (r *resolver) isAncestor(a, b *ast.Entity) bool {

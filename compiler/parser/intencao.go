@@ -111,8 +111,15 @@ var legacyTrigger = map[string]bool{"receber": true, "receive": true, "chamar": 
 // parseIntentLine parses one intent phrase (with its block, if any).
 func (p *Parser) parseIntentLine() error {
 	lines := p.blockLinesWithHeader()
-	head := lines[0]
-	body := lines[1:]
+	if _, err := p.layoutTree(lines, ""); err != nil {
+		return err
+	}
+	return p.intentFrom(lines[0], lines[1:])
+}
+
+// intentFrom interprets one flat phrase (header + indented lines). Data
+// blocks reduce their sections to calls of this function.
+func (p *Parser) intentFrom(head dline, body []dline) error {
 	w := wordsOf(head.toks)
 	in := p.intent()
 	pos := p.at(head.toks[0])

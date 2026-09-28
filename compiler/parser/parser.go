@@ -17,11 +17,15 @@ type Parser struct {
 	program *ast.Program
 	// File names the source in positions and runtime errors.
 	File string
+	// context is the hierarchical path of the data block being read.
+	context string
+	// unknown is the first column-1 line no construction recognized.
+	unknown *lexer.Token
 }
 
 // at converts a token into a source position.
 func (p *Parser) at(tok lexer.Token) diagnostics.Position {
-	return diagnostics.Position{File: p.File, Line: tok.Line, Column: tok.Column}
+	return diagnostics.Position{File: p.File, Line: tok.Line, Column: tok.Column, Context: p.context}
 }
 
 // errorf reports a parse error with file and line.
@@ -48,6 +52,19 @@ func (p *Parser) Parse() (*ast.Program, error) {
 
 	for !p.isAtEnd() {
 		tok := p.current()
+		if page, ok := p.isDataBlock(); ok {
+			var err error
+			if page {
+				err = p.parsePageBlock()
+			} else {
+				err = p.parseDataBlock()
+			}
+			if err != nil {
+				return nil, err
+			}
+			p.skipWhitespace()
+			continue
+		}
 		if p.isIntentLine() {
 			if err := p.parseIntentLine(); err != nil {
 				return nil, err
@@ -137,13 +154,42 @@ func (p *Parser) Parse() (*ast.Program, error) {
 				}
 			}
 			if !handled {
+				if tok.Column == 1 && p.unknown == nil {
+					p.unknown = &tok // reported if this turns out to be an intent program
+				}
 				p.advance()
 			}
 		}
 		p.skipWhitespace()
 	}
 
+	if p.unknown != nil && p.program.Intent != nil {
+		return nil, p.unknownLine(*p.unknown)
+	}
 	return p.program, nil
+}
+
+// unknownLine explains a column-1 line that no construction recognizes in
+// an intent program (it is never ignored: docs/INTENCAO.md › Erros).
+func (p *Parser) unknownLine(tok lexer.Token) error {
+	var words []lexer.Token
+	for i := 0; i < len(p.tokens); i++ {
+		if p.tokens[i].Line == tok.Line && p.tokens[i].Type != lexer.TokenIndent && p.tokens[i].Type != lexer.TokenNewline {
+			words = append(words, p.tokens[i])
+		}
+	}
+	text := lineText(dline{toks: words})
+	hint := ""
+	for _, w := range wordsOf(words) {
+		for _, known := range []string{"pode", "tem", "pertence", "comeca", "herda", "recebe", "precisa", "executa", "tenha", "permita", "disponibilize", "quando", "crie"} {
+			if w != known && editDistance(w, known) == 1 {
+				hint = " (você quis dizer \"" + known + "\" em vez de \"" + w + "\"?)"
+			}
+		}
+	}
+	return p.teach(tok, "não entendi a linha \""+text+"\""+hint,
+		"cada linha precisa ser uma construção conhecida; uma linha desconhecida nunca é ignorada",
+		"confira a grafia e compare com docs/INTENCAO.md (frases planas ou blocos com tem, pode, acesso…)", "")
 }
 
 func (p *Parser) current() lexer.Token {
