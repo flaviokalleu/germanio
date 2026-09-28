@@ -1,0 +1,15 @@
+logica
+    funcao fib(n)
+        se n < 2
+            retornar n
+        retornar fib(n - 1) + fib(n - 2)
+
+    funcao soma_lista(itens)
+        definir total = 0
+        para cada x em itens
+            total = total + x
+        retornar total
+
+definir resultado = fib(15)
+definir numeros = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+definir soma = soma_lista(numeros)
