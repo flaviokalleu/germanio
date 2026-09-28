@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"math/rand"
@@ -13,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/flaviokalleu/germanio/compiler/ast"
@@ -39,6 +41,7 @@ type signal struct {
 
 // Scope holds variable bindings with parent scope chaining.
 type Scope struct {
+	mu     *sync.RWMutex // only the global scope is shared between tasks; nil elsewhere
 	vars   map[string]interface{}
 	parent *Scope
 	// ctx is the execution context inherited by nested scopes.
@@ -55,8 +58,35 @@ func NewScope(parent *Scope) *Scope {
 	return s
 }
 
+func (s *Scope) lock() {
+	if s.mu != nil {
+		s.mu.Lock()
+	}
+}
+
+func (s *Scope) unlock() {
+	if s.mu != nil {
+		s.mu.Unlock()
+	}
+}
+
+func (s *Scope) rlock() {
+	if s.mu != nil {
+		s.mu.RLock()
+	}
+}
+
+func (s *Scope) runlock() {
+	if s.mu != nil {
+		s.mu.RUnlock()
+	}
+}
+
 func (s *Scope) Get(name string) (interface{}, bool) {
-	if v, ok := s.vars[name]; ok {
+	s.rlock()
+	v, ok := s.vars[name]
+	s.runlock()
+	if ok {
 		return v, true
 	}
 	if s.parent != nil {
@@ -74,16 +104,21 @@ func (s *Scope) Set(name string, value interface{}) {
 		if cur.global && s.ctx != nil && !s.ctx.AllowGlobal {
 			break
 		}
+		cur.lock()
 		if _, ok := cur.vars[name]; ok {
 			cur.vars[name] = value
+			cur.unlock()
 			return
 		}
+		cur.unlock()
 	}
-	s.vars[name] = value
+	s.SetLocal(name, value)
 }
 
 func (s *Scope) SetLocal(name string, value interface{}) {
+	s.lock()
 	s.vars[name] = value
+	s.unlock()
 }
 
 // Interpreter executes Germanio AST scripts.
@@ -111,6 +146,7 @@ type Interpreter struct {
 func New(db *banco.Banco) *Interpreter {
 	global := NewScope(nil)
 	global.global = true
+	global.mu = new(sync.RWMutex)
 	interp := &Interpreter{
 		Global:    global,
 		Functions: make(map[string]*ast.FuncDecl),
@@ -159,6 +195,9 @@ func (interp *Interpreter) ExecStatements(stmts []*ast.Statement, scope *Scope) 
 func (interp *Interpreter) ExecStatement(stmt *ast.Statement, scope *Scope) {
 	if stmt == nil {
 		return
+	}
+	if scope != nil && scope.ctx != nil && scope.ctx.stop != nil && scope.ctx.stop.Load() {
+		panic(errTarefaCancelada)
 	}
 
 	switch stmt.Type {
@@ -446,6 +485,38 @@ func (interp *Interpreter) execCall(call *ast.FuncCall, scope *Scope, pos diagno
 
 const maxCallDepth = 200
 
+// maxParalelo is how many tasks of paralelo run at the same time.
+const maxParalelo = 8
+
+// errTarefaCancelada stops a task whose deadline passed.
+var errTarefaCancelada = errors.New("tarefa interrompida pelo prazo")
+
+// runTask runs fn as a separate task: its own copy of the execution context
+// (call depth, output) so tasks never share mutable interpreter state, and an
+// optional stop flag checked before every instruction. A failure becomes the
+// task's result ("erro: …"), as before.
+func (interp *Interpreter) runTask(fn *ast.FuncDecl, parent *Scope, stop *atomic.Bool) (result interface{}) {
+	caller := NewScope(interp.Global)
+	if parent != nil && parent.ctx != nil {
+		c := *parent.ctx
+		c.Output = nil
+		c.stop = stop
+		caller.ctx = &c
+	} else {
+		caller.ctx = &Context{stop: stop}
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			if sig, ok := r.(signal); ok && sig.Type == signalReturn {
+				result = sig.Value
+				return
+			}
+			result = fmt.Sprintf("erro: %v", r)
+		}
+	}()
+	return interp.callFunctionIn(fn, nil, caller, diagnostics.Position{})
+}
+
 // callFunction is kept for callers outside a scope (legacy paths).
 func (interp *Interpreter) callFunction(fn *ast.FuncDecl, args []interface{}) interface{} {
 	return interp.callFunctionIn(fn, args, interp.Global, diagnostics.Position{})
@@ -703,9 +774,11 @@ func (interp *Interpreter) evalPattern(expr *ast.Expression, scope *Scope) inter
 func (s *Scope) names() []string {
 	var out []string
 	for cur := s; cur != nil; cur = cur.parent {
+		cur.rlock()
 		for k := range cur.vars {
 			out = append(out, k)
 		}
+		cur.runlock()
 	}
 	return out
 }
@@ -1126,46 +1199,34 @@ func (interp *Interpreter) callBuiltin(name string, args []interface{}) (interfa
 		return nil, true
 
 	case "paralelo", "parallel":
-		// paralelo([func1, func2, func3]) — run functions in parallel, return results
+		// paralelo([f1, f2, …]) — run the functions at the same time, at most
+		// maxParalelo at once; the results keep the order of the tasks.
 		if len(args) < 1 {
 			return []interface{}{}, true
 		}
-		if tasks, ok := args[0].([]interface{}); ok {
-			results := make([]interface{}, len(tasks))
-			var wg sync.WaitGroup
-			var mu sync.Mutex
-			for i, task := range tasks {
-				wg.Add(1)
-				go func(idx int, t interface{}) {
-					defer wg.Done()
-					defer func() {
-						if r := recover(); r != nil {
-							if sig, ok := r.(signal); ok && sig.Type == signalReturn {
-								mu.Lock()
-								results[idx] = sig.Value
-								mu.Unlock()
-								return
-							}
-							mu.Lock()
-							results[idx] = fmt.Sprintf("erro: %v", r)
-							mu.Unlock()
-						}
-					}()
-					// If it's a function name, call it
-					if name, ok := t.(string); ok {
-						if fn, exists := interp.Functions[name]; exists {
-							val := interp.callFunction(fn, nil)
-							mu.Lock()
-							results[idx] = val
-							mu.Unlock()
-						}
-					}
-				}(i, task)
-			}
-			wg.Wait()
-			return results, true
+		tasks, ok := args[0].([]interface{})
+		if !ok {
+			return []interface{}{}, true
 		}
-		return []interface{}{}, true
+		results := make([]interface{}, len(tasks))
+		slots := make(chan struct{}, maxParalelo)
+		var wg sync.WaitGroup
+		for i, task := range tasks {
+			name, _ := task.(string)
+			fn, exists := interp.Functions[name]
+			if !exists {
+				continue
+			}
+			wg.Add(1)
+			slots <- struct{}{}
+			go func(idx int, fn *ast.FuncDecl) {
+				defer wg.Done()
+				defer func() { <-slots }()
+				results[idx] = interp.runTask(fn, interp.Global, nil)
+			}(i, fn)
+		}
+		wg.Wait()
+		return results, true
 
 	case "esperar", "await", "wait":
 		// esperar(milliseconds) — async sleep
@@ -1180,7 +1241,10 @@ func (interp *Interpreter) callBuiltin(name string, args []interface{}) (interfa
 		return nil, true
 
 	case "timeout":
-		// timeout(func_name, milliseconds) — run function with timeout
+		// timeout(func_name, milliseconds) — run a function with a deadline.
+		// When the deadline passes the task is stopped (at its next
+		// instruction) and timeout waits for it to end: nothing keeps running
+		// after the caller has moved on.
 		if len(args) < 2 {
 			return nil, true
 		}
@@ -1189,32 +1253,20 @@ func (interp *Interpreter) callBuiltin(name string, args []interface{}) (interfa
 		if ms > 60000 {
 			ms = 60000
 		}
-
 		fn, exists := interp.Functions[funcName]
 		if !exists {
 			return nil, true
 		}
-
+		stop := new(atomic.Bool)
 		resultCh := make(chan interface{}, 1)
-		go func() {
-			defer func() {
-				if r := recover(); r != nil {
-					if sig, ok := r.(signal); ok && sig.Type == signalReturn {
-						resultCh <- sig.Value
-						return
-					}
-					resultCh <- nil
-				}
-			}()
-			val := interp.callFunction(fn, nil)
-			resultCh <- val
-		}()
-
+		go func() { resultCh <- interp.runTask(fn, interp.Global, stop) }()
 		select {
 		case result := <-resultCh:
 			return result, true
 		case <-time.After(time.Duration(ms) * time.Millisecond):
-			interp.AppendLog(fmt.Sprintf("AVISO: timeout em '%s' após %dms", funcName, ms))
+			stop.Store(true)
+			<-resultCh
+			interp.AppendLog(fmt.Sprintf("AVISO: timeout em '%s' após %dms; a tarefa foi interrompida", funcName, ms))
 			return nil, true
 		}
 
@@ -1260,11 +1312,14 @@ func (interp *Interpreter) callBuiltin(name string, args []interface{}) (interfa
 		}
 		if urls, ok := args[0].([]interface{}); ok {
 			results := make([]interface{}, len(urls))
+			slots := make(chan struct{}, maxParalelo)
 			var wg sync.WaitGroup
 			for i, u := range urls {
 				wg.Add(1)
+				slots <- struct{}{}
 				go func(idx int, urlStr string) {
 					defer wg.Done()
+					defer func() { <-slots }()
 					if interp.HTTPClient != nil {
 						resp, err := interp.HTTPClient.Chamar("GET", urlStr, nil)
 						if err != nil {

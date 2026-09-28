@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"sync/atomic"
 
 	"github.com/flaviokalleu/germanio/compiler/ast"
 	"github.com/flaviokalleu/germanio/compiler/diagnostics"
@@ -53,6 +54,8 @@ type Context struct {
 	Output      []string
 	AllowGlobal bool
 	depth       int
+	// stop, when set, interrupts the execution at its next instruction.
+	stop *atomic.Bool
 }
 
 // Response is what a route produced.
