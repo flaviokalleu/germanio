@@ -274,6 +274,7 @@ func (a *intentAPI) payload(ctx *interp.Context, w *ast.Entity, id any, token st
 	}
 	out["comandos"], out["depois"] = commands, after
 	out["execucao"], out["dono"] = serialize(run, runRow), serialize(owner, ownerRow)
+	out["variaveis"] = a.runVariables(ctx, run, ownerRow)
 	if ownerRow != nil && owner.RepoKey != "" {
 		out["repositorio"] = toStr(ownerRow[owner.RepoKey])
 	}

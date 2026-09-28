@@ -1,0 +1,14 @@
+# Variáveis de CI: o que as execuções recebem sem estar no repositório.
+
+variaveis
+    tem
+        chave obrigatório
+        valor texto oculto
+    pertence a projeto
+    acesso
+        maintainer
+            administrar
+    integração
+        nome "variables"
+
+pipelines usam as variaveis do projeto

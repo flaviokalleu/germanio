@@ -40,6 +40,9 @@ hierarchical syntax. Nothing below is in a tagged release yet.
   in the change's transaction, with the names of changed fields and never their values; each
   activity is seen only by whoever sees the record it describes. A vocabulary that translates
   the same name twice with different values is now an error instead of a silent override (G105).
+- Variables of executions (GEP 0015, in test): `pipelines usam as variaveis do projeto` gives
+  every step the owner's variables; a `valor oculto` is never returned and is masked in logs
+  (by whole lines, so a secret written in two pieces never leaks); the execution's own names win.
 - Files of a record (GEP 0014, in test): fields declared `arquivo` or `imagem` (`anexo arquivo`,
   `foto imagem`; a type that comes only from the name keeps storing text) are sent to
   `…/<registro>/<campo>` (streamed, outside the transaction, with a size limit), downloaded only by

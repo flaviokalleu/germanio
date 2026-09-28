@@ -171,6 +171,10 @@ type Execution struct {
 	Run        string // step → run entity
 	Step       string // run → step entity
 	RunField   string // step → run reference field
+	// Variables: the data whose records (of the owner) become the steps'
+	// environment, and its field pointing at the owner (GEP 0015).
+	Variables      string
+	VariablesOwner string
 }
 
 // RemoteWork: records of this entity are work that executors (records of

@@ -89,7 +89,7 @@ Escopo núcleo v1 = features marcadas **[N]** (fluxos 1–5 da missão + testes 
 | CI-04 [N] | Log do job | `PATCH /jobs/:id/trace` incremental; visualização | job log | API | trace | leitura | | | PASS | TestFluxo5 |
 | CI-05 [N] | Resultado do job | `PUT /jobs/:id state=success|failed`; avança stages; status agregado | pipeline graph | API | | | | | PASS | TestFluxo5 |
 | CI-06 [N] | Retry / cancel | novo build / estado canceled | job | `/jobs/:id/retry|cancel` | | Developer+ | | | PASS | TestFluxo5 |
-| CI-07 | Variáveis de CI | projeto; mascaradas | settings | `/variables` | ci_variables | Maintainer+ | cripto | | NOT_STARTED | |
+| CI-07 | Variáveis de CI | projeto; mascaradas | settings | `/variables` | ci_variables | Maintainer+ | cripto | SUPPORTED (GEP 0015, em teste) | PASS (variáveis do projeto chegam às etapas do executor local e do runner oficial; valor oculto nunca volta pela API e aparece como [MASKED] no log; os nomes CI_* vencem; variáveis de grupo, protegidas e por ambiente ainda não) | TestVariaveisDeCI, TestRunnerOficial |
 | CI-08 | Artefatos | upload/download | job | `/jobs/:id/artifacts` | ci_job_artifacts | | uploads | SUPPORTED (GEP 0014, em teste) | PARTIAL (o `gitlab-runner` oficial envia `artifacts: paths` e o zip volta para quem vê o job; o executor local ainda não junta artefatos; expiração e navegação dentro do zip não) | TestRunnerOficial, TestArquivos |
 | CI-09 | needs/DAG, rules/only/except, when:manual, allow_failure | | | | | | | | NOT_STARTED | |
 | CI-10 | Isolamento de execução (containers) | runner docker executor | | | | | docker | MISSING | NOT_STARTED | |

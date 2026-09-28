@@ -140,14 +140,14 @@ var legacyBlockWords = map[string]bool{
 // sections are the aspects a data block may contain (folded words).
 var sections = []string{"tem", "pertence a", "comeca", "pode", "regras", "acesso", "permita",
 	"integracao", "quando", "antes de", "recebe", "executa", "executam", "repositorio", "singular", "pendencia para",
-	"renomeie", "descarte", "guarda historico"}
+	"renomeie", "descarte", "guarda historico", "usam", "usa"}
 
 func sectionOf(w []string) string {
 	if len(w) == 0 {
 		return ""
 	}
 	switch w[0] {
-	case "tem", "comeca", "pode", "regras", "acesso", "permita", "integracao", "quando", "recebe", "executa", "executam", "repositorio", "singular", "renomeie", "descarte":
+	case "tem", "comeca", "pode", "regras", "acesso", "permita", "integracao", "quando", "recebe", "executa", "executam", "repositorio", "singular", "renomeie", "descarte", "usam", "usa":
 		return w[0]
 	case "pertence":
 		return "pertence a"
@@ -310,7 +310,7 @@ func (p *Parser) dataSection(name string, header []lexer.Token, sec *node) error
 		return p.teach(at, "\""+lineText(sec.line)+"\" não é uma seção de "+name,
 			"dentro de um dado, cada linha do primeiro nível diz de que aspecto se trata",
 			"use uma destas seções: "+strings.Join(displaySections(), ", ")+suggest(w[0]), name)
-	case "tem", "comeca", "recebe", "executa", "executam":
+	case "tem", "comeca", "recebe", "executa", "executam", "usam", "usa":
 		if kind == "tem" && len(toks) == 1 && len(sec.children) == 0 {
 			return p.teach(at, "a seção tem está vazia", "tem lista campos, relações e pessoas do dado", "escreva um item por linha, recuado abaixo de tem", name)
 		}

@@ -584,6 +584,23 @@
           }
         },
         {
+          "match": "^\\s+(usam?)\\s+([\\p{L}_][\\p{L}\\p{N}_]*(?:\\s+[\\p{L}_][\\p{L}\\p{N}_]*)*?)\\s+(do|da|dos|das)\\s+([\\p{L}_][\\p{L}\\p{N}_]*)\\s*$",
+          "captures": {
+            "1": {
+              "name": "keyword.other.intent.germanio"
+            },
+            "2": {
+              "name": "entity.name.type.germanio"
+            },
+            "3": {
+              "name": "keyword.other.intent.germanio"
+            },
+            "4": {
+              "name": "entity.name.type.germanio"
+            }
+          }
+        },
+        {
           "match": "^\\s+(descarte)\\s+([\\p{L}_][\\p{L}\\p{N}_]*)\\s*$",
           "captures": {
             "1": {

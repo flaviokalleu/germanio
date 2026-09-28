@@ -147,6 +147,8 @@ func TestHierarquiaDemaisSecoes(t *testing.T) {
 			"chamados\n    tem\n        titulo\n        responsaveis\n    pendência para\n        responsaveis\n"},
 		{"guarda histórico", "tenha issues\n\ncada issue tem\n    titulo\n\nissue guarda histórico\n",
 			"issues\n    tem\n        titulo\n    guarda histórico\n"},
+		{"usam variaveis", "projetos\n    tem\n        caminho único\n        pipelines\n    tem repositório\n    executa pipelines a cada envio de código conforme \"ci.yml\"\n\npipelines\n    tem\n        jobs\n\njobs\n    tem\n        nome\n\nvariaveis\n    tem\n        chave\n        valor texto oculto\n    pertence a projeto\n\npipelines usam as variaveis do projeto\n",
+			"projetos\n    tem\n        caminho único\n        pipelines\n    tem repositório\n    executa pipelines a cada envio de código conforme \"ci.yml\"\n\npipelines\n    tem\n        jobs\n    usam variaveis do projeto\n\njobs\n    tem\n        nome\n\nvariaveis\n    tem\n        chave\n        valor texto oculto\n    pertence a projeto\n"},
 		{"renomeie e descarte", "tenha clientes\n\ncada cliente tem\n    nome_completo\n\nrenomeie nome de clientes para nome_completo\ndescarte fax de clientes\n",
 			"clientes\n    tem\n        nome_completo\n    renomeie nome para nome_completo\n    descarte fax\n"},
 		{"singular", "tenha tokens de acesso\n\ncada token de acesso tem\n    nome\n",
@@ -230,6 +232,8 @@ func TestHierarquiaErros(t *testing.T) {
 		{"página sem nada", "tenha issues\n\ncada issue tem\n    titulo\n\npágina Vazia\n    permita\n        criar\n", []string{"não mostra nada"}},
 		{"nome de dado impossível", "tenha clientes e -x\n", []string{"não pode ser o nome de um dado"}},
 		{"avisos sem pendências", "tenha issues\n\ncada issue tem\n    titulo\n\ntenha avisos por e-mail\n", []string{"nenhum dado gera pendências"}},
+		{"variáveis de outro dono", "projetos\n    tem\n        caminho único\n        pipelines\n    tem repositório\n    executa pipelines a cada envio de código conforme \"ci.yml\"\n\npipelines\n    tem\n        jobs\n\njobs\n    tem\n        nome\n\nvariaveis\n    tem\n        chave\n        valor texto oculto\n    pertence a projeto\n\npipelines usam as variaveis do grupo\n", []string{"são executados por projeto"}},
+		{"valor pelo nome é dinheiro", "projetos\n    tem\n        caminho único\n        pipelines\n    tem repositório\n    executa pipelines a cada envio de código conforme \"ci.yml\"\n\npipelines\n    tem\n        jobs\n\njobs\n    tem\n        nome\n\nvariaveis\n    tem\n        chave\n        valor oculto\n    pertence a projeto\n\npipelines usam as variaveis do projeto\n", []string{"valor texto oculto"}},
 		{"integração em conflito", "projetos\n    tem\n        nome\n    integração\n        nome \"projects\"\n\ndisponibilize projetos para integração como \"repos\"\n", []string{"já é \"projects\""}},
 	}
 	for _, c := range cases {

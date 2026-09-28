@@ -201,6 +201,17 @@ func parseNativeRun(doc map[string]any) ([]stepSpec, error) {
 // (`traduza variáveis das etapas com f`).
 func (a *intentAPI) stepVariables(ctx *interp.Context, work map[string]any) map[string]string {
 	out := map[string]string{"CI": "true"}
+	defer func() {
+		// the owner's variables (GEP 0015) never replace the execution's names
+		for _, it := range asList(work["variaveis"]) {
+			v, _ := it.(map[string]any)
+			if name := toStr(v["nome"]); name != "" && validEnvName(name) {
+				if _, taken := out[name]; !taken {
+					out[name] = toStr(v["valor"])
+				}
+			}
+		}
+	}()
 	if fn := a.app.Translators["variaveis_das_etapas"]; fn != "" {
 		if res, err := a.in.RunFunction(fn, []any{work}, ctx); err == nil {
 			if m, ok := res.(map[string]any); ok {
@@ -463,16 +474,43 @@ func (x *executor) claimAll() {
 }
 
 // logBuffer collects output and saves it periodically.
+// logBuffer keeps a step's log. Hidden values (GEP 0015) are masked by
+// whole lines, so a secret written in two pieces is never stored half
+// unmasked; String gives the complete lines, Final also the last partial one.
 type logBuffer struct {
-	mu  sync.Mutex
-	buf strings.Builder
+	mu      sync.Mutex
+	buf     strings.Builder
+	pending string
+	masks   []string
+}
+
+func (l *logBuffer) mask(values ...string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	for _, v := range values {
+		if len(v) >= 4 { // too short a value would mask ordinary text
+			l.masks = append(l.masks, v)
+		}
+	}
+}
+
+func (l *logBuffer) masked(s string) string {
+	for _, m := range l.masks {
+		s = strings.ReplaceAll(s, m, "[MASKED]")
+	}
+	return s
 }
 
 func (l *logBuffer) Write(p []byte) (int, error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	if l.buf.Len() < 4<<20 {
-		l.buf.Write(p)
+	if l.buf.Len() >= 4<<20 {
+		return len(p), nil
+	}
+	l.pending += string(p)
+	if i := strings.LastIndexByte(l.pending, '\n'); i >= 0 {
+		l.buf.WriteString(l.masked(l.pending[:i+1]))
+		l.pending = l.pending[i+1:]
 	}
 	return len(p), nil
 }
@@ -481,6 +519,13 @@ func (l *logBuffer) String() string {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	return l.buf.String()
+}
+
+// Final is the whole log, the last partial line included.
+func (l *logBuffer) Final() string {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.buf.String() + l.masked(l.pending)
 }
 
 func (x *executor) run(step *ast.Entity, job map[string]any) {
@@ -547,7 +592,7 @@ func (x *executor) run(step *ast.Entity, job map[string]any) {
 	if jctx.Err() == context.Canceled {
 		status = stCanceled
 	}
-	change := map[string]any{"estado": status, "terminado_em": now(), "log": log.String()}
+	change := map[string]any{"estado": status, "terminado_em": now(), "log": log.Final()}
 	if t0, err := time.Parse(time.RFC3339, toStr(job["iniciado_em"])); err == nil {
 		change["duracao"] = time.Since(t0).Seconds()
 	}
@@ -588,9 +633,11 @@ func (x *executor) execute(ctx context.Context, log *logBuffer, owner, run, job 
 		}
 	}
 	env := []string{"PATH=" + os.Getenv("PATH"), "HOME=" + dir}
-	for k, v := range x.a.stepVariables(&interp.Context{}, x.a.localWork(owner, run, job, work)) {
+	local := x.a.localWork(owner, run, job, work)
+	for k, v := range x.a.stepVariables(&interp.Context{}, local) {
 		env = append(env, k+"="+v)
 	}
+	log.mask(hiddenValues(local)...)
 	runLines := func(list []string) bool {
 		for _, line := range list {
 			fmt.Fprintf(log, "$ %s\n", line)
@@ -714,4 +761,52 @@ func (a *intentAPI) killStep(id any) {
 func (a *intentAPI) stepLog(w http.ResponseWriter, row map[string]any) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	fmt.Fprint(w, toStr(row["log"]))
+}
+
+// runVariables: the variables of the owner of an execution (GEP 0015):
+// [{nome, valor, oculto}].
+func (a *intentAPI) runVariables(ctx *interp.Context, run *ast.Entity, owner map[string]any) []any {
+	x := run.Execution
+	out := []any{}
+	if x == nil || x.Variables == "" || owner == nil {
+		return out
+	}
+	ve := a.app.Entities[x.Variables]
+	res, err := a.in.Op(ctx, ve.Singular, "filtrar", map[string]any{x.VariablesOwner: owner["id"]}, map[string]any{"limite": 500})
+	if err != nil {
+		return out
+	}
+	nameField := "chave"
+	if fieldOf(ve, "chave") == nil {
+		nameField = "nome"
+	}
+	hidden := false
+	if f := fieldOf(ve, "valor"); f != nil {
+		hidden = f.Hidden || f.IsSecret()
+	}
+	for _, it := range res.([]any) {
+		row := it.(map[string]any)
+		out = append(out, map[string]any{"nome": toStr(row[nameField]), "valor": toStr(row["valor"]), "oculto": hidden})
+	}
+	return out
+}
+
+func hiddenValues(work map[string]any) []string {
+	var out []string
+	for _, it := range asList(work["variaveis"]) {
+		if v, _ := it.(map[string]any); v != nil && v["oculto"] == true {
+			out = append(out, toStr(v["valor"]))
+		}
+	}
+	return out
+}
+
+// validEnvName: a name a shell accepts as a variable.
+func validEnvName(s string) bool {
+	for i, r := range s {
+		if !(r == '_' || r >= 'A' && r <= 'Z' || r >= 'a' && r <= 'z' || i > 0 && r >= '0' && r <= '9') {
+			return false
+		}
+	}
+	return s != ""
 }

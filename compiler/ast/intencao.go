@@ -34,12 +34,14 @@ type Intent struct {
 	VocabularyPos map[string]diagnostics.Position
 	// Conflicts: the same fact declared with different values in two files
 	// (found while merging; the resolver reports them with both origins).
-	Conflicts         []string
-	Ceilings          []*VisibilityCeiling
-	Creators          []*CreatorRole
-	Approvals         []string     // X recebe aprovações
-	Finals            []*StateDecl // X <estado> é final
-	Executions        []*ExecutionDecl
+	Conflicts  []string
+	Ceilings   []*VisibilityCeiling
+	Creators   []*CreatorRole
+	Approvals  []string     // X recebe aprovações
+	Finals     []*StateDecl // X <estado> é final
+	Executions []*ExecutionDecl
+	// RunVariables: `pipelines usam as variaveis do projeto` (GEP 0015).
+	RunVariables      []*RunVariablesDecl
 	Subscriptions     []*SubscriptionDecl
 	RemoteExecutors   []*RemoteExecutorDecl
 	Translators       map[string]string // traduza <ponto> com <função> (integracoes/)
@@ -259,6 +261,7 @@ func MergeIntent(a, b *Intent) *Intent {
 	a.Approvals = append(a.Approvals, b.Approvals...)
 	a.Finals = append(a.Finals, b.Finals...)
 	a.Executions = append(a.Executions, b.Executions...)
+	a.RunVariables = append(a.RunVariables, b.RunVariables...)
 	a.Subscriptions = append(a.Subscriptions, b.Subscriptions...)
 	a.RemoteExecutors = append(a.RemoteExecutors, b.RemoteExecutors...)
 	for k, v := range b.Translators {
@@ -393,6 +396,13 @@ type CreatorRole struct {
 	Entity string
 	Role   string
 	Pos    diagnostics.Position
+}
+
+// RunVariablesDecl: records of Data that belong to the owner of the
+// executions Runs become the environment of their steps.
+type RunVariablesDecl struct {
+	Runs, Data, Owner string
+	Pos               diagnostics.Position
 }
 
 // ExecutionDecl: `projeto executa pipelines a cada envio de código conforme

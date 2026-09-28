@@ -14,6 +14,8 @@ disponibilize atividades para integração como "events"
 vocabulário da integração
     acao é "action_name"
     artefatos é "artifacts"
+    chave é "key"
+    valor é "value"
     recurso é "target_type"
     recurso_id é "target_id"
     resumo é "target_title"

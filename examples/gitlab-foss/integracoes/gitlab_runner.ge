@@ -29,6 +29,9 @@ logica
         definir lista = [{key: "CI_JOB_TOKEN", value: t.token, public: falso, masked: verdadeiro}, {key: "CI_REPOSITORY_URL", value: repo, public: falso, masked: verdadeiro}]
         para cada nome em chaves(v)
             lista = adicionar(lista, {key: nome, value: texto(v[nome]), public: verdadeiro, masked: falso})
+        para cada variavel em t.variaveis
+            se nao contem(chaves(v), variavel.nome)
+                lista = adicionar(lista, {key: variavel.nome, value: variavel.valor, public: nao variavel.oculto, masked: variavel.oculto})
         retornar lista
 
     funcao job_gitlab(t, host)

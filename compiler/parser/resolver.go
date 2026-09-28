@@ -873,6 +873,9 @@ func ResolveIntent(prog *ast.Program) error {
 			sys("iniciado_em", ast.FieldTexto), sys("terminado_em", ast.FieldTexto), sys("duracao", ast.FieldNumero),
 			sys("repetido", ast.FieldBooleano), sys("imagem", ast.FieldTexto))
 	}
+	if err := r.runVariables(in); err != nil {
+		return err
+	}
 
 	// 7g1. Minimum role: `todo grupo precisa ter pelo menos um owner`.
 	for _, m := range in.MinRoles {

@@ -106,6 +106,9 @@ func (p *Parser) isIntentLine() bool {
 		if x == "tem" || x == "pode" || x == "podem" || x == "pertence" || x == "herda" || x == "comeca" || x == "recebe" || x == "executa" || x == "executam" || x == "precisa" || x == "gera" {
 			return true
 		}
+		if (x == "usa" || x == "usam") && len(w) >= 5 && (contains(w, "do") || contains(w, "da") || contains(w, "dos") || contains(w, "das")) {
+			return true // pipelines usam as variaveis do projeto (GEP 0015)
+		}
 		if x == "guarda" && i+2 == len(w)-1 && w[i+2] == "historico" {
 			return true // issue guarda histórico (GEP 0011)
 		}
@@ -408,6 +411,26 @@ func (p *Parser) intentFrom(head dline, body []dline) error {
 				return p.errorf(head.toks[0], "use: <quem> executam <etapas>, por exemplo runners executam jobs")
 			}
 			in.RemoteExecutors = append(in.RemoteExecutors, &ast.RemoteExecutorDecl{Executor: who, Steps: steps, Pos: pos})
+			return nil
+		case "usa", "usam":
+			// pipelines usam as variaveis do projeto (GEP 0015, em teste)
+			runs, _ := phrase(w[:i])
+			rest := w[i+1:]
+			j := -1
+			for k, x := range rest {
+				if x == "do" || x == "da" || x == "dos" || x == "das" {
+					j = k
+				}
+			}
+			var data, owner string
+			if j > 0 {
+				data, _ = phrase(rest[:j])
+				owner, _ = phrase(rest[j+1:])
+			}
+			if runs == "" || data == "" || owner == "" {
+				return p.teach(head.toks[0], "\""+lineText(head)+"\" não diz quais variáveis nem de quem", "as execuções usam as variáveis de quem as executa", "escreva: pipelines usam as variaveis do projeto", "")
+			}
+			in.RunVariables = append(in.RunVariables, &ast.RunVariablesDecl{Runs: runs, Data: data, Owner: owner, Pos: pos})
 			return nil
 		case "executa":
 			// projeto executa pipelines a cada envio de código conforme "pipeline.yml"
@@ -1018,4 +1041,13 @@ func (p *Parser) eachItem(head dline, body []dline, fn func(dline, []dline) erro
 		i += len(kids)
 	}
 	return nil
+}
+
+func contains(list []string, x string) bool {
+	for _, v := range list {
+		if v == x {
+			return true
+		}
+	}
+	return false
 }

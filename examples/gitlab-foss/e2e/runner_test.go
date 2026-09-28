@@ -40,6 +40,7 @@ func TestRunnerOficial(t *testing.T) {
 
 	p := ada.must("POST", "/api/v4/projects", map[string]any{"name": "App", "path": "app", "initialize_with_readme": true}, 201)
 	pid := id(p)
+	ada.must("POST", "/api/v4/projects/"+pid+"/variables", map[string]any{"key": "DEPLOY_TOKEN", "value": "s3cr3t-valor"}, 201)
 	pat := ada.must("POST", "/api/v4/personal_access_tokens", map[string]any{"name": "git"}, 201)
 	u, _ := url.Parse(base)
 	u.User = url.UserPassword("ada", pat["token"].(string))
@@ -48,7 +49,7 @@ func TestRunnerOficial(t *testing.T) {
 	work := filepath.Join(dir, "app")
 	run(t, work, "git", "config", "user.email", "ada@example.com")
 	run(t, work, "git", "config", "user.name", "Ada")
-	os.WriteFile(filepath.Join(work, ".gitlab-ci.yml"), []byte("stages: [build, test]\nbuild:\n  stage: build\n  script:\n    - echo compilando $CI_COMMIT_REF_NAME em $CI_PROJECT_PATH\n    - test -f README.md\n    - echo resultado do build > saida.txt\n  artifacts:\n    paths:\n      - saida.txt\ntest:\n  stage: test\n  script:\n    - echo falhando de propósito\n    - exit 3\n"), 0o644)
+	os.WriteFile(filepath.Join(work, ".gitlab-ci.yml"), []byte("stages: [build, test]\nbuild:\n  stage: build\n  script:\n    - echo compilando $CI_COMMIT_REF_NAME em $CI_PROJECT_PATH\n    - test -f README.md\n    - echo resultado do build > saida.txt\n    - echo token=$DEPLOY_TOKEN\n    - test \"$DEPLOY_TOKEN\" = s3cr3t-valor\n  artifacts:\n    paths:\n      - saida.txt\ntest:\n  stage: test\n  script:\n    - echo falhando de propósito\n    - exit 3\n"), 0o644)
 	run(t, work, "git", "add", ".")
 	run(t, work, "git", "commit", "--quiet", "-m", "ci")
 	run(t, work, "git", "push", "--quiet", "origin", "main")
@@ -81,7 +82,7 @@ func TestRunnerOficial(t *testing.T) {
 	if b["state"] != "success" {
 		t.Fatalf("build: %v", b)
 	}
-	if log := trace(t, ada, "/api/v4/jobs/"+id(b)+"/trace"); !strings.Contains(log, "compilando main em ada/app") || !strings.Contains(log, "Job succeeded") {
+	if log := trace(t, ada, "/api/v4/jobs/"+id(b)+"/trace"); !strings.Contains(log, "compilando main em ada/app") || !strings.Contains(log, "Job succeeded") || strings.Contains(log, "s3cr3t-valor") || !strings.Contains(log, "[MASKED]") {
 		t.Fatalf("log do build:\n%s", log)
 	}
 	// CI-08: the runner uploads the artifacts (GEP 0014); they come back as a

@@ -151,3 +151,62 @@ func TestFluxo5Pipelines(t *testing.T) {
 	eve.must("POST", "/api/v4/projects/"+pid+"/pipelines", map[string]any{"ref": "main"}, 404)
 	ada.must("POST", "/api/v4/projects/"+pid+"/pipelines", map[string]any{"ref": "nope"}, 400)
 }
+
+// CI-07: as variáveis do projeto chegam às etapas (GEP 0015); o valor oculto
+// nunca volta pela API e aparece mascarado no log; os nomes da execução vencem.
+func TestVariaveisDeCI(t *testing.T) {
+	t.Setenv("GERMANIO_EXECUTOR", "local")
+	base := gitlab(t)
+	ada := signup(t, base, "ada")
+	eve := signup(t, base, "eve")
+	p := ada.must("POST", "/api/v4/projects", map[string]any{"name": "App", "path": "app", "initialize_with_readme": true}, 201)
+	pid := id(p)
+	outro := ada.must("POST", "/api/v4/projects", map[string]any{"name": "Outro", "path": "outro", "initialize_with_readme": true}, 201)
+	v := ada.must("POST", "/api/v4/projects/"+pid+"/variables", map[string]any{"key": "DEPLOY_TOKEN", "value": "s3cr3t-valor"}, 201)
+	if v["value"] != nil {
+		t.Fatalf("o valor oculto voltou pela API: %v", v)
+	}
+	ada.must("POST", "/api/v4/projects/"+pid+"/variables", map[string]any{"key": "CI_COMMIT_REF_NAME", "value": "sequestrado"}, 201)
+	for _, it := range ada.list("/api/v4/projects/" + pid + "/variables") {
+		if it.(map[string]any)["value"] != nil {
+			t.Fatalf("a lista mostra valores ocultos: %v", it)
+		}
+	}
+	if code, _, _ := eve.call("GET", "/api/v4/projects/"+pid+"/variables", nil); code < 400 {
+		t.Fatalf("quem não é maintainer vê as variáveis: %d", code)
+	}
+
+	pat := ada.must("POST", "/api/v4/personal_access_tokens", map[string]any{"name": "git"}, 201)
+	pushCI := func(path, ci string) string {
+		u, _ := url.Parse(base)
+		u.User = url.UserPassword("ada", pat["token"].(string))
+		dir := t.TempDir()
+		run(t, dir, "git", "clone", "--quiet", u.String()+"/ada/"+path+".git", "w")
+		work := filepath.Join(dir, "w")
+		run(t, work, "git", "config", "user.email", "ada@example.com")
+		run(t, work, "git", "config", "user.name", "Ada")
+		os.WriteFile(filepath.Join(work, ".gitlab-ci.yml"), []byte(ci), 0o644)
+		run(t, work, "git", "add", ".")
+		run(t, work, "git", "commit", "--quiet", "-m", "ci")
+		run(t, work, "git", "push", "--quiet", "origin", "main")
+		return path
+	}
+	pushCI("app", "build:\n  script:\n    - echo token=$DEPLOY_TOKEN\n    - test \"$DEPLOY_TOKEN\" = s3cr3t-valor\n    - test \"$CI_COMMIT_REF_NAME\" = main\n")
+	pushCI("outro", "build:\n  script:\n    - test -z \"$DEPLOY_TOKEN\"\n")
+
+	for _, proj := range []string{pid, id(outro)} {
+		pipe := jsonNum(ada.list("/api/v4/projects/" + proj + "/pipelines")[0].(map[string]any)["iid"]) // numbered per project
+		done := waitState(t, ada, "/api/v4/projects/"+proj+"/pipelines/"+pipe, "success", "failed")
+		b := jobByName(t, ada, proj, pipe, "build")
+		log := trace(t, ada, "/api/v4/jobs/"+id(b)+"/trace")
+		if done["state"] != "success" {
+			t.Fatalf("pipeline do projeto %s: %v\n%s", proj, done["state"], log)
+		}
+		if strings.Contains(log, "s3cr3t-valor") {
+			t.Fatalf("o valor oculto apareceu no log:\n%s", log)
+		}
+		if proj == pid && !strings.Contains(log, "token=[MASKED]") {
+			t.Fatalf("o log deveria mostrar o valor mascarado:\n%s", log)
+		}
+	}
+}
