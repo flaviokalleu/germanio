@@ -54,3 +54,48 @@ func (r *resolver) runVariables(in *ast.Intent) error {
 	}
 	return nil
 }
+
+// protectedTarget recognises `enviar código para as <dado> [dos <dono>]`
+// where <dado> belongs to <dono> (or to the block's data): the records of
+// <dado> name protected branches of <dono> (GEP 0016, em teste).
+func (r *resolver) protectedTarget(target, context string) (*ast.Entity, *ast.Entity) {
+	dataName, ownerName := target, context
+	for _, sep := range []string{"_dos_", "_das_", "_do_", "_da_"} {
+		if i := strings.LastIndex(target, sep); i > 0 {
+			dataName, ownerName = target[:i], target[i+len(sep):]
+			break
+		}
+	}
+	d, o := r.byName[dataName], r.byName[ownerName]
+	if d == nil || o == nil || d == o {
+		return nil, nil
+	}
+	for _, t := range d.Parents {
+		if t == o.Singular {
+			return o, d
+		}
+	}
+	return nil, nil
+}
+
+// protectedBranches records that the records of d (belonging to e) name
+// branches only rule's role may change.
+func (r *resolver) protectedBranches(e, d *ast.Entity, g *ast.Grant, rule *ast.AccessRule) error {
+	field := ""
+	for f, t := range d.Parents {
+		if t == e.Singular {
+			field = f
+		}
+	}
+	if !e.Repository {
+		return r.errAt(g.Pos, "enviar código para as %s: %s não tem repositório", d.Plural, e.Plural)
+	}
+	if fieldByNameAST(d.Model, "nome") == nil {
+		return r.errAt(g.Pos, "enviar código para as %s: %s precisa ter nome (a branch, ou um padrão com *)", d.Plural, d.Plural)
+	}
+	if rule.MinRole == "" || !g.Only {
+		return r.errAt(g.Pos, "as %s são protegidas por um papel, por exemplo: somente maintainer pode enviar código para as %s dos %s", d.Plural, d.Plural, e.Plural)
+	}
+	e.ProtectedBranches = append(e.ProtectedBranches, &ast.ProtectedBranches{Data: d.Singular, OwnerField: field, Role: rule.MinRole})
+	return nil
+}

@@ -340,6 +340,7 @@ válidas. `construcao_do_sistema` são as construções sem sujeito único (`ten
 | `acesso` › `maintainer` › `adicionar membros` | `maintainer pode adicionar membros` |
 | `acesso` › `somente owner` › `excluir` | `somente owner pode excluir D` |
 | `acesso` › `somente maintainer` › `enviar código para a branch padrão` | `somente maintainer pode enviar código para a branch padrão dos D` |
+| `acesso` › `somente maintainer` › `enviar código para as branches protegidas` ([GEP 0016](gep/0016-branches-protegidas.md), em teste) | `somente maintainer pode enviar código para as branches protegidas dos D` (um dado de D com `nome`; `*` vale qualquer texto) |
 | `permita` › `pesquisar`, `filtrar por estado, autor` | `permita pesquisar D`, `permita filtrar D por estado, autor` |
 | `integração` / `integração` › `nome "projects"` | `disponibilize D para integração [como "projects"]` |
 | `quando criar` / `antes de excluir` + corpo | `quando criar d` / `antes de excluir d` |
@@ -347,7 +348,7 @@ válidas. `construcao_do_sistema` são as construções sem sujeito único (`ten
 | `executa pipelines a cada envio de código conforme "arquivo"` | `d executa …` |
 | `executam jobs` (em `runners`) | `runners executam jobs` |
 | `repositório pode começar com "README.md" contendo "# {nome}"` | `repositório do d pode começar com …` |
-| `singular token de acesso` | `cada token de acesso tem` (a forma que nomeia um registro, quando o plural admite duas leituras: tokens → token ou tokem) |
+| `singular token de acesso` | `cada token de acesso tem` (a forma que nomeia um registro, quando o plural admite duas leituras: tokens → token ou tokem; vale também quando a regra erra, como em palavras estrangeiras: `singular branch protegida`) |
 | `pendência para` + campos de pessoas (um por linha) | `d gera pendência para responsaveis` (veja Pendências) |
 | `renomeie nome para nome_completo` | `renomeie nome de D para nome_completo` (veja Migração) |
 | `descarte fax` (GEP 0010, em teste) | `descarte fax de D` (veja Migração) |

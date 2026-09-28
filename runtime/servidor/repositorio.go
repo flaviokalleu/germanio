@@ -543,6 +543,9 @@ func defaultBranch(row map[string]any) string {
 
 // protectedBranch: `somente <papel> pode enviar código para a branch padrão`.
 func (a *intentAPI) protectedBranch(ctx *interp.Context, atual map[string]any, e *ast.Entity, row map[string]any, updates []git.RefUpdate) error {
+	if err := a.protectedByData(ctx, atual, e, row, updates); err != nil {
+		return err
+	}
 	if e.ProtectedBranchRole == "" || a.in.IsAdmin(atual) {
 		return nil
 	}
@@ -730,4 +733,63 @@ func (a *intentAPI) reviewView(w http.ResponseWriter, r *http.Request, ctx *inte
 	out := serialize(e, row)
 	out["mudancas"] = diffJSON(files)
 	a.json(w, 200, out, nil)
+}
+
+// protectedByData: branches named by the records of a data (GEP 0016),
+// `*` standing for any text, need the declared role to change.
+func (a *intentAPI) protectedByData(ctx *interp.Context, atual map[string]any, e *ast.Entity, row map[string]any, updates []git.RefUpdate) error {
+	if len(e.ProtectedBranches) == 0 || a.in.IsAdmin(atual) {
+		return nil
+	}
+	for _, pb := range e.ProtectedBranches {
+		res, err := a.in.Op(ctx, pb.Data, "filtrar", map[string]any{pb.OwnerField: row["id"]}, map[string]any{"limite": 500})
+		if err != nil {
+			return err
+		}
+		var patterns []string
+		for _, it := range res.([]any) {
+			patterns = append(patterns, toStr(it.(map[string]any)["nome"]))
+		}
+		for _, u := range updates {
+			branch, ok := strings.CutPrefix(u.Ref, "refs/heads/")
+			if !ok {
+				continue
+			}
+			for _, p := range patterns {
+				if globMatch(p, branch) && a.in.Level(ctx, atual, e, row) < a.app.Level(pb.Role) {
+					msg := fmt.Sprintf("Somente %s pode enviar código para a branch protegida %s", pb.Role, branch)
+					if a.app.Messages == "en" {
+						msg = "You are not allowed to push code to protected branches on this project."
+					}
+					return &interp.RuntimeError{Status: 403, Message: msg}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// globMatch: `*` stands for any text (slashes included), everything else
+// must be equal.
+func globMatch(pattern, s string) bool {
+	parts := strings.Split(pattern, "*")
+	if len(parts) == 1 {
+		return pattern == s
+	}
+	if !strings.HasPrefix(s, parts[0]) {
+		return false
+	}
+	s = s[len(parts[0]):]
+	for i, p := range parts[1:] {
+		last := i == len(parts)-2
+		if last {
+			return strings.HasSuffix(s, p)
+		}
+		k := strings.Index(s, p)
+		if k < 0 {
+			return false
+		}
+		s = s[k+len(p):]
+	}
+	return true
 }

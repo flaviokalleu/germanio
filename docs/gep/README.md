@@ -69,6 +69,7 @@ Rules:
 | [0013](0013-avisos-por-email.md) | Notices by e-mail (`tenha avisos por e-mail`) | Em teste |
 | [0014](0014-arquivos.md) | Files of a record (`anexo arquivo`, `foto imagem`) | Em teste |
 | [0015](0015-variaveis-das-execucoes.md) | Variables of executions (`pipelines usam as variaveis do projeto`) | Em teste |
+| [0016](0016-branches-protegidas.md) | Protected branches named by data (`enviar código para as branches protegidas`) | Em teste |
 
 Pending decisions that will become GEPs are listed in
 [`docs/INTENCAO.md` › Pendências da sintaxe hierárquica](../INTENCAO.md#pendências-da-sintaxe-hierárquica)

@@ -39,6 +39,7 @@ projetos
             enviar código
         somente maintainer
             enviar código para a branch padrão
+            enviar código para as branches protegidas
         maintainer
             administrar
         somente owner

@@ -432,6 +432,15 @@ func (p *Parser) dataSection(name string, header []lexer.Token, sec *node) error
 		if len(toks) < 2 {
 			return p.teach(at, "falta a forma no singular", "singular diz como se chama um só registro quando o plural admite duas leituras (tokens → token ou tokem)", "escreva: singular "+strings.TrimSuffix(name, "s"), name)
 		}
+		// the declared form names the data, whatever the inference says
+		// (branches protegidas → branch protegida, not branche protegida)
+		plural, _ := phrase(wordsOf(subject))
+		sing, _ := phrase(wordsOf(toks[1:]))
+		for _, d := range p.intent().Entities {
+			if d.Name == plural {
+				d.Singular = sing
+			}
+		}
 		return flat(join(synth(at, "cada"), toks[1:], synth(at, "tem")), nil)
 	case "repositorio":
 		// repositório pode começar com "x" contendo "y" → repositório do <dado> pode …

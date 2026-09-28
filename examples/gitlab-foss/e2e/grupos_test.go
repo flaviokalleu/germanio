@@ -70,6 +70,18 @@ func TestGruposMembrosPapeis(t *testing.T) {
 		t.Fatalf("branches: %v", branches)
 	}
 
+	// RP-06: branches protegidas por padrão (GEP 0016) — dados do projeto
+	prot := ada.must("POST", "/api/v4/projects/"+id(p)+"/protected_branches", map[string]any{"name": "release/*"}, 201)
+	bob.must("POST", "/api/v4/projects/"+id(p)+"/protected_branches", map[string]any{"name": "*"}, 403)
+	out = runFails(t, work, "git", "push", "origin", "HEAD:release/1.0")
+	if !strings.Contains(out, "protected branches") {
+		t.Fatalf("push para branch protegida por padrão:\n%s", out)
+	}
+	bob.must("POST", "/api/v4/projects/"+id(p)+"/repository/branches", map[string]any{"branch": "release/2.0", "ref": "main"}, 403)
+	run(t, work, "git", "push", "--quiet", "origin", "HEAD:hotfix")
+	ada.must("DELETE", "/api/v4/projects/"+id(p)+"/protected_branches/"+id(prot), nil, 204)
+	run(t, work, "git", "push", "--quiet", "origin", "HEAD:release/1.0")
+
 	// Ninguém concede papel maior que o próprio; o último owner não sai
 	bob.must("POST", "/api/v4/groups/"+id(g)+"/members", map[string]any{"user_id": eveID, "access_level": 50}, 403)
 	ada.must("POST", "/api/v4/groups/"+id(g)+"/sair", nil, 400)

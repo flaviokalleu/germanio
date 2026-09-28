@@ -1,0 +1,14 @@
+# Branches protegidas: quais branches só o maintainer muda (release/*, stable).
+
+branches protegidas
+    singular branch protegida
+    tem
+        nome obrigatório
+    pertence a projeto
+    acesso
+        developer
+            ver
+        maintainer
+            administrar
+    integração
+        nome "protected_branches"

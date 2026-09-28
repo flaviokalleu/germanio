@@ -1083,6 +1083,16 @@ func ResolveIntent(prog *ast.Program) error {
 		if target == "perfil" && app.LoginEntity != "" {
 			target, rule.Own = app.LoginEntity, true
 		}
+		if verb == "enviar_codigo" {
+			// somente maintainer pode enviar código para as branches protegidas
+			// (dos projetos): the rule is about the data with the repository
+			if owner, data := r.protectedTarget(target, g.Context); owner != nil {
+				if err := r.protectedBranches(owner, data, g, rule); err != nil {
+					return err
+				}
+				continue
+			}
+		}
 		e, err := r.entity(target, g.Pos)
 		if err != nil {
 			return err

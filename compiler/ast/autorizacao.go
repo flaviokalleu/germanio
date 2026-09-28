@@ -67,8 +67,11 @@ type Entity struct {
 	CeilingFields []string
 	// ProtectedBranchRole: minimum role to change the main branch directly.
 	ProtectedBranchRole string
-	CreatorRole         string // quem cria X vira <papel>
-	MinRole             string // todo X precisa ter pelo menos um <papel>
+	// ProtectedBranches: data whose records (of this record) name branches
+	// or patterns only a role may change (GEP 0016).
+	ProtectedBranches []*ProtectedBranches
+	CreatorRole       string // quem cria X vira <papel>
+	MinRole           string // todo X precisa ter pelo menos um <papel>
 	// PendingFields: people fields whose new people receive a pending item
 	// (issue gera pendência para responsaveis; GEP 0009, em teste).
 	PendingFields []string
@@ -203,4 +206,10 @@ type ViewThrough struct {
 	Kind, ID             string
 	ParentKind, ParentID string
 	Author               string
+}
+
+// ProtectedBranches: records of Data that belong to the record (OwnerField)
+// name branches (`*` for any text) that need Role to change.
+type ProtectedBranches struct {
+	Data, OwnerField, Role string
 }

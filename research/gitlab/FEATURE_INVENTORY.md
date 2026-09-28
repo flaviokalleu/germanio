@@ -47,7 +47,7 @@ Escopo núcleo v1 = features marcadas **[N]** (fluxos 1–5 da missão + testes 
 | RP-03 [N] | Árvore e arquivo | navegação por ref/caminho | tree/blob | `GET /repository/tree`, `/repository/files/:path/raw` | repo | leitura | git | G13 | PASS | TestFluxo2 |
 | RP-04 [N] | Commits | lista e detalhe com diff | commits | `/repository/commits`, `/commits/:sha`, `/commits/:sha/diff` | repo | leitura | git | G13 | PASS | TestFluxo2 |
 | RP-05 [N] | Branches | listar/criar/remover | branches | `/repository/branches` | repo | Developer+ para criar | git | G13 | PASS | TestGrupos |
-| RP-06 | Branches protegidas | push/merge por nível | settings | `/protected_branches` | protected_branches | Maintainer+ | | | PARTIAL (só branch padrão) | TestGrupos |
+| RP-06 | Branches protegidas | push/merge por nível | settings | `/protected_branches` | protected_branches | Maintainer+ | | | PASS (branch padrão e branches protegidas por nome ou padrão com *, como dados do projeto; quem pode fazer merge numa branch protegida ainda segue mesclar) | TestGruposMembrosPapeis |
 | RP-07 | Tags | criar, listar, remover | `/-/tags` | `/repository/tags` | refs | Developer+ para criar | git | SUPPORTED | PASS (tags leves por git push e pela API, com as regras de enviar código; tags anotadas e protegidas ainda não) | TestTags |
 | RP-08 | Editar arquivo pela web | commit direto | editor | `POST /repository/commits` | repo | Developer+ | git | G13 | NOT_STARTED | |
 | RP-09 | Compare | diff entre refs | compare | `/repository/compare` | repo | leitura | git | | PASS (API) | — |

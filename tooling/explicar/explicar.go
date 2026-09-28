@@ -132,6 +132,11 @@ func Entidade(prog *ast.Program, nome string) (string, error) {
 			w("  recuperação de senha: /esqueci envia por e-mail um link de uso único, válido por 1 hora, para o endereço público (GERMANIO_URL_PUBLICA); a resposta não revela se a conta existe; o e-mail vem do ambiente (GERMANIO_SMTP_* ou GERMANIO_CORREIO_PASTA)\n")
 		}
 	}
+	for _, pb := range e.ProtectedBranches {
+		if d := app.Entities[pb.Data]; d != nil {
+			w("Branches protegidas: as que cada %s nomeia em %s (nome; * vale qualquer texto) só mudam com %s ou superior\n", d.Label, d.Plural, pb.Role)
+		}
+	}
 	if e.History && app.ActivityEntity != "" {
 		w("Histórico: cada mudança fica em %s (quem, o quê, quando e quais campos, nunca os valores)\n", app.ActivityEntity)
 	}

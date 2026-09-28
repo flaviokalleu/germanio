@@ -98,3 +98,19 @@ func TestEfeitosEmOrdemForaDaTransacao(t *testing.T) {
 		t.Fatalf("a mudança e a escrita do efeito deviam ficar: pais=%d", n)
 	}
 }
+
+func TestGlobMatch(t *testing.T) {
+	cases := []struct {
+		p, s string
+		ok   bool
+	}{
+		{"main", "main", true}, {"main", "mains", false}, {"release/*", "release/1.0", true},
+		{"release/*", "release", false}, {"*-stable", "2-stable", true}, {"*", "qualquer/coisa", true},
+		{"a*b*c", "a-x-b-y-c", true}, {"a*b*c", "a-x-c", false},
+	}
+	for _, c := range cases {
+		if globMatch(c.p, c.s) != c.ok {
+			t.Errorf("globMatch(%q, %q) != %v", c.p, c.s, c.ok)
+		}
+	}
+}
