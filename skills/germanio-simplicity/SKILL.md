@@ -132,6 +132,28 @@ internos, relações, ações, permissões, integrações). `ge check` detecta a
 implementação, permissão impossível, relação inválida, entidade desconhecida, referência
 ambígua, regra contraditória, integração sem capability, campo impossível de inferir.
 
+## 34b. Três mundos: domínio, core, adaptador
+
+Código técnico não é automaticamente errado. Antes de julgar, pergunte onde ele está:
+
+| Camada | Onde | Pode conter | Regra |
+|--------|------|-------------|-------|
+| **Domínio** (aplicação) | `backend/`, `frontend/` | intenção do produto | deve ser simples para um leigo |
+| **Core** (Germanio) | `compiler/`, `runtime/` | mecanismos universais (claim, lease, token temporário, log por offset, transação…) | pode ser complexo por dentro, mas **genérico**: nada de nomes, caminhos, formatos ou protocolos de um sistema externo |
+| **Adaptador** | `integracoes/` | protocolo de um sistema externo: caminhos, cabeçalhos, códigos HTTP, payloads, nomes como `CI_JOB_ID` | pode ser técnico e específico; marcado `NÍVEL AVANÇADO / ADAPTADOR DE COMPATIBILIDADE`; só traduz para capabilities do core, sem regras do produto |
+
+> Adaptadores podem conhecer a complexidade do sistema externo. O domínio não.
+
+O erro é atravessar a fronteira: protocolo externo no domínio (complicado para o leigo) ou
+no core (o runtime passa a "conhecer" um produto). Antes de escrever Go, pergunte:
+*isto serviria igualmente a outro sistema (outro runner, um worker próprio, uma render farm)?*
+Se não, não é core — é adaptador. O Germanio impõe as pastas: `integracoes/` não pode
+declarar dados, permissões ou páginas.
+
+Um teste verde com a camada errada continua errado: o stress test exige ao mesmo tempo
+compatibilidade funcional, evolução genérica do Germanio, `.ge` de domínio simples e
+runtime independente da aplicação.
+
 ## 35. Checklist obrigatório
 
 ```text
@@ -148,6 +170,7 @@ ambígua, regra contraditória, integração sem capability, campo impossível d
 [ ] Um leigo consegue aproximadamente ler?
 [ ] Um profissional consegue inspecionar/personalizar?
 [ ] É determinístico?
+[ ] Está na camada certa (domínio simples, core genérico, adaptador em integracoes/)?
 ```
 
 Se houver problema, não finalize: refatore Germanio ou o `.ge`.

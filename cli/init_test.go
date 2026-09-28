@@ -133,10 +133,17 @@ func TestPastasMantemSeuPapel(t *testing.T) {
 		{"frontend/cupons.ge", "tenha cupons\n", "vai em backend/"},
 		{"frontend/regras.ge", "somente administrador pode excluir produtos\n", "vai em backend/"},
 		{"backend/tela.ge", "crie página Cupons\n    mostre produtos\n", "vão em frontend/"},
+		{"integracoes/externo.ge", "tenha cupons\n", "integracoes/ só traduz"},
+		{"integracoes/externo.ge", "somente administrador pode excluir produtos\n", "integracoes/ só traduz"},
 	} {
 		dir := filepath.Join(t.TempDir(), "loja")
 		cmdInit(dir)
+		os.MkdirAll(filepath.Dir(filepath.Join(dir, c.file)), 0755)
 		os.WriteFile(filepath.Join(dir, c.file), []byte(c.src), 0644)
+		if strings.HasPrefix(c.file, "integracoes/") {
+			app, _ := os.ReadFile(filepath.Join(dir, "app.ge"))
+			os.WriteFile(filepath.Join(dir, "app.ge"), append(app, []byte("importar \"integracoes\"\n")...), 0644)
+		}
 		_, err := carregar(t, filepath.Join(dir, "app.ge"))
 		if err == nil || !strings.Contains(err.Error(), c.want) || !strings.Contains(err.Error(), c.file) {
 			t.Fatalf("%s: erro esperado com %q, veio %v", c.file, c.want, err)

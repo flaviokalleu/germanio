@@ -47,7 +47,8 @@ func (s *Servidor) registerIntent(mux *routeMux) error {
 	s.intent = a
 	s.registerTaskModule()
 	s.tasks().handle("entrega", a.deliver)
-	a.mountRemote(mux)
+	a.registerRemoteModule()
+	a.startLeases()
 	for _, name := range app.Order {
 		e := app.Entities[name]
 		if len(e.Rules) == 0 && e.Integrate == "" {

@@ -589,6 +589,28 @@ func ResolveIntent(prog *ast.Program) error {
 		e.Hooks[verb] = h
 	}
 
+	// 7b2. Remote work that is not a pipeline step starts waiting for an
+	// executor, so `conversao pode cancelar` has a state to leave.
+	steps := map[string]bool{}
+	for _, x := range in.Executions {
+		if run, err := r.entity(x.Entity, x.Pos); err == nil {
+			for _, c := range run.Children {
+				steps[c] = true
+			}
+		}
+	}
+	for _, x := range in.RemoteExecutors {
+		work, err := r.entity(x.Steps, x.Pos)
+		if err != nil {
+			return err
+		}
+		if !steps[work.Singular] && work.StateField == "" {
+			work.StateField, work.Initial = "estado", "pendente"
+			work.Transitions = map[string]*ast.Transition{}
+			work.Model.Fields = append(work.Model.Fields, &ast.Field{Name: "estado", Type: ast.FieldTexto, HasDefault: true, DefaultValue: "pendente", System: true, Index: true, Pos: x.Pos})
+		}
+	}
+
 	// 7c. Capabilities: `issue pode fechar / ser confidencial` (subject is data, not a role)
 	var grants []*ast.Grant
 	for _, g := range in.Grants {
@@ -771,18 +793,15 @@ func ResolveIntent(prog *ast.Program) error {
 			sys("repetido", ast.FieldBooleano), sys("imagem", ast.FieldTexto))
 	}
 
-	// 7g2. Remote executors: `runners executam jobs`.
+	// 7g2. Remote work: `runners executam jobs`, `trabalhadores executam conversoes`.
 	for _, x := range in.RemoteExecutors {
 		ex, err := r.entity(x.Executor, x.Pos)
 		if err != nil {
 			return err
 		}
-		step, err := r.entity(x.Steps, x.Pos)
+		work, err := r.entity(x.Steps, x.Pos)
 		if err != nil {
 			return err
-		}
-		if step.Execution == nil || step.Execution.Role != "step" {
-			return r.errAt(x.Pos, "%s executam %s: %s precisam ser etapas de uma execução (ex.: projeto executa pipelines …; pipeline tem jobs)", ex.Plural, step.Plural, step.Plural)
 		}
 		key := ""
 		for _, f := range ex.Model.Fields {
@@ -791,13 +810,30 @@ func ResolveIntent(prog *ast.Program) error {
 			}
 		}
 		if key == "" {
-			return r.errAt(x.Pos, "%s executam %s: cada %s precisa de uma credencial (ex.: token segredo)", ex.Plural, step.Plural, ex.Singular)
+			return r.errAt(x.Pos, "%s executam %s: cada %s precisa de uma credencial (ex.: token secreto)", ex.Plural, work.Plural, ex.Singular)
 		}
-		field := ex.Singular + "_id"
-		step.Model.Fields = append(step.Model.Fields,
-			&ast.Field{Name: field, Type: ast.FieldInteiro, Reference: ex.Singular, System: true, Index: true, Pos: x.Pos},
-			&ast.Field{Name: "token_execucao", Type: ast.FieldTexto, System: true, Hidden: true, Index: true, Pos: x.Pos})
-		step.Execution.Executor, step.Execution.ExecutorField, step.Execution.ExecutorKey = ex.Singular, field, key
+		sys := func(name string, t ast.FieldType, hidden bool) *ast.Field {
+			return &ast.Field{Name: name, Type: t, System: true, Hidden: hidden, Pos: x.Pos}
+		}
+		rw := &ast.RemoteWork{Executor: ex.Singular, ExecutorField: ex.Singular + "_id", ExecutorKey: key, Pending: "pendente", Canceled: "cancelado"}
+		if work.Execution == nil {
+			// Plain work: it gets the work state machine unless it declared its own start.
+			rw.Pending = work.Initial
+			if t := work.Transitions["cancelar"]; t != nil {
+				rw.Canceled = t.Target
+			}
+			for _, st := range []string{"sucesso", "falhou", rw.Canceled} {
+				work.Finals = appendUnique(work.Finals, st)
+			}
+			work.Model.Fields = append(work.Model.Fields, sys("log", ast.FieldTextoLongo, true),
+				sys("iniciado_em", ast.FieldTexto, false), sys("terminado_em", ast.FieldTexto, false), sys("duracao", ast.FieldNumero, false))
+		}
+		work.Model.Fields = append(work.Model.Fields,
+			&ast.Field{Name: rw.ExecutorField, Type: ast.FieldInteiro, Reference: ex.Singular, System: true, Index: true, Pos: x.Pos},
+			&ast.Field{Name: "token_execucao", Type: ast.FieldTexto, System: true, Hidden: true, Index: true, Pos: x.Pos},
+			sys("reserva_ate", ast.FieldTexto, true), sys("chave_reserva", ast.FieldTexto, true), sys("tentativas", ast.FieldInteiro, false))
+		ex.Model.Fields = append(ex.Model.Fields, sys("visto_em", ast.FieldTexto, false))
+		work.Remote = rw
 	}
 
 	// 7h. Subscriptions: webhooks receive events of their owner.
@@ -952,7 +988,11 @@ func ResolveIntent(prog *ast.Program) error {
 			}
 		}
 		if verb == "administrar" {
-			for _, v := range []string{"ver", "editar", "excluir"} {
+			verbs := []string{"ver", "editar", "excluir"}
+			if g.Target == e.Plural || Singular(g.Target) == e.Singular && g.Target != e.Singular {
+				verbs = append(verbs, "criar") // administrar runners: the whole collection
+			}
+			for _, v := range verbs {
 				cp := *rule
 				cp.Verb = v
 				addRule(e, &cp)

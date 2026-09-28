@@ -2,8 +2,10 @@
 #
 #   backend/   o que existe, quem pode fazer o quê, o que acontece
 #   frontend/  o que aparece para as pessoas
+#   integracoes/  adaptadores de protocolos externos (nível avançado)
 
 crie sistema gitlab
 
 importar "backend"
 importar "frontend"
+importar "integracoes"

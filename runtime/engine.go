@@ -222,6 +222,13 @@ func checkRole(rel string, p *ast.Program, uses map[string]bool) error {
 				}
 			}
 		}
+	case "integracoes":
+		// Adapters translate an external protocol; they never declare the product.
+		if in != nil && (len(in.Entities) > 0 || len(in.FieldBlocks) > 0 || len(in.Relations) > 0 || len(in.Grants) > 0 || len(in.Permits) > 0 ||
+			len(in.Roles) > 0 || len(in.States) > 0 || len(in.Hooks) > 0 || len(in.Pages) > 0 || len(in.RemoteExecutors) > 0 || in.Login != nil) ||
+			len(p.Models) > 0 || len(p.Screens) > 0 || len(p.Pages) > 0 {
+			return fmt.Errorf("%s: integracoes/ só traduz protocolos externos (rotas e lógica); o produto (dados, permissões, páginas) fica em backend/ e frontend/", file)
+		}
 	case "backend":
 		if (in != nil && len(in.Pages) > 0) || len(p.Screens) > 0 || len(p.Pages) > 0 || len(p.SidebarItems) > 0 || p.Theme != nil {
 			return fmt.Errorf("%s: backend/ descreve o que existe e as regras; páginas, menu e tema vão em frontend/", file)

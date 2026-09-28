@@ -50,6 +50,9 @@ loja/
   os erros dizem a linha a escrever.
 - Cada lado mantém seu papel: `frontend/` só tem páginas; `tenha`, `pode`, `quando`,
   login e integração ficam no `backend/`, e páginas nunca ficam no `backend/`.
+- `integracoes/` (opcional, **nível avançado**) guarda adaptadores de protocolos externos
+  (por exemplo o `gitlab-runner`): podem ser técnicos, só traduzem para capabilities do
+  Germanio e não podem declarar dados, permissões ou páginas.
 - A página diz *o que aparece*; o backend decide *quem pode*. `permita criar` numa página
   mostra o formulário apenas a quem o backend permite.
 
@@ -75,7 +78,7 @@ O nível 4 nunca é necessário para CRUD, login, permissões ou relações.
 | `grupo tem subgrupos` | hierarquia (`pai_id`) |
 | `endereço dentro do grupo pai ou do criador` (linha de `X tem`) | `endereco` = endereço do primeiro contêiner definido + `/` + `caminho` (`empresa/web/app`); calculado, nunca aceito da entrada; único entre todos os endereçados e os nomes das pessoas; renomear um contêiner (ou a pessoa) atualiza o que está dentro; repositórios passam a ser servidos pelo endereço |
 | `labels por nome` (linha de `issue tem`) | lista escrita e lida pelo nome (`"bug,ux"` → `["bug","ux"]`), procurado entre os itens do mesmo pai (labels do projeto); nome novo cria o item quando a pessoa pode criá-lo ali; `?labels=bug` filtra pelo nome. Itens de outro pai nunca entram |
-| `runners executam jobs` | cada runner (com um campo `segredo`, e opcionalmente `pertence a projeto`) pega etapas pendentes, envia o log e o resultado pelo protocolo de executor remoto; os nomes externos vêm do vocabulário (`pedir é "request"`, `variavel_versao é "CI_COMMIT_SHA"`…). O token de cada etapa só lê o repositório dela e deixa de valer quando ela termina |
+| `runners executam jobs` | trabalho remoto: cada runner (um `token secreto`, `ativo`, opcionalmente `pode pertencer a projeto`) pega trabalhos pendentes com reserva renovável; reserva vencida devolve o trabalho à fila (3 tentativas, depois falha); cancelamento visível ao executor; token temporário (só do próprio trabalho, lê o repositório só enquanto executa). Vale para qualquer dado: `trabalhadores executam conversoes`. Protocolos externos falam com isso por um adaptador em `integracoes/` usando `trabalho_remoto.*` |
 | `projeto tem repositório` | cada registro tem um repositório Git criado e removido com ele e servido em `/<campo único>.git` |
 
 **Tipo pelo nome** (quando não há tipo): `email`→email · `senha`/`password`→senha protegida ·

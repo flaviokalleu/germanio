@@ -137,9 +137,9 @@ func (p *Parser) parseIntentLine() error {
 		}
 		return p.parseDisponibilize(head)
 	case "integracao":
-		// integração em "/api/v4"
+		// integração em "/api/v1"
 		if len(head.toks) != 3 || head.toks[2].Type != lexer.TokenString {
-			return p.errorf(head.toks[0], `use: integração em "/api/v4"`)
+			return p.errorf(head.toks[0], `use: integração em "/api/v1"`)
 		}
 		in.IntegrationPrefix = strings.TrimRight(head.toks[2].Value, "/")
 		return nil
@@ -557,6 +557,20 @@ func (p *Parser) parsePode(head dline, body []dline, only bool) error {
 	}
 	if k == len(w) || k == i {
 		return p.errorf(head.toks[0], "use: <papel> pode <ação> <dados>")
+	}
+	// runner pode pertencer a projeto: an optional parent
+	if !only && k+1 < len(w) && w[k+1] == "pertencer" {
+		subject, _ := phrase(w[i:k])
+		rest := w[k+2:]
+		if len(rest) > 0 && rest[0] == "a" {
+			rest = rest[1:]
+		}
+		to, _ := phrase(rest)
+		if to == "" {
+			return p.errorf(head.toks[0], "use: %s pode pertencer a <dado>", subject)
+		}
+		in.Relations = append(in.Relations, &ast.RelationDecl{Kind: "pertence", From: subject, To: to, Optional: true, Pos: p.at(head.toks[0])})
+		return nil
 	}
 	// "autor ou planner pode" grants the same actions to each role.
 	var roles []string

@@ -104,7 +104,7 @@ func (a *intentAPI) serveGit(w http.ResponseWriter, r *http.Request, entities []
 	}
 	// A running step's token reads the repository of that step (remote executors clone with it).
 	if _, pass, ok := r.BasicAuth(); ok && row != nil && service == "upload-pack" {
-		if step, job := a.stepByToken(ctx, pass); job != nil && a.stepOwnerIs(ctx, step, job, e, row) {
+		if step, job := a.stepByToken(ctx, pass, true); job != nil && a.stepOwnerIs(ctx, step, job, e, row) {
 			a.gitProtocol(w, r, ctx, row, service, advertise)
 			return
 		}

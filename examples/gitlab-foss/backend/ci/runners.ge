@@ -4,18 +4,14 @@ tenha runners
 
 runner tem
     descrição
-    token segredo prefixo "glrt-"
-    ativo começa com verdadeiro
+    token secreto
+    ativo
 
-runner pertence a projeto opcional
+runner pode pertencer a projeto
 
 runners executam jobs
 
 somente administrador pode
-    criar runners
-    ver runners
-    editar runners
-    excluir runners
+    administrar runners
 
-disponibilize para integração
-    runners
+disponibilize runners para integração

@@ -77,22 +77,10 @@ type routeMux struct {
 
 func (m *routeMux) HandleFunc(pattern string, h func(http.ResponseWriter, *http.Request)) {
 	if at, taken := m.explicit[shapeOf(pattern)]; taken {
-		if at == runtimeProtocol {
-			return
-		}
 		fmt.Printf("[germanio] %s: a rota declarada em %s substitui a gerada\n", pattern, at)
 		return
 	}
 	m.ServeMux.HandleFunc(pattern, h)
-}
-
-const runtimeProtocol = "protocolo do runtime"
-
-// claim registers a runtime protocol route and reserves its shape, so the
-// generated route of the same shape (for example "edit a job") yields to it.
-func (m *routeMux) claim(pattern string, h func(http.ResponseWriter, *http.Request)) {
-	m.ServeMux.HandleFunc(pattern, h)
-	m.explicit[shapeOf(pattern)] = runtimeProtocol
 }
 
 // shapeOf ignores parameter names: "PUT /a/{id}" and "PUT /a/{r0}" collide.

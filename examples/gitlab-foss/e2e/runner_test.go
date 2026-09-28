@@ -27,7 +27,7 @@ func TestRunnerOficial(t *testing.T) {
 	root := &api{t: t, base: base, token: tok["access_token"].(string)}
 	runner := root.must("POST", "/api/v4/runners", map[string]any{"description": "shell"}, 201)
 	rtoken, _ := runner["token"].(string)
-	if !strings.HasPrefix(rtoken, "glrt-") {
+	if rtoken == "" {
 		t.Fatalf("token do runner: %v", runner)
 	}
 	ada := signup(t, base, "ada")
@@ -172,7 +172,13 @@ func TestProtocoloRunner(t *testing.T) {
 	if got := ada.must("GET", "/api/v4/jobs/"+jid, nil, 200); got["state"] != "success" {
 		t.Fatalf("job: %v", got)
 	}
-	// Terminado o job, o token morre.
+	// Terminado o job: o token não lê mais o repositório; repetir o resultado não muda nada.
 	runFails(t, t.TempDir(), "git", "clone", "--quiet", u.String()+"/ada/app.git", "y")
-	anon.must("PUT", "/api/v4/jobs/"+jid, map[string]any{"token": jobToken, "state": "failed"}, 403)
+	anon.must("PUT", "/api/v4/jobs/"+jid, map[string]any{"token": jobToken, "state": "failed"}, 200)
+	if got := ada.must("GET", "/api/v4/jobs/"+jid, nil, 200); got["state"] != "success" {
+		t.Fatalf("resultado mudou depois de concluído: %v", got)
+	}
+	if c := trace(8, "tarde\n", jobToken); c == 202 {
+		t.Fatal("log aceito depois de concluído")
+	}
 }

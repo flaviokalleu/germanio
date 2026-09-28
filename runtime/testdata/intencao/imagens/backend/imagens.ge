@@ -1,0 +1,34 @@
+# Uma fila de conversão de imagens: pessoas pedem, trabalhadores convertem.
+
+tenha usuarios, conversoes, trabalhadores
+
+cada usuario tem
+    nome obrigatório
+    email obrigatório e único
+    senha
+
+tenha login
+tenha cadastro
+login usa email
+
+cada trabalhador tem
+    nome
+    token secreto
+    ativo
+
+cada conversao tem
+    arquivo obrigatório
+    formato
+    autor
+
+trabalhadores executam conversoes
+
+conversao pode cancelar
+
+usuario pode
+    criar suas conversoes
+    ver suas conversoes
+    cancelar suas conversoes
+
+somente administrador pode
+    administrar trabalhadores

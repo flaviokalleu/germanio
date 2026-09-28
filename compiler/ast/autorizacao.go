@@ -61,6 +61,8 @@ type Entity struct {
 	Execution *Execution
 	// Subscription: records of this entity receive events of an owner (webhooks).
 	Subscription *Subscription
+	// Remote: records are work taken by remote executors.
+	Remote *RemoteWork
 	// Address: `endereço dentro do grupo pai ou do criador`.
 	Address    *Address
 	Repository bool     // X tem repositório
@@ -133,10 +135,17 @@ type Execution struct {
 	Run        string // step → run entity
 	Step       string // run → step entity
 	RunField   string // step → run reference field
-	// Executor: entity whose records run steps remotely (runners executam jobs).
-	Executor      string
-	ExecutorField string // step → executor reference field
+}
+
+// RemoteWork: records of this entity are work that executors (records of
+// Executor, each holding a secret credential) take and run elsewhere —
+// `runners executam jobs`, `trabalhadores executam conversoes`.
+type RemoteWork struct {
+	Executor      string // entity of the executors
+	ExecutorField string // work → executor reference field
 	ExecutorKey   string // executor's secret field (its credential)
+	Pending       string // state of work waiting for an executor
+	Canceled      string // state people set to cancel it
 }
 
 // Subscription delivers events of Owner records to the URL of each record.

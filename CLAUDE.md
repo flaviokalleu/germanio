@@ -79,3 +79,14 @@ implemente a regra da aplicação em Go; identifique a capability genérica falt
 implemente o mecanismo no Germanio, exponha uma interface simples para `.ge`, teste, volte à
 aplicação e refatore o `.ge` obsoleto. A aplicação descreve intenção; Go implementa mecanismos.
 Referência da linguagem de intenção: `docs/INTENCAO.md`.
+
+### Três camadas (domínio, core, adaptador)
+
+- **Domínio** (`backend/`, `frontend/` de cada app): intenção, simples para leigos.
+- **Core** (`compiler/`, `runtime/`): mecanismos genéricos. Não pode conter nomes, caminhos,
+  formatos ou protocolos de sistemas externos (ex.: nada de `/api/v4`, `CI_JOB_ID`, `JOB-TOKEN`).
+- **Adaptador** (`integracoes/`): traduz um protocolo externo para capabilities do core; pode
+  ser técnico; marcado `NÍVEL AVANÇADO / ADAPTADOR DE COMPATIBILIDADE`; sem regras do produto.
+
+Adaptadores podem conhecer a complexidade do sistema externo. O domínio não.
+Detalhes em `skills/germanio-simplicity/SKILL.md` (seção 34b).

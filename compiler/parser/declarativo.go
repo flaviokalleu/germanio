@@ -312,7 +312,7 @@ func (p *Parser) fieldFromTokens(t []lexer.Token) (*ast.Field, error) {
 				}
 				i++
 			}
-		} else if t[i].Name() == "segredo" {
+		} else if n := foldWord(strings.ToLower(t[i].Name())); n == "segredo" || n == "secreto" || n == "secreta" {
 			f.Type = ast.FieldSegredo
 			i++
 		}
@@ -470,6 +470,13 @@ func (p *Parser) fieldFromTokens(t []lexer.Token) (*ast.Field, error) {
 	}
 	if f.Type == "" {
 		f.Type = inferType(f.Name)
+	}
+	// Things are active until someone turns them off.
+	if f.Type == ast.FieldBooleano && !f.HasDefault {
+		switch strings.ToLower(f.Name) {
+		case "ativo", "ativa", "active", "habilitado", "habilitada", "enabled":
+			f.HasDefault, f.DefaultValue = true, true
+		}
 	}
 	if f.Type == ast.FieldSenha {
 		f.Protected = true
