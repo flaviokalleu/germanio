@@ -92,7 +92,7 @@ grammar = {
                           {"name": "constant.numeric.germanio", "match": r"[0-9]+"}]},
             {"begin": r"^\s*(" + w("tenha") + r")\s*$", "end": r"^(?=\S)",
              "beginCaptures": {"1": {"name": "keyword.other.intent.germanio"}},
-             "patterns": [{"include": "#comment"}, kw("keyword.other.intent.germanio", "papeis", "login", "cadastro"),
+             "patterns": [{"include": "#comment"}, kw("keyword.other.intent.germanio", "papeis", "login", "cadastro", "recuperacao de senha"),
                           {"name": "entity.name.type.germanio", "match": NAME}]},
             {"begin": r"^\s*(" + NAMES + r")\s+(" + words("pode ser vista por", "pode ser visto por", "podem ser vistas por", "podem ser vistos por") + r")\s*$", "end": r"^(?=\S)",
              "beginCaptures": {"1": {"name": "entity.name.type.germanio"}, "2": {"name": "keyword.other.permission.germanio"}},
@@ -129,7 +129,10 @@ grammar = {
         "data_block": {"patterns": [
             {"begin": r"^(" + w("pagina") + r"|page)\s+(" + NAMES + r")\s*$", "end": r"^(?=\S)",
              "beginCaptures": {"1": {"name": "keyword.other.intent.germanio"}, "2": {"name": "entity.name.section.germanio"}},
-             "patterns": [{"include": "#comment"},
+             "patterns": [{"include": "#comment"}, {"include": "#string"},
+                          # page sections (docs/gep/0002-secoes-de-pagina.md, em teste)
+                          {"match": r"^\s+(" + words("topo", "filtros", "colunas", "vazio", "acoes") + r")\s*$", "captures": {"1": {"name": "keyword.other.intent.germanio"}}},
+                          {"match": r"^\s+(" + words("titulo", "texto", "acao") + r")\b", "captures": {"1": {"name": "keyword.other.intent.germanio"}}},
                           {"match": r"^\s+(" + w("mostre") + r")\s+(" + NAMES + r")\s*$", "captures": {"1": {"name": "keyword.other.intent.germanio"}, "2": {"name": "entity.name.type.germanio"}}},
                           {"match": r"^\s+(" + w("permita") + r")\s*$", "captures": {"1": {"name": "keyword.other.permission.germanio"}}},
                           {"match": r"^\s+([0-9]+)\s+(" + w("por pagina") + r")", "captures": {"1": {"name": "constant.numeric.germanio"}, "2": {"name": "keyword.other.intent.germanio"}}},
@@ -223,7 +226,7 @@ grammar = {
             # tenha papeis / tenha login / tenha X, Y
             {"begin": r"^\s*(" + w("tenha") + r")" + E, "end": r"$",
              "beginCaptures": {"1": {"name": "keyword.other.intent.germanio"}},
-             "patterns": [kw("keyword.other.intent.germanio", "papeis", "papel", "login", "cadastro"),
+             "patterns": [kw("keyword.other.intent.germanio", "papeis", "papel", "login", "cadastro", "recuperacao de senha"),
                           {"name": "entity.name.type.germanio", "match": NAME}]},
             # somente X pode / X ou Y pode / X podem
             {"match": r"^\s*(?:(" + w("somente") + r")\s+)?(" + role_subject + r")\s+(" + words("podem", "pode") + r")" + E + r"(?:\s+(" + words("ser vista por", "ser visto por", "ser vistas por", "ser vistos por") + r")|\s+(ser)\s+(" + NAME + r")|\s+(" + words("baixar codigo", "enviar codigo") + r"|" + NAME + r")(?:\s+(" + words("seus", "suas", "seu", "sua") + r"))?(?:\s+(.+?))?)?\s*$",

@@ -1,24 +1,25 @@
 # AGENT_STATE
 
 ## CURRENT_PHASE
-2026-09-28, em ordem:
-1. Estudo dirigido de linguagens, frontend e performance: FEITO (`docs/research/languages/`,
-   `docs/research/frontend/`, `docs/research/performance/`; divergências em G67–G75, riscos
-   de performance em G85–G90).
-2. Norma de eficiência ("simples para o humano, eficiente para a máquina") e suíte de
-   benchmarks (`bench/`): FEITO. Falta publicar o primeiro baseline numa máquina ociosa.
-3. Lançamento e descoberta: FEITO. README em inglês e pt-BR, docs públicos com
-   `tooling/doctest`, exemplos reais testados, CONTRIBUTING/SECURITY/CoC, GEP 0001, release
-   (goreleaser + workflow + Docker), CHANGELOG verdadeiro, About do GitHub aplicado, SEO do
-   site, plano editorial (`docs/launch/LANCAMENTO.md`, com o que só o proprietário pode fazer:
-   social preview, push, primeira tag, hospedar o site, publicar a extensão). Correções de
-   segurança no caminho: `/ws` (G65), bloqueio de login padrão (G83), pastas servidas (G91).
-4. Pesquisa profunda do ecossistema (pedido de 2026-09-28): EM ANDAMENTO. Triagem do tópico
-   programming-language, mais 13 linguagens, pacotes, concorrência, segurança; depois
-   ECOSYSTEM_MATRIX.md, atualização do GERMANIO_LESSONS.md e GEPs em rascunho.
-   Regra: documentar primeiro, propor depois, implementar só com decisão justificada.
-Depois: retomar o GitLab pelo inventário, com as lacunas P0/P1 abertas priorizadas
-(G85 visibilidade como SQL, G86 escritor único, G89 `paralelo`, G67 linhas ignoradas).
+2026-09-28, em ordem (histórico resumido; detalhes nos commits e em GERMANIO_GAPS.md):
+1. Estudo dirigido de linguagens, frontend e performance: FEITO (`docs/research/`).
+2. Norma de eficiência e suíte de benchmarks: FEITO; primeiro baseline em
+   `bench/resultados/2026-09-28-e421c8e.txt` e limites de regressão em `bench/README.md`.
+3. Lançamento e descoberta: FEITO (README en/pt-BR, docs públicos com `tooling/doctest`,
+   exemplos testados, comunidade, release, About do GitHub, SEO, plano editorial). O que só o
+   proprietário pode fazer está em `docs/launch/LANCAMENTO.md`.
+4. Pesquisa do ecossistema: FEITO (`docs/research/languages/`: triagem, 24 linguagens,
+   descobertas, pacotes, concorrência, segurança, matriz, lições, respostas; GEPs 0002–0007
+   em rascunho).
+5. Correções que a pesquisa revelou: FEITO para os P0/P1 de segurança e dados — G65, G83,
+   G91, G98–G102 (segurança); G85 (visibilidade 220× mais rápida), G87, G88, G89 (quase),
+   G93 (parcial), G94, G95, G96 (performance/dados); G67, G68, G74, G84, G103 (linguagem);
+   G75 (acessibilidade, parcial); G76, G80 (parcial).
+6. GEPs em teste (implementados, não normativos até a decisão do mantenedor): 0002 (seções
+   de página) e 0008 (recuperação de senha). Rascunhos esperando decisão: 0003–0007.
+Próximo: GitLab pelo inventário (NT-01 pendências, NT-02 atividade, AD-01 painel — depende
+de agregados), com uma GEP por construção nova; G86 e G93 esperam decisões (efeitos após o
+commit; renomear campos sem perder dados).
 
 ## CURRENT_GOAL
 Continuar o GitLab por intenção: issues → merge requests → CI/CD → páginas (UI),

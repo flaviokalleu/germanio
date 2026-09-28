@@ -147,7 +147,7 @@
             },
             {
               "name": "keyword.other.intent.germanio",
-              "match": "(?<![\\p{L}\\p{N}_])(?:[cç][aáàâã]d[aáàâã]str[oóôõ]|p[aáàâã]p[eéê][ií]s|l[oóôõ]g[ií]n)(?![\\p{L}\\p{N}_])"
+              "match": "(?<![\\p{L}\\p{N}_])(?:r[eéê][cç][uú]p[eéê]r[aáàâã][cç][aáàâã][oóôõ]\\s+d[eéê]\\s+s[eéê]nh[aáàâã]|[cç][aáàâã]d[aáàâã]str[oóôõ]|p[aáàâã]p[eéê][ií]s|l[oóôõ]g[ií]n)(?![\\p{L}\\p{N}_])"
             },
             {
               "name": "entity.name.type.germanio",
@@ -342,6 +342,25 @@
           "patterns": [
             {
               "include": "#comment"
+            },
+            {
+              "include": "#string"
+            },
+            {
+              "match": "^\\s+((?:f[ií]ltr[oóôõ]s|[cç][oóôõ]l[uú]n[aáàâã]s|v[aáàâã]z[ií][oóôõ]|[aáàâã][cç][oóôõ][eéê]s|t[oóôõ]p[oóôõ]))\\s*$",
+              "captures": {
+                "1": {
+                  "name": "keyword.other.intent.germanio"
+                }
+              }
+            },
+            {
+              "match": "^\\s+((?:t[ií]t[uú]l[oóôõ]|t[eéê]xt[oóôõ]|[aáàâã][cç][aáàâã][oóôõ]))\\b",
+              "captures": {
+                "1": {
+                  "name": "keyword.other.intent.germanio"
+                }
+              }
             },
             {
               "match": "^\\s+(m[oóôõ]str[eéê])\\s+([\\p{L}_][\\p{L}\\p{N}_]*(?:\\s+[\\p{L}_][\\p{L}\\p{N}_]*)*?)\\s*$",
@@ -912,7 +931,7 @@
           "patterns": [
             {
               "name": "keyword.other.intent.germanio",
-              "match": "(?<![\\p{L}\\p{N}_])(?:[cç][aáàâã]d[aáàâã]str[oóôõ]|p[aáàâã]p[eéê][ií]s|p[aáàâã]p[eéê]l|l[oóôõ]g[ií]n)(?![\\p{L}\\p{N}_])"
+              "match": "(?<![\\p{L}\\p{N}_])(?:r[eéê][cç][uú]p[eéê]r[aáàâã][cç][aáàâã][oóôõ]\\s+d[eéê]\\s+s[eéê]nh[aáàâã]|[cç][aáàâã]d[aáàâã]str[oóôõ]|p[aáàâã]p[eéê][ií]s|p[aáàâã]p[eéê]l|l[oóôõ]g[ií]n)(?![\\p{L}\\p{N}_])"
             },
             {
               "name": "entity.name.type.germanio",
