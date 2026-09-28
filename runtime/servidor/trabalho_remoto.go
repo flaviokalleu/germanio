@@ -355,8 +355,13 @@ func (a *intentAPI) withStatus(dst, src map[string]any) map[string]any {
 
 // conclude records a result; repeating it, or concluding finished work, changes nothing.
 func (a *intentAPI) conclude(ctx *interp.Context, w *ast.Entity, row map[string]any, result string) error {
+	return a.concludeWith(ctx, w, row, result, true)
+}
+
+// concludeWith: retryGrace=false ends the token in the same update (expired leases).
+func (a *intentAPI) concludeWith(ctx *interp.Context, w *ast.Entity, row map[string]any, result string, retryGrace bool) error {
 	st := toStr(row["estado"])
-	grace := stamp(time.Now().Add(remoteLease())) // the token only answers retries until then
+	var grace any = stamp(time.Now().Add(remoteLease())) // the token only answers retries until then
 	switch {
 	case st == w.Remote.Canceled:
 		// acknowledging a cancellation: the token only answers retries now
@@ -368,6 +373,9 @@ func (a *intentAPI) conclude(ctx *interp.Context, w *ast.Entity, row map[string]
 		return nil // the executor cannot cancel; only people can
 	}
 	change := map[string]any{"estado": result, "terminado_em": now(), "reserva_ate": grace}
+	if !retryGrace {
+		change["reserva_ate"], change["token_execucao"] = nil, nil
+	}
 	if t0 := parseStamp(toStr(row["iniciado_em"])); !t0.IsZero() {
 		change["duracao"] = time.Since(t0).Seconds()
 	}
@@ -403,15 +411,13 @@ func (a *intentAPI) expire(clock time.Time) {
 			case st != stRunning:
 			case !started.IsZero() && clock.Sub(started) > remoteLimit():
 				a.note(ctx, w, row, "tempo limite esgotado")
-				a.conclude(ctx, w, a.reload(ctx, w, row), stFailed)
-				a.revoke(ctx, w, row)
+				a.concludeWith(ctx, w, a.reload(ctx, w, row), stFailed, false)
 			case !until.IsZero() && clock.After(until):
 				tries := int(asNumber(row["tentativas"])) + 1
 				a.note(ctx, w, row, "reserva expirada: o executor parou de responder")
 				if tries >= remoteAttempts {
 					a.in.Op(ctx, w.Singular, "atualizar", row["id"], map[string]any{"tentativas": tries})
-					a.conclude(ctx, w, a.reload(ctx, w, row), stFailed)
-					a.revoke(ctx, w, row) // an expired lease ends the token at once, no grace
+					a.concludeWith(ctx, w, a.reload(ctx, w, row), stFailed, false) // an expired lease ends the token at once
 					continue
 				}
 				a.dbOf(ctx).AtualizarOnde(w.Singular, banco.Consulta{Filtros: map[string]any{"id": row["id"], "estado": stRunning}},
@@ -419,11 +425,6 @@ func (a *intentAPI) expire(clock time.Time) {
 			}
 		}
 	}
-}
-
-// revoke ends a work's token immediately.
-func (a *intentAPI) revoke(ctx *interp.Context, w *ast.Entity, row map[string]any) {
-	a.in.Op(ctx, w.Singular, "atualizar", row["id"], map[string]any{"token_execucao": nil, "reserva_ate": nil})
 }
 
 func (a *intentAPI) reload(ctx *interp.Context, w *ast.Entity, row map[string]any) map[string]any {
