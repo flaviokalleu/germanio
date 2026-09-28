@@ -61,3 +61,33 @@ func TestDataSemHora(t *testing.T) {
 		t.Fatalf("datas: %v", got)
 	}
 }
+
+// A log grows by appending chunks; a chunk written for an outdated length
+// is refused, so two writers never interleave.
+func TestAnexarTexto(t *testing.T) {
+	t.Setenv("GERMANIO_SQLITE", filepath.Join(t.TempDir(), "t.db"))
+	m := &ast.Model{Name: "job", Fields: []*ast.Field{{Name: "log", Type: ast.FieldTextoLongo}}}
+	b, err := Abrir(&ast.DatabaseConfig{Driver: "sqlite"}, "t", []*ast.Model{m})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer b.Fechar()
+	row, err := b.CriarMapa("job", map[string]any{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	id := row["id"].(int64)
+	for i, chunk := range []string{"linha 1\n", "linha 2\n"} {
+		ok, err := b.AnexarTexto("job", id, "log", chunk, i*8)
+		if err != nil || !ok {
+			t.Fatalf("anexo %d: %v %v", i, ok, err)
+		}
+	}
+	if ok, _ := b.AnexarTexto("job", id, "log", "atrasado\n", 8); ok {
+		t.Fatal("um pedaço para um tamanho antigo foi aceito")
+	}
+	got, _ := b.Buscar("job", id)
+	if got["log"] != "linha 1\nlinha 2\n" {
+		t.Fatalf("log: %q", got["log"])
+	}
+}

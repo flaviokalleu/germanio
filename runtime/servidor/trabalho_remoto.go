@@ -339,8 +339,14 @@ func (a *intentAPI) appendLog(ctx *interp.Context, w *ast.Entity, row map[string
 	if len(current)+len(text) > remoteMaxLog {
 		text = text[:max(0, remoteMaxLog-len(current))]
 	}
-	if _, err := a.in.Op(ctx, w.Singular, "atualizar", row["id"], map[string]any{"log": current + text}); err != nil {
+	// Append only the new chunk (rewriting the whole log costs the square of
+	// its size); a length that changed meanwhile refuses the chunk.
+	ok, err := a.dbOf(ctx).AnexarTexto(w.Singular, int64(asNumber(row["id"])), "log", text, len(current))
+	if err != nil {
 		return nil, err
+	}
+	if !ok {
+		return out, nil
 	}
 	out["aceito"], out["tamanho"] = true, float64(len(current)+len(text))
 	return a.withStatus(out, a.renew(ctx, w, row)), nil

@@ -517,15 +517,26 @@ func (x *executor) run(step *ast.Entity, job map[string]any) {
 
 	log := &logBuffer{}
 	done := make(chan struct{})
-	go func() { // stream the log while the job runs
+	go func() { // stream the log while the job runs, appending only what grew
 		t := time.NewTicker(time.Second)
 		defer t.Stop()
+		written := 0
 		for {
 			select {
 			case <-done:
 				return
 			case <-t.C:
-				a.in.Op(ctx, step.Singular, "atualizar", id, map[string]any{"log": log.String()})
+				text := log.String()
+				if len(text) == written {
+					continue
+				}
+				if ok, err := a.s.DB.AnexarTexto(step.Singular, int64(asNumber(id)), "log", text[written:], written); err == nil && ok {
+					written = len(text)
+				} else {
+					// the stored log changed meanwhile: write it whole once
+					a.in.Op(ctx, step.Singular, "atualizar", id, map[string]any{"log": text})
+					written = len(text)
+				}
 			}
 		}
 	}()

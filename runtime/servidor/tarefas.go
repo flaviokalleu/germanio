@@ -48,6 +48,9 @@ func (s *Servidor) tasks() *taskQueue {
 	if err != nil {
 		fmt.Printf("[germanio] fila de tarefas indisponível: %v\n", err)
 	}
+	// The queue is polled several times a second: the due tasks are found
+	// through an index, never by reading the whole table.
+	s.DB.DB.Exec(`CREATE INDEX IF NOT EXISTS idx_germanio_tarefas_devidas ON ` + tasksTable + ` (estado, proxima_em)`)
 	s.queue = q
 	s.onClose = append(s.onClose, func() { close(q.stop) })
 	go q.loop()
@@ -92,16 +95,35 @@ func (q *taskQueue) enqueue(ctx *interp.Context, tipo string, dados map[string]a
 func (q *taskQueue) loop() {
 	tick := time.NewTicker(250 * time.Millisecond)
 	defer tick.Stop()
+	clean := time.NewTicker(time.Hour)
+	defer clean.Stop()
+	q.cleanup(time.Now())
 	for {
 		select {
 		case <-q.stop:
 			return
 		case <-tick.C:
 		case <-q.wake:
+		case now := <-clean.C:
+			q.cleanup(now)
 		}
 		for q.runOne() {
 		}
 	}
+}
+
+// How long finished tasks are kept: done ones only briefly, failed ones
+// longer so a person can see why they failed.
+const (
+	keepDoneTasks   = 7 * 24 * time.Hour
+	keepFailedTasks = 30 * 24 * time.Hour
+)
+
+// cleanup removes old finished tasks: the queue table does not grow forever.
+func (q *taskQueue) cleanup(now time.Time) {
+	done := now.UTC().Add(-keepDoneTasks).Format(time.RFC3339Nano)
+	failed := now.UTC().Add(-keepFailedTasks).Format(time.RFC3339Nano)
+	q.s.DB.DB.Exec(fmt.Sprintf(`DELETE FROM %s WHERE (estado = 'concluida' AND criado_em < %s) OR (estado = 'morta' AND criado_em < %s)`, tasksTable, q.ph(1), q.ph(2)), done, failed)
 }
 
 // runOne claims the next due task (atomic update) and runs it.

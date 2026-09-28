@@ -652,3 +652,30 @@ func (b *Banco) AtualizarOnde(modelo string, c Consulta, dados map[string]any) (
 	}
 	return res.RowsAffected()
 }
+
+// AnexarTexto appends text to a text field without rewriting what is already
+// there (a job's log grows by small chunks: rewriting it every time costs the
+// square of its size). The append happens only if the stored text still has
+// length tamanho, so two writers never interleave; it reports whether it did.
+func (b *Banco) AnexarTexto(modelo string, id int64, campo, texto string, tamanho int) (bool, error) {
+	cols, err := b.columns(modelo)
+	if err != nil {
+		return false, err
+	}
+	if !cols[campo] {
+		return false, &ErrCampo{modelo, campo}
+	}
+	concat := "COALESCE(" + q(campo) + ", '') || " + b.ph(1)
+	length := "LENGTH(COALESCE(" + q(campo) + ", ''))"
+	if b.Driver == "mysql" {
+		concat = "CONCAT(COALESCE(" + q(campo) + ", ''), " + b.ph(1) + ")"
+		length = "CHAR_LENGTH(COALESCE(" + q(campo) + ", ''))"
+	}
+	res, err := b.x().Exec(fmt.Sprintf("UPDATE %s SET %s = %s, %s = CURRENT_TIMESTAMP WHERE %s = %s AND %s = %s",
+		q(modelo), q(campo), concat, q("atualizado_em"), q("id"), b.ph(2), length, b.ph(3)), texto, id, tamanho)
+	if err != nil {
+		return false, err
+	}
+	n, _ := res.RowsAffected()
+	return n == 1, nil
+}
