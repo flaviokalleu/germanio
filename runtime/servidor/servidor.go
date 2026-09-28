@@ -1325,15 +1325,10 @@ func (s *Servidor) handleExport(w http.ResponseWriter, r *http.Request, modelo s
 		return
 	}
 
-	items, err := s.DB.ListarTodos(modelo)
-	if err != nil {
-		s.jsonError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	model := s.DB.Models[modelo]
 	timestamp := time.Now().Format("2006-01-02")
 
+	// The rows stream in batches: exporting a big table never loads it whole.
 	switch format {
 	case "csv":
 		filename := fmt.Sprintf("%s_%s.csv", modelo, timestamp)
@@ -1344,7 +1339,6 @@ func (s *Servidor) handleExport(w http.ResponseWriter, r *http.Request, modelo s
 		// Write BOM for Excel UTF-8 compatibility
 		w.Write([]byte{0xEF, 0xBB, 0xBF})
 
-		// Header row
 		headers := []string{"id"}
 		for _, f := range model.Fields {
 			headers = append(headers, strings.ToLower(f.Name))
@@ -1352,29 +1346,47 @@ func (s *Servidor) handleExport(w http.ResponseWriter, r *http.Request, modelo s
 		headers = append(headers, "criado_em", "atualizado_em")
 		writer.Write(headers)
 
-		// Data rows
-		for _, item := range items {
-			var row []string
-			for _, h := range headers {
-				val := ""
-				if v, ok := item[h]; ok && v != nil {
-					val = fmt.Sprintf("%v", v)
-					// Prevent CSV formula injection
-					if len(val) > 0 && (val[0] == '=' || val[0] == '+' || val[0] == '-' || val[0] == '@') {
-						val = "'" + val
+		s.DB.ListarEmLotes(modelo, 1000, func(items []map[string]any) error {
+			for _, item := range items {
+				var row []string
+				for _, h := range headers {
+					val := ""
+					if v, ok := item[h]; ok && v != nil {
+						val = fmt.Sprintf("%v", v)
+						// Prevent CSV formula injection (OWASP: = + - @ tab CR)
+						if len(val) > 0 && strings.ContainsRune("=+-@\t\r", rune(val[0])) {
+							val = "'" + val
+						}
 					}
+					row = append(row, val)
 				}
-				row = append(row, val)
+				writer.Write(row)
 			}
-			writer.Write(row)
-		}
+			writer.Flush()
+			return writer.Error()
+		})
 		writer.Flush()
 
 	default: // json
 		filename := fmt.Sprintf("%s_%s.json", modelo, timestamp)
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename))
-		json.NewEncoder(w).Encode(items)
+		w.Write([]byte("["))
+		first := true
+		enc := json.NewEncoder(w)
+		s.DB.ListarEmLotes(modelo, 1000, func(items []map[string]any) error {
+			for _, item := range items {
+				if !first {
+					w.Write([]byte(","))
+				}
+				first = false
+				if err := enc.Encode(item); err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+		w.Write([]byte("]\n"))
 	}
 }
 

@@ -755,6 +755,56 @@ func (b *Banco) ContarPorStatus(modelo string) (map[string]int64, error) {
 	return result, nil
 }
 
+// ListarEmLotes calls fn with the rows of modelo in batches of at most
+// lote, newest first, ignoring soft-deleted records. Memory stays at one
+// batch whatever the size of the table (exports stream instead of loading
+// everything); each batch continues after the last id (keyset), so late
+// batches cost the same as the first.
+func (b *Banco) ListarEmLotes(modelo string, lote int, fn func([]map[string]any) error) error {
+	model, ok := b.Models[modelo]
+	if !ok {
+		return fmt.Errorf("modelo '%s' não encontrado", modelo)
+	}
+	if lote <= 0 {
+		lote = 1000
+	}
+	var last any
+	for {
+		var where []string
+		var args []any
+		if model.SoftDelete {
+			where = append(where, q("deletado_em")+" IS NULL")
+		}
+		if last != nil {
+			where = append(where, q("id")+" < "+b.ph(len(args)+1))
+			args = append(args, last)
+		}
+		whereSQL := ""
+		if len(where) > 0 {
+			whereSQL = " WHERE " + strings.Join(where, " AND ")
+		}
+		rows, err := b.x().Query(fmt.Sprintf("SELECT * FROM %s%s ORDER BY %s DESC LIMIT %d", q(modelo), whereSQL, q("id"), lote), args...)
+		if err != nil {
+			return err
+		}
+		batch, err := scanRows(rows)
+		rows.Close()
+		if err != nil {
+			return err
+		}
+		if len(batch) == 0 {
+			return nil
+		}
+		if err := fn(batch); err != nil {
+			return err
+		}
+		if len(batch) < lote {
+			return nil
+		}
+		last = batch[len(batch)-1]["id"]
+	}
+}
+
 // ListarTodos returns all rows (for export), ignoring soft-deleted records.
 func (b *Banco) ListarTodos(modelo string) ([]map[string]any, error) {
 	model, ok := b.Models[modelo]

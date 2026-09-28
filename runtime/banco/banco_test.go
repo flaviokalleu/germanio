@@ -120,3 +120,37 @@ func TestConsultaOu(t *testing.T) {
 		t.Fatalf("grupo vazio: %d", n)
 	}
 }
+
+// ListarEmLotes reads every row exactly once, newest first, one batch at a
+// time.
+func TestListarEmLotes(t *testing.T) {
+	t.Setenv("GERMANIO_SQLITE", filepath.Join(t.TempDir(), "t.db"))
+	m := &ast.Model{Name: "linha", Fields: []*ast.Field{{Name: "n", Type: ast.FieldInteiro}}}
+	b, err := Abrir(&ast.DatabaseConfig{Driver: "sqlite"}, "t", []*ast.Model{m})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer b.Fechar()
+	tx, _ := b.DB.Begin()
+	for i := 1; i <= 2500; i++ {
+		tx.Exec(`INSERT INTO linha (n) VALUES (?)`, i)
+	}
+	tx.Commit()
+	var seen []int64
+	batches := 0
+	err = b.ListarEmLotes("linha", 1000, func(rows []map[string]any) error {
+		batches++
+		for _, r := range rows {
+			seen = append(seen, r["id"].(int64))
+		}
+		return nil
+	})
+	if err != nil || batches != 3 || len(seen) != 2500 || seen[0] != 2500 || seen[2499] != 1 {
+		t.Fatalf("lotes %d, linhas %d, primeiro %v, último %v, erro %v", batches, len(seen), seen[0], seen[len(seen)-1], err)
+	}
+	for i := 1; i < len(seen); i++ {
+		if seen[i] >= seen[i-1] {
+			t.Fatalf("ordem quebrada em %d", i)
+		}
+	}
+}

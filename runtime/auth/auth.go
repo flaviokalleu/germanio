@@ -130,6 +130,17 @@ func (a *Auth) Registrar(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+var (
+	dummyOnce sync.Once
+	dummy     []byte
+)
+
+// dummyHash is a bcrypt hash at the cost real passwords use.
+func dummyHash() []byte {
+	dummyOnce.Do(func() { dummy, _ = bcrypt.GenerateFromPassword([]byte("germanio-tempo-igual"), bcrypt.DefaultCost) })
+	return dummy
+}
+
 // protectedField: fields a person never sets for themselves.
 func protectedField(name string) bool {
 	switch strings.ToLower(name) {
@@ -191,6 +202,9 @@ func (a *Auth) Login(w http.ResponseWriter, r *http.Request) {
 	).Scan(&id, &storedHash, &role)
 
 	if err == sql.ErrNoRows {
+		// Spend the same time as a wrong password: the answer's timing must
+		// not reveal which logins exist.
+		bcrypt.CompareHashAndPassword(dummyHash(), []byte(pass))
 		jsonErr(w, "Credenciais inválidas", 401)
 		return
 	}
