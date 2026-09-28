@@ -92,12 +92,18 @@ func TestInterfaceWeb(t *testing.T) {
 	}
 
 	// issue com título perigoso: o HTML é escapado
-	code, page, at = b.submit("/projetos/1/issues/novo", url.Values{"_csrf": {csrf}, "_campos": {"1"}, "titulo": {"<script>alert(1)</script>"}})
+	code, page, at = b.submit("/projetos/1/issues/novo", url.Values{"_csrf": {csrf}, "_campos": {"1"}, "titulo": {"<script>alert(1)</script>"}, "descricao": {"Passos:\n\n1. **abrir** `app`\n\n<img src=x onerror=alert(2)> [x](javascript:alert(3))"}})
 	if code != 200 || !strings.Contains(at, "/projetos/1/issues/1") {
 		t.Fatalf("criar issue: %d %s\n%s", code, at, page)
 	}
 	if strings.Contains(page, "<script>alert(1)") || !strings.Contains(page, "&lt;script&gt;") {
 		t.Fatalf("título não foi escapado")
+	}
+	// descrição formatada: Markdown vira HTML, HTML e links perigosos não passam
+	// (o texto original continua, escapado, no formulário de edição)
+	rendered, _, _ := strings.Cut(page[strings.Index(page, `<div class="texto">`)+1:], "</div>")
+	if !strings.Contains(rendered, "<strong>abrir</strong>") || !strings.Contains(rendered, "<code>app</code>") || strings.Contains(rendered, "onerror") || strings.Contains(rendered, "javascript:") || strings.Contains(page, "<img src=x") {
+		t.Fatalf("descrição formatada:\n%s", page)
 	}
 	if !strings.Contains(page, `action="/projetos/1/issues/1/acao/fechar"`) || strings.Contains(page, "acao/reabrir") {
 		t.Fatalf("botões de estado da issue aberta:\n%s", page)
@@ -107,12 +113,12 @@ func TestInterfaceWeb(t *testing.T) {
 		t.Fatalf("fechar pela interface:\n%s", page)
 	}
 	// comentário pela interface
-	code, page, _ = b.submit("/projetos/1/issues/1/comentarios/novo", url.Values{"_csrf": {csrf}, "_campos": {"1"}, "texto": {"primeiro comentário"}})
+	code, page, _ = b.submit("/projetos/1/issues/1/comentarios/novo", url.Values{"_csrf": {csrf}, "_campos": {"1"}, "texto": {"primeiro **comentário**"}})
 	if code != 200 {
 		t.Fatalf("comentar: %d\n%s", code, page)
 	}
 	_, page, _ = b.get("/projetos/1/issues/1")
-	if !strings.Contains(page, "primeiro comentário") {
+	if !strings.Contains(page, "primeiro <strong>comentário</strong>") {
 		t.Fatalf("comentário não aparece na issue")
 	}
 

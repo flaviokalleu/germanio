@@ -9,7 +9,7 @@ projeto tem
 issue tem
     numero por projeto
     titulo obrigatório até 255
-    descrição
+    descrição formatada
     autor
     labels
     responsaveis
@@ -24,7 +24,7 @@ issue pode
 
 comentario tem
     autor
-    texto obrigatório
+    texto obrigatório e formatado
 
 label tem
     nome obrigatório

@@ -7,7 +7,7 @@ projeto tem merge requests
 merge request tem
     numero por projeto
     titulo obrigatório até 255
-    descrição
+    descrição formatada
     autor
     revisores
     origem: branch

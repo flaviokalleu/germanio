@@ -338,6 +338,27 @@ func display(v any) string {
 	return s
 }
 
+// formattedBody: a record without a title whose main text is formatted
+// (a comment) is shown whole, as safe Markdown, instead of a truncated title.
+func formattedBody(e *ast.Entity, row map[string]any) (template.HTML, bool) {
+	for _, k := range []string{"titulo", "nome", "name", "title", "caminho_completo", "username", "email"} {
+		if v, ok := row[k]; ok && v != nil && fmt.Sprint(v) != "" {
+			return "", false
+		}
+	}
+	for _, f := range e.Model.Fields {
+		if f.Type == ast.FieldTextoLongo && !f.Hidden && !f.System {
+			if !f.Formatted {
+				return "", false
+			}
+			if t := toStr(row[strings.ToLower(f.Name)]); t != "" {
+				return template.HTML(interp.Markdown(t)), true
+			}
+		}
+	}
+	return "", false
+}
+
 func titleOf(e *ast.Entity, row map[string]any) string {
 	for _, k := range []string{"titulo", "nome", "name", "title", "caminho_completo", "username", "email"} {
 		if v, ok := row[k]; ok && v != nil && fmt.Sprint(v) != "" {
@@ -368,6 +389,7 @@ type cell struct {
 type tableRow struct {
 	Href  string
 	Title string
+	Body  template.HTML // full formatted text of records without a title (comments)
 	Cells []cell
 }
 type tableData struct {
@@ -390,6 +412,9 @@ func (ps *pageSite) table(e *ast.Entity, rows []any, base string) template.HTML 
 			ref = display(n)
 		}
 		tr := tableRow{Href: base + "/" + url.PathEscape(ref), Title: titleOf(e, row)}
+		if body, ok := formattedBody(e, row); ok {
+			tr.Title, tr.Body = e.Label+" "+display(row["id"]), body
+		}
 		for _, c := range cols {
 			tr.Cells = append(tr.Cells, cell{Text: display(row[strings.ToLower(c.Name)]), Badge: strings.ToLower(c.Name) == "estado" || c.Type == ast.FieldVisibilidade})
 		}
@@ -1262,7 +1287,7 @@ var headingTpl = tpl(`<h1>{{.}}</h1>`)
 var sectionTpl = tpl(`<h2>{{.Title}}{{if .Href}}<a href="{{.Href}}">ver tudo</a>{{end}}</h2>`)
 var emptyTpl = tpl(`<div class="vazio">{{.}}</div>`)
 var tableTpl = tpl(`{{if .Rows}}<div class="tabela"><table><thead><tr>{{range .Heads}}<th>{{.}}</th>{{end}}</tr></thead><tbody>
-{{range .Rows}}<tr><td><a href="{{.Href}}">{{.Title}}</a></td>{{range .Cells}}<td>{{if .Badge}}<span class="selo">{{.Text}}</span>{{else}}{{.Text}}{{end}}</td>{{end}}</tr>{{end}}
+{{range .Rows}}<tr><td><a href="{{.Href}}">{{.Title}}</a>{{if .Body}}<div class="texto">{{.Body}}</div>{{end}}</td>{{range .Cells}}<td>{{if .Badge}}<span class="selo">{{.Text}}</span>{{else}}{{.Text}}{{end}}</td>{{end}}</tr>{{end}}
 </tbody></table></div>{{else}}<div class="vazio">{{.Empty}}</div>{{end}}`)
 var formTpl = tpl(`<form class="{{if .Title}}caixa{{end}}" method="post" action="{{.Action}}">{{if .Title}}<h3>{{.Title}}</h3>{{end}}
 <input type="hidden" name="_csrf" value="{{.CSRF}}"><input type="hidden" name="_campos" value="1">
