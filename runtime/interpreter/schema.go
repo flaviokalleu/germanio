@@ -129,6 +129,7 @@ func (interp *Interpreter) prepareWrite(c *Call, m *ast.Model, data map[string]a
 	reveal := map[string]any{}
 	errs := fieldErrors{}
 	db := interp.dbOf(c.Ctx())
+	var current map[string]any // the record before this update, read on demand
 	for k, v := range data {
 		f := fieldByName(m, k)
 		if f == nil {
@@ -190,7 +191,18 @@ func (interp *Interpreter) prepareWrite(c *Call, m *ast.Model, data map[string]a
 			continue
 		}
 		if f.Type == ast.FieldLista {
-			list, msg := interp.checkList(db, f, v)
+			list, msg := interp.checkList(db, f, v, func(k string) any {
+				if x, ok := out[k]; ok {
+					return x
+				}
+				if !create {
+					if current == nil {
+						current, _ = db.BuscarRegistro(strings.ToLower(m.Name), id)
+					}
+					return current[k]
+				}
+				return nil
+			}, m)
 			if msg != "" {
 				errs.add(f.Name, msg)
 				continue
@@ -438,7 +450,20 @@ func secretActive(m *ast.Model, row map[string]any) bool {
 
 // checkList normalizes a list field ("a, b" or [..]) and validates that
 // referenced records exist. It is stored as JSON text.
-func (interp *Interpreter) checkList(db *banco.Banco, f *ast.Field, v any) (string, string) {
+// checkList validates a list of references. Items that belong to a parent
+// the record also has (labels of the project an issue is in) must share it:
+// anything else is treated as inexistent, so nothing of other records leaks.
+func (interp *Interpreter) checkList(db *banco.Banco, f *ast.Field, v any, own func(string) any, m *ast.Model) (string, string) {
+	var shared []string
+	if tm := interp.modelAST(f.ListOf); tm != nil && f.ListOf != "texto" && f.ListOf != "numero" {
+		for _, tf := range tm.Fields {
+			if tf.Reference != "" && tf.Reference != f.ListOf {
+				if rf := fieldByName(m, tf.Name); rf != nil && rf.Reference == tf.Reference {
+					shared = append(shared, strings.ToLower(tf.Name))
+				}
+			}
+		}
+	}
 	var items []any
 	switch x := v.(type) {
 	case []any:
@@ -465,8 +490,14 @@ func (interp *Interpreter) checkList(db *banco.Banco, f *ast.Field, v any) (stri
 			if !ok {
 				return "", "must contain ids"
 			}
-			if row, _ := db.BuscarRegistro(f.ListOf, int64(id)); row == nil {
+			row, _ := db.BuscarRegistro(f.ListOf, int64(id))
+			if row == nil {
 				return "", "must exist"
+			}
+			for _, k := range shared {
+				if toString(row[k]) != toString(own(k)) {
+					return "", "must exist"
+				}
 			}
 			sv = toString(id)
 		}

@@ -109,3 +109,17 @@ func TestIssuesPrivadasNaoVazam(t *testing.T) {
 		t.Fatalf("dona deve encontrar sua issue: %v", l)
 	}
 }
+
+// Uma issue só usa labels do próprio projeto: labels de outro projeto
+// (inclusive privado) são tratados como inexistentes.
+func TestLabelsDeOutroProjetoNaoEntram(t *testing.T) {
+	base := gitlab(t)
+	ada := signup(t, base, "ada")
+	eve := signup(t, base, "eve")
+	priv := ada.must("POST", "/api/v4/projects", map[string]any{"name": "Secret", "path": "secret"}, 201)
+	secret := ada.must("POST", "/api/v4/projects/"+id(priv)+"/labels", map[string]any{"name": "segredo"}, 201)
+	mine := eve.must("POST", "/api/v4/projects", map[string]any{"name": "Mine", "path": "mine"}, 201)
+	eve.must("POST", "/api/v4/projects/"+id(mine)+"/issues", map[string]any{"title": "x", "labels": []any{secret["id"]}}, 400)
+	i := eve.must("POST", "/api/v4/projects/"+id(mine)+"/issues", map[string]any{"title": "y"}, 201)
+	eve.must("PUT", "/api/v4/projects/"+id(mine)+"/issues/"+jsonNum(i["iid"]), map[string]any{"labels": []any{secret["id"]}}, 400)
+}
