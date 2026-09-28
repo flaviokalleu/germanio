@@ -37,7 +37,7 @@ type Intent struct {
 	RemoteExecutors   []*RemoteExecutorDecl
 	Translators       map[string]string // traduza <ponto> com <função> (integracoes/)
 	InitialFiles      []*InitialFileDecl
-	ReservedAddresses []string // endereços reservados
+	ReservedAddresses []string       // endereços reservados
 	MinRoles          []*CreatorRole // todo grupo precisa ter pelo menos um owner
 }
 
