@@ -17,6 +17,8 @@ vocabulário da integração
     branch_padrao é "default_branch"
     arquivado é "archived"
     iniciar_repositorio é "initialize_with_readme"
+    busca é "search"
+    tipo_busca é "scope"
     inicio é "start_date"
     prazo é "due_date"
     milestone_id é "milestone_id"

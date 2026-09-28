@@ -1097,6 +1097,16 @@ func ResolveIntent(prog *ast.Program) error {
 	}
 
 	app.ReservedAddresses = in.ReservedAddresses
+	for _, name := range in.GlobalSearch {
+		e, err := r.entity(name, diagnostics.Position{})
+		if err != nil {
+			return fmt.Errorf("tenha busca geral: %w", err)
+		}
+		if len(e.Search) == 0 {
+			return fmt.Errorf("tenha busca geral em %s: declare também permita pesquisar %s", e.Plural, e.Plural)
+		}
+		app.GlobalSearch = append(app.GlobalSearch, e.Singular)
+	}
 	if in.InitialAdmin != "" {
 		if app.LoginEntity == "" {
 			return fmt.Errorf("tenha administrador inicial: declare antes tenha login")

@@ -38,3 +38,17 @@ func TestEstadosETransicoes(t *testing.T) {
 		t.Fatalf("reabrir: %v", r)
 	}
 }
+
+// Busca geral fora do GitLab: o tipo escolhe a coleção; tipo desconhecido é recusado.
+func TestBuscaGeralGenerica(t *testing.T) {
+	_, ana := loadApp(t, "testdata/intencao/chamados.ge")
+	ana.expect("POST", "/cadastro", map[string]any{"nome": "Ana", "email": "ana@x.com", "senha": "senha-da-ana"}, 201)
+	ana.csrf = csrfFromCookie(t, ana)
+	ana.expect("POST", "/_ge/api/chamados", map[string]any{"titulo": "Impressora sem tinta"}, 201)
+	ana.expect("POST", "/_ge/api/chamados", map[string]any{"titulo": "Rede lenta"}, 201)
+	_, _, raw := ana.do("GET", "/_ge/api/busca?tipo_busca=chamados&q=impressora", nil)
+	if l := decodeList(t, raw); len(l) != 1 || l[0]["titulo"] != "Impressora sem tinta" {
+		t.Fatalf("busca: %s", raw)
+	}
+	ana.expect("GET", "/_ge/api/busca?tipo_busca=pedidos&q=x", nil, 400)
+}

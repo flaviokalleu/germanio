@@ -47,6 +47,7 @@ func (s *Servidor) registerIntent(mux *routeMux) error {
 	s.intent = a
 	s.registerTaskModule()
 	s.tasks().handle("entrega", a.deliver)
+	a.mountSearch(mux)
 	a.registerRemoteModule()
 	a.startLeases()
 	for _, name := range app.Order {
@@ -1490,4 +1491,46 @@ func (a *intentAPI) manualRun(w http.ResponseWriter, r *http.Request, ctx *inter
 		return
 	}
 	a.json(w, 201, serializeFor(ctx, a.in, atual, e, row, false), nil)
+}
+
+// mountSearch serves `tenha busca geral em …`: one place to search several
+// kinds of data. The kind (tipo) picks the collection and the request is
+// answered by that collection's own listing — visibility, search fields,
+// filters and pages are exactly the same.
+func (a *intentAPI) mountSearch(mux *routeMux) {
+	if len(a.app.GlobalSearch) == 0 {
+		return
+	}
+	for _, extern := range []bool{false, true} {
+		p := *a
+		p.extern = extern
+		base := "/_ge/api/busca"
+		if extern {
+			if a.app.Integration == "" {
+				continue
+			}
+			base = a.app.Integration + "/" + p.ext("busca")
+		}
+		pp := &p
+		mux.HandleFunc("GET "+base, func(w http.ResponseWriter, r *http.Request) {
+			kind := r.URL.Query().Get(pp.ext("tipo_busca"))
+			var names []string
+			for _, n := range pp.app.GlobalSearch {
+				e := pp.app.Entities[n]
+				name := e.Plural
+				if pp.extern && e.Integrate != "" {
+					name = e.Integrate
+				}
+				names = append(names, name)
+				if kind == name {
+					pp.serve(w, r, []*ast.Entity{e}, "listar", "")
+					return
+				}
+			}
+			pp.fail(w, 400, map[string]string{
+				"pt": "escolha o tipo de busca: " + strings.Join(names, ", "),
+				"en": pp.ext("tipo_busca") + " does not have a valid value (" + strings.Join(names, ", ") + ")",
+			}[pp.app.Messages])
+		})
+	}
 }

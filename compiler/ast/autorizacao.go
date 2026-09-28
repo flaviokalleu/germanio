@@ -16,6 +16,8 @@ type App struct {
 	MemberModel string // model holding memberships (polymorphic)
 	Messages    string // "pt" (default) or "en"
 	Vocabulary  map[string]string
+	// GlobalSearch: entities searched together (`tenha busca geral em …`).
+	GlobalSearch []string
 	// InitialAdmin: `tenha administrador inicial "root"` — login name of the
 	// first administrator, created when nobody exists yet.
 	InitialAdmin string

@@ -103,7 +103,7 @@ Escopo núcleo v1 = features marcadas **[N]** (fluxos 1–5 da missão + testes 
 | NT-02 | Eventos de atividade | feed de atividade | activity | `/events` | events | leitura | | | NOT_STARTED | |
 | NT-03 | E-mail de notificação | | | | | | email | PARTIAL | NOT_STARTED | |
 | AD-01 | Admin dashboard | contagens, usuários, projetos | `/admin` | `/admin` | | admin | | | NOT_STARTED | |
-| SR-01 | Busca global | projetos/issues/MRs | search | `/search` | | leitura | | | NOT_STARTED | |
+| SR-01 | Busca global | projetos/issues/MRs | search | `/search` | | leitura | | | PASS | TestBuscaGeral (API; página de busca ainda não) |
 | UP-01 | Uploads em markdown | `/uploads` | | | uploads | | | PARTIAL (upload genérico existe) | NOT_STARTED | |
 
 ## Fora do núcleo (classificado, não omitido)

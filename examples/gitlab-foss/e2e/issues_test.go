@@ -173,3 +173,28 @@ func TestMilestones(t *testing.T) {
 		t.Fatalf("reabrir milestone: %v", r)
 	}
 }
+
+// Busca geral: um lugar, vários tipos; cada resultado respeita quem pode ver.
+func TestBuscaGeral(t *testing.T) {
+	base := gitlab(t)
+	ada := signup(t, base, "ada")
+	eve := signup(t, base, "eve")
+	pub := ada.must("POST", "/api/v4/projects", map[string]any{"name": "Farol Público", "path": "farol", "visibility": "public"}, 201)
+	priv := ada.must("POST", "/api/v4/projects", map[string]any{"name": "Farol Secreto", "path": "farol-secreto"}, 201)
+	ada.must("POST", "/api/v4/projects/"+id(pub)+"/issues", map[string]any{"title": "farol quebrado"}, 201)
+	ada.must("POST", "/api/v4/projects/"+id(priv)+"/issues", map[string]any{"title": "farol secreto"}, 201)
+
+	if l := ada.list("/api/v4/search?scope=issues&search=farol"); len(l) != 2 {
+		t.Fatalf("Ada vê as duas issues: %v", l)
+	}
+	if l := eve.list("/api/v4/search?scope=issues&search=farol"); len(l) != 1 || l[0].(map[string]any)["title"] != "farol quebrado" {
+		t.Fatalf("Eve só vê a pública: %v", l)
+	}
+	if l := eve.list("/api/v4/search?scope=projects&search=farol"); len(l) != 1 {
+		t.Fatalf("projetos visíveis para Eve: %v", l)
+	}
+	if l := ada.list("/api/v4/search?scope=merge_requests&search=farol"); len(l) != 0 {
+		t.Fatalf("nenhum merge request: %v", l)
+	}
+	ada.must("GET", "/api/v4/search?scope=wikis&search=farol", nil, 400)
+}

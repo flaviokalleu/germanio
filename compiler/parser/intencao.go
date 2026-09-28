@@ -530,6 +530,14 @@ func splitItems(t []lexer.Token) [][]string {
 
 func (p *Parser) parseTenha(head dline, body []dline) error {
 	in := p.intent()
+	// tenha busca geral em projetos, issues e merge requests
+	if w := wordsOf(head.toks); len(w) >= 5 && w[1] == "busca" && w[2] == "geral" && w[3] == "em" {
+		for _, it := range splitItems(head.toks[4:]) {
+			name, _ := phrase(it)
+			in.GlobalSearch = append(in.GlobalSearch, name)
+		}
+		return nil
+	}
 	// tenha administrador inicial "root"
 	if w := wordsOf(head.toks); len(w) >= 3 && w[1] == "administrador" && w[2] == "inicial" {
 		if len(head.toks) != 4 || head.toks[3].Type != lexer.TokenString {

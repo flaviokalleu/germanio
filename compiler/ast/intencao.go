@@ -39,6 +39,7 @@ type Intent struct {
 	InitialFiles      []*InitialFileDecl
 	ReservedAddresses []string          // endereços reservados
 	InitialAdmin      string            // tenha administrador inicial "root"
+	GlobalSearch      []string          // tenha busca geral em projetos, issues
 	ReadOnly          []*VisibilityRule // projeto arquivado é somente leitura (Flag; Who unused)
 	MinRoles          []*CreatorRole    // todo grupo precisa ter pelo menos um owner
 }
@@ -185,6 +186,7 @@ func MergeIntent(a, b *Intent) *Intent {
 	a.InitialFiles = append(a.InitialFiles, b.InitialFiles...)
 	a.ReservedAddresses = append(a.ReservedAddresses, b.ReservedAddresses...)
 	a.ReadOnly = append(a.ReadOnly, b.ReadOnly...)
+	a.GlobalSearch = append(a.GlobalSearch, b.GlobalSearch...)
 	a.Visibility = append(a.Visibility, b.Visibility...)
 	if a.Vocabulary == nil {
 		a.Vocabulary = b.Vocabulary
