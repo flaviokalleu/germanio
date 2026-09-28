@@ -484,6 +484,21 @@ type executor interface {
 	QueryRow(query string, args ...any) *sql.Row
 }
 
+// Travar locks a row until the current transaction ends, so invariants that
+// read before writing (the last owner) cannot race. SQLite needs nothing:
+// its transactions take the write lock up front (_txlock=immediate).
+func (b *Banco) Travar(modelo string, id any) error {
+	if b.tx == nil || b.Driver == "sqlite" || b.Driver == "" {
+		return nil
+	}
+	var x any
+	err := b.tx.QueryRow(fmt.Sprintf("SELECT %s FROM %s WHERE %s = %s FOR UPDATE", q("id"), q(modelo), q("id"), b.ph(1)), normalizeArg(id)).Scan(&x)
+	if err == sql.ErrNoRows {
+		return nil
+	}
+	return err
+}
+
 // Executar runs a statement on the current transaction (or the pool).
 func (b *Banco) Executar(query string, args ...any) (sql.Result, error) {
 	return b.x().Exec(query, args...)

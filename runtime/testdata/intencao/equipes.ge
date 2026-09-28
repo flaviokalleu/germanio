@@ -1,0 +1,57 @@
+crie sistema Equipes
+
+tenha usuarios, times, projetos, membros
+
+cada usuario tem
+    nome obrigatório
+    email obrigatório e único
+    senha
+    admin começa com falso
+
+tenha login
+tenha cadastro
+login usa email
+
+tenha papeis
+    colaborador 10
+    dono 50
+
+time tem
+    nome obrigatório
+    membros com papel
+
+projeto tem
+    nome obrigatório
+    membros com papel
+
+projeto pertence a time opcional
+projeto herda membros do time
+
+quem cria time vira dono
+quem cria projeto vira dono
+todo time precisa ter pelo menos um dono
+todo projeto precisa ter pelo menos um dono
+
+usuario pode
+    ver usuarios
+    criar times
+    criar projetos
+
+colaborador pode
+    ver times
+    ver projetos
+    ver membros
+    criar projetos
+
+dono pode
+    administrar time
+    administrar projeto
+
+membro pode sair do time
+membro pode sair do projeto
+
+somente administrador pode excluir usuarios
+
+ao iniciar
+    se usuario.contar() == 0
+        usuario.criar({nome: "Admin", email: "admin@equipes.test", senha: "admin12345", admin: verdadeiro})

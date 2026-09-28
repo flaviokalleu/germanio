@@ -976,6 +976,9 @@ func ResolveIntent(prog *ast.Program) error {
 			rule.MinRole = "administrador"
 		case app.LoginEntity != "" && (role == app.LoginEntity || role == app.Entities[app.LoginEntity].Plural):
 			rule.SignedIn = true
+		case app.Level(role) > 0:
+			// a declared role wins over the owner words below (`tenha papeis … dono 50`)
+			rule.MinRole = role
 		case role == "autor" || role == "dono" || role == "criador":
 			rule.SignedIn, rule.Own = true, true
 		case role == "membro" || role == "membros":
@@ -983,8 +986,6 @@ func ResolveIntent(prog *ast.Program) error {
 				return r.errAt(g.Pos, "membro pode… exige tenha papeis")
 			}
 			rule.MinRole = app.Roles[0].Name
-		case app.Level(role) > 0:
-			rule.MinRole = role
 		default:
 			return r.errAt(g.Pos, "papel %q não declarado. Use tenha papeis ou um papel existente (administrador, todos, %s)", role, app.LoginEntity)
 		}

@@ -232,6 +232,8 @@ todos podem ver produtos
 ```
 
 - Papéis vão do menor para o maior; o que vale para um papel vale para os superiores.
+  Um papel declarado vence as palavras de pessoa: com `dono 50` em `tenha papeis`,
+  `dono pode …` fala do papel, não de quem possui o registro.
 - `administrador` = pessoa com `admin` verdadeiro (ou `papel` "administrador"); tem autorização ampla, mas deve respeitar validações e invariantes de integridade.
 - `todos` = qualquer visitante; `usuario` (o dado do login) = qualquer pessoa conectada;
   `membro` = qualquer papel no registro.
@@ -495,8 +497,13 @@ A tabela é um contrato de aceitação, não uma declaração de que todos os te
 - Definir e testar a cobertura dos diagnósticos de contradição e ambiguidade em `ge check`.
 - Precisar a configuração explícita de transições fora das convenções atuais, sem inventar
   verbos ou destinos silenciosamente; manter estado e metadados coerentes.
-- Comprovar o invariante de papel mínimo em criação, herança, concorrência e alterações
-  indiretas; teste de parser não é prova dessas garantias de execução.
+- Invariante de papel mínimo: comprovado em execução por `runtime/papel_minimo_test.go`
+  (domínio sem GitLab) — remover, sair e rebaixar; administrador não contorna; dois donos
+  permitem remover um; adicionar outro libera o anterior; criação exige titular; herança
+  conta os titulares do pai; mover para fora do pai e excluir a pessoa são recusados quando
+  deixariam o registro sem titular; saídas simultâneas deixam exatamente uma passar (SQLite
+  serializa as transações). Pendente: teste da trava `FOR UPDATE` em PostgreSQL/MySQL e de
+  operações em lote (ainda não existem).
 - Verificar a fronteira entre configuração externa e adaptador para cada construção já
   suportada. Não presumir que mover um arquivo para `integracoes/` torna qualquer sintaxe válida.
 

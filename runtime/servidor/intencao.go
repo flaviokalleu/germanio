@@ -571,6 +571,12 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 			return
 		}
 		urow := updated.(map[string]any)
+		if e.MinRole != "" && (movedTo(data, row, e.HierarchyField) || movedTo(data, row, e.InheritVia)) {
+			if err := a.keepsHolderAfter(ctx, e, urow); err != nil {
+				a.failErr(w, r, err)
+				return
+			}
+		}
 		if h := e.Hooks["editar"]; h != nil {
 			if _, _, err := a.in.RunHook(ctx, h, a.hookVars(atual, e, urow, body)); err != nil {
 				// Compensate: restore the previous values.
@@ -817,15 +823,68 @@ func (a *intentAPI) create(w http.ResponseWriter, r *http.Request, ctx *interp.C
 			out[k] = v
 		}
 	}
+	if e.MinRole != "" {
+		if err := a.keepsHolderAfter(ctx, e, a.find(ctx, e, fmt.Sprint(row["id"]), nil)); err != nil {
+			a.failErr(w, r, err) // the transaction undoes the creation
+			return
+		}
+	}
 	a.emit(ctx, e, "criar", row, atual)
 	a.json(w, 201, out, nil)
 }
 
 // remove runs `quando excluir` first (it may refuse), then deletes the
 // record and everything that belongs to it.
-// keepsMinRole refuses removing or demoting the last member holding the
-// role a record must always have (todo grupo precisa ter pelo menos um owner).
-// newRole "" means the membership is being removed.
+// The minimum role (`todo grupo precisa ter pelo menos um owner`): a record
+// always has someone holding the role or a higher one — directly, or through
+// the parent it inherits members from. The check runs inside the request's
+// transaction, after locking the record.
+
+// hasHolder: record (of e) has someone with level ≥ min — directly or through
+// the parents it inherits members from — ignoring the membership skip
+// (removed or demoted) and the person gone (deleted).
+func (a *intentAPI) hasHolder(ctx *interp.Context, e *ast.Entity, record map[string]any, min int, skip, gone any, depth int) bool {
+	if record == nil || depth > 16 {
+		return false
+	}
+	var enough []any
+	for _, role := range a.app.Roles {
+		if role.Level >= min {
+			enough = append(enough, role.Name)
+		}
+	}
+	f := map[string]any{"recurso": e.Singular, "recurso_id": record["id"], "papel__em": enough}
+	if skip != nil {
+		f["id__diferente"] = skip
+	}
+	if gone != nil {
+		f["pessoa_id__diferente"] = gone
+	}
+	if n, err := a.in.Op(ctx, a.app.MemberModel, "contar", f); err == nil && asNumber(n) > 0 {
+		return true
+	}
+	for _, field := range []string{e.HierarchyField, e.InheritVia} {
+		if field == "" || record[field] == nil {
+			continue
+		}
+		pe := a.app.Entities[e.Parents[field]]
+		res, _ := a.in.Op(ctx, pe.Singular, "buscar", record[field])
+		if parent, _ := res.(map[string]any); parent != nil && pe.HasMembers && a.hasHolder(ctx, pe, parent, min, skip, gone, depth+1) {
+			return true
+		}
+	}
+	return false
+}
+
+func (a *intentAPI) minRoleError(e *ast.Entity) error {
+	msg := map[string]string{
+		"pt": fmt.Sprintf("%s precisa ter pelo menos um %s", e.Label, e.MinRole),
+		"en": fmt.Sprintf("The last %s cannot leave or be removed", e.MinRole),
+	}[a.app.Messages]
+	return &interp.RuntimeError{Status: 400, Message: msg}
+}
+
+// keepsMinRole: removing (newRole "") or demoting a membership keeps a holder.
 func (a *intentAPI) keepsMinRole(ctx *interp.Context, member map[string]any, newRole string) error {
 	target := a.app.Entities[toStr(member["recurso"])]
 	if target == nil || target.MinRole == "" {
@@ -835,26 +894,68 @@ func (a *intentAPI) keepsMinRole(ctx *interp.Context, member map[string]any, new
 	if a.app.Level(toStr(member["papel"])) < min || (newRole != "" && a.app.Level(newRole) >= min) {
 		return nil
 	}
-	var enough []any
-	for _, role := range a.app.Roles {
-		if role.Level >= min {
-			enough = append(enough, role.Name)
-		}
+	a.dbOf(ctx).Travar(target.Singular, member["recurso_id"])
+	res, _ := a.in.Op(ctx, target.Singular, "buscar", member["recurso_id"])
+	rec, _ := res.(map[string]any)
+	if rec == nil || a.hasHolder(ctx, target, rec, min, member["id"], nil, 0) {
+		return nil
 	}
-	n, err := a.in.Op(ctx, a.app.MemberModel, "contar", map[string]any{"recurso": member["recurso"], "recurso_id": member["recurso_id"], "papel__em": enough, "id__diferente": member["id"]})
-	if err != nil || asNumber(n) > 0 {
+	return a.minRoleError(target)
+}
+
+// movedTo: the edit changes the parent in field.
+func movedTo(data, row map[string]any, field string) bool {
+	if field == "" {
+		return false
+	}
+	v, given := data[field]
+	return given && toStr(v) != toStr(row[field])
+}
+
+// keepsHolderAfter: a record created or moved to another parent must end with a holder.
+func (a *intentAPI) keepsHolderAfter(ctx *interp.Context, e *ast.Entity, record map[string]any) error {
+	if e.MinRole == "" || record == nil {
+		return nil
+	}
+	if a.hasHolder(ctx, e, record, a.app.Level(e.MinRole), nil, nil, 0) {
+		return nil
+	}
+	return a.minRoleError(e)
+}
+
+// personLeaves: deleting a person keeps every record they hold a holder.
+func (a *intentAPI) personLeaves(ctx *interp.Context, person map[string]any) error {
+	if a.app.MemberModel == "" {
+		return nil
+	}
+	res, err := a.in.Op(ctx, a.app.MemberModel, "filtrar", map[string]any{"pessoa_id": person["id"]}, map[string]any{"limite": 1000})
+	if err != nil {
 		return err
 	}
-	msg := map[string]string{
-		"pt": fmt.Sprintf("%s precisa ter pelo menos um %s", target.Label, target.MinRole),
-		"en": fmt.Sprintf("The last %s cannot leave or be removed", target.MinRole),
-	}[a.app.Messages]
-	return &interp.RuntimeError{Status: 400, Message: msg}
+	for _, it := range res.([]any) {
+		m := it.(map[string]any)
+		target := a.app.Entities[toStr(m["recurso"])]
+		if target == nil || target.MinRole == "" || a.app.Level(toStr(m["papel"])) < a.app.Level(target.MinRole) {
+			continue
+		}
+		a.dbOf(ctx).Travar(target.Singular, m["recurso_id"])
+		rr, _ := a.in.Op(ctx, target.Singular, "buscar", m["recurso_id"])
+		rec, _ := rr.(map[string]any)
+		if rec != nil && !a.hasHolder(ctx, target, rec, a.app.Level(target.MinRole), nil, person["id"], 0) {
+			return a.minRoleError(target)
+		}
+	}
+	return nil
 }
 
 func (a *intentAPI) remove(ctx *interp.Context, atual map[string]any, e *ast.Entity, row map[string]any) error {
 	if e.Singular == a.app.MemberModel {
 		if err := a.keepsMinRole(ctx, row, ""); err != nil {
+			return err
+		}
+	}
+	if e.Singular == a.app.LoginEntity {
+		if err := a.personLeaves(ctx, row); err != nil {
 			return err
 		}
 	}
