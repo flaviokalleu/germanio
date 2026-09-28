@@ -1,0 +1,34 @@
+crie sistema Autoria
+
+usuarios
+    tem
+        nome obrigatório
+        email obrigatório e único
+        senha min 8
+        admin começa com falso
+    acesso
+        usuario
+            editar seu perfil
+
+tenha login
+tenha cadastro
+tenha administrador inicial "admin@autoria.local"
+login usa email
+
+notas
+    tem
+        titulo obrigatório
+        autor
+    acesso
+        usuario
+            criar
+            ver seus
+
+tarefas
+    tem
+        titulo obrigatório
+    pertence a usuario
+    acesso
+        usuario
+            criar seus
+            ver seus

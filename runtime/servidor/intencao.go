@@ -963,6 +963,61 @@ func (a *intentAPI) personLeaves(ctx *interp.Context, person map[string]any) err
 			return a.minRoleError(target)
 		}
 	}
+	// The person's memberships go with the person (in the same transaction).
+	for {
+		rows, err := a.in.Op(ctx, a.app.MemberModel, "filtrar", map[string]any{"pessoa_id": person["id"]}, map[string]any{"limite": 500, "ordenar": "id"})
+		if err != nil {
+			return err
+		}
+		list := rows.([]any)
+		if len(list) == 0 {
+			return nil
+		}
+		for _, it := range list {
+			if _, err := a.in.Op(ctx, a.app.MemberModel, "deletar", it.(map[string]any)["id"]); err != nil {
+				return err
+			}
+		}
+	}
+}
+
+// personReferences settles what refers to a person being deleted: records
+// that belong to the person (a required reference) are deleted with their
+// own contents; records that only name the person (an optional reference:
+// author, whoever closed it) stay, without the name.
+func (a *intentAPI) personReferences(ctx *interp.Context, person map[string]any) error {
+	for _, n := range a.app.Order {
+		c := a.app.Entities[n]
+		if c == nil || c.Singular == a.app.MemberModel || c.Singular == a.app.LoginEntity {
+			continue
+		}
+		for _, f := range c.Model.Fields {
+			if f.Reference != a.app.LoginEntity {
+				continue
+			}
+			field := strings.ToLower(f.Name)
+			for {
+				rows, err := a.in.Op(ctx, c.Singular, "filtrar", map[string]any{field: person["id"]}, map[string]any{"limite": 500, "ordenar": "id"})
+				if err != nil {
+					return err
+				}
+				list := rows.([]any)
+				if len(list) == 0 {
+					break
+				}
+				for _, it := range list {
+					rec := it.(map[string]any)
+					if f.Required {
+						if err := a.cascade(ctx, c, rec, 1); err != nil {
+							return err
+						}
+					} else if _, err := a.in.Op(ctx, c.Singular, "atualizar", rec["id"], map[string]any{field: nil}); err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
 	return nil
 }
 
@@ -974,6 +1029,9 @@ func (a *intentAPI) remove(ctx *interp.Context, atual map[string]any, e *ast.Ent
 	}
 	if e.Singular == a.app.LoginEntity {
 		if err := a.personLeaves(ctx, row); err != nil {
+			return err
+		}
+		if err := a.personReferences(ctx, row); err != nil {
 			return err
 		}
 	}

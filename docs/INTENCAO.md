@@ -425,6 +425,11 @@ erros de validação reunidos por campo (`{"message": {"email": ["já está em u
 excluir remove o que pertence ao registro; cada alteração (criar, editar, excluir, ações)
 roda numa transação junto com seus `antes de`/`quando`: se algo falha ou é recusado, nada
 fica — nem registros criados pelos hooks, nem números consumidos, nem eventos na fila.
+Excluir uma pessoa leva junto o que pertence a ela (referência obrigatória à pessoa, como
+`pertence a usuario`) e as participações dela; o que só a nomeia (referência opcional: autor,
+quem concluiu) fica, sem o nome. A regra do último dono continua valendo: excluir a última
+pessoa com o papel mínimo de algo é recusado.
+
 Mudar os campos declarados nunca perde dados em silêncio: um campo novo vira coluna (a
 falha é erro, não é ignorada); uma coluna que ainda tem valores e deixou de ser declarada —
 tipicamente um campo renomeado — é avisada na partida, e os valores continuam nela; um campo

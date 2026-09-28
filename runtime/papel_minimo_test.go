@@ -123,3 +123,51 @@ func decodeList(t *testing.T, raw string) []map[string]any {
 	}
 	return list
 }
+
+// Deleting a person who takes part in something removes their memberships
+// with them (what belongs to the record goes with it); it used to fail with
+// a raw foreign-key error (G76).
+func TestExcluirPessoaQueParticipa(t *testing.T) {
+	admin, p, ids := equipes(t)
+	ana := p["ana"]
+	time1 := ana.expect("POST", "/_ge/api/times", map[string]any{"nome": "Núcleo"}, 201)
+	base := "/_ge/api/times/" + itoa(int(time1["id"].(float64)))
+	ana.expect("POST", base+"/membros", map[string]any{"pessoa_id": ids["bia"], "papel": "colaborador"}, 201)
+	code, _, raw := admin.do("DELETE", "/_ge/api/usuarios/"+itoa(int(ids["bia"])), nil)
+	if code >= 300 {
+		t.Fatalf("excluir uma pessoa que participa de um time: %d %s", code, raw)
+	}
+	_, _, list := ana.do("GET", base+"/membros", nil)
+	for _, m := range decodeList(t, list) {
+		if m["pessoa_id"] == ids["bia"] {
+			t.Fatalf("a participação da pessoa excluída ficou: %s", list)
+		}
+	}
+}
+
+// Deleting a person: what belongs to them (a required reference to the
+// person) goes with them; what only names them (an optional reference:
+// author, whoever closed it) stays, without the name.
+func TestExcluirPessoaComRegistros(t *testing.T) {
+	t.Setenv("GERMANIO_ADMIN_SENHA", "admin-senha-longa-1")
+	_, admin := loadApp(t, "testdata/autoria/app.ge")
+	_, ana := admin.fresh(t)
+	me := ana.expect("POST", "/cadastro", map[string]any{"nome": "Ana", "email": "ana@x.com", "senha": "senha-forte-1"}, 201)
+	ana.csrf = csrfFromCookie(t, ana)
+	nota := ana.expect("POST", "/_ge/api/notas", map[string]any{"titulo": "n1"}, 201)
+	ana.expect("POST", "/_ge/api/tarefas", map[string]any{"titulo": "t1"}, 201)
+	admin.expect("POST", "/entrar", map[string]any{"login": "admin@autoria.local", "senha": "admin-senha-longa-1"}, 200)
+	admin.csrf = csrfFromCookie(t, admin)
+	code, _, raw := admin.do("DELETE", "/_ge/api/usuarios/"+itoa(int(me["id"].(float64))), nil)
+	if code >= 300 {
+		t.Fatalf("excluir uma pessoa com registros: %d %s", code, raw)
+	}
+	n := admin.expect("GET", "/_ge/api/notas/"+itoa(int(nota["id"].(float64))), nil, 200)
+	if n["autor_id"] != nil {
+		t.Fatalf("a nota deveria ficar sem autor: %v", n)
+	}
+	_, _, list := admin.do("GET", "/_ge/api/tarefas", nil)
+	if items := decodeList(t, list); len(items) != 0 {
+		t.Fatalf("as tarefas que pertenciam à pessoa ficaram: %s", list)
+	}
+}
