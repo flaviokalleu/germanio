@@ -38,4 +38,17 @@ registre em `GERMANIO_GAPS.md` ou `AGENT_STATE.md` e resolva conscientemente.
 Uma mudança que altera a linguagem e deixa a documentação incorreta está incompleta;
 uma mudança normativa sem implementação e testes alinhados também está.
 
+## Performance Gate
+
+"Simples para o humano. Eficiente para a máquina." (`docs/INTENCAO.md` › Eficiência). Ao
+mexer em parser, resolver, runtime, servidor, banco, concorrência ou frontend:
+
+1. Pergunte o custo: CPU, memória, alocações, I/O, startup, latência, binário e JS enviado.
+2. Não crie leitura sem limite, trabalho sem limite, carga inteira na memória de dados
+   grandes, nem inicialização de capability não declarada.
+3. Meça antes e depois quando a mudança tocar um caminho quente (`bench/`, `go test -bench`),
+   com o contexto registrado (hardware, SO, Go, commit, comando).
+4. Regressão significativa não entra em silêncio: documente em `GERMANIO_GAPS.md` e decida.
+5. Correto → seguro → mensurável → rápido. Nunca troque segurança por velocidade.
+
 Go constrói mecanismos. Germanio constrói produtos.

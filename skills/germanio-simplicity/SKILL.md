@@ -216,9 +216,19 @@ runtime independente da aplicação.
 [ ] É determinístico?
 [ ] Está na camada certa (domínio simples, core genérico, adaptador em integracoes/)?
 [ ] A hierarquia fornece o contexto em vez de repetir o sujeito?
+[ ] A simplicidade da frase esconde um custo ingênuo (leitura sem limite, N+1, arquivo
+    inteiro na memória, trabalho sem limite, capability carregada sem uso)?
 ```
 
 Se houver problema, não finalize: refatore Germanio ou o `.ge`.
+
+## 35b. Simples para o humano, eficiente para a máquina
+
+A frase simples não autoriza implementação ingênua. `mostre clientes` é paginado e projetado;
+`processe pedidos em paralelo` (quando existir) terá limite, backpressure e cancelamento
+resolvidos pelo runtime. O autor nunca escreve goroutine, channel, mutex ou pool: se uma
+aplicação precisa disso para ser eficiente, falta uma capability. Meça antes de otimizar
+(`docs/INTENCAO.md` › Eficiência).
 
 ## 36. Regra para agentes
 

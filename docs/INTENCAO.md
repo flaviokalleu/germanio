@@ -131,6 +131,62 @@ mundo externo ↔ capabilities genéricas. Não pode substituir autorização ou
 HTTP e Git são protocolos genéricos permitidos no core; a proibição é acoplar o core ao
 contrato particular de um produto, mesmo que seus campos sejam renomeados em português.
 
+## Eficiência: simples para o humano, eficiente para a máquina
+
+Germanio minimiza ao mesmo tempo o **custo cognitivo para o humano** e o **custo
+computacional para a máquina**, e não sacrifica um pelo outro em silêncio. A simplicidade da
+superfície não justifica aplicações pesadas; a engenharia fica embaixo. Desempenho, memória,
+concorrência e carga são requisitos da linguagem, e não uma otimização futura.
+
+Ordem de prioridade: **correto → seguro → mensurável → rápido**. Nenhuma otimização
+dispensa uma garantia de correção ou de segurança; `unsafe` e técnicas equivalentes só entram
+com necessidade medida e isolamento rigoroso.
+
+Obrigações:
+
+- **Meça antes de otimizar.** Uma decisão de performance cita a medição que a motivou. Go é
+  uma vantagem potencial, não uma garantia: interpretação, reflexão, `map` genérico,
+  conversões e serializações repetidas têm custo e são auditados
+  (`docs/research/performance/`).
+- **Custos considerados** em todo subsistema (parser, AST, análise, runtime, servidor, banco,
+  frontend): CPU, memória, alocações, GC, I/O, startup, latência, throughput, tamanho do
+  binário e o JavaScript enviado.
+- **Pague apenas pelo que usar.** Uma aplicação que não declara uma capability (chat,
+  WebSocket, fila, IA, storage, Git, e-mail…) NÃO DEVE inicializá-la nem mantê-la em memória;
+  o que está no binário sem uso é dívida registrada.
+- **Sem ingenuidade no banco.** `mostre clientes` NÃO DEVE virar uma leitura sem limite. O
+  runtime pagina, projeta só o necessário, evita N+1, usa índices derivados do que é declarado
+  e mantém as transações curtas.
+- **Streaming.** Arquivos, uploads, downloads, logs, Git e respostas grandes são processados
+  de forma incremental quando possível: um arquivo de 5 GB não exige 5 GB de memória.
+- **Concorrência limitada e com backpressure.** O autor declara intenção; o runtime decide
+  workers, limites, cancelamento, timeouts, propagação de erro e limpeza. Nenhuma construção
+  cria trabalho ilimitado: produtor saturado é contido de forma previsível.
+- **Limites seguros por padrão** para conexões, workers, jobs concorrentes, timeouts, tamanho
+  de upload, memória por operação, pool do banco e taxa de requisições. `ge explain` mostra
+  os limites em vigor.
+- **Nada de mecanismo no código comum.** goroutine, channel, mutex, ponteiro, buffer pool,
+  connection pool e allocator são mecanismos do core; não aparecem no nível padrão. O nível
+  avançado pode chegar a eles quando realmente necessário.
+- **Benchmarks permanentes** em três categorias: micro (lexer, parser, resolver,
+  expressões, serialização), aplicação (HTTP, JSON, banco, WebSocket, upload, download, jobs,
+  renderização) e stress (muitas conexões, filas e arquivos grandes). Todo resultado
+  publicado registra o hardware, o SO, a versão do Go e do Germanio, a configuração, o
+  dataset, o comando e o commit. Um número sem contexto não é publicado.
+- **O custo da abstração é medido** contra um baseline equivalente em Go direto (e, no
+  frontend, contra um alvo equivalente). O objetivo não é vencer benchmark; é saber quanto
+  custa o Germanio.
+- **Budgets vêm depois do baseline.** Não se fixam números antes de medir. Com o baseline
+  medido, definem-se budgets para o startup do CLI, a compilação, o overhead do runtime, a
+  memória em repouso, as alocações, o overhead HTTP e o bundle do frontend.
+- **Regressão consciente.** Uma feature que torna algo significativamente mais pesado
+  (ordem de grandeza: várias vezes) não entra em silêncio: é identificada, documentada,
+  investigada e decidida.
+
+A intenção de carga e de concorrência (por exemplo "aceite muitas conexões", "processe
+pedidos em paralelo") só vira sintaxe depois que a semântica, os limites padrão e os testes
+estiverem definidos. Até lá, ela é pendência de design, e não uma frase aceita.
+
 ## Sintaxe hierárquica e contextual
 
 **O que está abaixo pertence ao contexto que está acima.** A indentação carrega significado:

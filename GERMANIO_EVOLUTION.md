@@ -82,3 +82,14 @@ tab contava como 2 espaços; recuo sem pai não era diagnosticado; `administrar`
 que só se referiam opcionalmente ao alvo (falha de segurança); `ge fmt` não formatava a camada
 de intenção; `ge explain` não mostrava a origem dos fatos; o singular de estrangeirismos
 (`tokens`) era adivinhado.
+
+## Diretriz de eficiência (2026-09-28)
+
+Nova norma: "Simples para o humano. Eficiente para a máquina." (`docs/INTENCAO.md` ›
+Eficiência). Desempenho, memória, concorrência e carga passam a ser requisitos da linguagem,
+com a ordem correto → seguro → mensurável → rápido. Por decisão explícita, nenhum budget
+numérico é fixado antes do baseline medido. Começou pela auditoria do caminho de execução
+(`docs/research/performance/AUDITORIA.md`) e por uma suíte permanente de benchmarks
+(`bench/`) que compara Germanio com Go direto. A intenção de concorrência ("processe em
+paralelo", "aceite muitas conexões") fica como pendência de design até ter semântica,
+limites e testes.
