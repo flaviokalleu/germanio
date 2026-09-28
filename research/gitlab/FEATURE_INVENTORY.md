@@ -102,7 +102,7 @@ Escopo núcleo v1 = features marcadas **[N]** (fluxos 1–5 da missão + testes 
 | NT-01 | Todos | atribuição/menção gera todo | `/dashboard/todos` | `/todos` | todos | dono | | SUPPORTED (GEP 0009) | PARTIAL (atribuição; menção ainda não) | TestPendencias |
 | NT-02 | Eventos de atividade | feed de atividade | activity | `/events` | events | leitura | | SUPPORTED (GEP 0011, em teste) | PARTIAL (`/api/v4/events` com os nomes do GitLab e sem vazamento; o histórico de um projeto é `?dentro=projeto&dentro_id=`, não `/projects/:id/events`; as ações saem em português: `criar`, `fechar`) | TestAtividade, TestHistorico |
 | NT-03 | E-mail de notificação | | | | | | email | PARTIAL | NOT_STARTED | |
-| AD-01 | Admin dashboard | contagens, usuários, projetos | `/admin` | `/admin` | | admin | | | NOT_STARTED | |
+| AD-01 | Admin dashboard | contagens, usuários, projetos | `/admin` | `/admin` | | admin | | SUPPORTED (GEP 0012, em teste) | PARTIAL (página `/painel` com as contagens, cada uma sob a visibilidade de quem vê — o administrador vê o total; a lista de usuários e projetos do admin são as páginas comuns; `/api/v4/application/statistics` ainda não) | TestPainel, TestIndicadores |
 | SR-01 | Busca global | projetos/issues/MRs | search | `/search` | | leitura | | | PASS | TestBuscaGeral (API; página de busca ainda não) |
 | UP-01 | Uploads em markdown | `/uploads` | | | uploads | | | PARTIAL (upload genérico existe) | NOT_STARTED | |
 

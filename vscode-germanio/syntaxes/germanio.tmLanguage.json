@@ -347,7 +347,15 @@
               "include": "#string"
             },
             {
-              "match": "^\\s+((?:f[ií]ltr[oóôõ]s|[cç][oóôõ]l[uú]n[aáàâã]s|v[aáàâã]z[ií][oóôõ]|[aáàâã][cç][oóôõ][eéê]s|t[oóôõ]p[oóôõ]))\\s*$",
+              "match": "^\\s+((?:[ií]nd[ií][cç][aáàâã]d[oóôõ]r[eéê]s|f[ií]ltr[oóôõ]s|[cç][oóôõ]l[uú]n[aáàâã]s|v[aáàâã]z[ií][oóôõ]|[aáàâã][cç][oóôõ][eéê]s|t[oóôõ]p[oóôõ]))\\s*$",
+              "captures": {
+                "1": {
+                  "name": "keyword.other.intent.germanio"
+                }
+              }
+            },
+            {
+              "match": "^\\s+(t[oóôõ]t[aáàâã]l\\s+d[eéê])\\s",
               "captures": {
                 "1": {
                   "name": "keyword.other.intent.germanio"

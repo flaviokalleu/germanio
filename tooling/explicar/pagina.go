@@ -33,7 +33,24 @@ func Pagina(prog *ast.Program, nome string) (string, error) {
 	var b strings.Builder
 	w := func(format string, a ...any) { fmt.Fprintf(&b, format, a...) }
 	w("Página %s (%s)\n\n", pg.Name, where(pg.Pos))
+	if len(pg.Indicators) > 0 {
+		w("Indicadores (cada número conta só o que quem vê a página pode ver; o administrador vê o total):\n")
+		for _, ind := range pg.Indicators {
+			what := ind.Entity
+			if ie := app.Entities[ind.Entity]; ie != nil {
+				what = ie.Plural
+			}
+			if ind.State != "" {
+				what += " no estado " + ind.State
+			}
+			w("  %q — conta %s (%s)\n", ind.Label, what, where(ind.Pos))
+		}
+		w("\n")
+	}
 	if e == nil {
+		if len(pg.Indicators) > 0 {
+			w("Um painel: só indicadores, sem lista nem ações.\n")
+		}
 		return b.String(), nil
 	}
 	w("Mostra: %s\n", e.Plural)

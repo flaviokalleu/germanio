@@ -421,8 +421,10 @@ página Clientes
 A página pede; o domínio decide: uma ação só aparece para quem pode fazê-la, como qualquer botão
 de `permita`. Um rótulo sozinho (`"Novo cliente"`) é erro: um texto não é uma ação. As seções
 valem na página da coleção (não nas listas aninhadas). `ge explain pagina Clientes` mostra cada
-seção como declarada ou padrão e quem vê cada ação. Indicadores e gráficos ainda não existem:
-dependem de uma GEP de agregados.
+seção como declarada ou padrão e quem vê cada ação. Indicadores (`indicadores` ›
+`total de issues abertas`) estão em teste na [GEP 0012](gep/0012-indicadores.md), não normativa
+até a decisão do mantenedor: cada número conta só o que quem vê a página pode ver. Gráficos,
+somas e médias ainda não existem: cada um depende de uma GEP própria.
 
 ### Fusão e conflitos
 

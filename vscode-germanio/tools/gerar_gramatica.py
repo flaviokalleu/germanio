@@ -131,7 +131,8 @@ grammar = {
              "beginCaptures": {"1": {"name": "keyword.other.intent.germanio"}, "2": {"name": "entity.name.section.germanio"}},
              "patterns": [{"include": "#comment"}, {"include": "#string"},
                           # page sections (docs/gep/0002-secoes-de-pagina.md)
-                          {"match": r"^\s+(" + words("topo", "filtros", "colunas", "vazio", "acoes") + r")\s*$", "captures": {"1": {"name": "keyword.other.intent.germanio"}}},
+                          {"match": r"^\s+(" + words("topo", "filtros", "colunas", "vazio", "acoes", "indicadores") + r")\s*$", "captures": {"1": {"name": "keyword.other.intent.germanio"}}},
+                          {"match": r"^\s+(" + w("total de") + r")\s", "captures": {"1": {"name": "keyword.other.intent.germanio"}}},
                           {"match": r"^\s+(" + words("titulo", "texto", "acao") + r")\b", "captures": {"1": {"name": "keyword.other.intent.germanio"}}},
                           {"match": r"^\s+(" + w("mostre") + r")\s+(" + NAMES + r")\s*$", "captures": {"1": {"name": "keyword.other.intent.germanio"}, "2": {"name": "entity.name.type.germanio"}}},
                           {"match": r"^\s+(" + w("permita") + r")\s*$", "captures": {"1": {"name": "keyword.other.permission.germanio"}}},

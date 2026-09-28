@@ -225,6 +225,9 @@ func TestHierarquiaErros(t *testing.T) {
 		{"histórico com linhas abaixo", "tenha issues\n\nissues\n    tem\n        titulo\n    guarda histórico\n        titulo\n", []string{"guarda histórico fica sozinho"}},
 		{"histórico de dado desconhecido", "tenha issues\n\ncada issue tem\n    titulo\n\nnoticia guarda histórico\n", []string{"noticia"}},
 		{"tradução repetida com outro valor", "tenha clientes\n\ncada cliente tem\n    nome\n\nvocabulário da integração\n    nome é \"name\"\n    nome é \"title\"\n", []string{"nome já é traduzido como \"name\""}},
+		{"indicador sem total de", "tenha issues\n\ncada issue tem\n    titulo\n\npágina Painel\n    indicadores\n        issues\n", []string{"não é um indicador", "total de issues"}},
+		{"indicador com estado inexistente", "tenha issues\n\ncada issue tem\n    titulo\n\nissue começa aberta\n\npágina Painel\n    indicadores\n        total de issues voadoras\n", []string{"\"voadoras\" não é um estado de issues", "aberta"}},
+		{"página sem nada", "tenha issues\n\ncada issue tem\n    titulo\n\npágina Vazia\n    permita\n        criar\n", []string{"não mostra nada"}},
 		{"integração em conflito", "projetos\n    tem\n        nome\n    integração\n        nome \"projects\"\n\ndisponibilize projetos para integração como \"repos\"\n", []string{"já é \"projects\""}},
 	}
 	for _, c := range cases {

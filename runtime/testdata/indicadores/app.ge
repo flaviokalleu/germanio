@@ -1,0 +1,53 @@
+crie sistema Indicadores
+
+tenha usuarios, projetos, issues
+
+tenha login
+tenha cadastro
+tenha administrador inicial "root@x.local"
+
+usuarios
+    tem
+        nome
+        email obrigatório e único
+        senha min 8
+        admin começa com falso
+
+projetos
+    tem
+        nome obrigatório
+        issues
+    acesso
+        usuario
+            criar
+            ver
+
+issues
+    tem
+        titulo obrigatório
+        autor
+    pertence a projeto
+    começa aberta
+    pode
+        fechar
+        ser confidencial
+    regras
+        confidencial pode ser vista por
+            autor
+    acesso
+        usuario
+            criar
+            ver
+            fechar
+
+página Painel
+    indicadores
+        total de usuarios
+        total de projetos
+        total de issues abertas
+        total de issues fechadas "Resolvidas"
+
+página Projetos
+    mostre projetos
+    indicadores
+        total de projetos

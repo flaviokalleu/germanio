@@ -40,6 +40,12 @@ hierarchical syntax. Nothing below is in a tagged release yet.
   in the change's transaction, with the names of changed fields and never their values; each
   activity is seen only by whoever sees the record it describes. A vocabulary that translates
   the same name twice with different values is now an error instead of a silent override (G105).
+- Indicators (GEP 0012, in test): a page section `indicadores` with `total de issues abertas`;
+  each number counts only what the viewer could list, and a page may be only indicators (a
+  dashboard).
+- Security: a list of data with a restriction such as `confidencial pode ser vista por autor`
+  returned restricted records to people who could not see them (the single record was already
+  protected); restrictions now make the list check each record (G106).
 - External effects run after the commit (G86): inside a change, `chamar` with a writing
   method, webhooks and messages are recorded and run once the change is saved, in order,
   never holding the database's write lock. An undone change has no effects; a failing effect

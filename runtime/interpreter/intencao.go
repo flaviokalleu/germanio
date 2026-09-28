@@ -403,7 +403,9 @@ func (interp *Interpreter) RulePasses(ctx *Context, atual map[string]any, e *ast
 // RecordDependent reports whether seeing records of e depends on each
 // record (visibility, roles or ownership) — lists must then be filtered.
 func RecordDependent(e *ast.Entity) bool {
-	if e.Visibility != "" || e.ViewThrough != nil || len(e.Hooks["antes_ver"].GetBody()) > 0 {
+	// restrictions (X confidencial pode ser vista por …) hide single records:
+	// a list must check each one
+	if e.Visibility != "" || e.ViewThrough != nil || len(e.Restrictions) > 0 || len(e.Hooks["antes_ver"].GetBody()) > 0 {
 		return true
 	}
 	for _, v := range []string{"ver", "editar", "excluir"} {

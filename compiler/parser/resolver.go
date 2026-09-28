@@ -1141,11 +1141,17 @@ func ResolveIntent(prog *ast.Program) error {
 
 	// 9. Pages imply the operations they show and permit.
 	for _, pg := range app.Pages {
+		if err := r.indicators(pg); err != nil {
+			return err
+		}
 		target := pg.Show
 		if target == "" {
 			target = pg.Manage
 		}
 		if target == "" {
+			if len(pg.Indicators) == 0 {
+				return r.errAt(pg.Pos, "a página %s não mostra nada. Escreva abaixo dela: mostre <dados>, ou indicadores com total de <dados>", pg.Name)
+			}
 			continue
 		}
 		e, err := r.entity(target, pg.Pos)

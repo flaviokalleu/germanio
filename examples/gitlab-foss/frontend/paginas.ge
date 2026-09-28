@@ -32,3 +32,12 @@ página Grupos
 
 página Pendências
     mostre pendências
+
+página Painel
+    indicadores
+        total de usuarios
+        total de projetos
+        total de grupos
+        total de issues abertas
+        total de merge requests abertos
+        total de merge requests mesclados

@@ -65,6 +65,7 @@ Rules:
 | [0009](0009-pendencias.md) | Pending items (`pendência para responsaveis`) | Aceita |
 | [0010](0010-descarte-de-campo.md) | Discarding a field on purpose (`descarte fax`) | Em teste |
 | [0011](0011-historico.md) | History (`guarda histórico`) | Em teste |
+| [0012](0012-indicadores.md) | Indicators (`indicadores` › `total de issues abertas`) | Em teste |
 
 Pending decisions that will become GEPs are listed in
 [`docs/INTENCAO.md` › Pendências da sintaxe hierárquica](../INTENCAO.md#pendências-da-sintaxe-hierárquica)

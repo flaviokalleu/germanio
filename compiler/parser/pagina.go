@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"sort"
 	"strings"
 
 	"github.com/flaviokalleu/germanio/compiler/ast"
@@ -11,7 +12,7 @@ import (
 // table of regions with domain meaning. Each one replaces only its own
 // default; none is required.
 
-var pageSections = map[string]bool{"topo": true, "filtros": true, "colunas": true, "vazio": true}
+var pageSections = map[string]bool{"topo": true, "filtros": true, "colunas": true, "vazio": true, "indicadores": true}
 
 // pageSection reads the section at body[i]; it returns the index of its last
 // line.
@@ -63,6 +64,26 @@ func (p *Parser) pageSection(pg *ast.PageDecl, body []dline, i int) (int, error)
 			} else {
 				pg.Columns = append(pg.Columns, name)
 			}
+		case "indicadores":
+			// total de <dado> [estado] ["rótulo"] (GEP 0012, em teste)
+			if len(w) < 3 || w[0] != "total" || w[1] != "de" {
+				return last, p.teach(line.toks[0], "\""+lineText(line)+"\" não é um indicador", "cada indicador conta registros de um dado", "escreva: total de issues, ou total de issues abertas", "página "+pg.Name)
+			}
+			ind := &ast.PageIndicator{Pos: p.at(line.toks[0])}
+			var words []lexer.Token
+			for _, t := range line.toks {
+				if t.Type == lexer.TokenString {
+					ind.Label = t.Value
+					break
+				}
+				words = append(words, t)
+			}
+			ind.Words = wordsOf(words)[2:]
+			if ind.Label == "" {
+				text := lineText(dline{toks: words})
+				ind.Label = strings.ToUpper(text[:1]) + text[1:]
+			}
+			pg.Indicators = append(pg.Indicators, ind)
 		case "vazio":
 			if pg.Empty == nil {
 				pg.Empty = &ast.PageEmpty{Pos: p.at(body[i].toks[0])}
@@ -93,17 +114,19 @@ func (p *Parser) pageSection(pg *ast.PageDecl, body []dline, i int) (int, error)
 }
 
 var pageSectionWhy = map[string]string{
-	"topo":    "o topo tem o título da página, um texto e as ações",
-	"filtros": "filtros lista a pesquisa e os campos pelos quais se filtra",
-	"colunas": "colunas lista, em ordem, os campos que a tabela mostra",
-	"vazio":   "vazio diz o que aparece quando não há nada para mostrar",
+	"topo":        "o topo tem o título da página, um texto e as ações",
+	"filtros":     "filtros lista a pesquisa e os campos pelos quais se filtra",
+	"colunas":     "colunas lista, em ordem, os campos que a tabela mostra",
+	"vazio":       "vazio diz o que aparece quando não há nada para mostrar",
+	"indicadores": "indicadores lista os números da página, um por linha",
 }
 
 var pageSectionFix = map[string]string{
-	"topo":    "escreva abaixo: título \"Clientes\"",
-	"filtros": "escreva abaixo um item por linha: pesquisar, cidade",
-	"colunas": "escreva abaixo um campo por linha: nome, email",
-	"vazio":   "escreva abaixo: título \"Nenhum cliente\"",
+	"topo":        "escreva abaixo: título \"Clientes\"",
+	"filtros":     "escreva abaixo um item por linha: pesquisar, cidade",
+	"colunas":     "escreva abaixo um campo por linha: nome, email",
+	"vazio":       "escreva abaixo: título \"Nenhum cliente\"",
+	"indicadores": "escreva abaixo: total de clientes",
 }
 
 // pageText reads `título "X"` / `texto "X"`.
@@ -135,4 +158,63 @@ func (p *Parser) pageAction(line dline) (*ast.PageAction, error) {
 	}
 	act.Verb = strings.Join(words, "_")
 	return act, nil
+}
+
+// indicators resolves `total de <dado> [estado]` (GEP 0012, em teste): the
+// data by name, then, if the last word is not part of the name, one of the
+// data's states written as it reads (abertas for aberta).
+func (r *resolver) indicators(pg *ast.PageDecl) error {
+	for _, ind := range pg.Indicators {
+		name, _ := phrase(ind.Words)
+		if e := r.byName[name]; e != nil {
+			ind.Entity = e.Singular
+			continue
+		}
+		n := len(ind.Words)
+		if n < 2 {
+			_, err := r.entity(name, ind.Pos)
+			return err
+		}
+		name, _ = phrase(ind.Words[:n-1])
+		e, err := r.entity(name, ind.Pos)
+		if err != nil {
+			return err
+		}
+		word := ind.Words[n-1]
+		states := statesOf(e)
+		for _, st := range states {
+			if word == st || word == st+"s" {
+				ind.Entity, ind.State = e.Singular, st
+			}
+		}
+		if ind.State == "" {
+			if len(states) == 0 {
+				return r.errAt(ind.Pos, "total de %s %s: %s não tem estados, então %q não diz nada. Escreva: total de %s", name, word, e.Plural, word, name)
+			}
+			return r.errAt(ind.Pos, "total de %s %s: %q não é um estado de %s (estados: %s)", name, word, word, e.Plural, strings.Join(states, ", "))
+		}
+	}
+	return nil
+}
+
+// statesOf: the initial state and every transition's target.
+func statesOf(e *ast.Entity) []string {
+	var out []string
+	seen := map[string]bool{}
+	add := func(s string) {
+		if s != "" && !seen[s] {
+			seen[s] = true
+			out = append(out, s)
+		}
+	}
+	add(e.Initial)
+	var verbs []string
+	for v := range e.Transitions {
+		verbs = append(verbs, v)
+	}
+	sort.Strings(verbs)
+	for _, v := range verbs {
+		add(e.Transitions[v].Target)
+	}
+	return out
 }

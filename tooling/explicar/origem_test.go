@@ -129,3 +129,32 @@ func TestExplicarEfeitosEMigracao(t *testing.T) {
 		}
 	}
 }
+
+// ge explain pagina shows each indicator, what it counts and its origin
+// (GEP 0012), and says a page of indicators only is a dashboard.
+func TestExplicarIndicadores(t *testing.T) {
+	src, err := os.ReadFile("../../runtime/testdata/indicadores/app.ge")
+	if err != nil {
+		t.Fatal(err)
+	}
+	toks, err := lexer.New(string(src)).Tokenize()
+	if err != nil {
+		t.Fatal(err)
+	}
+	prog, err := parser.New(toks).Parse()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := parser.ResolveIntent(prog); err != nil {
+		t.Fatal(err)
+	}
+	text, err := Pagina(prog, "Painel")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"só o que quem vê a página pode ver", `"Total de issues abertas" — conta issues no estado aberta`, `"Resolvidas" — conta issues no estado fechada`, "Um painel"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("explicação sem %q:\n%s", want, text)
+		}
+	}
+}

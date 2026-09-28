@@ -58,7 +58,7 @@ func (s *Servidor) registerPages(mux *routeMux) {
 	}
 	ps := &pageSite{a: s.intent, slugs: map[string]*ast.PageDecl{}}
 	for _, pg := range app.Pages {
-		if pg.Show == "" {
+		if pg.Show == "" && len(pg.Indicators) == 0 {
 			continue
 		}
 		sl := slug(pg.Name)
@@ -635,6 +635,14 @@ func (ps *pageSite) serve(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	if pg.Show == "" {
+		if len(parts) > 0 {
+			http.NotFound(w, r)
+			return
+		}
+		ps.dashboard(w, r, pg)
+		return
+	}
 	chain, api, view, _ := ps.resolve(pg, parts)
 	v := ps.base(r, pg.Name)
 	v.Crumbs = append(v.Crumbs, link{"/" + slug(pg.Name), pg.Name})
@@ -705,6 +713,9 @@ func (ps *pageSite) serve(w http.ResponseWriter, r *http.Request) {
 		body.WriteString(string(htmlOf(headingTpl, v.Title)))
 		if own && pg.Text != "" {
 			body.WriteString(string(htmlOf(introTpl, pg.Text)))
+		}
+		if own && len(pg.Indicators) > 0 {
+			body.WriteString(string(ps.indicators(ctx, atual, pg)))
 		}
 		if own && canCreate {
 			for _, act := range pg.Actions {
@@ -1031,8 +1042,8 @@ func pager(q url.Values, count, per int) map[string]any {
 
 func (ps *pageSite) post(w http.ResponseWriter, r *http.Request) {
 	pg, parts := ps.pageOf(r)
-	if pg == nil || len(parts) == 0 && r.URL.Path != "/"+slug(pg.Name) {
-		http.NotFound(w, r)
+	if pg == nil || len(parts) == 0 && r.URL.Path != "/"+slug(pg.Name) || pg.Show == "" {
+		http.NotFound(w, r) // a dashboard has nothing to change
 		return
 	}
 	if err := r.ParseForm(); err != nil {
@@ -1382,6 +1393,7 @@ pre{background:var(--soft);border:1px solid var(--line);border-radius:6px;paddin
 .diff .add{background:#dafbe1}.diff .del{background:#ffebe9}.diff .hunk{color:var(--muted)}
 @media (prefers-color-scheme:dark){.diff .add{background:#12261e}.diff .del{background:#2d1117}}
 .paginas{display:flex;gap:12px;margin-top:10px}.intro{color:var(--muted);margin:-8px 0 16px}
+.indicadores{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:0 0 20px}.indicador{border:1px solid var(--line);border-radius:8px;padding:14px;background:var(--soft);display:flex;flex-direction:column}.indicador .valor{font-size:28px;font-weight:700}.indicador .rotulo{color:var(--muted)}
 a.botao{display:inline-block;padding:7px 14px;border-radius:6px;background:var(--accent);color:var(--on-accent);text-decoration:none}
 @media (max-width:640px){main{padding:12px}th,td{padding:6px 8px}}
 </style></head><body>

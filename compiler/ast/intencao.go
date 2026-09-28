@@ -200,6 +200,18 @@ type PageDecl struct {
 	Filters []string      // filtros › pesquisar | campo
 	Columns []string      // colunas › campo
 	Empty   *PageEmpty    // vazio › título, texto, ação
+	// Indicators (GEP 0012, em teste): indicadores › total de <dado> [estado].
+	Indicators []*PageIndicator
+}
+
+// PageIndicator counts the records of Entity (in State, when given) the
+// viewer can see. Words holds the data and state as written, resolved later.
+type PageIndicator struct {
+	Words  []string
+	Entity string
+	State  string
+	Label  string
+	Pos    diagnostics.Position
 }
 
 // PageAction is a verb the page offers, with an optional label. The verb
