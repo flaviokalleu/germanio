@@ -228,6 +228,8 @@ func TestHierarquiaErros(t *testing.T) {
 		{"indicador sem total de", "tenha issues\n\ncada issue tem\n    titulo\n\npágina Painel\n    indicadores\n        issues\n", []string{"não é um indicador", "total de issues"}},
 		{"indicador com estado inexistente", "tenha issues\n\ncada issue tem\n    titulo\n\nissue começa aberta\n\npágina Painel\n    indicadores\n        total de issues voadoras\n", []string{"\"voadoras\" não é um estado de issues", "aberta"}},
 		{"página sem nada", "tenha issues\n\ncada issue tem\n    titulo\n\npágina Vazia\n    permita\n        criar\n", []string{"não mostra nada"}},
+		{"nome de dado impossível", "tenha clientes e -x\n", []string{"não pode ser o nome de um dado"}},
+		{"avisos sem pendências", "tenha issues\n\ncada issue tem\n    titulo\n\ntenha avisos por e-mail\n", []string{"nenhum dado gera pendências"}},
 		{"integração em conflito", "projetos\n    tem\n        nome\n    integração\n        nome \"projects\"\n\ndisponibilize projetos para integração como \"repos\"\n", []string{"já é \"projects\""}},
 	}
 	for _, c := range cases {

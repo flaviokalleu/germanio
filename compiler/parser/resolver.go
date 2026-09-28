@@ -1207,6 +1207,15 @@ func ResolveIntent(prog *ast.Program) error {
 		}
 	}
 
+	// 10a2. Notices by e-mail (GEP 0013, em teste) tell people about their
+	// pending items.
+	if in.EmailNotices {
+		if len(in.PendingItems) == 0 {
+			return r.errAt(in.EmailNoticesPos, "tenha avisos por e-mail avisa cada pessoa das suas pendências, mas nenhum dado gera pendências. Declare, no bloco do dado: pendência para › responsaveis")
+		}
+		app.EmailNotices = true
+	}
+
 	// 10b. History (GEP 0011, em teste).
 	if err := r.history(in, app); err != nil {
 		return err

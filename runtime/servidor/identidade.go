@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -251,6 +252,13 @@ func (a *intentAPI) mountIdentity(mux *routeMux) {
 	})
 	if app.Login.Recovery {
 		a.mountRecovery(mux)
+	}
+	if app.EmailNotices {
+		if _, why := mailerFromEnv(); why != "" {
+			fmt.Printf("[germanio] avisos por e-mail indisponíveis: %s\n", why)
+		} else if os.Getenv("GERMANIO_URL_PUBLICA") == "" {
+			fmt.Println("[germanio] avisos por e-mail sem endereço da aplicação: defina GERMANIO_URL_PUBLICA para o link do e-mail")
+		}
 	}
 	mux.HandleFunc("POST /sair", func(w http.ResponseWriter, r *http.Request) {
 		http.SetCookie(w, &http.Cookie{Name: interp.SessionCookie, Value: "", Path: "/", MaxAge: -1, HttpOnly: true})

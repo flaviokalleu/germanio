@@ -645,6 +645,16 @@ func (p *Parser) parseTenha(head dline, body []dline) error {
 		in.InitialAdmin = head.toks[3].Value
 		return nil
 	}
+	// tenha avisos por e-mail (GEP 0013, em teste): read whole, the "e" of
+	// e-mail is not the conjunction of a list
+	if w := wordsOf(head.toks); len(w) >= 4 && w[1] == "avisos" && w[2] == "por" {
+		switch strings.Join(w[3:], "") {
+		case "e-mail", "email":
+			in.EmailNotices = true
+			in.EmailNoticesPos = p.at(head.toks[0])
+			return nil
+		}
+	}
 	items := splitItems(head.toks[1:])
 	// tenha papeis + indented list of roles
 	if len(items) == 1 && len(items[0]) == 1 && (items[0][0] == "papeis" || items[0][0] == "papel") && len(body) > 0 {
@@ -720,10 +730,25 @@ func (p *Parser) parseTenha(head dline, body []dline) error {
 				in.Roles = append(in.Roles, &ast.Role{Name: r, Level: level, Pos: pos})
 			}
 		default:
+			if !validName(name) {
+				return p.teach(positions[k], fmt.Sprintf("%q não pode ser o nome de um dado", strings.ReplaceAll(name, "_", " ")), "o nome de um dado tem só letras, números e espaços (lista separada por vírgula ou \"e\")", "escreva, por exemplo: tenha clientes e pedidos", "")
+			}
 			in.Entities = append(in.Entities, &ast.EntityDecl{Name: name, Pos: pos})
 		}
 	}
 	return nil
+}
+
+// validName: a data name is letters, digits and underscores (the spaces of
+// a multi-word name), starting with a letter.
+func validName(name string) bool {
+	for i, r := range name {
+		letter := r == '_' || (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || r > 127
+		if !letter && (i == 0 || r < '0' || r > '9') {
+			return false
+		}
+	}
+	return name != ""
 }
 
 func (p *Parser) parsePode(head dline, body []dline, only bool) error {

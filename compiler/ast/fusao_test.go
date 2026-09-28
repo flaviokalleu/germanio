@@ -28,6 +28,14 @@ func filled(t reflect.Type) reflect.Value {
 		return reflect.ValueOf(1).Convert(t)
 	case reflect.Interface:
 		return reflect.ValueOf("x")
+	case reflect.Struct:
+		v := reflect.New(t).Elem()
+		for i := 0; i < t.NumField(); i++ {
+			if v.Field(i).CanSet() {
+				v.Field(i).Set(filled(t.Field(i).Type))
+			}
+		}
+		return v
 	}
 	return reflect.Zero(t)
 }

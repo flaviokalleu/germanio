@@ -40,6 +40,9 @@ hierarchical syntax. Nothing below is in a tagged release yet.
   in the change's transaction, with the names of changed fields and never their values; each
   activity is seen only by whoever sees the record it describes. A vocabulary that translates
   the same name twice with different values is now an error instead of a silent override (G105).
+- Notices by e-mail (GEP 0013, in test): `tenha avisos por e-mail` sends each new pending item to
+  its owner after the change is saved. `tenha` now refuses impossible data names instead of
+  creating phantom data (G108).
 - Indicators (GEP 0012, in test): a page section `indicadores` with `total de issues abertas`;
   each number counts only what the viewer could list, and a page may be only indicators (a
   dashboard).

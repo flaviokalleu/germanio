@@ -14,13 +14,15 @@ type App struct {
 	// ActivityEntity is the data of the history ("" when no data keeps one;
 	// GEP 0011, em teste).
 	ActivityEntity string
-	Login          *LoginDecl
-	Integration    string // prefix, default "/api"
-	Pages          []*PageDecl
-	Init           []*Statement
-	MemberModel    string // model holding memberships (polymorphic)
-	Messages       string // "pt" (default) or "en"
-	Vocabulary     map[string]string
+	// EmailNotices: every new pending item is also sent by e-mail (GEP 0013).
+	EmailNotices bool
+	Login        *LoginDecl
+	Integration  string // prefix, default "/api"
+	Pages        []*PageDecl
+	Init         []*Statement
+	MemberModel  string // model holding memberships (polymorphic)
+	Messages     string // "pt" (default) or "en"
+	Vocabulary   map[string]string
 	// GlobalSearch: entities searched together (`tenha busca geral em …`).
 	GlobalSearch []string
 	// InitialAdmin: `tenha administrador inicial "root"` — login name of the

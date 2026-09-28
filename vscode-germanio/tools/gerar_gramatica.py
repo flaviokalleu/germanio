@@ -92,7 +92,7 @@ grammar = {
                           {"name": "constant.numeric.germanio", "match": r"[0-9]+"}]},
             {"begin": r"^\s*(" + w("tenha") + r")\s*$", "end": r"^(?=\S)",
              "beginCaptures": {"1": {"name": "keyword.other.intent.germanio"}},
-             "patterns": [{"include": "#comment"}, kw("keyword.other.intent.germanio", "papeis", "login", "cadastro", "recuperacao de senha"),
+             "patterns": [{"include": "#comment"}, kw("keyword.other.intent.germanio", "papeis", "login", "cadastro", "recuperacao de senha", "avisos por e-mail"),
                           {"name": "entity.name.type.germanio", "match": NAME}]},
             {"begin": r"^\s*(" + NAMES + r")\s+(" + words("pode ser vista por", "pode ser visto por", "podem ser vistas por", "podem ser vistos por") + r")\s*$", "end": r"^(?=\S)",
              "beginCaptures": {"1": {"name": "entity.name.type.germanio"}, "2": {"name": "keyword.other.permission.germanio"}},

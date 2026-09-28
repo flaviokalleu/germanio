@@ -54,6 +54,9 @@ type Intent struct {
 	MinRoles     []*CreatorRole    // todo grupo precisa ter pelo menos um owner
 	// Pending items (GEP 0009): issue gera pendência para responsaveis.
 	PendingItems []*PendingRule
+	// EmailNotices: `tenha avisos por e-mail` (GEP 0013, em teste).
+	EmailNotices    bool
+	EmailNoticesPos diagnostics.Position
 	// History: `issue guarda histórico` (GEP 0011, em teste).
 	History []*HistoryDecl
 	// Renames: renomeie nome de clientes para nome_completo (G93).
@@ -268,6 +271,10 @@ func MergeIntent(a, b *Intent) *Intent {
 	a.Capabilities = append(a.Capabilities, b.Capabilities...)
 	a.PendingItems = append(a.PendingItems, b.PendingItems...)
 	a.History = append(a.History, b.History...)
+	a.EmailNotices = a.EmailNotices || b.EmailNotices
+	if a.EmailNoticesPos.Line == 0 {
+		a.EmailNoticesPos = b.EmailNoticesPos
+	}
 	a.Renames = append(a.Renames, b.Renames...)
 	a.Discards = append(a.Discards, b.Discards...)
 	a.InitialFiles = append(a.InitialFiles, b.InitialFiles...)

@@ -147,7 +147,7 @@
             },
             {
               "name": "keyword.other.intent.germanio",
-              "match": "(?<![\\p{L}\\p{N}_])(?:r[eéê][cç][uú]p[eéê]r[aáàâã][cç][aáàâã][oóôõ]\\s+d[eéê]\\s+s[eéê]nh[aáàâã]|[cç][aáàâã]d[aáàâã]str[oóôõ]|p[aáàâã]p[eéê][ií]s|l[oóôõ]g[ií]n)(?![\\p{L}\\p{N}_])"
+              "match": "(?<![\\p{L}\\p{N}_])(?:r[eéê][cç][uú]p[eéê]r[aáàâã][cç][aáàâã][oóôõ]\\s+d[eéê]\\s+s[eéê]nh[aáàâã]|[aáàâã]v[ií]s[oóôõ]s\\s+p[oóôõ]r\\s+[eéê]-m[aáàâã][ií]l|[cç][aáàâã]d[aáàâã]str[oóôõ]|p[aáàâã]p[eéê][ií]s|l[oóôõ]g[ií]n)(?![\\p{L}\\p{N}_])"
             },
             {
               "name": "entity.name.type.germanio",

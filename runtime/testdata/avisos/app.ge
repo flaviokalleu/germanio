@@ -1,0 +1,33 @@
+crie sistema Suporte
+
+usuarios
+    tem
+        nome obrigatório
+        email obrigatório e único
+        senha min 8
+
+tenha login
+tenha cadastro
+tenha avisos por e-mail
+
+chamados
+    tem
+        titulo obrigatório
+        autor
+        responsaveis
+    pode
+        ser confidencial
+    regras
+        confidencial pode ser vista por
+            autor
+    pendência para
+        responsaveis
+    acesso
+        usuario
+            ver
+            criar
+            editar
+
+quando criar chamado
+    se chamado.titulo == "recusado"
+        recuse "Chamado recusado"

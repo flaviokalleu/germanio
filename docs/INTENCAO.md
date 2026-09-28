@@ -629,6 +629,10 @@ começa aberta; pode concluir; cada pessoa vê, conclui e exclui só as suas), q
 escreve quando o programa não o declara (`ge explain pendencias` mostra a origem). Para
 mostrá-las, a aplicação declara `página Pendências` + `mostre pendências`.
 
+`tenha avisos por e-mail` ([GEP 0013](gep/0013-avisos-por-email.md), **em teste**, não normativa
+até a decisão do mantenedor) manda cada nova pendência também por e-mail ao dono, depois de a
+mudança ser salva, com a configuração de e-mail da recuperação de senha.
+
 ## Migração
 
 O banco acompanha o programa sozinho quando isso não pode perder nada: um campo novo vira uma

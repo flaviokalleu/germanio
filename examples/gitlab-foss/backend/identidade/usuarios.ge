@@ -53,6 +53,7 @@ tokens de acesso
 tenha login
 tenha cadastro
 tenha recuperação de senha
+tenha avisos por e-mail
 tenha administrador inicial "root"
 login usa username e email
 login exige estado "ativo"

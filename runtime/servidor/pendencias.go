@@ -3,6 +3,8 @@ package servidor
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/flaviokalleu/germanio/compiler/ast"
 	interp "github.com/flaviokalleu/germanio/runtime/interpreter"
@@ -70,6 +72,7 @@ func (a *intentAPI) pending(ctx *interp.Context, atual map[string]any, e *ast.En
 			if _, err := a.in.Op(ctx, pe, "criar", map[string]any{"dono_id": id, "recurso": e.Singular, "recurso_id": after["id"], "motivo": motivo}); err != nil {
 				return err
 			}
+			a.noticeByEmail(ctx, id, motivo)
 		}
 		for id := range old {
 			if now[id] {
@@ -118,4 +121,37 @@ func (a *intentAPI) personSees(ctx *interp.Context, id int64, e *ast.Entity, rec
 		return false
 	}
 	return a.in.Can(ctx, person, e, "ver", record)
+}
+
+// noticeByEmail sends the pending item to its owner by e-mail (GEP 0013, em
+// teste) — after the change is saved, like every external effect (G86).
+func (a *intentAPI) noticeByEmail(ctx *interp.Context, id int64, motivo string) {
+	if !a.app.EmailNotices {
+		return
+	}
+	send, why := mailerFromEnv()
+	le := a.app.Entities[a.app.LoginEntity]
+	field := emailField(le)
+	if why != "" || field == "" {
+		return // said once at start
+	}
+	res, _ := a.in.Op(ctx, le.Singular, "buscar", id)
+	person, _ := res.(map[string]any)
+	to := toStr(person[field])
+	if to == "" {
+		return
+	}
+	subject := "Nova pendência — " + a.s.Program.System.Name
+	text := motivo
+	if public := strings.TrimSuffix(os.Getenv("GERMANIO_URL_PUBLICA"), "/"); public != "" {
+		text += "\n\nVeja suas pendências em " + public // the declared address, never the request's Host
+	}
+	run := func() error { return send(to, subject, text) }
+	if ctx != nil && ctx.Effects != nil {
+		ctx.Effects.Add(interp.Effect{Kind: "e-mail de aviso", Run: run})
+		return
+	}
+	if err := run(); err != nil {
+		fmt.Printf("[germanio] aviso por e-mail: %v\n", err)
+	}
 }

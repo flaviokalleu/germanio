@@ -66,6 +66,7 @@ Rules:
 | [0010](0010-descarte-de-campo.md) | Discarding a field on purpose (`descarte fax`) | Em teste |
 | [0011](0011-historico.md) | History (`guarda histórico`) | Em teste |
 | [0012](0012-indicadores.md) | Indicators (`indicadores` › `total de issues abertas`) | Em teste |
+| [0013](0013-avisos-por-email.md) | Notices by e-mail (`tenha avisos por e-mail`) | Em teste |
 
 Pending decisions that will become GEPs are listed in
 [`docs/INTENCAO.md` › Pendências da sintaxe hierárquica](../INTENCAO.md#pendências-da-sintaxe-hierárquica)
