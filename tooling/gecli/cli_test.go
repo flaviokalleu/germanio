@@ -172,3 +172,26 @@ func TestCLINativeTests(t *testing.T) {
 		t.Fatalf("expected no-tests diagnostic: %d %s", code, err)
 	}
 }
+
+// `ge new` creates an application in the intent syntax that passes its own
+// check and the formatter; `run` and `test` are the English names of rodar and
+// testar.
+func TestCLINewApplication(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "loja")
+	if code, _, err := invoke("new", dir); code != 0 {
+		t.Fatal(err)
+	}
+	app := filepath.Join(dir, "app.ge")
+	if code, out, err := invoke("check", app); code != 0 || !strings.Contains(out, "verificado") {
+		t.Fatalf("o projeto novo não passa no check: %s %s", out, err)
+	}
+	if code, out, err := invoke("fmt", dir, "--check"); code != 0 {
+		t.Fatalf("o projeto novo não está na forma canônica: %s %s", out, err)
+	}
+	if code, _, _ := invoke("new", dir); code == 0 {
+		t.Fatal("new sobrescreveu uma pasta existente")
+	}
+	if code, out, err := invoke("test", filepath.Join("..", "..", "examples", "germanio")); code != 0 {
+		t.Fatalf("ge test: %s %s", out, err)
+	}
+}

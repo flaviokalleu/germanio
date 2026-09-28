@@ -16,32 +16,39 @@ import (
 	"github.com/flaviokalleu/germanio/tooling/explicar"
 	"github.com/flaviokalleu/germanio/tooling/formatter"
 	"github.com/flaviokalleu/germanio/tooling/intelligence"
+	"github.com/flaviokalleu/germanio/versao"
 )
 
-const Version = "0.7.0-dev"
+// Version is the Germanio version (set by releases at link time, see versao).
+var Version = versao.Versao
+
 const help = `Germanio — simples para começar, explícito para evoluir.
 
 Uso: ge <comando> [arquivo]
-  init [subcomando]      Inicia ou expande um projeto através do Project Intelligence
-    ge init              Cria projeto guiado, rápido ou por descrição
-    ge init entidade N   Cria entidade, banco, API e página conectada
-    ge init pagina N     Cria página contextual, a partir da entidade existente
-    ge init dashboard    Cria dashboard com métricas do projeto
-  graph                  Exibe o Project Knowledge Graph textual
-  explain pagina N       Explica as conexões de uma página
-  eject componente       Transfere componente para controle manual
-  rodar [inicio.ge]       Verifica e executa Germanio
-  check [inicio.ge]       Verifica sem executar nem ler entrada
-  testar [arquivo/pasta] [--coverage]  Executa testes .ge isolados
-  fmt [arquivo ou pasta] Formata arquivos .ge; --check não escreve
-  novo <diretorio>        Cria um programa inicial sem sobrescrever
-  explicar <GE0000>       Explica um código de diagnóstico
-  versao                 Exibe a versão
-  ajuda                  Exibe esta ajuda
 
-Compatibilidade: ge rodar app.ge [porta], ge check app.ge.
-Comandos legados explícitos: ge legado <comando Germanio> [argumentos].
-A linguagem .ge é determinística e não utiliza LLM no compilador.
+Aplicações
+  new <nome>              Cria uma aplicação (app.ge, backend/, frontend/)
+  run [app.ge] [porta]    Verifica e executa (também: rodar; porta padrão 8080)
+  check [app.ge]          Verifica sem executar nem ler entrada
+  explain <dado> [app.ge] Mostra o que o Germanio sabe de um dado e de onde vem cada fato
+  fmt [arquivo ou pasta]  Formata arquivos .ge; --check não escreve
+
+Programas do núcleo
+  novo <pasta>            Cria um programa de terminal (inicio.ge)
+  test [arquivo ou pasta] Executa testes .ge do núcleo (também: testar); --coverage
+  explicar <GE0000>       Explica um código de diagnóstico
+
+Project Intelligence (experimental)
+  init [subcomando]       Inicia ou expande um projeto guiado (entidade N, pagina N, dashboard)
+  graph                   Exibe o Project Knowledge Graph textual
+  explain pagina <N>      Explica as conexões de uma página
+  eject <componente>      Transfere componente para controle manual
+
+  versao                  Exibe a versão (também: version, --version)
+  ajuda                   Exibe esta ajuda
+
+Comandos da CLI anterior: ge legado <comando> [argumentos] (build, docker, ide).
+A linguagem .ge é determinística e não utiliza IA no compilador nem na execução.
 `
 
 func Run(args []string, in io.Reader, out, stderr io.Writer) int {
@@ -123,7 +130,15 @@ func Run(args []string, in io.Reader, out, stderr io.Writer) int {
 		}
 		fmt.Fprintln(out, "Componente ejetado:", file)
 		return 0
-	case "testar":
+	case "new":
+		if len(rest) != 1 {
+			return fail(fmt.Errorf("Uso: ge new minha_aplicacao"))
+		}
+		if err := legacy.CriarProjeto(rest[0], out); err != nil {
+			return fail(err)
+		}
+		return 0
+	case "testar", "test":
 		path := "."
 		coverage, hasPath := false, false
 		for _, arg := range rest {
@@ -198,7 +213,10 @@ func Run(args []string, in io.Reader, out, stderr io.Writer) int {
 			}
 		}
 		return 0
-	case "rodar", "check":
+	case "rodar", "run", "check":
+		if cmd == "run" {
+			cmd = "rodar"
+		}
 		if len(rest) == 0 {
 			rest = []string{"inicio.ge"}
 		}
@@ -222,7 +240,11 @@ func Run(args []string, in io.Reader, out, stderr io.Writer) int {
 				for _, w := range explicar.Verificar(prog) {
 					fmt.Fprintln(out, "aviso:", w)
 				}
-				fmt.Fprintf(out, "Germanio: %s verificado — %d dados, %d papéis.\n", prog.System.Name, len(prog.App.Entities), len(prog.App.Roles))
+				name := "programa"
+				if prog.System != nil {
+					name = prog.System.Name
+				}
+				fmt.Fprintf(out, "Germanio: %s verificado — %d dados, %d papéis.\n", name, len(prog.App.Entities), len(prog.App.Roles))
 				return 0
 			}
 		}

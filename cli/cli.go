@@ -3,6 +3,7 @@ package cli
 import (
 	"embed"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -12,18 +13,13 @@ import (
 
 	"github.com/flaviokalleu/germanio/runtime"
 	"github.com/flaviokalleu/germanio/runtime/ide"
+	"github.com/flaviokalleu/germanio/versao"
 )
 
-const version = "0.6.0"
+var version = versao.Versao
 
 const banner = `
-  ███████╗██╗      █████╗ ███╗   ██╗ ██████╗
-  ██╔════╝██║     ██╔══██╗████╗  ██║██╔════╝
-  █████╗  ██║     ███████║██╔██╗ ██║██║  ███╗
-  ██╔══╝  ██║     ██╔══██╗██║╚██╗██║██║   ██║
-  ██║     ███████╗██║  ██║██║ ╚████║╚██████╔╝
-  ╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝
-  v%s - Tudo roda direto do .ge
+  Germanio %s — CLI anterior (use ge para o dia a dia)
 `
 
 // Run executes the CLI.
@@ -134,26 +130,22 @@ Uso: germanio <comando> [argumentos]
 Comandos:
   run <arquivo.ge> [porta]  Executa o arquivo .ge (porta padrao: 8080)
   check <arquivo.ge>        Verifica sintaxe sem executar
-  new <nome>                Cria projeto plano (tudo num arquivo so)
-  init <nome>               Cria projeto organizado (pastas por responsabilidade)
+  new <nome>                Cria projeto plano na sintaxe tecnica anterior
+  init <nome>               Cria projeto de intencao (app.ge, backend/, frontend/) = ge new
   build <arquivo.ge> [-o nome]  Compila em executavel standalone
   ide [diretorio] [-p porta]  Abre a IDE web do Germanio
   docker                    Gera Dockerfile para o projeto atual
   version                   Mostra a versao
   help                      Mostra esta ajuda
 
-Modos de projeto:
-  new   → Modo plano: um arquivo so, ideal para comecar rapido.
-  init  → Modo organizado: dados/, telas/, eventos/ separados.
-          Comece com 'new' e migre para 'init' quando crescer.
+Projetos novos: prefira "ge new <nome>" (o mesmo que "germanio init").
 
 Atalho:
   germanio inicio.ge           Mesmo que "germanio run inicio.ge"
 
 Exemplo:
-  germanio new meuapp          Cria projeto plano
-  germanio init meuapp         Cria projeto organizado
-  germanio run meuapp/inicio.ge
+  germanio init meuapp         Cria projeto de intencao
+  germanio run meuapp/app.ge
 `)
 }
 
@@ -989,14 +981,22 @@ CMD ["germanio", "run", "%s"]
 //go:embed all:modelos/organizado
 var modelos embed.FS
 
-// cmdInit creates an organized project: app.ge (entry point), backend/
-// (what exists, who may do what, what happens) and frontend/ (what appears).
-// Both folders are imported whole, so a new file needs no registration.
+// cmdInit creates an organized project (see CriarProjeto).
 func cmdInit(name string) {
+	if err := CriarProjeto(name, os.Stdout); err != nil {
+		fmt.Printf("[germanio] Erro: %s\n", err)
+		os.Exit(1)
+	}
+}
+
+// CriarProjeto creates an organized intent project: app.ge (entry point),
+// backend/ (what exists, who may do what, what happens) and frontend/ (what
+// appears). Both folders are imported whole, so a new file needs no
+// registration. It never overwrites an existing path.
+func CriarProjeto(name string, out io.Writer) error {
 	dir := name
 	if _, err := os.Stat(dir); err == nil {
-		fmt.Printf("[germanio] Erro: '%s' já existe\n", dir)
-		os.Exit(1)
+		return fmt.Errorf("'%s' já existe", dir)
 	}
 	title := filepath.Base(name)
 	title = strings.ToUpper(title[:1]) + title[1:]
@@ -1018,11 +1018,10 @@ func cmdInit(name string) {
 		return os.WriteFile(dest, data, 0644)
 	})
 	if err != nil {
-		fmt.Printf("[germanio] Erro ao criar o projeto: %s\n", err)
-		os.Exit(1)
+		return fmt.Errorf("erro ao criar o projeto: %w", err)
 	}
-	fmt.Printf("[germanio] Projeto '%s' criado!\n\n", title)
-	fmt.Printf(`  %s/
+	fmt.Fprintf(out, "Projeto '%s' criado:\n\n", title)
+	fmt.Fprintf(out, `  %s/
   ├── app.ge              ponto de partida (crie sistema + importar)
   ├── backend/            o que existe, quem pode, o que acontece
   │   ├── pessoas.ge      login e cadastro
@@ -1033,9 +1032,10 @@ func cmdInit(name string) {
   ├── .env.exemplo        copie para .env
   └── .gitignore
 `, name)
-	fmt.Printf("\n[germanio] Execute: cp %s %s && germanio run %s\n",
+	fmt.Fprintf(out, "\nExecute: cp %s %s && ge run %s\n",
 		filepath.Join(name, ".env.exemplo"), filepath.Join(name, ".env"), filepath.Join(name, "app.ge"))
-	fmt.Println("[germanio] Arquivos novos em backend/ ou frontend/ entram sozinhos no sistema.")
+	fmt.Fprintln(out, "Arquivos novos em backend/ ou frontend/ entram sozinhos no sistema.")
+	return nil
 }
 
 func cmdBuild(arquivo string, output string) {
