@@ -1,0 +1,25 @@
+# Pedidos feitos pelas pessoas.
+
+tenha pedidos
+
+pedido pertence a produto
+pedido pertence a usuario
+
+cada pedido tem
+    quantidade começa com 1
+
+pedido começa aberto
+
+pedido pode
+    pagar
+    cancelar
+
+usuario pode
+    criar seus pedidos
+    ver seus pedidos
+    pagar seus pedidos
+    cancelar seus pedidos
+
+antes de criar pedido
+    se produto.buscar(dados.produto_id).estoque < dados.quantidade
+        recuse "Estoque insuficiente"

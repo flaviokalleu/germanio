@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -44,77 +45,220 @@ func parseFG(arquivo string) (*ast.Program, error) {
 	return program, nil
 }
 
-// resolveImports processes all import statements recursively.
-func resolveImports(program *ast.Program, baseDir string, resolved map[string]bool) error {
+// resolveImports processes all import statements recursively. The folder
+// of the entry file is the project: imports never leave it, and the folders
+// backend/ and frontend/ directly inside it keep their roles (checkRole).
+func resolveImports(program *ast.Program, entry string, resolved map[string]bool) error {
+	entry, err := filepath.Abs(entry)
+	if err != nil {
+		return err
+	}
+	root := filepath.Dir(entry)
 	if resolved == nil {
-		resolved = make(map[string]bool)
+		resolved = map[string]bool{}
 	}
+	l := &loader{root: root, resolved: resolved, declares: map[string][]string{}}
+	_, err = l.importsFrom(program, entry)
+	return err
+}
 
+type loader struct {
+	root     string
+	resolved map[string]bool
+	declares map[string][]string // file → data it declares (tenha …)
+}
+
+// importsFrom loads the imports of one program and returns the data it
+// named (importar produtos e pedidos do backend).
+func (l *loader) importsFrom(program *ast.Program, from string) (map[string]bool, error) {
+	uses := map[string]bool{}
+	dir := filepath.Dir(from)
 	for _, imp := range program.Imports {
-		// Resolve path relative to the base .ge file
-		importPath := filepath.Join(baseDir, imp.Path)
-		absPath, err := filepath.Abs(importPath)
+		base := dir
+		if imp.FromRoot {
+			base = l.root
+		}
+		absPath, err := filepath.Abs(filepath.Join(base, imp.Path))
 		if err != nil {
-			return fmt.Errorf("caminho inválido: %s", imp.Path)
+			return nil, fmt.Errorf("caminho inválido: %s", imp.Path)
 		}
-
-		// Security: prevent path traversal outside project directory
-		absBase, _ := filepath.Abs(baseDir)
-		if !strings.HasPrefix(absPath, absBase) {
-			return fmt.Errorf("importação bloqueada: '%s' fora do diretório do projeto", imp.Path)
+		// Security: imports never leave the project folder.
+		if absPath != l.root && !strings.HasPrefix(absPath, l.root+string(filepath.Separator)) {
+			return nil, fmt.Errorf("importação bloqueada: '%s' fora do diretório do projeto", imp.Path)
 		}
-
-		// Avoid circular imports
-		if resolved[absPath] {
-			continue
-		}
-		resolved[absPath] = true
-
-		fmt.Printf("[germanio] Importando: %s\n", imp.Path)
-
-		imported, err := parseFG(absPath)
-		if err != nil {
-			return fmt.Errorf("erro ao importar %s: %w", imp.Path, err)
-		}
-
-		// Recursively resolve imports in the imported file
-		importDir := filepath.Dir(absPath)
-		if err := resolveImports(imported, importDir, resolved); err != nil {
-			return err
-		}
-
-		// Merge based on what was requested
-		switch imp.What {
-		case "tudo":
-			program.Merge(imported)
-		case "dados":
-			program.Models = append(program.Models, imported.Models...)
-		case "telas":
-			program.Screens = append(program.Screens, imported.Screens...)
-		case "eventos":
-			program.Events = append(program.Events, imported.Events...)
-		case "tema":
-			if imported.Theme != nil {
-				program.Theme = imported.Theme
-			}
-		case "logica":
-			program.Rules = append(program.Rules, imported.Rules...)
-		default:
-			// Import specific named items (e.g., importar produto de "dados.ge")
-			for _, m := range imported.Models {
-				if m.Name == imp.What {
-					program.Models = append(program.Models, m)
+		if imp.FromRoot {
+			if _, err := os.Stat(absPath); err != nil {
+				if _, err2 := os.Stat(absPath + ".ge"); err2 == nil {
+					absPath += ".ge"
+				} else {
+					return nil, fmt.Errorf("%s: importar %s do %s: não existe a pasta %s/", l.rel(from), strings.Join(imp.Names, ", "), imp.Path, imp.Path)
 				}
 			}
-			for _, s := range imported.Screens {
-				if s.Name == imp.What {
-					program.Screens = append(program.Screens, s)
+		}
+		files := []string{absPath}
+		if info, err := os.Stat(absPath); err == nil && info.IsDir() {
+			// importar "backend": every .ge inside, in alphabetical order.
+			if imp.What != "tudo" {
+				return nil, fmt.Errorf("importar %s de \"%s\": pastas são importadas inteiras (use: importar \"%s\")", imp.What, imp.Path, imp.Path)
+			}
+			files = nil
+			filepath.WalkDir(absPath, func(path string, d os.DirEntry, err error) error {
+				if err == nil && !d.IsDir() && filepath.Ext(path) == ".ge" {
+					files = append(files, path)
 				}
+				return nil
+			})
+			if len(files) == 0 {
+				return nil, fmt.Errorf("importar \"%s\": a pasta não tem arquivos .ge", imp.Path)
+			}
+		}
+		for _, file := range files {
+			if l.resolved[file] {
+				continue // already imported (or circular)
+			}
+			l.resolved[file] = true
+			rel := l.rel(file)
+			fmt.Printf("[germanio] Importando: %s\n", rel)
+			imported, err := parseFG(file)
+			if err != nil {
+				return nil, fmt.Errorf("erro ao importar %s: %w", rel, err)
+			}
+			if in := imported.Intent; in != nil {
+				for _, e := range in.Entities {
+					l.declares[file] = append(l.declares[file], e.Name)
+				}
+			}
+			own, err := l.importsFrom(imported, file)
+			if err != nil {
+				return nil, err
+			}
+			if err := checkRole(rel, imported, own); err != nil {
+				return nil, err
+			}
+			mergeImport(program, imported, imp.What)
+		}
+		if len(imp.Names) > 0 {
+			offered := map[string]bool{}
+			for _, f := range files {
+				for _, n := range l.declares[f] {
+					offered[dataKey(n)] = true
+				}
+			}
+			for _, n := range imp.Names {
+				if !offered[dataKey(n)] {
+					return nil, fmt.Errorf("%s: importar %s do %s: %s não tem %s%s", l.rel(from), n, imp.Path, imp.Path, n, listOffered(files, l))
+				}
+				uses[dataKey(n)] = true
 			}
 		}
 	}
+	return uses, nil
+}
 
+func (l *loader) rel(file string) string {
+	r, err := filepath.Rel(l.root, file)
+	if err != nil {
+		return file
+	}
+	return filepath.ToSlash(r)
+}
+
+// dataKey compares data names as people write them: plural or singular,
+// with or without accents.
+func dataKey(name string) string {
+	n := strings.ToLower(strings.NewReplacer("á", "a", "à", "a", "â", "a", "ã", "a", "é", "e", "ê", "e", "í", "i", "ó", "o", "ô", "o", "õ", "o", "ú", "u", "ç", "c", " ", "_").Replace(name))
+	return parser.Singular(n)
+}
+
+func listOffered(files []string, l *loader) string {
+	var names []string
+	for _, f := range files {
+		names = append(names, l.declares[f]...)
+	}
+	if len(names) == 0 {
+		return ""
+	}
+	sort.Strings(names)
+	return " (tem: " + strings.Join(names, ", ") + ")"
+}
+
+// checkRole keeps the two sides of an organized project honest:
+// frontend/ describes what appears (pages, menu, theme); backend/ describes
+// what exists, who may do what and what happens — never screens.
+func checkRole(rel string, p *ast.Program, uses map[string]bool) error {
+	parts := strings.Split(filepath.ToSlash(rel), "/")
+	if len(parts) < 2 {
+		return nil
+	}
+	file := filepath.ToSlash(rel)
+	in := p.Intent
+	switch parts[0] {
+	case "frontend":
+		what := ""
+		switch {
+		case in != nil && (len(in.Entities) > 0 || len(in.FieldBlocks) > 0 || len(in.Relations) > 0 || len(in.States) > 0):
+			what = "o que existe (tenha, tem, pertence, começa)"
+		case in != nil && (len(in.Grants) > 0 || len(in.Permits) > 0 || len(in.Roles) > 0 || len(in.Visibility) > 0 || len(in.Creators) > 0):
+			what = "quem pode fazer o quê (pode, permita, papéis)"
+		case in != nil && (len(in.Hooks) > 0 || len(in.Init) > 0 || len(in.Executions) > 0 || len(in.Subscriptions) > 0):
+			what = "o que acontece (quando, antes de, ao iniciar)"
+		case in != nil && (len(in.Integrations) > 0 || in.Login != nil || len(in.Vocabulary) > 0 || in.IntegrationPrefix != ""):
+			what = "login ou integração"
+		case len(p.Models) > 0 || len(p.Functions) > 0 || len(p.Rules) > 0 || len(p.Routes) > 0 || len(p.Crons) > 0 || p.Database != nil || p.Auth != nil:
+			what = "dados, lógica ou rotas"
+		}
+		if what != "" {
+			return fmt.Errorf("%s: frontend/ mostra o que aparece (páginas, menu, tema); %s vai em backend/", file, what)
+		}
+		// Each page file says what it uses from the backend.
+		if in != nil {
+			for _, pg := range in.Pages {
+				target := pg.Show
+				if target == "" {
+					target = pg.Manage
+				}
+				if target != "" && !uses[dataKey(target)] {
+					return fmt.Errorf("%s:%d: a página %s mostra %s, mas o arquivo não importa — escreva no início: importar %s do backend", file, pg.Pos.Line, pg.Name, target, target)
+				}
+			}
+		}
+	case "backend":
+		if (in != nil && len(in.Pages) > 0) || len(p.Screens) > 0 || len(p.Pages) > 0 || len(p.SidebarItems) > 0 || p.Theme != nil {
+			return fmt.Errorf("%s: backend/ descreve o que existe e as regras; páginas, menu e tema vão em frontend/", file)
+		}
+	}
 	return nil
+}
+
+func mergeImport(program, imported *ast.Program, what string) {
+	switch what {
+	case "tudo":
+		program.Merge(imported)
+	case "dados":
+		program.Models = append(program.Models, imported.Models...)
+	case "telas":
+		program.Screens = append(program.Screens, imported.Screens...)
+	case "eventos":
+		program.Events = append(program.Events, imported.Events...)
+	case "tema":
+		if imported.Theme != nil {
+			program.Theme = imported.Theme
+		}
+	case "logica":
+		program.Rules = append(program.Rules, imported.Rules...)
+	default:
+		// Import specific named items (e.g., importar produto de "dados.ge")
+		for _, m := range imported.Models {
+			if m.Name == what {
+				program.Models = append(program.Models, m)
+			}
+		}
+		for _, s := range imported.Screens {
+			if s.Name == what {
+				program.Screens = append(program.Screens, s)
+			}
+		}
+	}
 }
 
 // Executar loads a .ge file and runs the application.
@@ -163,8 +307,7 @@ func Carregar(arquivo string, porta string) (*App, error) {
 		return nil, err
 	}
 
-	baseDir := filepath.Dir(arquivo)
-	if err := resolveImports(program, baseDir, nil); err != nil {
+	if err := resolveImports(program, arquivo, nil); err != nil {
 		return nil, err
 	}
 
@@ -315,8 +458,7 @@ func Verificar(arquivo string) error {
 		return err
 	}
 
-	baseDir := filepath.Dir(arquivo)
-	if err := resolveImports(program, baseDir, nil); err != nil {
+	if err := resolveImports(program, arquivo, nil); err != nil {
 		return err
 	}
 	if err := parser.ResolveIntent(program); err != nil {
@@ -387,7 +529,7 @@ func Compilar(arquivo string) (*ast.Program, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := resolveImportsQuiet(program, filepath.Dir(arquivo)); err != nil {
+	if err := resolveImportsQuiet(program, arquivo); err != nil {
 		return nil, err
 	}
 	if err := parser.ResolveIntent(program); err != nil {
@@ -399,10 +541,10 @@ func Compilar(arquivo string) (*ast.Program, error) {
 	return program, nil
 }
 
-func resolveImportsQuiet(program *ast.Program, dir string) error {
+func resolveImportsQuiet(program *ast.Program, entry string) error {
 	stdout := os.Stdout
 	devnull, _ := os.Open(os.DevNull)
 	os.Stdout = devnull
 	defer func() { os.Stdout = stdout; devnull.Close() }()
-	return resolveImports(program, dir, nil)
+	return resolveImports(program, entry, nil)
 }

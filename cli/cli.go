@@ -1,7 +1,9 @@
 package cli
 
 import (
+	"embed"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -982,197 +984,58 @@ CMD ["germanio", "run", "%s"]
 	fmt.Println("[germanio] Execute: docker build -t meu-app . && docker run -p 8080:8080 meu-app")
 }
 
+// modelos holds the project templates written by `germanio init`.
+//
+//go:embed all:modelos/organizado
+var modelos embed.FS
+
+// cmdInit creates an organized project: app.ge (entry point), backend/
+// (what exists, who may do what, what happens) and frontend/ (what appears).
+// Both folders are imported whole, so a new file needs no registration.
 func cmdInit(name string) {
 	dir := name
-	baseName := filepath.Base(name)
-	title := strings.ToUpper(baseName[:1]) + baseName[1:]
-
-	// Criar estrutura organizada por responsabilidade
-	// Inspirado no React: cada pasta tem um papel claro
-	dirs := []string{
-		dir,
-		filepath.Join(dir, "dados"),  // modelos (como models/ ou types/)
-		filepath.Join(dir, "telas"),  // interfaces (como pages/ ou components/)
-		filepath.Join(dir, "eventos"), // interacoes (como handlers/ ou hooks/)
+	if _, err := os.Stat(dir); err == nil {
+		fmt.Printf("[germanio] Erro: '%s' já existe\n", dir)
+		os.Exit(1)
 	}
-	for _, d := range dirs {
-		if err := os.MkdirAll(d, 0755); err != nil {
-			fmt.Printf("Erro: %s\n", err)
-			os.Exit(1)
+	title := filepath.Base(name)
+	title = strings.ToUpper(title[:1]) + title[1:]
+	const root = "modelos/organizado"
+	err := fs.WalkDir(modelos, root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
 		}
-	}
-
-	// ── inicio.ge ── entry point (como App.js no React)
-	inicio := `sistema ` + baseName + `
-
-importar "tema.ge"
-importar "dados/produto.ge"
-importar "dados/cliente.ge"
-importar "telas/produtos.ge"
-importar "telas/clientes.ge"
-importar "eventos/acoes.ge"
-`
-	// ── tema.ge ── visual (como theme.js)
-	tema := `tema
-  cor primaria "#6366f1"
-  cor secundaria "#8b5cf6"
-  cor destaque "#f59e0b"
-`
-
-	// ── dados/produto.ge ── um modelo por arquivo (como um component)
-	produto := `dados
-
-  produto
-    nome: texto obrigatorio
-    descricao: texto
-    preco: dinheiro
-    estoque: numero
-    categoria: texto
-    status: status
-`
-
-	// ── dados/cliente.ge
-	cliente := `dados
-
-  cliente
-    nome: texto obrigatorio
-    email: email unico
-    telefone: telefone
-    cidade: texto
-    status: status
-`
-
-	// ── telas/produtos.ge
-	telaProdutos := `telas
-
-  tela produtos
-    titulo "Produtos"
-    lista produto
-      mostrar nome
-      mostrar preco
-      mostrar estoque
-      mostrar categoria
-      mostrar status
-    botao azul
-      texto "Novo Produto"
-`
-
-	// ── telas/clientes.ge
-	telaClientes := `telas
-
-  tela clientes
-    titulo "Clientes"
-    lista cliente
-      mostrar nome
-      mostrar email
-      mostrar telefone
-      mostrar cidade
-      mostrar status
-    botao verde
-      texto "Novo Cliente"
-`
-
-	// ── eventos/acoes.ge
-	acoes := `eventos
-
-  quando clicar "Novo Produto"
-    criar produto
-
-  quando clicar "Novo Cliente"
-    criar cliente
-`
-
-	// Mapa de arquivos a criar
-	files := map[string]string{
-		filepath.Join(dir, "inicio.ge"):           inicio,
-		filepath.Join(dir, "tema.ge"):              tema,
-		filepath.Join(dir, "dados", "produto.ge"):  produto,
-		filepath.Join(dir, "dados", "cliente.ge"):  cliente,
-		filepath.Join(dir, "telas", "produtos.ge"): telaProdutos,
-		filepath.Join(dir, "telas", "clientes.ge"): telaClientes,
-		filepath.Join(dir, "eventos", "acoes.ge"):  acoes,
-	}
-	for path, content := range files {
-		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-			fmt.Printf("Erro ao criar %s: %s\n", path, err)
-			os.Exit(1)
+		rel, _ := filepath.Rel(root, path)
+		dest := filepath.Join(dir, rel)
+		if d.IsDir() {
+			return os.MkdirAll(dest, 0755)
 		}
-	}
-
-	// ── .env
-	envContent := `# Configuracao do projeto ` + baseName + `
-GERMANIO_PORT=8080
-GERMANIO_DB_TYPE=sqlite
-GERMANIO_DB_NAME=` + baseName + `.db
-`
-	envPath := filepath.Join(dir, ".env")
-	if err := os.WriteFile(envPath, []byte(envContent), 0644); err != nil {
-		fmt.Printf("Erro ao criar .env: %s\n", err)
+		data, err := modelos.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		data = []byte(strings.ReplaceAll(string(data), "{{nome}}", title))
+		return os.WriteFile(dest, data, 0644)
+	})
+	if err != nil {
+		fmt.Printf("[germanio] Erro ao criar o projeto: %s\n", err)
 		os.Exit(1)
 	}
-
-	// ── .gitignore
-	gitignore := `*.db
-*.db-shm
-*.db-wal
-.env
-germanio
-germanio.exe
-`
-	giPath := filepath.Join(dir, ".gitignore")
-	if err := os.WriteFile(giPath, []byte(gitignore), 0644); err != nil {
-		fmt.Printf("Erro ao criar .gitignore: %s\n", err)
-		os.Exit(1)
-	}
-
-	// ── Dockerfile
-	dockerfileContent := `FROM golang:1.26-alpine AS builder
-
-WORKDIR /build
-COPY go.mod go.sum ./
-RUN go mod download
-COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o germanio .
-
-FROM alpine:3.20
-RUN apk add --no-cache ca-certificates
-WORKDIR /app
-COPY --from=builder /build/germanio /usr/local/bin/germanio
-COPY *.ge ./
-COPY dados/ ./dados/
-COPY telas/ ./telas/
-COPY eventos/ ./eventos/
-
-EXPOSE 8080
-CMD ["germanio", "run", "inicio.ge"]
-`
-	dfPath := filepath.Join(dir, "Dockerfile")
-	if err := os.WriteFile(dfPath, []byte(dockerfileContent), 0644); err != nil {
-		fmt.Printf("Erro ao criar Dockerfile: %s\n", err)
-		os.Exit(1)
-	}
-
-	fmt.Printf("[germanio] Projeto '%s' criado! (modo organizado)\n", title)
-	fmt.Println()
-	fmt.Printf("  %s/\n", name)
-	fmt.Printf("  ├── inicio.ge          (entry point)\n")
-	fmt.Printf("  ├── tema.ge            (visual)\n")
-	fmt.Printf("  ├── dados/\n")
-	fmt.Printf("  │   ├── produto.ge     (modelo)\n")
-	fmt.Printf("  │   └── cliente.ge     (modelo)\n")
-	fmt.Printf("  ├── telas/\n")
-	fmt.Printf("  │   ├── produtos.ge    (interface)\n")
-	fmt.Printf("  │   └── clientes.ge    (interface)\n")
-	fmt.Printf("  ├── eventos/\n")
-	fmt.Printf("  │   └── acoes.ge       (interacoes)\n")
-	fmt.Printf("  ├── .env\n")
-	fmt.Printf("  ├── .gitignore\n")
-	fmt.Printf("  └── Dockerfile\n")
-	fmt.Println()
-	fmt.Printf("[germanio] Execute: germanio run %s\n", filepath.Join(name, "inicio.ge"))
-	fmt.Println()
-	fmt.Println("[germanio] Adicione novos modelos em dados/, telas em telas/,")
-	fmt.Println("        e importe no inicio.ge. Cada arquivo cuida de uma coisa.")
+	fmt.Printf("[germanio] Projeto '%s' criado!\n\n", title)
+	fmt.Printf(`  %s/
+  ├── app.ge              ponto de partida (crie sistema + importar)
+  ├── backend/            o que existe, quem pode, o que acontece
+  │   ├── pessoas.ge      login e cadastro
+  │   ├── produtos.ge     produtos e quem pode mexer neles
+  │   └── pedidos.ge      pedidos, estados e regras
+  ├── frontend/           o que aparece
+  │   └── loja.ge         páginas
+  ├── .env.exemplo        copie para .env
+  └── .gitignore
+`, name)
+	fmt.Printf("\n[germanio] Execute: cp %s %s && germanio run %s\n",
+		filepath.Join(name, ".env.exemplo"), filepath.Join(name, ".env"), filepath.Join(name, "app.ge"))
+	fmt.Println("[germanio] Arquivos novos em backend/ ou frontend/ entram sozinhos no sistema.")
 }
 
 func cmdBuild(arquivo string, output string) {

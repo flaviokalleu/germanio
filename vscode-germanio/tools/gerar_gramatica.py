@@ -123,6 +123,12 @@ grammar = {
                                              {"name": "entity.name.type.germanio", "match": NAME}]}}},
         ]},
         "intent": {"patterns": [
+            # importar produtos e pedidos do backend
+            {"match": r"^\s*(" + w("importar") + r")\s+((?:" + NAME + r")(?:\s*(?:,|\be\b)\s*" + NAME + r")*)\s+(" + words("do", "da", "de") + r")\s+(" + NAME + r")\s*$",
+             "captures": {"1": {"name": "keyword.control.import.germanio"},
+                          "2": {"patterns": [kw("keyword.operator.logical.germanio", "e"), {"name": "punctuation.separator.germanio", "match": ","},
+                                             {"name": "entity.name.type.germanio", "match": NAME}]},
+                          "3": {"name": "keyword.control.import.germanio"}, "4": {"name": "entity.name.namespace.germanio"}}},
             {"include": "#blocks"},
             {"begin": r"^\s*(" + w("crie") + r")\s+(" + w("pagina") + r")\s+(.+?)\s*$", "end": r"^(?=\S)",
              "beginCaptures": {"1": {"name": "keyword.other.intent.germanio"}, "2": {"name": "keyword.other.intent.germanio"}, "3": {"name": "entity.name.section.germanio"}},

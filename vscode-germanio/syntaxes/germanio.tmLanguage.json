@@ -326,6 +326,36 @@
     "intent": {
       "patterns": [
         {
+          "match": "^\\s*([ií]mp[oóôõ]rt[aáàâã]r)\\s+((?:[\\p{L}_][\\p{L}\\p{N}_]*)(?:\\s*(?:,|\\be\\b)\\s*[\\p{L}_][\\p{L}\\p{N}_]*)*)\\s+((?:d[oóôõ]|d[aáàâã]|d[eéê]))\\s+([\\p{L}_][\\p{L}\\p{N}_]*)\\s*$",
+          "captures": {
+            "1": {
+              "name": "keyword.control.import.germanio"
+            },
+            "2": {
+              "patterns": [
+                {
+                  "name": "keyword.operator.logical.germanio",
+                  "match": "(?<![\\p{L}\\p{N}_])(?:[eéê])(?![\\p{L}\\p{N}_])"
+                },
+                {
+                  "name": "punctuation.separator.germanio",
+                  "match": ","
+                },
+                {
+                  "name": "entity.name.type.germanio",
+                  "match": "[\\p{L}_][\\p{L}\\p{N}_]*"
+                }
+              ]
+            },
+            "3": {
+              "name": "keyword.control.import.germanio"
+            },
+            "4": {
+              "name": "entity.name.namespace.germanio"
+            }
+          }
+        },
+        {
           "include": "#blocks"
         },
         {

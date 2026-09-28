@@ -25,6 +25,34 @@ crie página Clientes
 permita pesquisar clientes
 ```
 
+## Organização do projeto
+
+`germanio init loja` cria um projeto com dois lados, como um app com backend e
+frontend separados (Laravel, Next.js), mas sem rotas nem controllers:
+
+```text
+loja/
+├── app.ge              crie sistema Loja + importar "backend" + importar "frontend"
+├── backend/            o que existe, quem pode fazer o quê, o que acontece
+│   ├── pessoas.ge      tenha usuarios, tenha login
+│   ├── produtos.ge     tenha produtos, cada produto tem…, somente administrador pode…
+│   └── pedidos.ge      pedido começa aberto, pedido pode pagar, antes de criar pedido…
+├── frontend/           o que aparece
+│   └── loja.ge         importar produtos e pedidos do backend + crie página …
+├── .env.exemplo
+└── .gitignore
+```
+
+- `importar "backend"` importa a pasta inteira (todos os `.ge`, em ordem alfabética):
+  um arquivo novo entra no sistema sem registro manual.
+- Cada arquivo do `frontend/` diz o que usa: `importar produtos e pedidos do backend`.
+  Uma página só mostra dados importados, e o que se importa precisa existir no backend —
+  os erros dizem a linha a escrever.
+- Cada lado mantém seu papel: `frontend/` só tem páginas; `tenha`, `pode`, `quando`,
+  login e integração ficam no `backend/`, e páginas nunca ficam no `backend/`.
+- A página diz *o que aparece*; o backend decide *quem pode*. `permita criar` numa página
+  mostra o formulário apenas a quem o backend permite.
+
 ## Níveis
 
 | Nível | Para quê | Exemplos |

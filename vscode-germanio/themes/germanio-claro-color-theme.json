@@ -53,10 +53,26 @@
       }
     },
     {
+      "name": "keyword.control.import",
+      "scope": "keyword.control.import.germanio",
+      "settings": {
+        "foreground": "#6a3fc8",
+        "fontStyle": "bold"
+      }
+    },
+    {
       "name": "keyword.control",
       "scope": "keyword.control.germanio",
       "settings": {
         "foreground": "#c0266a"
+      }
+    },
+    {
+      "name": "entity.name.namespace",
+      "scope": "entity.name.namespace.germanio",
+      "settings": {
+        "foreground": "#8e2a7a",
+        "fontStyle": "bold"
       }
     },
     {

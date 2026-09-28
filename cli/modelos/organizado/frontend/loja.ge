@@ -1,0 +1,16 @@
+# As páginas da loja. Quem pode cada ação é decidido no backend.
+
+importar produtos e pedidos do backend
+
+crie página Produtos
+    mostre produtos
+    permita
+        pesquisar
+        criar
+        editar
+        excluir
+
+crie página Pedidos
+    mostre pedidos
+    permita
+        criar

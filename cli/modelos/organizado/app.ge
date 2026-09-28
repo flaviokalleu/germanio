@@ -1,0 +1,11 @@
+# {{nome}} — ponto de partida da aplicação.
+#
+#   backend/   o que existe, quem pode fazer o quê e o que acontece
+#   frontend/  o que aparece para as pessoas
+#
+# Cada pasta é importada inteira: crie um arquivo novo e ele já faz parte do sistema.
+
+crie sistema {{nome}}
+
+importar "backend"
+importar "frontend"

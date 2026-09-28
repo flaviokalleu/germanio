@@ -958,15 +958,39 @@ func (p *Parser) parseImportar() error {
 		return nil
 	}
 
-	// importar <what> de "file.ge"
-	imp.What = p.advance().Value
-	p.skipIndent()
-
-	// expect 'de'
-	if p.current().Type == lexer.TokenDe {
+	// importar produtos e pedidos do backend  /  importar produtos de "backend/produtos.ge"
+	imp.Pos = p.at(tok)
+	var names, raw []string
+	for !p.isAtEnd() && p.current().Type != lexer.TokenNewline && p.current().Type != lexer.TokenString {
+		t := p.current()
+		if t.Type == lexer.TokenDe || (t.Type == lexer.TokenIdentifier && (t.Value == "do" || t.Value == "da" || t.Value == "dos" || t.Value == "das")) {
+			break
+		}
 		p.advance()
-		p.skipIndent()
+		if t.Type == lexer.TokenComma || t.Type == lexer.TokenE {
+			continue
+		}
+		names, raw = append(names, t.Name()), append(raw, t.Value)
 	}
+	if len(names) == 0 {
+		return p.errorf(tok, `use: importar "arquivo.ge" ou importar produtos e pedidos do backend`)
+	}
+	p.advance() // de / do / da
+	if len(names) > 1 || p.current().Type == lexer.TokenIdentifier {
+		imp.What, imp.Names = "tudo", names
+		switch src := p.current(); src.Type {
+		case lexer.TokenString:
+			imp.Path = p.advance().Value
+		case lexer.TokenIdentifier:
+			imp.Path, imp.FromRoot = p.advance().Value, true
+		default:
+			return p.errorf(tok, "importar %s: diga de onde (por exemplo: do backend)", strings.Join(names, ", "))
+		}
+		p.program.Imports = append(p.program.Imports, imp)
+		return nil
+	}
+	imp.What = raw[0]
+	p.skipIndent()
 
 	if p.current().Type == lexer.TokenString {
 		imp.Path = p.advance().Value

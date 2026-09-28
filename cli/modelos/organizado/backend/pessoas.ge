@@ -1,0 +1,19 @@
+# Quem usa a loja e como entra.
+
+tenha usuarios
+
+cada usuario tem
+    nome obrigatório
+    email obrigatório e único
+    senha min 8
+    admin começa com falso
+
+tenha login
+tenha cadastro
+login usa email
+
+usuario pode editar seu perfil
+
+ao iniciar
+    se usuario.contar() == 0 e ambiente.ler("ADMIN_SENHA", nulo) != nulo
+        usuario.criar({nome: "Administrador", email: ambiente.ler("ADMIN_EMAIL", "admin@loja.local"), senha: ambiente.ler("ADMIN_SENHA"), admin: verdadeiro})

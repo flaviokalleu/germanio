@@ -2,34 +2,76 @@
   "name": "germanio",
   "displayName": "Germanio",
   "description": "Linguagem Germanio (.ge): cores para cada parte da frase, ícone dos arquivos, temas e atalhos.",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "publisher": "flaviokalleu",
   "license": "MIT",
   "icon": "icon.png",
-  "galleryBanner": { "color": "#2b1f55", "theme": "dark" },
-  "engines": { "vscode": "^1.75.0" },
-  "categories": ["Programming Languages", "Snippets", "Themes"],
-  "keywords": ["germanio", "ge", "intenção", "declarativo", "fullstack", "português"],
-  "repository": { "type": "git", "url": "https://github.com/flaviokalleu/germanio" },
+  "galleryBanner": {
+    "color": "#2b1f55",
+    "theme": "dark"
+  },
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Snippets",
+    "Themes"
+  ],
+  "keywords": [
+    "germanio",
+    "ge",
+    "intenção",
+    "declarativo",
+    "fullstack",
+    "português"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/flaviokalleu/germanio"
+  },
   "contributes": {
     "languages": [
       {
         "id": "germanio",
-        "aliases": ["Germanio", "germanio"],
-        "extensions": [".ge"],
+        "aliases": [
+          "Germanio",
+          "germanio"
+        ],
+        "extensions": [
+          ".ge"
+        ],
         "configuration": "./language-configuration.json",
-        "icon": { "light": "./icons/ge.svg", "dark": "./icons/ge.svg" }
+        "icon": {
+          "light": "./icons/ge.svg",
+          "dark": "./icons/ge.svg"
+        }
       }
     ],
     "grammars": [
-      { "language": "germanio", "scopeName": "source.germanio", "path": "./syntaxes/germanio.tmLanguage.json" }
+      {
+        "language": "germanio",
+        "scopeName": "source.germanio",
+        "path": "./syntaxes/germanio.tmLanguage.json"
+      }
     ],
     "snippets": [
-      { "language": "germanio", "path": "./snippets/germanio.json" }
+      {
+        "language": "germanio",
+        "path": "./snippets/germanio.json"
+      }
     ],
     "themes": [
-      { "label": "Germanio Escuro", "uiTheme": "vs-dark", "path": "./themes/germanio-escuro-color-theme.json" },
-      { "label": "Germanio Claro", "uiTheme": "vs", "path": "./themes/germanio-claro-color-theme.json" }
+      {
+        "label": "Germanio Escuro",
+        "uiTheme": "vs-dark",
+        "path": "./themes/germanio-escuro-color-theme.json"
+      },
+      {
+        "label": "Germanio Claro",
+        "uiTheme": "vs",
+        "path": "./themes/germanio-claro-color-theme.json"
+      }
     ],
     "configurationDefaults": {
       "[germanio]": {

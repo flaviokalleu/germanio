@@ -84,6 +84,11 @@ type Import struct {
 	Pos  diagnostics.Position
 	What string
 	Path string
+	// Names: `importar produtos e pedidos do backend` — the data this file
+	// uses from another part of the project. Path is then a folder or file
+	// name taken from the project root (FromRoot) or a quoted path.
+	Names    []string
+	FromRoot bool
 }
 
 func (i *Import) NodeType() string { return "Import" }
