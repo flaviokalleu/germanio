@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="front" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#2a2f3a"/>
+      <stop offset="1" stop-color="#0d1016"/>
+    </linearGradient>
+    <linearGradient id="side" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#bfe9ff"/>
+      <stop offset="0.45" stop-color="#3aa8ff"/>
+      <stop offset="1" stop-color="#0b5fd6"/>
+    </linearGradient>
+    <linearGradient id="top" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#7cc9ff"/>
+    </linearGradient>
+    <linearGradient id="right" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1a1e27"/>
+      <stop offset="1" stop-color="#05070b"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="9" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="soft" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <!-- outer glow silhouette -->
+  <path d="M300 28 L412 150 L430 330 L336 486 L168 486 L84 316 L166 134 Z"
+        fill="#1f8fff" opacity="0.55" filter="url(#glow)"/>
+  <!-- facets -->
+  <path d="M300 28 L166 134 L84 316 L150 330 L214 170 Z" fill="url(#side)"/>
+  <path d="M300 28 L214 170 L372 214 L412 150 Z" fill="url(#top)"/>
+  <path d="M214 170 L150 330 L168 486 L336 486 L380 400 L372 214 Z" fill="url(#front)"/>
+  <path d="M84 316 L150 330 L168 486 Z" fill="#1c6fe0"/>
+  <path d="M372 214 L412 150 L430 330 L380 400 Z" fill="url(#right)"/>
+  <path d="M380 400 L430 330 L336 486 Z" fill="#0a4fb8"/>
+  <!-- glowing edges -->
+  <g fill="none" stroke="#8fd6ff" stroke-width="7" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M300 28 L412 150 L430 330 L336 486 L168 486 L84 316 L166 134 Z"/>
+    <path d="M300 28 L214 170 L372 214 L412 150 M214 170 L150 330 L84 316 M150 330 L168 486 M372 214 L380 400 L430 330 M380 400 L336 486" stroke-width="4" opacity="0.8"/>
+  </g>
+  <!-- face -->
+  <g filter="url(#soft)">
+    <ellipse cx="226" cy="290" rx="30" ry="40" fill="#07121f" stroke="#2fb4ff" stroke-width="9"/>
+    <ellipse cx="326" cy="290" rx="30" ry="40" fill="#07121f" stroke="#2fb4ff" stroke-width="9"/>
+    <path d="M232 372 L262 390 L232 408" fill="none" stroke="#2fb4ff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M280 408 L324 408" stroke="#2fb4ff" stroke-width="12" stroke-linecap="round"/>
+  </g>
+  <circle cx="232" cy="278" r="9" fill="#ffffff"/>
+  <circle cx="332" cy="278" r="9" fill="#ffffff"/>
+</svg>

@@ -1,259 +1,72 @@
 {
   "Sistema": {
-    "prefix": "sistema",
-    "body": [
-      "sistema ${1:meuapp}",
-      "",
-      "$0"
-    ],
-    "description": "Declaração do sistema"
+    "prefix": ["crie sistema", "sistema"],
+    "body": ["crie sistema ${1:Loja}", "", "tenha ${2:clientes}", "", "cada ${3:cliente} tem", "\t${4:nome obrigatório}", "\t${5:email obrigatório e único}", "", "crie página ${6:Clientes}", "\tmostre ${2:clientes}", "\tpermita", "\t\tcriar", "\t\teditar", "\t\texcluir", "$0"],
+    "description": "Um sistema completo: dados, campos e página"
   },
-  "Importar": {
-    "prefix": "importar",
-    "body": [
-      "importar \"${1:arquivo}.ge\""
-    ],
-    "description": "Importar arquivo"
+  "Dados com campos": {
+    "prefix": ["tem", "cada tem"],
+    "body": ["${1:cliente} tem", "\t${2:nome obrigatório}", "\t${3:email obrigatório e único}", "$0"],
+    "description": "O que um dado tem"
   },
-  "Importar de": {
-    "prefix": "importar de",
-    "body": [
-      "importar ${1:dados} de \"${2:arquivo}.ge\""
-    ],
-    "description": "Importar seção específica"
+  "Relação pertence a": {
+    "prefix": "pertence",
+    "body": "${1:pedido} pertence a ${2:cliente}",
+    "description": "Um dado pertence a outro"
   },
-  "Tema": {
-    "prefix": "tema",
-    "body": [
-      "tema",
-      "  cor primaria \"${1:#6366f1}\"",
-      "  cor secundaria \"${2:#8b5cf6}\"",
-      "  cor destaque \"${3:#f59e0b}\"",
-      ""
-    ],
-    "description": "Bloco de tema visual"
+  "Login": {
+    "prefix": ["tenha login", "login"],
+    "body": ["tenha login", "tenha cadastro", "login usa ${1:email}", "$0"],
+    "description": "Pessoas entram no sistema (senha guardada com segurança)"
   },
-  "Dados - Modelo": {
-    "prefix": "modelo",
-    "body": [
-      "  ${1:nome}",
-      "    ${2:campo}: ${3|texto,numero,dinheiro,email,telefone,status,senha,data,booleano,imagem,texto_longo|}${4| ,obrigatorio,obrigatorio unico|}",
-      "    $0"
-    ],
-    "description": "Novo modelo dentro de dados"
+  "Papéis": {
+    "prefix": ["tenha papeis", "papeis"],
+    "body": ["tenha papeis", "\t${1:leitor}", "\t${2:editor}", "\t${3:dono}", "$0"],
+    "description": "Papéis do menor para o maior"
   },
-  "Dados": {
-    "prefix": "dados",
-    "body": [
-      "dados",
-      "",
-      "  ${1:nome}",
-      "    ${2:campo}: ${3|texto,numero,dinheiro,email,telefone,status,senha,data,booleano,imagem|}",
-      "    $0",
-      ""
-    ],
-    "description": "Bloco de dados com modelo"
+  "Quem pode": {
+    "prefix": ["pode", "permissao"],
+    "body": ["${1:editor} pode", "\t${2:criar} ${3:pedidos}", "\t${4:editar} ${3:pedidos}", "$0"],
+    "description": "O que um papel pode fazer"
   },
-  "Tela": {
-    "prefix": "tela",
-    "body": [
-      "  tela ${1:nome}",
-      "    titulo \"${2:Titulo}\"",
-      "    lista ${3:modelo}",
-      "      mostrar ${4:campo}",
-      "    botao ${5|azul,verde,vermelho|}",
-      "      texto \"${6:Novo}\"",
-      ""
-    ],
-    "description": "Nova tela"
+  "Somente": {
+    "prefix": "somente",
+    "body": "somente ${1:administrador} pode ${2:excluir} ${3:pedidos}",
+    "description": "Restringe uma ação a um papel"
   },
-  "Telas": {
-    "prefix": "telas",
-    "body": [
-      "telas",
-      "",
-      "  tela ${1:nome}",
-      "    titulo \"${2:Titulo}\"",
-      "    lista ${3:modelo}",
-      "      mostrar ${4:campo}",
-      "    botao azul",
-      "      texto \"${5:Novo}\"",
-      ""
-    ],
-    "description": "Bloco de telas"
+  "Estados": {
+    "prefix": ["começa", "estado"],
+    "body": ["${1:pedido} começa ${2:aberto}", "", "${1:pedido} pode", "\t${3:fechar}", "\t${4:reabrir}", "$0"],
+    "description": "Estados e transições (fechar → fechado, reabrir → volta ao início)"
   },
-  "Evento": {
+  "Quando": {
     "prefix": "quando",
-    "body": [
-      "  quando clicar \"${1:Botao}\"",
-      "    ${2|criar,atualizar,deletar|} ${3:modelo}",
-      ""
-    ],
-    "description": "Novo evento"
+    "body": ["quando ${1:criar} ${2:pedido}", "\t$0"],
+    "description": "O que acontece depois de uma ação"
   },
-  "Eventos": {
-    "prefix": "eventos",
-    "body": [
-      "eventos",
-      "",
-      "  quando clicar \"${1:Botao}\"",
-      "    ${2|criar,atualizar,deletar|} ${3:modelo}",
-      ""
-    ],
-    "description": "Bloco de eventos"
+  "Antes de": {
+    "prefix": "antes",
+    "body": ["antes de ${1:criar} ${2:pedido}", "\tse ${3:dados.total > 1000}", "\t\trecuse \"${4:Pedidos acima de 1000 precisam de aprovação}\"", "$0"],
+    "description": "Regra que roda antes e pode recusar"
   },
-  "Autenticação": {
-    "prefix": "autenticacao",
-    "body": [
-      "autenticacao",
-      "  modelo: ${1:usuario}",
-      "  campo_login: ${2:email}",
-      "  campo_senha: ${3:senha}",
-      "  roles: ${4:admin, usuario}",
-      ""
-    ],
-    "description": "Configuração de autenticação"
+  "Página": {
+    "prefix": ["crie página", "pagina"],
+    "body": ["crie página ${1:Pedidos}", "\tmostre ${2:pedidos}", "\tpermita", "\t\tpesquisar", "\t\tcriar", "\t\teditar", "\t\texcluir", "$0"],
+    "description": "Uma página conectada, sem código de interface"
   },
-  "Logica": {
-    "prefix": "logica",
-    "body": [
-      "logica",
-      "",
-      "  $0",
-      ""
-    ],
-    "description": "Bloco de lógica"
+  "Integração": {
+    "prefix": ["disponibilize", "integração"],
+    "body": ["disponibilize para integração", "\t${1:pedidos}", "$0"],
+    "description": "Publica os dados para outros sistemas"
   },
-  "Função": {
-    "prefix": "funcao",
-    "body": [
-      "  funcao ${1:nome}(${2:params})",
-      "    ${3:retornar $0}",
-      ""
-    ],
-    "description": "Definir função"
-  },
-  "Se / Senão": {
+  "Se": {
     "prefix": "se",
-    "body": [
-      "  se ${1:condicao}",
-      "    ${2:acao}",
-      "  senao",
-      "    ${3:acao_alternativa}",
-      ""
-    ],
-    "description": "Condicional se/senão"
-  },
-  "Definir variável": {
-    "prefix": "definir",
-    "body": [
-      "  definir ${1:nome} = ${2:valor}"
-    ],
-    "description": "Definir variável"
-  },
-  "Repetir": {
-    "prefix": "repetir",
-    "body": [
-      "  repetir ${1:10} vezes",
-      "    ${0}",
-      ""
-    ],
-    "description": "Loop repetir N vezes"
-  },
-  "Enquanto": {
-    "prefix": "enquanto",
-    "body": [
-      "  enquanto ${1:condicao}",
-      "    ${0}",
-      ""
-    ],
-    "description": "Loop enquanto"
+    "body": ["se ${1:condição}", "\t$0"],
+    "description": "Lógica explícita"
   },
   "Para cada": {
     "prefix": "para cada",
-    "body": [
-      "  para cada ${1:item} em ${2:lista}",
-      "    ${0}",
-      ""
-    ],
-    "description": "Loop para cada"
-  },
-  "Cron": {
-    "prefix": "cron",
-    "body": [
-      "  cron cada ${1|1,5,10,30|} ${2|minuto,hora|}",
-      "    ${0}",
-      ""
-    ],
-    "description": "Tarefa agendada"
-  },
-  "Integração WhatsApp": {
-    "prefix": "whatsapp",
-    "body": [
-      "integracoes",
-      "",
-      "  whatsapp",
-      "    mensagem \"${1:Texto da mensagem}\"",
-      ""
-    ],
-    "description": "Integração com WhatsApp"
-  },
-  "Banco": {
-    "prefix": "banco",
-    "body": [
-      "banco",
-      "  tipo: ${1|sqlite,mysql,postgresql|}",
-      "  nome: ${2:meuapp}",
-      ""
-    ],
-    "description": "Configuração do banco de dados"
-  },
-  "Projeto plano completo": {
-    "prefix": "germanio-plano",
-    "body": [
-      "sistema ${1:meuapp}",
-      "",
-      "tema",
-      "  cor primaria \"${2:#6366f1}\"",
-      "  cor secundaria \"${3:#8b5cf6}\"",
-      "",
-      "dados",
-      "",
-      "  ${4:item}",
-      "    nome: texto obrigatorio",
-      "    ${5:descricao}: ${6:texto}",
-      "    status: status",
-      "",
-      "telas",
-      "",
-      "  tela ${4:item}s",
-      "    titulo \"${7:Itens}\"",
-      "    lista ${4:item}",
-      "      mostrar nome",
-      "      mostrar ${5:descricao}",
-      "      mostrar status",
-      "    botao azul",
-      "      texto \"Novo\"",
-      "",
-      "eventos",
-      "",
-      "  quando clicar \"Novo\"",
-      "    criar ${4:item}",
-      ""
-    ],
-    "description": "Projeto completo em modo plano (um arquivo)"
-  },
-  "Projeto organizado - inicio": {
-    "prefix": "germanio-inicio",
-    "body": [
-      "sistema ${1:meuapp}",
-      "",
-      "importar \"tema.ge\"",
-      "importar \"dados/${2:modelo}.ge\"",
-      "importar \"telas/${2:modelo}s.ge\"",
-      "importar \"eventos/acoes.ge\"",
-      ""
-    ],
-    "description": "Entry point para projeto organizado"
+    "body": ["para cada ${1:item} em ${2:lista}", "\t$0"],
+    "description": "Repete para cada item"
   }
 }

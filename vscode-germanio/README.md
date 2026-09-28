@@ -1,89 +1,51 @@
-# Germanio for VS Code
+<p align="center">
+  <img src="icon.png" alt="Germanio" width="128">
+</p>
 
-Suporte completo para a linguagem Germanio (`.ge`) no Visual Studio Code.
+# Germanio para VS Code
+
+Suporte oficial à linguagem Germanio (`.ge`): ícone de arquivo, destaque de
+sintaxe da linguagem de intenção, snippets, indentação automática e dois temas.
+
+![Destaque de sintaxe no tema Germanio Escuro](images/preview.png)
 
 ## Recursos
 
-- **Syntax highlighting** — Todos os 130+ keywords bilíngues (português/inglês)
-- **Snippets** — Atalhos para estruturas comuns (`sistema`, `dados`, `tela`, `quando`, `funcao`, etc.)
-- **Auto-indentação** — Indenta automaticamente dentro de blocos
-- **Comentários** — Toggle com `Ctrl+/` (usa `#`)
+- **Ícone de arquivo** — todo `.ge` aparece com o cristal do Germanio.
+- **Destaque de sintaxe que entende a intenção** — cada papel da frase tem sua cor:
+  - frases de intenção (`tenha`, `tem`, `começa`, `crie página`, `quando`, `antes de`)
+  - permissões (`pode`, `somente`, `permita`, `pode ser vista por`)
+  - entidades (`issues`, `projetos`), papéis (`guest`, `maintainer`, `ou superior`)
+  - ações (`fechar`, `editar`, `baixar código`), estados (`aberta`), campos
+  - modificadores (`obrigatório`, `único`, `padrão`, `segredo`) e tipos (`número`, `lista de`)
+  - lógica (`se`, `para cada`, `recuse`), módulos (`git.`, `markdown.`), strings com `{interpolação}`
+  - palavras com ou sem acento (`descrição`/`descricao`, `página`/`pagina`)
+- **Temas Germanio Escuro e Germanio Claro** — feitos para as cores acima (opcionais;
+  o destaque funciona em qualquer tema).
+- **Snippets** — `crie sistema`, `tem`, `pertence`, `tenha login`, `tenha papeis`,
+  `pode`, `somente`, `começa`, `quando`, `antes`, `crie página`, `disponibilize`, `se`, `para cada`.
+- **Editor** — comentários com `Ctrl+/` (`#`), indentação automática após
+  cabeçalhos de bloco, dobra de blocos por indentação, 4 espaços.
 
-## Snippets disponíveis
-
-| Prefixo | O que cria |
-|---------|-----------|
-| `sistema` | Declaração do sistema |
-| `dados` | Bloco de dados com modelo |
-| `modelo` | Novo modelo dentro de dados |
-| `telas` | Bloco de telas |
-| `tela` | Nova tela |
-| `eventos` | Bloco de eventos |
-| `quando` | Novo evento |
-| `autenticacao` | Configuração de auth |
-| `logica` | Bloco de lógica |
-| `funcao` | Definir função |
-| `se` | Condicional se/senão |
-| `definir` | Definir variável |
-| `repetir` | Loop repetir N vezes |
-| `enquanto` | Loop enquanto |
-| `para cada` | Loop para cada |
-| `importar` | Importar arquivo |
-| `tema` | Tema visual |
-| `cron` | Tarefa agendada |
-| `whatsapp` | Integração WhatsApp |
-| `banco` | Configuração do banco |
-| `germanio-plano` | Projeto completo (modo plano) |
-| `germanio-inicio` | Entry point (modo organizado) |
-
-## Instalação manual
-
-```bash
-# Copiar para as extensões do VS Code
-# Windows
-cp -r vscode-germanio %USERPROFILE%/.vscode/extensions/germanio
-
-# Linux/macOS
-cp -r vscode-germanio ~/.vscode/extensions/germanio
-```
-
-Ou empacote como `.vsix`:
+## Instalação
 
 ```bash
 cd vscode-germanio
-npm install -g @vscode/vsce
-vsce package
-code --install-extension germanio-0.4.0.vsix
+npx @vscode/vsce package          # gera germanio-<versão>.vsix
+code --install-extension germanio-*.vsix
 ```
 
-## Exemplo
+Ou no VS Code: *Extensões → … → Instalar a partir do VSIX*.
 
-```germanio
-sistema loja
+## Desenvolvimento
 
-tema
-  cor primaria "#6366f1"
+A gramática e os temas são gerados; não edite os JSON à mão:
 
-dados
-
-  produto
-    nome: texto obrigatorio
-    preco: dinheiro
-    status: status
-
-telas
-
-  tela produtos
-    titulo "Produtos"
-    lista produto
-      mostrar nome
-      mostrar preco
-      mostrar status
-    botao azul
-      texto "Novo"
-
-eventos
-
-  quando clicar "Novo"
-    criar produto
+```bash
+python3 tools/gerar_gramatica.py   # syntaxes/germanio.tmLanguage.json
+python3 tools/gerar_temas.py       # themes/*.json
 ```
+
+## Licença
+
+MIT

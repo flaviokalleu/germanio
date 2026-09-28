@@ -1,29 +1,17 @@
 {
-  "comments": {
-    "lineComment": "#"
-  },
-  "brackets": [
-    ["(", ")"]
-  ],
+  "comments": { "lineComment": "#" },
+  "brackets": [["{", "}"], ["[", "]"], ["(", ")"]],
   "autoClosingPairs": [
+    { "open": "{", "close": "}" },
+    { "open": "[", "close": "]" },
     { "open": "(", "close": ")" },
-    { "open": "\"", "close": "\"", "notIn": ["string"] }
+    { "open": "\"", "close": "\"", "notIn": ["string", "comment"] }
   ],
-  "surroundingPairs": [
-    { "open": "(", "close": ")" },
-    { "open": "\"", "close": "\"" }
-  ],
+  "surroundingPairs": [["{", "}"], ["[", "]"], ["(", ")"], ["\"", "\""]],
+  "folding": { "offSide": true },
   "indentationRules": {
-    "increaseIndentPattern": "^\\s*(sistema|dados|telas|tela|acoes|eventos|tema|logica|banco|integracoes|autenticacao|config|system|models|screens|screen|actions|events|theme|logic|database|integrations|authentication|quando|when|se|if|senao|else|funcao|function|enquanto|while|repetir|repeat|para cada|for_each|lista|list|botao|button|formulario|form|whatsapp|cron|tentar|try)\\b",
-    "decreaseIndentPattern": "^\\s*(senao|else|erro|error)\\b"
+    "increaseIndentPattern": "^\\s*((cada\\s.*\\stem|.*\\stem|.*\\spodem?|.*\\spor|permita|tenha|tenha\\s+pap[eé]is|disponibilize\\s+para\\s+integra[cç][aã]o|vocabul[aá]rio\\s+da\\s+integra[cç][aã]o|.*\\srecebe\\s+eventos\\s.*|quando\\s.*|antes\\s+de\\s.*|ao\\s+iniciar|crie\\s+p[aá]gina\\s.*|se\\s.*|sen[aã]o|para\\s+cada\\s.*|enquanto\\s.*|tentar|erro.*|funcao\\s.*|fun[cç][aã]o\\s.*|rota\\s.*|l[oó]gica|dados|rotas))\\s*$",
+    "decreaseIndentPattern": "^\\s*(sen[aã]o|erro)\\b"
   },
-  "wordPattern": "(-?\\d*\\.\\d\\w*)|([^\\`\\~\\!\\@\\#\\%\\^\\&\\*\\(\\)\\=\\+\\[\\{\\]\\}\\\\\\|\\;\\:\\'\\\"\\,\\.\\<\\>\\/\\?\\s]+)",
-  "onEnterRules": [
-    {
-      "beforeText": "^\\s*(sistema|dados|telas|tela|acoes|eventos|tema|logica|banco|integracoes|autenticacao|quando|se|senao|funcao|enquanto|repetir|lista|botao|formulario|whatsapp|cron|tentar)\\b.*$",
-      "action": {
-        "indent": "indent"
-      }
-    }
-  ]
+  "wordPattern": "[\\p{L}_][\\p{L}\\p{N}_]*|-?\\d+(\\.\\d+)?"
 }

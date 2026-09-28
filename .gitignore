@@ -16,3 +16,4 @@ CLAUDE.md
 .github/copilot-instructions.md
 docs/ebook-flang.html
 image.png
+*.vsix
