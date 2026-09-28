@@ -53,3 +53,26 @@ booleanos. Capabilities genéricas criadas:
 | #1, #2 por projeto | `numero por projeto` |
 
 Bug de segurança encontrado no caminho: editar um registro reatribuía o autor para quem editava.
+
+## Sintaxe hierárquica e contextual (2026-09-28)
+
+Norma em `docs/INTENCAO.md` › Sintaxe hierárquica; pesquisa em `docs/research/sintaxe-hierarquica.md`.
+O domínio inteiro do GitLab foi migrado para blocos; os mesmos testes de execução (inclusive o
+gitlab-runner oficial) passam sem alteração, e o aplicativo resolvido é idêntico ao da forma plana,
+exceto `administrar` num bloco, que vale para a coleção (inclui criar) — sem efeito prático no
+GitLab, porque os papéis que ganharam criar já podiam criar por serem developer ou superior.
+
+| Medida (domínio GitLab sem a compatibilidade) | Plano | Hierárquico |
+|---|---:|---:|
+| Linhas de código | 265 | 325 (+23%) |
+| Palavras | 772 | 598 (−23%) |
+| Menções a nomes de dados | 141 | 59 (−58%) |
+
+As linhas aumentam (cada item na sua linha, cada aspecto com título); a repetição do sujeito
+cai para menos da metade. A meta é o menor número de conceitos, não de caracteres.
+
+Problemas gerais revelados no caminho: linhas desconhecidas eram ignoradas em silêncio;
+tab contava como 2 espaços; recuo sem pai não era diagnosticado; `administrar` governava dados
+que só se referiam opcionalmente ao alvo (falha de segurança); `ge fmt` não formatava a camada
+de intenção; `ge explain` não mostrava a origem dos fatos; o singular de estrangeirismos
+(`tokens`) era adivinhado.

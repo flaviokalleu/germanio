@@ -38,22 +38,26 @@ significado; nada é adivinhado e nenhuma IA participa da execução.
 ```ge
 crie sistema Clientes
 
-tenha clientes
+clientes
+    tem
+        nome obrigatório
+        email obrigatório e único
+        telefone
 
-cada cliente tem
-    nome obrigatório
-    email obrigatório e único
-    telefone
+    permita
+        pesquisar
 
-crie página Clientes
+página Clientes
     mostre clientes
     permita
         cadastrar
         editar
         excluir
-
-permita pesquisar clientes
 ```
+
+O mesmo programa em frases planas (`tenha clientes`, `cada cliente tem …`,
+`permita pesquisar clientes`, `crie página Clientes …`) é equivalente; veja
+[Sintaxe hierárquica e contextual](#sintaxe-hierárquica-e-contextual).
 
 ## Organização do projeto
 
@@ -192,7 +196,10 @@ que vem abaixo são pessoas e o que elas podem fazer.
   (por exemplo 2) são aceitos, porque só a estrutura tem significado.
 - Linhas vazias e linhas só de comentário (`#`) não abrem nem fecham níveis.
 - Comentário no fim da linha pertence à linha. Texto entre aspas nunca é indentação.
-- Uma linha lógica não continua na linha seguinte; listas longas usam um item por linha.
+- Uma linha lógica não continua na linha seguinte. Na linha de uma seção cabe **um** item
+  (`tem repositório`, `pertence a grupo opcional`, `pode fechar`); listas usam um item por
+  linha, porque a vírgula já pertence aos modificadores (`email obrigatório, único e privado`)
+  e uma lista na mesma linha seria ambígua.
 
 ### Gramática (sobre os símbolos do layout)
 
@@ -205,10 +212,10 @@ item         = frase_plana | bloco_dado | bloco_pagina | construcao_do_sistema ;
 bloco_dado   = nome_do_dado NL ABRE secao { secao } FECHA ;
 bloco_pagina = "página" Nome NL ABRE { secao_pagina } FECHA ;
 
-secao        = "tem" ( itens NL | NL ABRE { linha_de_campo NL } FECHA )
+secao        = "tem" ( item NL | NL ABRE { linha_de_campo NL } FECHA )
              | "pertence a" ( alvo NL | NL ABRE { alvo NL } FECHA )
              | "começa" estado NL
-             | "pode" ( capacidades NL | NL ABRE { capacidade NL } FECHA )
+             | "pode" ( capacidade NL | NL ABRE { capacidade NL } FECHA )
              | "regras" NL ABRE { regra } FECHA
              | "acesso" NL ABRE { bloco_ator } FECHA
              | "permita" NL ABRE { permissao NL } FECHA
@@ -232,7 +239,7 @@ válidas. `construcao_do_sistema` são as construções sem sujeito único (`ten
 
 | Seção e conteúdo | Frase plana equivalente |
 | --- | --- |
-| `tem` + campos, relações e pessoas (um por linha) ou `tem a, b` | `cada d tem` + linhas / `d tem a, b` |
+| `tem` + campos, relações e pessoas (um por linha) ou `tem repositório` (um item na mesma linha) | `cada d tem` + linhas / `d tem repositório` |
 | `pertence a` + `grupo opcional`, `cliente como dono` | `d pertence a grupo opcional` |
 | `começa aberta` | `d começa aberta` |
 | `pode` + `fechar`, `reabrir`, `ser confidencial` | `d pode fechar` … |
@@ -255,8 +262,10 @@ válidas. `construcao_do_sistema` são as construções sem sujeito único (`ten
 | `executa pipelines a cada envio de código conforme "arquivo"` | `d executa …` |
 | `executam jobs` (em `runners`) | `runners executam jobs` |
 | `repositório pode começar com "README.md" contendo "# {nome}"` | `repositório do d pode começar com …` |
+| `singular token de acesso` | `cada token de acesso tem` (a forma que nomeia um registro, quando o plural admite duas leituras: tokens → token ou tokem) |
 
-Uma **ação sem alvo** vale para o próprio dado. Uma ação com alvo explícito (`adicionar membros`,
+Uma **ação sem alvo** vale para o próprio dado (a coleção: `administrar` sem alvo inclui
+criar, como `administrar projetos`). Uma ação com alvo explícito (`adicionar membros`,
 `ver labels`) só é aceita se o alvo for o dado ou algo que pertence a ele; para outro dado, a
 regra vai no bloco dele. `seu/seus` restringe aos registros da própria pessoa.
 

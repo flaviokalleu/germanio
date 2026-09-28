@@ -1,17 +1,18 @@
 # Runners: máquinas que executam os jobs fora do servidor.
 
-tenha runners
+runners
+    tem
+        descrição
+        token secreto
+        ativo
 
-runner tem
-    descrição
-    token secreto
-    ativo
+    pertence a
+        projeto opcional
 
-runner pode pertencer a projeto
+    executam jobs
 
-runners executam jobs
+    acesso
+        somente administrador
+            administrar
 
-somente administrador pode
-    administrar runners
-
-disponibilize runners para integração
+    integração

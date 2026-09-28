@@ -1,63 +1,70 @@
 # Issues: o que são, quem pode fazer o quê, como aparecem para integrações.
 
-tenha issues, comentarios, labels
+projetos
+    tem
+        issues
+        labels
 
-projeto tem
-    issues
-    labels
+issues
+    tem
+        numero por projeto
+        titulo obrigatório até 255
+        descrição formatada
+        autor
+        labels por nome
+        responsaveis
+        comentarios
 
-issue tem
-    numero por projeto
-    titulo obrigatório até 255
-    descrição formatada
-    autor
-    labels por nome
-    responsaveis
-    comentarios
+    começa aberta
 
-issue começa aberta
+    pode
+        fechar
+        reabrir
+        ser confidencial
 
-issue pode
-    fechar
-    reabrir
-    ser confidencial
+    regras
+        confidencial pode ser vista por
+            autor
+            responsaveis
+            reporter ou superior
 
-comentario tem
-    autor
-    texto obrigatório e formatado
+    acesso
+        usuario
+            criar
+            comentar
+        guest
+            ver
+        autor ou planner
+            editar
+            fechar
+            reabrir
+        somente maintainer
+            excluir
 
-label tem
-    nome obrigatório
-    cor padrão "#6699cc"
-    descrição
+    permita
+        pesquisar
+        filtrar por estado, autor, labels, responsaveis e milestone
 
-usuario pode
-    criar issues
-    comentar issues
+    integração
 
-guest pode
-    ver issues
-    ver labels
+comentarios
+    tem
+        autor
+        texto obrigatório e formatado
 
-autor ou planner pode
-    editar issues
-    fechar issues
-    reabrir issues
+    integração
+        nome "notes"
 
-reporter pode administrar labels
+labels
+    tem
+        nome obrigatório
+        cor padrão "#6699cc"
+        descrição
 
-somente maintainer pode excluir issues
+    acesso
+        guest
+            ver
+        reporter
+            administrar
 
-issue confidencial pode ser vista por
-    autor
-    responsaveis
-    reporter ou superior
-
-permita
-    pesquisar issues
-    filtrar issues por estado, autor, labels, responsaveis e milestone
-
-disponibilize para integração
-    issues
-    comentarios como "notes"
-    labels
+    integração

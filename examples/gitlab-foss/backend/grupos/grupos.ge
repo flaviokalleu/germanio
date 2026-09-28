@@ -1,7 +1,5 @@
 # Grupos, subgrupos e membros.
 
-tenha grupos, membros
-
 tenha papeis
     guest 10
     planner 15
@@ -10,35 +8,39 @@ tenha papeis
     maintainer 40
     owner 50
 
-grupo tem
-    nome obrigatório
-    caminho obrigatório
-    endereço dentro do grupo pai
-    descrição
-    visibilidade
-    subgrupos
-    membros com papel
+grupos
+    tem
+        nome obrigatório
+        caminho obrigatório
+        endereço dentro do grupo pai
+        descrição
+        visibilidade
+        subgrupos
+        membros com papel
 
-grupo não pode ser mais visível que o grupo pai
+    regras
+        não pode ser mais visível que o grupo pai
+        quem cria vira owner
+        precisa de pelo menos um owner
 
-usuario pode criar grupos
-maintainer pode criar grupos
+    acesso
+        usuario
+            criar
+        guest
+            ver
+            ver membros
+        maintainer
+            criar
+            adicionar membros
+            editar membros
+        owner
+            administrar
+        membro
+            sair
 
-guest pode
-    ver grupos
-    ver membros
+    integração
+        nome "groups"
 
-owner pode administrar grupo
-
-maintainer pode
-    adicionar membros
-    editar membros
-
-membro pode sair do grupo
-
-quem cria grupo vira owner
-todo grupo precisa ter pelo menos um owner
-
-disponibilize para integração
-    grupos como "groups"
-    membros como "members"
+membros
+    integração
+        nome "members"

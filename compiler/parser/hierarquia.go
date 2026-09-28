@@ -125,14 +125,14 @@ var legacyBlockWords = map[string]bool{
 
 // sections are the aspects a data block may contain (folded words).
 var sections = []string{"tem", "pertence a", "comeca", "pode", "regras", "acesso", "permita",
-	"integracao", "quando", "antes de", "recebe", "executa", "executam", "repositorio"}
+	"integracao", "quando", "antes de", "recebe", "executa", "executam", "repositorio", "singular"}
 
 func sectionOf(w []string) string {
 	if len(w) == 0 {
 		return ""
 	}
 	switch w[0] {
-	case "tem", "comeca", "pode", "regras", "acesso", "permita", "integracao", "quando", "recebe", "executa", "executam", "repositorio":
+	case "tem", "comeca", "pode", "regras", "acesso", "permita", "integracao", "quando", "recebe", "executa", "executam", "repositorio", "singular":
 		return w[0]
 	case "pertence":
 		return "pertence a"
@@ -353,6 +353,12 @@ func (p *Parser) dataSection(name string, header []lexer.Token, sec *node) error
 		return flat(head, nil)
 	case "quando", "antes de":
 		return flat(join(toks, subject), flattenLines(sec))
+	case "singular":
+		// singular token de acesso → cada token de acesso tem (the form that names one)
+		if len(toks) < 2 {
+			return p.teach(at, "falta a forma no singular", "singular diz como se chama um só registro quando o plural admite duas leituras (tokens → token ou tokem)", "escreva: singular "+strings.TrimSuffix(name, "s"), name)
+		}
+		return flat(join(synth(at, "cada"), toks[1:], synth(at, "tem")), nil)
 	case "repositorio":
 		// repositório pode começar com "x" contendo "y" → repositório do <dado> pode …
 		return flat(join(toks[:1], synth(at, "do"), subject, toks[1:]), nil)
@@ -426,7 +432,7 @@ func (p *Parser) access(name string, header []lexer.Token, path string, actor *n
 }
 
 func displaySections() []string {
-	return []string{"tem", "pertence a", "começa", "pode", "regras", "acesso", "permita", "integração", "quando", "antes de", "recebe", "executa", "executam", "repositório"}
+	return []string{"tem", "pertence a", "começa", "pode", "regras", "acesso", "permita", "integração", "quando", "antes de", "recebe", "executa", "executam", "repositório", "singular"}
 }
 
 // suggest proposes the closest section for a misspelled word.

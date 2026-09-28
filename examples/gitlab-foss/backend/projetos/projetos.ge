@@ -1,38 +1,51 @@
 # Projetos e seus repositórios.
 
-tenha projetos
+projetos
+    tem
+        nome obrigatório
+        caminho obrigatório
+        endereço dentro do grupo ou do criador
+        descrição
+        visibilidade
+        branch_padrao começa com "main"
+        repositório
+        criador
+        membros com papel
 
-projeto tem
-    nome obrigatório
-    caminho obrigatório
-    endereço dentro do grupo ou do criador
-    descrição
-    visibilidade
-    branch_padrao começa com "main"
-    repositório
-    criador
-    membros com papel
+    pertence a
+        grupo opcional
 
-projeto pode ser arquivado
-projeto arquivado é somente leitura
+    pode
+        ser arquivado
 
-repositório do projeto pode começar com "README.md" contendo "# {nome}\n"
+    regras
+        herda membros do grupo
+        não pode ser mais visível que o grupo
+        quem cria vira owner
+        precisa de pelo menos um owner
+        arquivado é somente leitura
 
-projeto pertence a grupo opcional
-projeto herda membros do grupo
-projeto não pode ser mais visível que o grupo
-quem cria projeto vira owner
-todo projeto precisa ter pelo menos um owner
+    repositório pode começar com "README.md" contendo "# {nome}\n"
 
-usuario pode criar seus projetos
-developer pode criar projetos
-guest pode ver projetos
-reporter pode baixar código dos projetos
-developer pode enviar código para projetos
-somente maintainer pode enviar código para a branch padrão dos projetos
-maintainer pode administrar projeto
-somente owner pode excluir projetos
+    acesso
+        usuario
+            criar seus
+        guest
+            ver
+        reporter
+            baixar código
+        developer
+            criar
+            enviar código
+        somente maintainer
+            enviar código para a branch padrão
+        maintainer
+            administrar
+        somente owner
+            excluir
 
-permita pesquisar projetos
+    permita
+        pesquisar
 
-disponibilize projetos para integração como "projects"
+    integração
+        nome "projects"

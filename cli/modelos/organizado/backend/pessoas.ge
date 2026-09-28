@@ -1,16 +1,17 @@
 # Quem usa a loja e como entra.
 
-tenha usuarios
+usuarios
+    tem
+        nome obrigatório
+        email obrigatório e único
+        senha min 8
+        admin começa com falso
 
-cada usuario tem
-    nome obrigatório
-    email obrigatório e único
-    senha min 8
-    admin começa com falso
+    acesso
+        usuario
+            editar seu perfil
 
 tenha login
 tenha cadastro
 tenha administrador inicial "admin@loja.local"
 login usa email
-
-usuario pode editar seu perfil

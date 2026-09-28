@@ -2,7 +2,7 @@
 
 importar produtos e pedidos do backend
 
-crie página Produtos
+página Produtos
     mostre produtos
     permita
         pesquisar
@@ -10,7 +10,7 @@ crie página Produtos
         editar
         excluir
 
-crie página Pedidos
+página Pedidos
     mostre pedidos
     permita
         criar

@@ -1,29 +1,54 @@
 # Pessoas e tokens de acesso.
 
-tenha usuarios
-tenha tokens de acesso
+usuarios
+    tem
+        username obrigatório e único
+        email obrigatório, único e privado
+        nome obrigatório
+        senha min 8 max 128
+        admin começa com falso
 
-usuario tem
-    username obrigatório e único
-    email obrigatório, único e privado
-    nome obrigatório
-    senha min 8 max 128
-    admin começa com falso
+    começa ativo
 
-usuario começa ativo
+    pode
+        bloquear
+        desbloquear
 
-usuario pode
-    bloquear
-    desbloquear
+    acesso
+        todos
+            ver
+        usuario
+            editar seu perfil
+        somente administrador
+            criar
+            excluir
+            bloquear
+            desbloquear
 
-token de acesso tem
-    nome obrigatório
-    token segredo prefixo "glpat-"
-    escopos começa com "api"
-    expira em 365 dias
-    revogavel
+    integração
+        nome "users"
 
-token de acesso pertence a usuario
+tokens de acesso
+    singular token de acesso
+
+    tem
+        nome obrigatório
+        token segredo prefixo "glpat-"
+        escopos começa com "api"
+        expira em 365 dias
+        revogavel
+
+    pertence a
+        usuario
+
+    acesso
+        usuario
+            criar
+            ver seus
+            revogar seus
+
+    integração
+        nome "personal_access_tokens"
 
 tenha login
 tenha cadastro
@@ -37,21 +62,3 @@ escopo "read_api" permite ler
 escopo "read_user" permite ler
 escopo "read_repository" permite baixar código
 escopo "write_repository" permite baixar código e enviar código
-
-todos podem ver usuarios
-
-usuario pode
-    editar seu perfil
-    criar tokens de acesso
-    ver seus tokens de acesso
-    revogar seus tokens de acesso
-
-somente administrador pode
-    criar usuarios
-    excluir usuarios
-    bloquear usuarios
-    desbloquear usuarios
-
-disponibilize para integração
-    usuarios como "users"
-    tokens de acesso como "personal_access_tokens"

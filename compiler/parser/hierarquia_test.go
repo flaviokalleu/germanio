@@ -141,6 +141,10 @@ func TestHierarquiaDemaisSecoes(t *testing.T) {
 			"projetos\n    tem\n        nome\n\npágina Projetos\n    mostre projetos\n    permita\n        pesquisar\n        criar\n"},
 		{"recebe e repositório", "tenha merge requests\n\ncada merge request tem\n    titulo\n\nmerge request recebe aprovações\n\ntenha projetos\n\ncada projeto tem\n    nome\n    caminho único\n    repositório\n\nrepositório do projeto pode começar com \"README.md\" contendo \"# {nome}\"\n",
 			"merge requests\n    tem\n        titulo\n    recebe aprovações\n\nprojetos\n    tem\n        nome\n        caminho único\n        repositório\n    repositório pode começar com \"README.md\" contendo \"# {nome}\"\n"},
+		{"um item na mesma linha", "tenha projetos\n\ncada projeto tem\n    caminho único\n\nprojeto tem repositório\nprojeto começa aberto\nprojeto pode fechar\n",
+			"projetos\n    tem\n        caminho único\n    tem repositório\n    começa aberto\n    pode fechar\n"},
+		{"singular", "tenha tokens de acesso\n\ncada token de acesso tem\n    nome\n",
+			"tokens de acesso\n    singular token de acesso\n    tem\n        nome\n"},
 		{"executam", "tenha trabalhadores, conversoes\n\ncada trabalhador tem\n    token secreto\n\ncada conversao tem\n    arquivo\n\ntrabalhadores executam conversoes\n",
 			"trabalhadores\n    tem\n        token secreto\n    executam conversoes\n\nconversoes\n    tem\n        arquivo\n"},
 	}

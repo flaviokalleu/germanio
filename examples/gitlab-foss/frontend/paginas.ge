@@ -2,7 +2,7 @@
 
 importar projetos e grupos do backend
 
-crie página Projetos
+página Projetos
     mostre projetos
     permita
         pesquisar
@@ -10,7 +10,7 @@ crie página Projetos
         editar
         excluir
 
-crie página Grupos
+página Grupos
     mostre grupos
     permita
         pesquisar

@@ -1,17 +1,19 @@
 # O que a loja vende.
 
-tenha produtos
+produtos
+    tem
+        nome obrigatório
+        descrição formatada
+        preco obrigatório
+        estoque começa com 0
 
-cada produto tem
-    nome obrigatório
-    descrição formatada
-    preco obrigatório
-    estoque começa com 0
+    acesso
+        todos
+            ver
+        somente administrador
+            criar
+            editar
+            excluir
 
-todos podem ver produtos
-permita pesquisar produtos por nome
-
-somente administrador pode
-    criar produtos
-    editar produtos
-    excluir produtos
+    permita
+        pesquisar por nome

@@ -1,26 +1,27 @@
 # CI/CD: a cada envio de código, o repositório diz o que executar.
 
-tenha pipelines, jobs
+projetos
+    tem
+        pipelines
+    executa pipelines a cada envio de código conforme ".gitlab-ci.yml"
 
-projeto tem pipelines
+pipelines
+    tem
+        numero por projeto
+        jobs
 
-pipeline tem
-    numero por projeto
-    jobs
+    acesso
+        reporter
+            ver
+            ver jobs
+        developer
+            executar
+            cancelar
+            repetir jobs
+            cancelar jobs
+            executar jobs
 
-projeto executa pipelines a cada envio de código conforme ".gitlab-ci.yml"
+    integração
 
-reporter pode
-    ver pipelines
-    ver jobs
-
-developer pode
-    executar pipelines
-    cancelar pipelines
-    repetir jobs
-    cancelar jobs
-    executar jobs
-
-disponibilize para integração
-    pipelines
-    jobs
+jobs
+    integração

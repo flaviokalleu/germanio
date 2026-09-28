@@ -1,10 +1,11 @@
 # AGENT_STATE
 
 ## CURRENT_PHASE
-Evolução da sintaxe oficial (hierárquica/contextual). Norma escrita em `docs/INTENCAO.md` ›
-Sintaxe hierárquica (Fase 4 concluída); implementação em andamento: layout formal, redução de
-blocos a frases planas com origem, linhas desconhecidas como erro, `ge fmt`/`check`/`explain`,
-migração do GitLab. Pesquisa em `docs/research/sintaxe-hierarquica.md`.
+Sintaxe hierárquica/contextual implementada e validada (norma: `docs/INTENCAO.md` › Sintaxe
+hierárquica). Parser com layout formal e redução a frases planas (`compiler/parser/hierarquia.go`),
+erros educativos, `ge fmt` e `ge explain` com origem, GitLab e template migrados.
+Próximo: G58 (seções de página), G57, G59, G60; retomar o GitLab pelo inventário
+(pendências/todos, admin) usando a forma hierárquica.
 
 ## CURRENT_GOAL
 Continuar o GitLab por intenção: issues → merge requests → CI/CD → páginas (UI),
