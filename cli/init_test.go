@@ -134,6 +134,7 @@ func TestPastasMantemSeuPapel(t *testing.T) {
 		{"frontend/regras.ge", "somente administrador pode excluir produtos\n", "vai em backend/"},
 		{"backend/tela.ge", "crie página Cupons\n    mostre produtos\n", "vão em frontend/"},
 		{"integracoes/externo.ge", "tenha cupons\n", "integracoes/ só traduz"},
+		{"backend/formato.ge", "traduza arquivos de execução com ler\n", "vai em integracoes/"},
 		{"integracoes/externo.ge", "somente administrador pode excluir produtos\n", "integracoes/ só traduz"},
 	} {
 		dir := filepath.Join(t.TempDir(), "loja")

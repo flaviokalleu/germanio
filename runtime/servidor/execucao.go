@@ -54,8 +54,12 @@ type stepSpec struct {
 	Order                    int
 }
 
-var reservedKeys = map[string]bool{"stages": true, "variables": true, "image": true, "default": true, "include": true, "workflow": true,
-	"before_script": true, "after_script": true, "services": true, "cache": true}
+// When a step runs, in the native format.
+const (
+	whenAuto   = "automatico" // after the previous stages succeed
+	whenManual = "manual"     // when someone starts it
+	whenAlways = "sempre"     // even after failures
+)
 
 func lines(v any) []string {
 	switch x := v.(type) {
@@ -73,91 +77,141 @@ func lines(v any) []string {
 	return nil
 }
 
-// parseRunFile reads the stages/jobs format: `stages:` plus one mapping per
-// job with script, stage, when, allow_failure, image, before/after_script.
-func parseRunFile(data []byte) ([]stepSpec, error) {
+// readRunFile turns the execution file into steps. The file is YAML; an
+// adapter may translate an external format (`traduza arquivos de execução
+// com f`) into the native one:
+//
+//	estagios: [construir, testar]
+//	etapas:
+//	  compilar:
+//	    estagio: construir
+//	    comandos: [make]          # or one line
+//	    depois: [make clean]      # always runs after the commands
+//	    quando: automatico | manual | sempre
+//	    pode_falhar: sim | não
+//	    imagem: golang:1.23       # container image (docker executor)
+func (a *intentAPI) readRunFile(data []byte) ([]stepSpec, error) {
 	var doc map[string]any
 	if err := yaml.Unmarshal(data, &doc); err != nil {
 		return nil, fmt.Errorf("configuração inválida: %v", err)
 	}
-	stages := []string{"build", "test", "deploy"}
-	if s := lines(doc["stages"]); len(s) > 0 {
-		stages = s
+	if fn := a.app.Translators["arquivos_de_execucao"]; fn != "" {
+		out, err := a.in.RunFunction(fn, []any{geValue(doc)}, &interp.Context{})
+		if err != nil {
+			return nil, fmt.Errorf("configuração inválida: %s", interp.Friendly(err))
+		}
+		m, ok := out.(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("configuração inválida: %s não devolveu {estagios, etapas}", fn)
+		}
+		doc = m
 	}
-	order := map[string]int{".pre": -1, ".post": len(stages)}
+	return parseNativeRun(doc)
+}
+
+// geValue converts decoded YAML into the values .ge works with (numbers are
+// float64, maps have string keys).
+func geValue(v any) any {
+	switch x := v.(type) {
+	case map[string]any:
+		out := make(map[string]any, len(x))
+		for k, val := range x {
+			out[k] = geValue(val)
+		}
+		return out
+	case map[any]any:
+		out := make(map[string]any, len(x))
+		for k, val := range x {
+			out[fmt.Sprint(k)] = geValue(val)
+		}
+		return out
+	case []any:
+		out := make([]any, len(x))
+		for i, val := range x {
+			out[i] = geValue(val)
+		}
+		return out
+	case int:
+		return float64(x)
+	case int64:
+		return float64(x)
+	case uint64:
+		return float64(x)
+	}
+	return v
+}
+
+// parseNativeRun reads the native format (see readRunFile).
+func parseNativeRun(doc map[string]any) ([]stepSpec, error) {
+	stages := lines(doc["estagios"])
+	if len(stages) == 0 {
+		stages = []string{"padrao"}
+	}
+	order := map[string]int{}
 	for i, s := range stages {
 		order[s] = i
 	}
-	var before, after []string
-	image, _ := doc["image"].(string)
-	if d, ok := doc["default"].(map[string]any); ok {
-		before, after = lines(d["before_script"]), lines(d["after_script"])
-		if im, ok := d["image"].(string); ok {
-			image = im
-		}
-	}
-	if b := lines(doc["before_script"]); b != nil {
-		before = b
-	}
-	if a := lines(doc["after_script"]); a != nil {
-		after = a
-	}
-	var specs []stepSpec
-	names := make([]string, 0, len(doc))
-	for k := range doc {
+	steps, _ := doc["etapas"].(map[string]any)
+	names := make([]string, 0, len(steps))
+	for k := range steps {
 		names = append(names, k)
 	}
 	sort.Strings(names)
+	var specs []stepSpec
 	for _, name := range names {
-		if reservedKeys[name] || strings.HasPrefix(name, ".") {
-			continue
-		}
-		job, ok := doc[name].(map[string]any)
+		job, ok := steps[name].(map[string]any)
 		if !ok {
-			return nil, fmt.Errorf("configuração inválida: %s deve ser um mapa", name)
+			return nil, fmt.Errorf("configuração inválida: a etapa %s deve ser um mapa", name)
 		}
-		script := lines(job["script"])
-		if len(script) == 0 {
-			return nil, fmt.Errorf("configuração inválida: o job %s não tem script", name)
+		commands := lines(job["comandos"])
+		if len(commands) == 0 {
+			return nil, fmt.Errorf("configuração inválida: a etapa %s não tem comandos", name)
 		}
-		stage, _ := job["stage"].(string)
+		stage, _ := job["estagio"].(string)
 		if stage == "" {
-			stage = "test"
+			stage = stages[0]
 		}
 		idx, ok := order[stage]
 		if !ok {
-			return nil, fmt.Errorf("configuração inválida: o job %s usa a etapa %q, que não está em stages", name, stage)
+			return nil, fmt.Errorf("configuração inválida: a etapa %s usa o estágio %q, que não está em estagios", name, stage)
 		}
-		when, _ := job["when"].(string)
-		if when == "" {
-			when = "on_success"
+		when, _ := job["quando"].(string)
+		switch when {
+		case "":
+			when = whenAuto
+		case whenAuto, whenManual, whenAlways:
+		default:
+			return nil, fmt.Errorf("configuração inválida: a etapa %s tem quando %q (use automatico, manual ou sempre)", name, when)
 		}
-		sp := stepSpec{Name: name, Stage: stage, When: when, Order: idx + 1, Image: image}
-		if im, ok := job["image"].(string); ok {
-			sp.Image = im
-		}
-		jb := before
-		if b := lines(job["before_script"]); b != nil {
-			jb = b
-		}
-		sp.Script = append(append([]string{}, jb...), script...)
-		sp.After = after
-		if a := lines(job["after_script"]); a != nil {
-			sp.After = a
-		}
-		sp.AllowFailure, _ = job["allow_failure"].(bool)
-		if when == "manual" {
-			if _, set := job["allow_failure"]; !set {
-				sp.AllowFailure = true
-			}
-		}
+		sp := stepSpec{Name: name, Stage: stage, When: when, Order: idx + 1, Script: commands, After: lines(job["depois"])}
+		sp.Image, _ = job["imagem"].(string)
+		sp.AllowFailure, _ = job["pode_falhar"].(bool)
 		specs = append(specs, sp)
 	}
 	if len(specs) == 0 {
-		return nil, fmt.Errorf("configuração inválida: nenhum job definido")
+		return nil, fmt.Errorf("configuração inválida: nenhuma etapa definida")
 	}
 	sort.SliceStable(specs, func(i, j int) bool { return specs[i].Order < specs[j].Order })
 	return specs, nil
+}
+
+// stepVariables: the environment of a step. The core only says it runs in
+// CI; an adapter may add the names an external format expects
+// (`traduza variáveis das etapas com f`).
+func (a *intentAPI) stepVariables(ctx *interp.Context, work map[string]any) map[string]string {
+	out := map[string]string{"CI": "true"}
+	if fn := a.app.Translators["variaveis_das_etapas"]; fn != "" {
+		if res, err := a.in.RunFunction(fn, []any{work}, ctx); err == nil {
+			if m, ok := res.(map[string]any); ok {
+				for k, v := range m {
+					out[k] = toStr(v)
+				}
+			}
+		} else {
+			fmt.Printf("[germanio] %s: %s\n", fn, interp.Friendly(err))
+		}
+	}
+	return out
 }
 
 func now() string { return time.Now().UTC().Format(time.RFC3339) }
@@ -171,7 +225,7 @@ func (a *intentAPI) createRun(ctx *interp.Context, atual map[string]any, run *as
 	if err != nil || blob == nil {
 		return nil, false, nil
 	}
-	specs, perr := parseRunFile(blob.Content)
+	specs, perr := a.readRunFile(blob.Content)
 	data := map[string]any{x.OwnerField: owner["id"], "branch": branch, "versao": sha}
 	if atual != nil {
 		data[a.app.LoginEntity+"_id"] = atual["id"]
@@ -308,7 +362,7 @@ func (a *intentAPI) advance(ctx *interp.Context, run *ast.Entity, runID any) {
 		if fresh {
 			for _, j := range stage {
 				if toStr(j["estado"]) == stCreated {
-					if toStr(j["quando"]) == "manual" {
+					if toStr(j["quando"]) == whenManual {
 						set(j, stManual)
 					} else {
 						set(j, stPending)
@@ -520,10 +574,10 @@ func (x *executor) execute(ctx context.Context, log *logBuffer, owner, run, job 
 			return stFailed
 		}
 	}
-	env := []string{"PATH=" + os.Getenv("PATH"), "HOME=" + dir, "CI=true", "GERMANIO=true",
-		"CI_COMMIT_SHA=" + sha, "CI_COMMIT_REF_NAME=" + toStr(run["branch"]), "CI_JOB_NAME=" + toStr(job["nome"]),
-		"CI_JOB_STAGE=" + toStr(job["etapa"]), "CI_PIPELINE_ID=" + fmt.Sprint(run["id"]), "CI_JOB_ID=" + fmt.Sprint(job["id"]),
-		"CI_PROJECT_DIR=" + work}
+	env := []string{"PATH=" + os.Getenv("PATH"), "HOME=" + dir}
+	for k, v := range x.a.stepVariables(&interp.Context{}, x.a.localWork(owner, run, job, work)) {
+		env = append(env, k+"="+v)
+	}
 	runLines := func(list []string) bool {
 		for _, line := range list {
 			fmt.Fprintf(log, "$ %s\n", line)
@@ -587,7 +641,7 @@ func (a *intentAPI) executionAction(ctx *interp.Context, atual map[string]any, e
 			}
 			a.in.Op(ctx, e.Singular, "atualizar", row["id"], map[string]any{"repetido": true})
 			res, err := a.in.Op(ctx, e.Singular, "criar", map[string]any{x.RunField: row[x.RunField], "nome": row["nome"], "etapa": row["etapa"],
-				"ordem": row["ordem"], "script": row["script"], "quando": "on_success", "permitir_falha": row["permitir_falha"], "imagem": row["imagem"]})
+				"ordem": row["ordem"], "script": row["script"], "quando": whenAuto, "permitir_falha": row["permitir_falha"], "imagem": row["imagem"]})
 			if err != nil {
 				return nil, err
 			}

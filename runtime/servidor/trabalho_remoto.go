@@ -566,3 +566,19 @@ func (a *intentAPI) gitProtocol(w http.ResponseWriter, r *http.Request, ctx *int
 		http.Error(w, "git: "+err.Error(), http.StatusInternalServerError)
 	}
 }
+
+// localWork describes a step run by this server in the same shape remote
+// executors receive (without a token), so adapters see one format.
+func (a *intentAPI) localWork(owner, run, job map[string]any, dir string) map[string]any {
+	for _, n := range a.app.Order {
+		w := a.app.Entities[n]
+		if w.Execution == nil || w.Execution.Role != "step" {
+			continue
+		}
+		out := a.payload(&interp.Context{}, w, job["id"], "")
+		delete(out, "token")
+		out["diretorio"] = dir
+		return out
+	}
+	return map[string]any{"id": job["id"], "diretorio": dir}
+}

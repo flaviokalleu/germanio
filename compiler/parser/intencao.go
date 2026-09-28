@@ -73,6 +73,8 @@ func (p *Parser) isIntentLine() bool {
 		return len(w) == 3 && w[1] == "em"
 	case "vocabulario":
 		return true
+	case "traduza":
+		return len(w) >= 4 && w[len(w)-2] == "com"
 	case "escopo":
 		return len(w) >= 4
 	case "quem":
@@ -142,6 +144,18 @@ func (p *Parser) parseIntentLine() error {
 			return p.errorf(head.toks[0], `use: integração em "/api/v1"`)
 		}
 		in.IntegrationPrefix = strings.TrimRight(head.toks[2].Value, "/")
+		return nil
+	case "traduza":
+		// traduza arquivos de execução com ler_formato (adapters, integracoes/)
+		k := len(w) - 2
+		if len(w) < 4 || w[k] != "com" {
+			return p.errorf(head.toks[0], "use: traduza <arquivos de execução | variáveis das etapas> com <função>")
+		}
+		point, _ := phrase(w[1:k])
+		if in.Translators == nil {
+			in.Translators = map[string]string{}
+		}
+		in.Translators[point] = head.toks[len(head.toks)-1].Name()
 		return nil
 	case "login":
 		return p.parseLoginConfig(head)

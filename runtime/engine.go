@@ -204,10 +204,15 @@ func checkRole(rel string, p *ast.Program, uses map[string]bool) error {
 			what = "o que acontece (quando, antes de, ao iniciar)"
 		case in != nil && (len(in.Integrations) > 0 || in.Login != nil || len(in.Vocabulary) > 0 || in.IntegrationPrefix != ""):
 			what = "login ou integração"
+		case in != nil && len(in.Translators) > 0:
+			what = "traduza (adaptador)"
 		case len(p.Models) > 0 || len(p.Functions) > 0 || len(p.Rules) > 0 || len(p.Routes) > 0 || len(p.Crons) > 0 || p.Database != nil || p.Auth != nil:
 			what = "dados, lógica ou rotas"
 		}
 		if what != "" {
+			if what == "traduza (adaptador)" {
+				return fmt.Errorf("%s: traduza é trabalho de adaptador e vai em integracoes/", file)
+			}
 			return fmt.Errorf("%s: frontend/ mostra o que aparece (páginas, menu, tema); %s vai em backend/", file, what)
 		}
 		// Each page file says what it uses from the backend.
@@ -232,6 +237,9 @@ func checkRole(rel string, p *ast.Program, uses map[string]bool) error {
 	case "backend":
 		if (in != nil && len(in.Pages) > 0) || len(p.Screens) > 0 || len(p.Pages) > 0 || len(p.SidebarItems) > 0 || p.Theme != nil {
 			return fmt.Errorf("%s: backend/ descreve o que existe e as regras; páginas, menu e tema vão em frontend/", file)
+		}
+		if in != nil && len(in.Translators) > 0 {
+			return fmt.Errorf("%s: traduza é trabalho de adaptador e vai em integracoes/", file)
 		}
 	}
 	return nil

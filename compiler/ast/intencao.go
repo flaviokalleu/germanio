@@ -35,6 +35,7 @@ type Intent struct {
 	Executions        []*ExecutionDecl
 	Subscriptions     []*SubscriptionDecl
 	RemoteExecutors   []*RemoteExecutorDecl
+	Translators       map[string]string // traduza <ponto> com <função> (integracoes/)
 }
 
 // EntityDecl: `tenha clientes` plus the fields from `cada cliente tem`.
@@ -169,6 +170,12 @@ func MergeIntent(a, b *Intent) *Intent {
 	a.Executions = append(a.Executions, b.Executions...)
 	a.Subscriptions = append(a.Subscriptions, b.Subscriptions...)
 	a.RemoteExecutors = append(a.RemoteExecutors, b.RemoteExecutors...)
+	for k, v := range b.Translators {
+		if a.Translators == nil {
+			a.Translators = map[string]string{}
+		}
+		a.Translators[k] = v
+	}
 	a.Visibility = append(a.Visibility, b.Visibility...)
 	if a.Vocabulary == nil {
 		a.Vocabulary = b.Vocabulary

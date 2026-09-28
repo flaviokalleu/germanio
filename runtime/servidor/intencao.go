@@ -1091,11 +1091,18 @@ func (a *intentAPI) ext(name string) string {
 	return name
 }
 
+// stateFields: fields whose values are words of the domain (states and
+// enumerated values) — the vocabulary translates their values too.
 func (a *intentAPI) stateFields() map[string]bool {
 	out := map[string]bool{}
 	for _, e := range a.app.Entities {
 		if e.StateField != "" {
 			out[e.StateField] = true
+		}
+		for _, f := range e.Model.Fields {
+			if f.Type == ast.FieldEnum && f.System {
+				out[strings.ToLower(f.Name)] = true
+			}
 		}
 	}
 	return out

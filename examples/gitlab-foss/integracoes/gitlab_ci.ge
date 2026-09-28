@@ -1,0 +1,65 @@
+# NÍVEL AVANÇADO / ADAPTADOR DE COMPATIBILIDADE
+#
+# Lê o formato .gitlab-ci.yml e o traduz para o arquivo de execução nativo do
+# Germanio (estagios, etapas, comandos, depois, quando, pode_falhar, imagem).
+# Também dá às etapas as variáveis CI_* que os scripts do GitLab esperam.
+
+traduza arquivos de execução com ler_gitlab_ci
+traduza variáveis das etapas com variaveis_gitlab
+
+logica
+  definir CHAVES_GLOBAIS = ["stages", "variables", "image", "default", "include", "workflow", "before_script", "after_script", "services", "cache"]
+
+  funcao linhas(valor)
+    se valor == nulo
+      retornar []
+    se tipo(valor) == "texto"
+      retornar [valor]
+    retornar valor
+
+  funcao ler_gitlab_ci(doc)
+    definir estagios = linhas(obter(doc, "stages", nulo))
+    se tamanho(estagios) == 0
+      estagios = ["build", "test", "deploy"]
+    estagios = mesclar_listas([".pre"], estagios)
+    estagios = adicionar(estagios, ".post")
+    definir padrao = obter(doc, "default", {})
+    definir antes = linhas(obter(doc, "before_script", obter(padrao, "before_script", nulo)))
+    definir depois = linhas(obter(doc, "after_script", obter(padrao, "after_script", nulo)))
+    definir imagem = obter(doc, "image", obter(padrao, "image", nulo))
+    definir etapas = {}
+    para cada nome em chaves(doc)
+      se contem(CHAVES_GLOBAIS, nome) ou comeca_com(nome, ".")
+        continue
+      definir job = doc[nome]
+      se tipo(job) != "objeto"
+        falhar(400, nome + " deve ser um mapa")
+      definir script = linhas(obter(job, "script", nulo))
+      se tamanho(script) == 0
+        falhar(400, "o job " + nome + " não tem script")
+      definir estagio = obter(job, "stage", "test")
+      se nao contem(estagios, estagio)
+        falhar(400, "o job " + nome + " usa a etapa \"" + estagio + "\", que não está em stages")
+      definir momento = obter(job, "when", "on_success")
+      definir etapa = {estagio: estagio, comandos: mesclar_listas(linhas(obter(job, "before_script", antes)), script), depois: linhas(obter(job, "after_script", depois)), imagem: obter(job, "image", imagem), pode_falhar: obter(job, "allow_failure", momento == "manual")}
+      etapa.quando = "automatico"
+      se momento == "manual"
+        etapa.quando = "manual"
+      se momento == "always"
+        etapa.quando = "sempre"
+      etapas[nome] = etapa
+    se tamanho(chaves(etapas)) == 0
+      falhar(400, "nenhum job definido")
+    retornar {estagios: estagios, etapas: etapas}
+
+  funcao mesclar_listas(a, b)
+    definir todas = a
+    para cada item em b
+      todas = adicionar(todas, item)
+    retornar todas
+
+  funcao variaveis_gitlab(t)
+    definir v = {CI: "true", GITLAB_CI: "true", CI_JOB_ID: t.id, CI_JOB_NAME: t.dados.nome, CI_JOB_STAGE: t.dados.etapa, CI_PIPELINE_ID: t.execucao.id, CI_COMMIT_SHA: t.execucao.versao, CI_COMMIT_REF_NAME: t.execucao.branch, CI_PROJECT_ID: t.dono.id, CI_PROJECT_PATH: t.repositorio}
+    se t.diretorio != nulo
+      v.CI_PROJECT_DIR = t.diretorio
+    retornar v

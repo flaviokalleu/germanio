@@ -67,6 +67,8 @@ vocabulário da integração
     cancelado é "canceled"
     ignorado é "skipped"
     manual é "manual"
+    automatico é "on_success"
+    sempre é "always"
     versao é "sha"
     branch é "ref"
     etapa é "stage"

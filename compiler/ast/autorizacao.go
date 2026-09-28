@@ -16,6 +16,9 @@ type App struct {
 	MemberModel string // model holding memberships (polymorphic)
 	Messages    string // "pt" (default) or "en"
 	Vocabulary  map[string]string
+	// Translators: adapter functions for translation points
+	// (arquivos_de_execucao, variaveis_das_etapas) — `traduza X com f`.
+	Translators map[string]string
 }
 
 // Entity is one kind of data the application has.
