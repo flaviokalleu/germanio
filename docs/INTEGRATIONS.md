@@ -1,5 +1,7 @@
 # Guia de Integracoes - Germanio
 
+> **Escopo desta referência:** Guia técnico de integrações. O domínio declara intenção; protocolos externos ficam em configuração separada ou adaptadores. Adaptadores não declaram domínio, páginas nem regras de negócio. Consulte [INTENCAO.md](INTENCAO.md) antes de transportar estes exemplos para uma aplicação.
+
 Este documento cobre todas as integracoes disponíveis no Germanio: WhatsApp, Email SMTP, Cron Jobs, HTTP Client e Webhooks.
 
 ---

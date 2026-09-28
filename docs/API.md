@@ -1,5 +1,7 @@
 # Germanio — Referência da API REST (API Reference)
 
+> **Escopo desta referência:** Referência técnica para consumidores de API e adaptadores. Não é sintaxe de domínio. Os contratos `/api/*` abaixo pertencem ao modo descrito neste guia; não os confunda com `/_ge/api` e integrações derivadas da [camada de intenção](INTENCAO.md). Valide o contrato efetivo no código e nos testes do modo utilizado.
+
 > Versao 0.5.0 | Ultima atualizacao: 2026-04-10
 
 ---

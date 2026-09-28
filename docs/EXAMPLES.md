@@ -1,5 +1,39 @@
 # Galeria de Exemplos - Germanio
 
+## Comece pela intenção
+
+A referência normativa é [INTENCAO.md](INTENCAO.md). Aplicações novas começam por
+existência, relações, permissões e páginas; lógica explícita é último recurso.
+
+```ge
+crie sistema Clientes
+
+tenha clientes
+cada cliente tem
+    nome obrigatório
+    email obrigatório e único
+    telefone
+
+crie página Clientes
+    mostre clientes
+    permita
+        cadastrar
+        editar
+        excluir
+
+permita pesquisar clientes
+```
+
+O exemplo é introdutório; defina login e permissões adequados antes de publicar dados reais.
+Para gerar uma estrutura organizada, use `germanio init loja`. Para verificar um arquivo,
+use `ge check app.ge`; `ge explain cliente` inspeciona a entidade no contexto do projeto.
+Consulte a ajuda da CLI para argumentos e seleção do arquivo.
+
+**As seções seguintes preservam a referência da sintaxe anterior e recursos avançados.**
+Elas não substituem a norma nem tornam HTTP, IDs, CRUD manual ou lógica imperativa
+obrigatórios. Não misture exemplos de modos diferentes sem verificar parser e execução.
+
+
 Colecao de exemplos completos e comentados para inspirar e acelerar o desenvolvimento com Germanio.
 
 ---

@@ -259,7 +259,7 @@ legado, modelos, telas, temas, rotas, banco, autenticação e integrações. `.g
 mantém sua semântica anterior; não recebe automaticamente as garantias `.ge`.
 **Não basta renomear um arquivo `.ge` para `.ge`.**
 
-Consulte a [documentação histórica](docs/GERMANIO_LEGACY.md). Os exemplos antigos
+Consulte a [índice de documentação](docs/README.md). Os exemplos antigos
 continuam em `examples/` e `demo/`; os novos estão em `examples/germanio/`.
 
 ## Desenvolvimento e validação

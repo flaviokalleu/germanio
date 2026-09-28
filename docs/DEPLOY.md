@@ -1,5 +1,7 @@
 # Germanio — Guia de Deploy (Deployment Guide)
 
+> **Escopo desta referência:** Guia de operação para quem hospeda. Configuração de servidor não deve virar requisito do autor do domínio. Para a camada de intenção, consulte as variáveis de operação em [INTENCAO.md](INTENCAO.md); não presuma que nomes de variáveis de modos anteriores sejam intercambiáveis. A versão de Go exigida pelo checkout é a de `go.mod`.
+
 > Versão 0.2.0 | Última atualização: 2026-04-09
 
 ---

@@ -1,5 +1,7 @@
 # Guia de Seguranca - Germanio
 
+> **Escopo desta referência:** Referência técnica de segurança, não garantia de segurança total nem contrato único para todos os modos. Na camada de intenção, autorização, relações, transições e invariantes são declarativos conforme [INTENCAO.md](INTENCAO.md). Exemplos de JWT/rotas abaixo não exigem implementação manual de autenticação pelo iniciante.
+
 Este documento descreve todos os mecanismos de seguranca do Germanio: autenticacao, autorizacao, protecao de dados e boas praticas.
 
 ---

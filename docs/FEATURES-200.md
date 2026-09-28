@@ -1,5 +1,7 @@
 # Germanio — 200 Features Para Leigos
 
+> **Escopo desta referência:** Catálogo de ideias e registros históricos; não é especificação nem comprovação de entrega. Marcações “implementado” abaixo precisam ser conferidas no código e nos testes da revisão usada. Prioridades atuais: [ROADMAP.md](ROADMAP.md). Semântica normativa: [INTENCAO.md](INTENCAO.md).
+
 **Objetivo:** Tornar o Germanio a plataforma mais acessivel do mundo para qualquer pessoa criar aplicacoes completas, sem precisar saber programar.
 
 **Legenda:** ✅ Ja implementado | 🔜 Planejado | 💡 Ideia nova
