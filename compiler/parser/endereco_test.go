@@ -80,3 +80,14 @@ func TestPrecisaTerPeloMenosUm(t *testing.T) {
 		}
 	}
 }
+
+func TestAdministradorInicial(t *testing.T) {
+	ok := parse(t, "crie sistema x\n\ntenha usuarios\n\nusuario tem\n    email obrigatório e único\n    senha\n    admin começa com falso\n\ntenha login\ntenha administrador inicial \"root@x.io\"\n")
+	if err := ResolveIntent(ok); err != nil || ok.App.InitialAdmin != "root@x.io" {
+		t.Fatalf("administrador inicial: %v %q", err, ok.App.InitialAdmin)
+	}
+	sem := parse(t, "crie sistema x\n\ntenha usuarios\n\nusuario tem\n    email obrigatório e único\n    senha\n\ntenha login\ntenha administrador inicial \"root@x.io\"\n")
+	if err := ResolveIntent(sem); err == nil || !strings.Contains(err.Error(), "precisa do campo admin") {
+		t.Fatalf("sem campo admin: %v", err)
+	}
+}

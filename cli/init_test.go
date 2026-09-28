@@ -79,8 +79,7 @@ func entrar(t *testing.T, base, email, senha string) *pessoa {
 func carregar(t *testing.T, app string) (*runtime.App, error) {
 	t.Setenv("GERMANIO_SQLITE", filepath.Join(t.TempDir(), "loja.db"))
 	t.Setenv("GERMANIO_BCRYPT_RAPIDO", "1")
-	t.Setenv("ADMIN_EMAIL", "admin@loja.local")
-	t.Setenv("ADMIN_SENHA", "senha-do-admin")
+	t.Setenv("GERMANIO_ADMIN_SENHA", "senha-do-admin")
 	return runtime.Carregar(app, "0")
 }
 

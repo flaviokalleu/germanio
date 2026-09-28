@@ -16,6 +16,9 @@ type App struct {
 	MemberModel string // model holding memberships (polymorphic)
 	Messages    string // "pt" (default) or "en"
 	Vocabulary  map[string]string
+	// InitialAdmin: `tenha administrador inicial "root"` — login name of the
+	// first administrator, created when nobody exists yet.
+	InitialAdmin string
 	// ReservedAddresses: top-level addresses the product keeps for itself
 	// (`endereços reservados`); the runtime adds the app's own routes.
 	ReservedAddresses []string

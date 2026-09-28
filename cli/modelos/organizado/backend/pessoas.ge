@@ -10,10 +10,7 @@ cada usuario tem
 
 tenha login
 tenha cadastro
+tenha administrador inicial "admin@loja.local"
 login usa email
 
 usuario pode editar seu perfil
-
-ao iniciar
-    se usuario.contar() == 0 e ambiente.ler("ADMIN_SENHA", nulo) != nulo
-        usuario.criar({nome: "Administrador", email: ambiente.ler("ADMIN_EMAIL", "admin@loja.local"), senha: ambiente.ler("ADMIN_SENHA"), admin: verdadeiro})

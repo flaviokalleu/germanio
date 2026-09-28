@@ -38,6 +38,7 @@ type Intent struct {
 	Translators       map[string]string // traduza <ponto> com <função> (integracoes/)
 	InitialFiles      []*InitialFileDecl
 	ReservedAddresses []string       // endereços reservados
+	InitialAdmin      string         // tenha administrador inicial "root"
 	MinRoles          []*CreatorRole // todo grupo precisa ter pelo menos um owner
 }
 
@@ -192,6 +193,9 @@ func MergeIntent(a, b *Intent) *Intent {
 	}
 	if a.Messages == "" {
 		a.Messages = b.Messages
+	}
+	if a.InitialAdmin == "" {
+		a.InitialAdmin = b.InitialAdmin
 	}
 	if a.IntegrationPrefix == "" {
 		a.IntegrationPrefix = b.IntegrationPrefix

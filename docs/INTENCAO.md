@@ -313,6 +313,10 @@ login exige state "active"
 login bloqueia após 10 tentativas por 10 minutos
 ```
 
+`tenha administrador inicial "root"` cria a primeira pessoa administradora (login `root`)
+quando ainda não existe ninguém e o servidor recebeu `GERMANIO_ADMIN_SENHA`
+(e, opcionalmente, `GERMANIO_ADMIN_EMAIL`); a senha nunca aparece no `.ge`.
+
 O runtime oferece `entrar`, `sair`, `cadastro`, sessão com CSRF, tokens (cabeçalho, `Bearer`,
 HTTP Basic para git) e `oauth/token`. O cadastro nunca aceita campos como `admin`.
 
@@ -421,6 +425,7 @@ Nada disto aparece no `.ge`; é configuração de quem hospeda a aplicação.
 | `GERMANIO_EXECUTOR` | `local` ou `docker` para executar etapas neste servidor (padrão: nenhum) |
 | `GERMANIO_JOB_TIMEOUT` | tempo máximo de uma etapa |
 | `GERMANIO_PROXIES_CONFIAVEIS` | IPs/CIDRs dos proxies reversos; só deles se aceita `X-Forwarded-For`/`X-Real-IP`/`CF-Connecting-IP` (padrão: nenhum — o IP é o da conexão) |
+| `GERMANIO_ADMIN_SENHA` / `GERMANIO_ADMIN_EMAIL` | senha (e e-mail) do `administrador inicial`, usados só enquanto não existe ninguém |
 | `GERMANIO_PERMITIR_REDE_LOCAL` | permite webhooks/chamadas para endereços internos (desligado por padrão, proteção SSRF) |
 
 ## Trabalho remoto e teste de generalização

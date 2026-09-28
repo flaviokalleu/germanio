@@ -521,6 +521,14 @@ func splitItems(t []lexer.Token) [][]string {
 
 func (p *Parser) parseTenha(head dline, body []dline) error {
 	in := p.intent()
+	// tenha administrador inicial "root"
+	if w := wordsOf(head.toks); len(w) >= 3 && w[1] == "administrador" && w[2] == "inicial" {
+		if len(head.toks) != 4 || head.toks[3].Type != lexer.TokenString {
+			return p.errorf(head.toks[0], `use: tenha administrador inicial "nome de login"`)
+		}
+		in.InitialAdmin = head.toks[3].Value
+		return nil
+	}
 	items := splitItems(head.toks[1:])
 	// tenha papeis + indented list of roles
 	if len(items) == 1 && len(items[0]) == 1 && (items[0][0] == "papeis" || items[0][0] == "papel") && len(body) > 0 {

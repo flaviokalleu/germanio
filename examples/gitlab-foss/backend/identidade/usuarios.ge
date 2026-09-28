@@ -28,6 +28,7 @@ token de acesso pertence a usuario
 
 tenha login
 tenha cadastro
+tenha administrador inicial "root"
 login usa username e email
 login exige estado "ativo"
 login bloqueia após 10 tentativas por 10 minutos
@@ -57,7 +58,3 @@ somente administrador pode
 disponibilize para integração
     usuarios como "users"
     tokens de acesso como "personal_access_tokens"
-
-ao iniciar
-    se usuario.contar() == 0 e ambiente.ler("GITLAB_ROOT_PASSWORD", nulo) != nulo
-        usuario.criar({username: "root", email: "admin@example.com", nome: "Administrator", senha: ambiente.ler("GITLAB_ROOT_PASSWORD"), admin: verdadeiro})

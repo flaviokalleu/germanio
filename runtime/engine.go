@@ -424,6 +424,7 @@ func Carregar(arquivo string, porta string) (*App, error) {
 	if len(program.Functions) > 0 || len(program.Scripts) > 0 {
 		interpreter.Run(program)
 	}
+	ensureInitialAdmin(interpreter, program)
 
 	if len(program.Crons) > 0 {
 		scheduler := cronpkg.Novo(program.Crons)
@@ -562,4 +563,57 @@ func resolveImportsQuiet(program *ast.Program, entry string) error {
 	os.Stdout = devnull
 	defer func() { os.Stdout = stdout; devnull.Close() }()
 	return resolveImports(program, entry, nil)
+}
+
+// ensureInitialAdmin: `tenha administrador inicial "root"` creates the first
+// administrator when nobody exists yet and the server was given its password
+// (GERMANIO_ADMIN_SENHA; optional GERMANIO_ADMIN_EMAIL). The password never
+// appears in .ge files.
+func ensureInitialAdmin(in *interp.Interpreter, program *ast.Program) {
+	app := program.App
+	if app == nil || app.InitialAdmin == "" {
+		return
+	}
+	ctx := &interp.Context{}
+	if n, err := in.Op(ctx, app.LoginEntity, "contar"); err != nil || toFloat(n) > 0 {
+		return
+	}
+	pass := os.Getenv("GERMANIO_ADMIN_SENHA")
+	if pass == "" {
+		fmt.Printf("[germanio] Administrador inicial %q: defina GERMANIO_ADMIN_SENHA para criá-lo.\n", app.InitialAdmin)
+		return
+	}
+	model := app.Entities[app.LoginEntity].Model
+	data := map[string]any{"admin": true}
+	loginField := "email"
+	if app.Login != nil && len(app.Login.Fields) > 0 {
+		loginField = strings.ToLower(app.Login.Fields[0])
+	}
+	data[loginField] = app.InitialAdmin
+	for _, f := range model.Fields {
+		name := strings.ToLower(f.Name)
+		switch {
+		case f.Type == ast.FieldSenha:
+			data[name] = pass
+		case name == "email" && loginField != "email":
+			data[name] = os.Getenv("GERMANIO_ADMIN_EMAIL")
+			if data[name] == "" {
+				data[name] = "admin@" + strings.ToLower(strings.ReplaceAll(program.System.Name, " ", "")) + ".local"
+			}
+		case (name == "nome" || name == "name") && data[name] == nil:
+			data[name] = map[string]string{"pt": "Administrador", "en": "Administrator"}[app.Messages]
+		}
+	}
+	if _, err := in.Op(ctx, app.LoginEntity, "criar", data); err != nil {
+		fmt.Printf("[germanio] Administrador inicial %q não foi criado: %s\n", app.InitialAdmin, interp.Friendly(err))
+		return
+	}
+	fmt.Printf("[germanio] Administrador inicial %q criado.\n", app.InitialAdmin)
+}
+
+func toFloat(v any) float64 {
+	if f, ok := v.(float64); ok {
+		return f
+	}
+	return 0
 }

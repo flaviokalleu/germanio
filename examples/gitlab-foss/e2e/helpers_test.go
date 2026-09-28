@@ -20,7 +20,8 @@ func gitlab(t *testing.T) string {
 	t.Setenv("GERMANIO_SQLITE", filepath.Join(t.TempDir(), "gitlab.db"))
 	t.Setenv("GERMANIO_GIT_RAIZ", filepath.Join(t.TempDir(), "repos"))
 	t.Setenv("GERMANIO_BCRYPT_RAPIDO", "1")
-	t.Setenv("GITLAB_ROOT_PASSWORD", "rootpassword1")
+	t.Setenv("GERMANIO_ADMIN_SENHA", "rootpassword1")
+	t.Setenv("GERMANIO_ADMIN_EMAIL", "admin@example.com")
 	app, err := germanio.Carregar("../app.ge", "0")
 	if err != nil {
 		t.Fatalf("Carregar: %v", err)

@@ -1085,6 +1085,15 @@ func ResolveIntent(prog *ast.Program) error {
 	}
 
 	app.ReservedAddresses = in.ReservedAddresses
+	if in.InitialAdmin != "" {
+		if app.LoginEntity == "" {
+			return fmt.Errorf("tenha administrador inicial: declare antes tenha login")
+		}
+		if f := fieldByNameAST(app.Entities[app.LoginEntity].Model, "admin"); f == nil || f.Type != ast.FieldBooleano {
+			return fmt.Errorf("tenha administrador inicial: %s precisa do campo admin (ex.: admin começa com falso)", app.LoginEntity)
+		}
+		app.InitialAdmin = in.InitialAdmin
+	}
 
 	// 9b. Translation points filled by adapters (`traduza X com f`).
 	for point, fn := range in.Translators {
