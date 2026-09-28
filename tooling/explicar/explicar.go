@@ -120,6 +120,16 @@ func Entidade(prog *ast.Program, nome string) (string, error) {
 	w("Persistência: automática, tabela %q (id, criado_em, atualizado_em)\n", e.Singular)
 	if app.LoginEntity == e.Singular {
 		w("Login: são as pessoas que entram no sistema (%s)\n", strings.Join(app.Login.Fields, " ou "))
+		if app.Login.Signup {
+			w("  cadastro: qualquer pessoa cria a própria conta (/cadastro); campos como admin nunca são aceitos\n")
+		}
+		w("  bloqueio: %d senhas erradas seguidas bloqueiam a conta por %d minutos; um endereço que erra 50 logins em 10 minutos espera\n", app.Login.LockAttempts, app.Login.LockMinutes)
+		if app.Login.Recovery {
+			w("  recuperação de senha: /esqueci envia por e-mail um link de uso único, válido por 1 hora, para o endereço público (GERMANIO_URL_PUBLICA); a resposta não revela se a conta existe; o e-mail vem do ambiente (GERMANIO_SMTP_* ou GERMANIO_CORREIO_PASTA)\n")
+		}
+	}
+	if len(e.PendingFields) > 0 {
+		w("Pendências: quem passa a estar em %s recebe uma pendência (dado %s); quem sai perde as abertas; excluir o registro exclui as pendências\n", strings.Join(e.PendingFields, ", "), app.PendingEntity)
 	}
 	w("\nCampos:\n")
 	for _, f := range e.Model.Fields {

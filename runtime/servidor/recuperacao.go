@@ -65,6 +65,20 @@ func mailerFromEnv() (mailer, string) {
 	}, ""
 }
 
+// recoveryResendGap: at most one recovery e-mail per account in this time,
+// however many requests arrive (from however many addresses): repeated
+// requests cannot flood someone's mailbox. The answer stays the same.
+const recoveryResendGap = 2 * time.Minute
+
+// recentRecovery reports whether a link was sent to the person less than
+// recoveryResendGap ago (a token is created with expiry now + 1 hour).
+func (a *intentAPI) recentRecovery(pessoa any) bool {
+	var n int
+	since := time.Now().UTC().Add(recoveryExpiry - recoveryResendGap).Format(time.RFC3339)
+	a.s.DB.DB.QueryRow(fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE pessoa_id = %s AND expira_em > %s`, recoveryTable, a.s.ph(1), a.s.ph(2)), pessoa, since).Scan(&n)
+	return n > 0
+}
+
 func hashToken(t string) string {
 	sum := sha256.Sum256([]byte(t))
 	return hex.EncodeToString(sum[:])
@@ -120,7 +134,7 @@ func (a *intentAPI) mountRecovery(mux *routeMux) {
 			return
 		}
 		login := first(toStr(body["login"]), toStr(body["email"]))
-		if user := a.s.findLogin(ctx, login); user != nil && toStr(user[field]) != "" {
+		if user := a.s.findLogin(ctx, login); user != nil && toStr(user[field]) != "" && !a.recentRecovery(user["id"]) {
 			raw := make([]byte, 32)
 			if _, err := rand.Read(raw); err != nil {
 				a.failErr(w, r, err)

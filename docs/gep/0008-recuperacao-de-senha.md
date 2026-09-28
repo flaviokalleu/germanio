@@ -1,6 +1,6 @@
 # GEP 0008: Password recovery
 
-- **Status:** Em teste (implemented behind this proposal; not normative until accepted)
+- **Status:** Aceita (2026-09-28, pelo mantenedor). Norma: `docs/INTENCAO.md` › Login
 - **Author:** agent (GitLab stress test, inventory ID-06); decision by the maintainer
 - **Level:** 1
 - **Layer:** domain (one phrase), core (mechanism)
@@ -54,7 +54,8 @@ login usa email
 - `/redefinir`: a form for the new password, validated by the password field's own rules.
   A token works once; using it deletes every recovery token of that person and clears the
   login lock. The page then sends the person to `/entrar`.
-- Requests are limited like logins (per address).
+- Requests are limited like logins (per address), and at most one e-mail goes to an account
+  every 2 minutes, however many requests arrive.
 - E-mail is configured outside the source: `GERMANIO_SMTP_HOST`, `GERMANIO_SMTP_PORTA`,
   `GERMANIO_SMTP_USUARIO`, `GERMANIO_SMTP_SENHA`, `GERMANIO_SMTP_REMETENTE`, plus
   `GERMANIO_URL_PUBLICA` for the link. Without them the application starts, and `/esqueci`

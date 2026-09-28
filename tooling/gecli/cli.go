@@ -105,7 +105,18 @@ func Run(args []string, in io.Reader, out, stderr io.Writer) int {
 			return 0
 		}
 		if len(rest) < 2 {
-			return fail(fmt.Errorf("Uso: ge explain <dado> [app.ge] ou ge explain pagina <nome>"))
+			return fail(fmt.Errorf("Uso: ge explain <dado> [app.ge] ou ge explain pagina <nome> [app.ge]"))
+		}
+		// pages of the intent layer (docs/INTENCAO.md › Página)
+		if file := findEntry(rest[2:]); file != "" {
+			if prog, err := germanioRuntime.Compilar(file); err == nil && prog.App != nil && len(prog.App.Pages) > 0 {
+				text, err := explicar.Pagina(prog, rest[1])
+				if err != nil {
+					return fail(err)
+				}
+				fmt.Fprint(out, text)
+				return 0
+			}
 		}
 		cwd, _ := os.Getwd()
 		graph, err := intelligence.NewProjectAnalyzer(cwd).Analyze()

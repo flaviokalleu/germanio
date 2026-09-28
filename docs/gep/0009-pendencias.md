@@ -1,6 +1,6 @@
 # GEP 0009: Pending items
 
-- **Status:** Em teste (implemented behind this proposal; `TestPendencias`; not normative until accepted)
+- **Status:** Aceita (2026-09-28, pelo mantenedor). Norma: `docs/INTENCAO.md` › Pendências
 - **Author:** agent (GitLab stress test, inventory NT-01); decision by the maintainer
 - **Level:** 1
 - **Layer:** domain (one phrase), core (the trigger); the data itself is ordinary Germanio

@@ -23,6 +23,10 @@ func TestRecuperacaoDeSenha(t *testing.T) {
 	if known["message"] != unknown["message"] {
 		t.Fatalf("a resposta revela quais contas existem: %v × %v", known, unknown)
 	}
+	// repeated requests for the same account: the same answer, no new e-mail
+	for i := 0; i < 5; i++ {
+		c.expect("POST", "/esqueci", map[string]any{"login": "ana@x.com"}, 202)
+	}
 	files, _ := filepath.Glob(filepath.Join(mail, "*"))
 	if len(files) != 1 {
 		t.Fatalf("esperado 1 e-mail, vieram %d", len(files))
@@ -40,7 +44,8 @@ func TestRecuperacaoDeSenha(t *testing.T) {
 	c.expect("POST", "/entrar", map[string]any{"login": "ana@x.com", "senha": "senha-antiga-1"}, 401)
 	c.expect("POST", "/entrar", map[string]any{"login": "ana@x.com", "senha": "senha-nova-123"}, 200)
 
-	// an expired link does not work
+	// an expired link does not work (the resend gap is over once the first
+	// link was used: using it deletes the person's links)
 	c.expect("POST", "/esqueci", map[string]any{"login": "ana@x.com"}, 202)
 	files, _ = filepath.Glob(filepath.Join(mail, "*"))
 	var fresh string

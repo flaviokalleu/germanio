@@ -1,6 +1,7 @@
 package explicar
 
 import (
+	"os"
 	"strings"
 	"testing"
 
@@ -52,5 +53,37 @@ func TestExplainMostraOrigem(t *testing.T) {
 		if !strings.Contains(flat, want) {
 			t.Fatalf("faltou %q:\n%s", want, flat)
 		}
+	}
+}
+
+// ge explain pagina tells each section as declared or default, and who sees
+// each action.
+func TestExplicarPagina(t *testing.T) {
+	src, err := os.ReadFile("../../runtime/testdata/secoes/app.ge")
+	if err != nil {
+		t.Fatal(err)
+	}
+	toks, err := lexer.New(string(src)).Tokenize()
+	if err != nil {
+		t.Fatal(err)
+	}
+	prog, err := parser.New(toks).Parse()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := parser.ResolveIntent(prog); err != nil {
+		t.Fatal(err)
+	}
+	text, err := Pagina(prog, "clientes")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{`título  "Nossos clientes" (declarado)`, `criar "Novo cliente" — aparece para:`, "Filtros (declarado)", "cidade", "Colunas (declarado)", `título  "Nenhum cliente"`} {
+		if !strings.Contains(text, want) {
+			t.Errorf("explicação sem %q:\n%s", want, text)
+		}
+	}
+	if _, err := Pagina(prog, "inexistente"); err == nil {
+		t.Error("página desconhecida aceita")
 	}
 }

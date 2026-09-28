@@ -348,6 +348,7 @@ válidas. `construcao_do_sistema` são as construções sem sujeito único (`ten
 | `executam jobs` (em `runners`) | `runners executam jobs` |
 | `repositório pode começar com "README.md" contendo "# {nome}"` | `repositório do d pode começar com …` |
 | `singular token de acesso` | `cada token de acesso tem` (a forma que nomeia um registro, quando o plural admite duas leituras: tokens → token ou tokem) |
+| `pendência para` + campos de pessoas (um por linha) | `d gera pendência para responsaveis` (veja Pendências) |
 
 Uma **ação sem alvo** vale para o próprio dado (a coleção: `administrar` sem alvo inclui
 criar, como `administrar projetos`). Uma ação com alvo explícito (`adicionar membros`,
@@ -359,6 +360,66 @@ regra vai no bloco dele. `seu/seus` restringe aos registros da própria pessoa.
 `página Clientes` + `mostre clientes`, `permita` + ações e `20 por página` **é** `crie página
 Clientes` com o mesmo corpo. `pagina "/caminho"` (com texto entre aspas) continua sendo a página
 estática do nível técnico; os dois se distinguem pelo que vem depois da palavra.
+
+Seções de página ([GEP 0002](gep/0002-secoes-de-pagina.md), aceita): uma tabela fechada de
+regiões com significado de domínio. Nenhuma é obrigatória; cada uma troca só o próprio padrão;
+`página Clientes` + `mostre clientes` sozinho continua produzindo a página inteira.
+
+```ge
+crie sistema Cadastro
+
+usuarios
+    tem
+        nome obrigatório
+        email obrigatório e único
+        senha min 8
+
+tenha login
+
+clientes
+    tem
+        nome obrigatório
+        email obrigatório e único
+        cidade
+    acesso
+        usuario
+            ver
+            criar
+
+página Clientes
+    mostre clientes
+    topo
+        título "Clientes"
+        texto "Todas as pessoas atendidas."
+        ações
+            criar "Novo cliente"
+    filtros
+        pesquisar
+        cidade
+    colunas
+        nome
+        email
+    vazio
+        título "Nenhum cliente"
+        texto "Cadastre o primeiro."
+        ação criar "Cadastrar cliente"
+    permita
+        criar
+```
+
+| Seção | Conteúdo | Regra | Padrão quando ausente |
+| --- | --- | --- | --- |
+| `topo` | `título "…"`, `texto "…"`, `ações` | — | título = nome dos dados |
+| `ações` (em `topo`) | um verbo por linha, rótulo opcional | o verbo precisa estar no `permita` da página; hoje só `criar` cabe no topo (as ações de um registro aparecem nele) | a ação criar, se permitida |
+| `filtros` | `pesquisar` ou um campo por linha | o campo precisa existir; declarar um filtro implica `permita filtrar por` (filtrar só estreita o que já se vê) | a pesquisa e os filtros do dado |
+| `colunas` | um campo por linha, na ordem | o campo precisa existir e não ser privado, oculto nem secreto | os campos visíveis |
+| `vazio` | `título`, `texto`, `ação verbo "rótulo"` | a ação segue a regra de `ações` | "Nenhum registro de … ainda." |
+
+A página pede; o domínio decide: uma ação só aparece para quem pode fazê-la, como qualquer botão
+de `permita`. Um rótulo sozinho (`"Novo cliente"`) é erro: um texto não é uma ação. As seções
+valem na página da coleção (não nas listas aninhadas). `ge explain pagina Clientes` mostra cada
+seção como declarada ou padrão e quem vê cada ação. Indicadores e gráficos ainda não existem:
+dependem de uma GEP de agregados.
 
 ### Fusão e conflitos
 
@@ -530,6 +591,17 @@ todos podem ver produtos
 `permita criar projetos` libera para qualquer pessoa conectada (ou qualquer visitante se não
 há login). `permita filtrar clientes por cidade` e `permita pesquisar clientes` habilitam filtro e busca.
 
+## Pendências
+
+`pendência para` ([GEP 0009](gep/0009-pendencias.md), aceita), no bloco do dado, ou
+`issue gera pendência para responsaveis`: quem passa a estar num campo de pessoas (uma pessoa ou
+uma lista) recebe uma pendência do registro; quem faz a mudança não recebe para si; quem sai do
+campo perde as pendências abertas; excluir o registro exclui as pendências. Tudo acontece na
+transação da mudança. As pendências são um dado comum, `pendencias` (motivo, recurso, dono;
+começa aberta; pode concluir; cada pessoa vê, conclui e exclui só as suas), que o Germanio
+escreve quando o programa não o declara (`ge explain pendencias` mostra a origem). Para
+mostrá-las, a aplicação declara `página Pendências` + `mostre pendências`.
+
 ## O que deve acontecer
 
 O padrão é declarar invariantes e transições:
@@ -592,6 +664,20 @@ senha certa é recusada enquanto o bloqueio dura; `login bloqueia após N tentat
 minutos` só ajusta os números. Além disso, um mesmo endereço que erra 50 logins em 10
 minutos, em quaisquer contas, espera antes de tentar de novo (resposta 429); logins certos não
 contam. Nenhuma aplicação com login fica sem essas proteções.
+
+`tenha recuperação de senha` ([GEP 0008](gep/0008-recuperacao-de-senha.md), aceita; implica o
+login, como `tenha cadastro`) oferece `/esqueci` e `/redefinir`:
+
+- a resposta de `/esqueci` é a mesma exista ou não a conta;
+- o link vai por e-mail para o endereço público declarado (`GERMANIO_URL_PUBLICA`), nunca para o
+  `Host` da requisição; o token é aleatório (32 bytes), guardado só como SHA-256, vale **uma
+  hora** e **uma vez**; usá-lo invalida todos os links da pessoa e limpa o bloqueio do login;
+- a senha nova obedece às regras do campo de senha;
+- no máximo um e-mail por conta a cada 2 minutos, e os pedidos contam no limite por endereço
+  do login;
+- o e-mail vem do ambiente (`GERMANIO_SMTP_HOST`, `_PORTA`, `_USUARIO`, `_SENHA`, `_REMETENTE`,
+  ou `GERMANIO_CORREIO_PASTA` em desenvolvimento), nunca do `.ge`; sem ele, a página diz que a
+  recuperação ainda não está disponível.
 
 `tenha administrador inicial "root"` cria a primeira pessoa administradora (login `root`)
 quando ainda não existe ninguém e o servidor recebeu `GERMANIO_ADMIN_SENHA`
@@ -806,10 +892,9 @@ A tabela é um contrato de aceitação, não uma declaração de que todos os te
 
 - Verbos que ligam e desligam uma condição sem máquina de estados (`pode` › `arquivar`,
   `restaurar`) ainda não existem; hoje a forma é `pode` › `ser arquivado`.
-- Seções de página além de `mostre`, `permita` e `N por página`: `topo`, `filtros`, `colunas`
-  e `vazio` estão em teste pela [GEP 0002](gep/0002-secoes-de-pagina.md) (implementadas, não
-  normativas até a decisão); `gráfico`, `lista` e indicadores como `total de clientes` seguem
-  como direção, dependentes de uma GEP de agregados.
+- `gráfico`, `lista` e indicadores como `total de clientes` nas páginas seguem como direção,
+  dependentes de uma GEP de agregados (as seções `topo`, `filtros`, `colunas` e `vazio` são
+  norma: Página).
 - `ge check --nivel N` (avisar construções acima de um nível) ainda não existe.
 
 ## Checklist de design de novas construções

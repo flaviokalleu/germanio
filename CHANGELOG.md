@@ -29,6 +29,9 @@ hierarchical syntax. Nothing below is in a tagged release yet.
   every block reduces to equivalent flat phrases, and a test proves the equivalence.
 - Merging of blocks of the same data, with conflicts reported with both origins.
 
+- Page sections (`topo`, `ações`, `filtros`, `colunas`, `vazio`; GEP 0002), password recovery
+  (`tenha recuperação de senha`; GEP 0008) and pending items (`pendência para`; GEP 0009).
+
 ### Tooling
 
 - `ge` CLI: `new`, `run`, `check`, `fmt`, `explain`, `test`, `explicar`.
