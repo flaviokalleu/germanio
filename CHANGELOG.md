@@ -46,6 +46,7 @@ hierarchical syntax. Nothing below is in a tagged release yet.
 - Security: a list of data with a restriction such as `confidencial pode ser vista por autor`
   returned restricted records to people who could not see them (the single record was already
   protected); restrictions now make the list check each record (G106).
+  A pending item names the record's title only if its owner may see the record (G107).
 - External effects run after the commit (G86): inside a change, `chamar` with a writing
   method, webhooks and messages are recorded and run once the change is saved, in order,
   never holding the database's write lock. An undone change has no effects; a failing effect
