@@ -285,8 +285,11 @@ uma forma é melhor. As noções abaixo são diferentes e não devem ser confund
 
 ### Gramática (sobre os símbolos do layout)
 
-`NL` é fim de linha; `ABRE`/`FECHA` são as mudanças de nível do layout. Palavras em
-português podem ser escritas com ou sem acento e em qualquer idioma do léxico.
+`NL` é fim de linha; `ABRE`/`FECHA` são símbolos abstratos: a abertura e o fechamento de
+um nível, calculados pela pilha de níveis do layout (não são tokens do lexer). As palavras podem
+ser escritas com ou sem acento. A camada de intenção entende hoje só palavras em português: uma
+linha em outra língua é erro que mostra as palavras em português (a decisão sobre outras
+línguas é a [GEP 0007](gep/0007-idiomas-da-intencao.md)).
 
 ```ebnf
 programa     = { item } ;

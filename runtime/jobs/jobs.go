@@ -1,6 +1,7 @@
 package jobs
 
 import (
+	"fmt"
 	"sync"
 	"sync/atomic"
 )
@@ -16,6 +17,7 @@ type Queue struct {
 	running   int64
 	completed int64
 	failed    int64
+	rejected  int64 // refused because the queue was full
 	closed    atomic.Bool
 	wg        sync.WaitGroup
 }
@@ -63,6 +65,8 @@ func (q *Queue) Submit(name string, fn func()) bool {
 		return true
 	default:
 		atomic.AddInt64(&q.queued, -1)
+		atomic.AddInt64(&q.rejected, 1)
+		fmt.Printf("[germanio] aviso: fila de trabalhos cheia; %q não foi executado\n", name)
 		return false
 	}
 }
@@ -76,6 +80,7 @@ func (q *Queue) Stats() map[string]int64 {
 		"running":   atomic.LoadInt64(&q.running),
 		"completed": atomic.LoadInt64(&q.completed),
 		"failed":    atomic.LoadInt64(&q.failed),
+		"rejected":  atomic.LoadInt64(&q.rejected),
 	}
 }
 
