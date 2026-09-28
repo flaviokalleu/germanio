@@ -158,6 +158,10 @@ func (a *intentAPI) serveGit(w http.ResponseWriter, r *http.Request, entities []
 	verb := "baixar_codigo"
 	if service == "receive-pack" {
 		verb = "enviar_codigo"
+		if le, _ := a.lockedAncestor(ctx, e, row, true, 0); le != nil {
+			http.Error(w, interp.Friendly(a.readOnlyError(le)), http.StatusForbidden)
+			return
+		}
 	}
 	if !a.s.scopeAllows(ctx, verb) {
 		http.Error(w, "The token does not have the scope for this operation", http.StatusForbidden)

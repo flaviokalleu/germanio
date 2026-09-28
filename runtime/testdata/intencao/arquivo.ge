@@ -1,0 +1,22 @@
+crie sistema Arquivo
+
+tenha pastas, documentos
+
+pasta tem
+    nome obrigatório
+    documentos
+
+documento tem
+    titulo obrigatório
+
+pasta pode ser trancada
+pasta trancada é somente leitura
+
+permita criar pastas
+permita ver pastas
+permita editar pastas
+permita excluir pastas
+permita criar documentos
+permita ver documentos
+permita editar documentos
+permita excluir documentos

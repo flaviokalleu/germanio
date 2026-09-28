@@ -34,7 +34,7 @@ Escopo núcleo v1 = features marcadas **[N]** (fluxos 1–5 da missão + testes 
 | PR-01 [N] | Criar projeto | no namespace do usuário ou grupo; cria repositório bare; criador Owner | `/projects/new` | `POST /api/v4/projects` | projects, members | autenticado / Developer+ no grupo | git | G13 | PASS | TestFluxo1 |
 | PR-02 [N] | Ver projeto | resolve `ns/path`; README, branches, visibilidade | `/:ns/:proj` | `GET /api/v4/projects/:id` (id ou path url-encoded) | projects | por visibilidade/membro | | | PASS | TestFluxo1 |
 | PR-03 [N] | Membros do projeto | adicionar/remover/alterar nível | members | `/projects/:id/members` | members | Maintainer+ | | | PASS | TestFluxo4 (adiciona membro) |
-| PR-04 | Editar/arquivar/remover projeto | | settings | `PUT/DELETE /projects/:id`, archive | projects | Maintainer / Owner | git | | PARTIAL (arquivar: campo sem regra de somente leitura) | — |
+| PR-04 | Editar/arquivar/remover projeto | | settings | `PUT/DELETE /projects/:id`, archive | projects | Maintainer / Owner | git | | PASS | TestProjetoArquivado (arquivar por `archived`; endpoints POST archive/unarchive ainda não) |
 | PR-05 | Fork | | | `POST /projects/:id/fork` | | | git | | NOT_STARTED | |
 | PR-06 | Estrelas, tópicos, avatar | | | | | | uploads | | NOT_STARTED | |
 

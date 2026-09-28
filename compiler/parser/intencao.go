@@ -95,6 +95,9 @@ func (p *Parser) isIntentLine() bool {
 	if len(w) >= 4 && w[len(w)-1] == "final" && w[len(w)-2] == "e" {
 		return true
 	}
+	if len(w) >= 5 && w[len(w)-2] == "somente" && w[len(w)-1] == "leitura" && w[len(w)-3] == "e" {
+		return true
+	}
 	for _, x := range w[1:] {
 		if x == "tem" || x == "pode" || x == "podem" || x == "pertence" || x == "herda" || x == "comeca" || x == "recebe" || x == "executa" || x == "executam" || x == "precisa" {
 			return true
@@ -262,6 +265,12 @@ func (p *Parser) parseIntentLine() error {
 		return nil
 	case "somente":
 		return p.parsePode(head, body, true)
+	}
+	// projeto arquivado é somente leitura
+	if len(w) >= 5 && w[len(w)-2] == "somente" && w[len(w)-1] == "leitura" && w[len(w)-3] == "e" {
+		subject, _ := phrase(w[:len(w)-4])
+		in.ReadOnly = append(in.ReadOnly, &ast.VisibilityRule{Entity: subject, Flag: w[len(w)-4], Pos: pos})
+		return nil
 	}
 	// merge request mesclado é final
 	if len(w) >= 4 && w[len(w)-1] == "final" && w[len(w)-2] == "e" {

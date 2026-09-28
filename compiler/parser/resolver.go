@@ -654,6 +654,18 @@ func ResolveIntent(prog *ast.Program) error {
 	}
 	in.Grants = grants
 
+	// 7d2. Read-only while a condition holds: `projeto arquivado é somente leitura`.
+	for _, ro := range in.ReadOnly {
+		e, err := r.entity(ro.Entity, ro.Pos)
+		if err != nil {
+			return err
+		}
+		if f := fieldByNameAST(e.Model, ro.Flag); f == nil || f.Type != ast.FieldBooleano {
+			return r.errAt(ro.Pos, "%s %s é somente leitura: declare antes a condição (ex.: %s pode ser %s)", e.Singular, ro.Flag, e.Singular, ro.Flag)
+		}
+		e.ReadOnlyWhen = ro.Flag
+	}
+
 	// 7e. Visibility ceilings: a record is never more visible than its parent.
 	for _, c := range in.Ceilings {
 		e, err := r.entity(c.Entity, c.Pos)

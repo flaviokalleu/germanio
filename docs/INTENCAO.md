@@ -195,11 +195,16 @@ issue confidencial pode ser vista por
     responsaveis
     reporter ou superior
 
+projeto pode ser arquivado
+projeto arquivado é somente leitura
 grupo não pode ser mais visível que o grupo pai
 quem cria grupo vira owner
 somente maintainer pode enviar código para a branch padrão dos projetos
 ```
 
+- `X <condição> é somente leitura`: enquanto a condição vale, o registro só muda para
+  desfazê-la, nada que pertence a ele é criado, editado, excluído ou muda de estado, e o
+  repositório não recebe código; ler e excluir o próprio registro continuam possíveis.
 - `X pode <verbo>` **sem objeto** é capacidade do dado; **com objeto** (`usuario pode criar issues`) é permissão.
 - Estados mudam só por ação; editar não altera `estado` nem carimbos.
 - Particípio segue o gênero do estado inicial (aberta → fechada; ativo → bloqueado).

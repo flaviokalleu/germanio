@@ -37,9 +37,10 @@ type Intent struct {
 	RemoteExecutors   []*RemoteExecutorDecl
 	Translators       map[string]string // traduza <ponto> com <função> (integracoes/)
 	InitialFiles      []*InitialFileDecl
-	ReservedAddresses []string       // endereços reservados
-	InitialAdmin      string         // tenha administrador inicial "root"
-	MinRoles          []*CreatorRole // todo grupo precisa ter pelo menos um owner
+	ReservedAddresses []string          // endereços reservados
+	InitialAdmin      string            // tenha administrador inicial "root"
+	ReadOnly          []*VisibilityRule // projeto arquivado é somente leitura (Flag; Who unused)
+	MinRoles          []*CreatorRole    // todo grupo precisa ter pelo menos um owner
 }
 
 // EntityDecl: `tenha clientes` plus the fields from `cada cliente tem`.
@@ -183,6 +184,7 @@ func MergeIntent(a, b *Intent) *Intent {
 	a.MinRoles = append(a.MinRoles, b.MinRoles...)
 	a.InitialFiles = append(a.InitialFiles, b.InitialFiles...)
 	a.ReservedAddresses = append(a.ReservedAddresses, b.ReservedAddresses...)
+	a.ReadOnly = append(a.ReadOnly, b.ReadOnly...)
 	a.Visibility = append(a.Visibility, b.Visibility...)
 	if a.Vocabulary == nil {
 		a.Vocabulary = b.Vocabulary

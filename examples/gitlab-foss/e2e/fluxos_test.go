@@ -125,3 +125,38 @@ func TestEscoposDeToken(t *testing.T) {
 	(&api{t: t, base: base, token: repo["token"].(string), pat: true}).must("GET", "/api/v4/projects/1", nil, 403)
 	ada.must("POST", "/api/v4/personal_access_tokens", map[string]any{"name": "bad", "scopes": "sudo"}, 400)
 }
+
+// Projeto arquivado é somente leitura: nada muda nele nem no que pertence a
+// ele, e o repositório não recebe código, até desarquivar.
+func TestProjetoArquivado(t *testing.T) {
+	base := gitlab(t)
+	ada := signup(t, base, "ada")
+	p := ada.must("POST", "/api/v4/projects", map[string]any{"name": "Old", "path": "old", "initialize_with_readme": true}, 201)
+	pid := id(p)
+	ada.must("POST", "/api/v4/projects/"+pid+"/issues", map[string]any{"title": "antes"}, 201)
+	if got := ada.must("PUT", "/api/v4/projects/"+pid, map[string]any{"archived": true}, 200); got["archived"] != true {
+		t.Fatalf("arquivar: %v", got)
+	}
+	ada.must("PUT", "/api/v4/projects/"+pid, map[string]any{"name": "Novo nome"}, 403)
+	ada.must("POST", "/api/v4/projects/"+pid+"/issues", map[string]any{"title": "depois"}, 403)
+	ada.must("PUT", "/api/v4/projects/"+pid+"/issues/1", map[string]any{"title": "x"}, 403)
+	ada.must("POST", "/api/v4/projects/"+pid+"/issues/1/close", nil, 403)
+	ada.must("GET", "/api/v4/projects/"+pid+"/issues/1", nil, 200) // ler continua valendo
+
+	pat := ada.must("POST", "/api/v4/personal_access_tokens", map[string]any{"name": "git"}, 201)
+	u, _ := url.Parse(base)
+	u.User = url.UserPassword("ada", pat["token"].(string))
+	dir := t.TempDir()
+	run(t, dir, "git", "clone", "--quiet", u.String()+"/ada/old.git", "w")
+	work := filepath.Join(dir, "w")
+	run(t, work, "git", "config", "user.email", "ada@example.com")
+	run(t, work, "git", "config", "user.name", "Ada")
+	os.WriteFile(filepath.Join(work, "x.txt"), []byte("x"), 0o644)
+	run(t, work, "git", "add", ".")
+	run(t, work, "git", "commit", "--quiet", "-m", "x")
+	runFails(t, work, "git", "push", "--quiet", "origin", "main")
+
+	ada.must("PUT", "/api/v4/projects/"+pid, map[string]any{"archived": false}, 200)
+	ada.must("POST", "/api/v4/projects/"+pid+"/issues", map[string]any{"title": "de novo"}, 201)
+	run(t, work, "git", "push", "--quiet", "origin", "main")
+}

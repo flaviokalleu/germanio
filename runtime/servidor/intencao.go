@@ -523,6 +523,10 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 			deny(nil)
 			return
 		}
+		if err := a.frozenFor(ctx, "criar", e, data, data); err != nil {
+			a.failErr(w, r, err)
+			return
+		}
 		a.create(w, r, ctx, atual, e, data, body)
 	case "editar":
 		row := a.find(ctx, e, ref, scope)
@@ -545,6 +549,10 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 			delete(data, k)
 		}
 		if err := a.namesIn(ctx, atual, e, data, row); err != nil {
+			a.failErr(w, r, err)
+			return
+		}
+		if err := a.frozenFor(ctx, "editar", e, row, data); err != nil {
 			a.failErr(w, r, err)
 			return
 		}
@@ -602,6 +610,10 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 			deny(row)
 			return
 		}
+		if err := a.frozenFor(ctx, "excluir", e, row, nil); err != nil {
+			a.failErr(w, r, err)
+			return
+		}
 		a.emit(ctx, e, "excluir", row, atual) // before removal: the owner must still exist
 		if err := a.remove(ctx, atual, e, row); err != nil {
 			a.failErr(w, r, err)
@@ -621,6 +633,10 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 		}
 		if verb == "sair" {
 			a.leave(w, r, ctx, atual, e, row)
+			return
+		}
+		if err := a.frozenFor(ctx, "acao", e, row, nil); err != nil {
+			a.failErr(w, r, err)
 			return
 		}
 		checkVerb := verb

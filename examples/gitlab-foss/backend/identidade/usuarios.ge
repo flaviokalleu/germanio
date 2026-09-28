@@ -9,7 +9,6 @@ usuario tem
     nome obrigatório
     senha min 8 max 128
     admin começa com falso
-    pode_criar_grupos começa com verdadeiro
 
 usuario começa ativo
 

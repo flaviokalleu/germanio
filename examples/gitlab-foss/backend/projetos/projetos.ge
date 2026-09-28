@@ -9,10 +9,12 @@ projeto tem
     descrição
     visibilidade
     branch_padrao começa com "main"
-    arquivado começa com falso
     repositório
     criador
     membros com papel
+
+projeto pode ser arquivado
+projeto arquivado é somente leitura
 
 repositório do projeto pode começar com "README.md" contendo "# {nome}\n"
 

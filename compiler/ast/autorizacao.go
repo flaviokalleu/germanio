@@ -71,6 +71,9 @@ type Entity struct {
 	Execution *Execution
 	// Subscription: records of this entity receive events of an owner (webhooks).
 	Subscription *Subscription
+	// ReadOnlyWhen: flag that freezes the record and what belongs to it
+	// (`projeto arquivado é somente leitura`).
+	ReadOnlyWhen string
 	// Remote: records are work taken by remote executors.
 	Remote *RemoteWork
 	// Address: `endereço dentro do grupo pai ou do criador`.

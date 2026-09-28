@@ -18,7 +18,6 @@ vocabulário da integração
     criador_id é "creator_id"
     pessoa_id é "user_id"
     papel é "access_level"
-    pode_criar_grupos é "can_create_group"
     estado é "state"
     ativo é "active"
     bloqueado é "blocked"
