@@ -559,6 +559,16 @@ func (p *Parser) parseTenha(head dline, body []dline) error {
 		wrapped := append([]dline{{indent: body[0].indent - 1, toks: head.toks[1:2]}}, body...)
 		return p.parseTenha(dline{toks: head.toks[:1]}, wrapped)
 	}
+	// tenha login / tenha cadastro take nothing else on the line: "tenha login
+	// com email e senha" would otherwise declare data named login_com_email
+	// and senha (G84).
+	for _, it := range items {
+		if (it[0] == "login" || it[0] == "cadastro") && len(it) > 1 {
+			return p.teach(head.toks[0], "\""+lineText(head)+"\" mistura a declaração do "+it[0]+" com outras palavras",
+				"tenha "+it[0]+" é uma frase completa; o resto da linha viraria nomes de dados",
+				"escreva tenha "+it[0]+" sozinho, e diga como se entra em outra linha: login usa email", "")
+		}
+	}
 	positions := []lexer.Token{}
 	for range items {
 		positions = append(positions, head.toks[0])
