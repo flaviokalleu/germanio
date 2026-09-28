@@ -716,7 +716,10 @@ func (ps *pageSite) record(ctx *interp.Context, e *ast.Entity, row map[string]an
 	return row
 }
 
-type detailItem struct{ Label, Value string }
+type detailItem struct {
+	Label, Value string
+	HTML         template.HTML // formatted text (safe Markdown)
+}
 
 func (ps *pageSite) details(ctx *interp.Context, e *ast.Entity, row map[string]any) []detailItem {
 	var out []detailItem
@@ -739,10 +742,14 @@ func (ps *pageSite) details(ctx *interp.Context, e *ast.Entity, row map[string]a
 				text = strings.Join(names, ", ")
 			}
 		}
-		out = append(out, detailItem{fieldLabel(f), text})
+		item := detailItem{Label: fieldLabel(f), Value: text}
+		if f.Formatted && v != nil {
+			item.HTML = template.HTML(interp.Markdown(toStr(v)))
+		}
+		out = append(out, item)
 	}
 	if v, ok := row["created_at"]; ok {
-		out = append(out, detailItem{"Criado em", display(v)})
+		out = append(out, detailItem{Label: "Criado em", Value: display(v)})
 	}
 	return out
 }
@@ -1150,7 +1157,7 @@ func (ps *pageSite) repositoryView(w http.ResponseWriter, r *http.Request, v *vi
 		}
 		c, _ := out.(map[string]any)
 		body.WriteString(string(htmlOf(headingTpl, toStr(c["title"]))))
-		body.WriteString(string(htmlOf(detailTpl, []detailItem{{"Commit", toStr(c["id"])}, {"Autor", toStr(c["author_name"]) + " <" + toStr(c["author_email"]) + ">"}, {"Data", toStr(c["authored_date"])}})))
+		body.WriteString(string(htmlOf(detailTpl, []detailItem{{Label: "Commit", Value: toStr(c["id"])}, {Label: "Autor", Value: toStr(c["author_name"]) + " <" + toStr(c["author_email"]) + ">"}, {Label: "Data", Value: toStr(c["authored_date"])}})))
 		_, dout, _ := ps.call(r, "GET", api+"/repositorio/commits/"+url.PathEscape(parts[1])+"/diff", nil)
 		body.WriteString(string(ps.diffs(asList(dout))))
 	default:
@@ -1264,7 +1271,7 @@ var formTpl = tpl(`<form class="{{if .Title}}caixa{{end}}" method="post" action=
 {{else if eq .Type "select"}}<label>{{.Label}}<select name="{{.Name}}" {{if .Multiple}}multiple{{end}} {{if .Required}}required{{end}}>{{range .Options}}<option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Text}}</option>{{end}}</select></label>
 {{else}}<label>{{.Label}}<input type="{{.Type}}" name="{{.Name}}" value="{{.Value}}" {{if .Required}}required{{end}}></label>{{end}}{{end}}
 <button {{if .Danger}}class="perigo"{{end}}>{{.Submit}}</button></form>`)
-var detailTpl = tpl(`<dl>{{range .}}<dt>{{.Label}}</dt><dd>{{.Value}}</dd>{{end}}</dl>`)
+var detailTpl = tpl(`<dl>{{range .}}<dt>{{.Label}}</dt><dd>{{if .HTML}}<div class="texto">{{.HTML}}</div>{{else}}{{.Value}}{{end}}</dd>{{end}}</dl>`)
 var searchTpl = tpl(`<form class="busca" method="get">{{if .Search}}<input type="search" name="q" value="{{.Q}}" placeholder="Pesquisar">{{end}}
 {{range .Filters}}<input name="{{.}}" value="{{getv $.Values .}}" placeholder="{{label .}}">{{end}}<button>Filtrar</button></form>`)
 var pagerTpl = tpl(`<div class="paginas">{{if .Prev}}<a href="{{.Prev}}">← anterior</a>{{end}}{{if .Next}}<a href="{{.Next}}">próxima →</a>{{end}}</div>`)

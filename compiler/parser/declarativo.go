@@ -411,6 +411,11 @@ func (p *Parser) fieldFromTokens(t []lexer.Token) (*ast.Field, error) {
 				f.Hidden = true
 			case "privado", "privada":
 				f.Private = true
+			case "formatado", "formatada":
+				f.Formatted = true
+				if f.Type == "" || f.Type == ast.FieldTexto {
+					f.Type = ast.FieldTextoLongo
+				}
 			case "imutavel":
 				f.Immutable = true
 			case "por":
