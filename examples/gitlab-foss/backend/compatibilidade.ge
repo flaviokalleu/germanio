@@ -8,7 +8,14 @@ mensagens em inglês
 login aceita tokens de acesso no cabeçalho "PRIVATE-TOKEN"
 login aceita oauth por 2 horas
 
+# O histórico (GEP 0011) é o feed de eventos dos clientes GitLab.
+disponibilize atividades para integração como "events"
+
 vocabulário da integração
+    acao é "action_name"
+    recurso é "target_type"
+    recurso_id é "target_id"
+    resumo é "target_title"
     nome é "name"
     caminho é "path"
     endereco é "full_path"
@@ -92,7 +99,6 @@ vocabulário da integração
     repetir é "retry"
     executar é "play"
     evento é "object_kind"
-    acao é "event_name"
     dados é "object_attributes"
     quem é "user"
     projeto é "project"

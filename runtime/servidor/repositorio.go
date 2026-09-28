@@ -226,6 +226,10 @@ func (a *intentAPI) serveGit(w http.ResponseWriter, r *http.Request, entities []
 			}
 		}
 		a.emit(ctx, e, "enviar_codigo", pushed, atual)
+		if err := a.history(ctx, atual, e, "enviar_codigo", nil, row); err != nil {
+			// the git answer is already written: report, do not answer twice
+			fmt.Printf("[germanio] histórico do envio de código: %v\n", err)
+		}
 		a.startRuns(ctx, atual, e, row, updatesToMaps(applied))
 		if h := e.Hooks["enviar_codigo"]; h != nil {
 			if _, _, err := a.in.RunHook(ctx, h, vars(applied)); err != nil {

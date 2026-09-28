@@ -118,7 +118,13 @@ func ResolveIntent(prog *ast.Program) error {
 	if in == nil {
 		return nil
 	}
+	if len(in.Conflicts) > 0 {
+		return fmt.Errorf("%s", in.Conflicts[0])
+	}
 	if err := withPendingData(in); err != nil {
+		return err
+	}
+	if err := withHistoryData(in); err != nil {
 		return err
 	}
 	app := &ast.App{Entities: map[string]*ast.Entity{}, Roles: in.Roles, Login: in.Login, Integration: in.IntegrationPrefix, Pages: in.Pages, Init: in.Init, Messages: "pt"}
@@ -1193,6 +1199,11 @@ func ResolveIntent(prog *ast.Program) error {
 		if pe := r.byName["pendencias"]; pe != nil {
 			app.PendingEntity = pe.Singular
 		}
+	}
+
+	// 10b. History (GEP 0011, em teste).
+	if err := r.history(in, app); err != nil {
+		return err
 	}
 
 	app.ReservedAddresses = in.ReservedAddresses

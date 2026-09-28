@@ -605,6 +605,10 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 			a.failErr(w, r, err)
 			return
 		}
+		if err := a.history(ctx, atual, e, "editar", row, urow); err != nil {
+			a.failErr(w, r, err)
+			return
+		}
 		a.emit(ctx, e, "editar", urow, atual)
 		a.json(w, 200, serializeFor(ctx, a.in, atual, e, urow, false), nil)
 	case "excluir":
@@ -622,6 +626,10 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 			return
 		}
 		a.emit(ctx, e, "excluir", row, atual) // before removal: the owner must still exist
+		if err := a.history(ctx, atual, e, "excluir", row, nil); err != nil {
+			a.failErr(w, r, err)
+			return
+		}
 		if err := a.remove(ctx, atual, e, row); err != nil {
 			a.failErr(w, r, err)
 			return
@@ -697,6 +705,10 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 					return
 				}
 				updated = a.find(ctx, e, fmt.Sprint(row["id"]), nil)
+			}
+			if err := a.history(ctx, atual, e, verb, row, updated); err != nil {
+				a.failErr(w, r, err)
+				return
 			}
 			a.emit(ctx, e, verb, updated, atual)
 			a.json(w, 200, serializeFor(ctx, a.in, atual, e, updated, false), nil)
@@ -854,6 +866,10 @@ func (a *intentAPI) create(w http.ResponseWriter, r *http.Request, ctx *interp.C
 		}
 	}
 	if err := a.pending(ctx, atual, e, nil, row); err != nil {
+		a.failErr(w, r, err)
+		return
+	}
+	if err := a.history(ctx, atual, e, "criar", nil, row); err != nil {
 		a.failErr(w, r, err)
 		return
 	}

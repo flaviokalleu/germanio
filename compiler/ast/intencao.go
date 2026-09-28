@@ -1,6 +1,8 @@
 package ast
 
 import (
+	"fmt"
+
 	"github.com/flaviokalleu/germanio/compiler/diagnostics"
 	"github.com/flaviokalleu/germanio/compiler/lexer"
 )
@@ -28,6 +30,11 @@ type Intent struct {
 	States            []*StateDecl
 	Visibility        []*VisibilityRule
 	Vocabulary        map[string]string
+	// VocabularyPos: where each translation was declared.
+	VocabularyPos map[string]diagnostics.Position
+	// Conflicts: the same fact declared with different values in two files
+	// (found while merging; the resolver reports them with both origins).
+	Conflicts         []string
 	Ceilings          []*VisibilityCeiling
 	Creators          []*CreatorRole
 	Approvals         []string     // X recebe aprovações
@@ -47,6 +54,8 @@ type Intent struct {
 	MinRoles     []*CreatorRole    // todo grupo precisa ter pelo menos um owner
 	// Pending items (GEP 0009): issue gera pendência para responsaveis.
 	PendingItems []*PendingRule
+	// History: `issue guarda histórico` (GEP 0011, em teste).
+	History []*HistoryDecl
 	// Renames: renomeie nome de clientes para nome_completo (G93).
 	Renames []*RenameDecl
 	// Discards: descarte telefone de clientes (removed on purpose, data kept).
@@ -57,6 +66,12 @@ type Intent struct {
 type RenameDecl struct {
 	Entity, From, To string
 	Pos              diagnostics.Position
+}
+
+// HistoryDecl: every change of Entity is recorded in the history.
+type HistoryDecl struct {
+	Entity string
+	Pos    diagnostics.Position
 }
 
 // PendingRule: a person placed in one of Fields of Entity receives a pending
@@ -240,6 +255,7 @@ func MergeIntent(a, b *Intent) *Intent {
 	a.MinRoles = append(a.MinRoles, b.MinRoles...)
 	a.Capabilities = append(a.Capabilities, b.Capabilities...)
 	a.PendingItems = append(a.PendingItems, b.PendingItems...)
+	a.History = append(a.History, b.History...)
 	a.Renames = append(a.Renames, b.Renames...)
 	a.Discards = append(a.Discards, b.Discards...)
 	a.InitialFiles = append(a.InitialFiles, b.InitialFiles...)
@@ -251,9 +267,23 @@ func MergeIntent(a, b *Intent) *Intent {
 		a.Vocabulary = b.Vocabulary
 	} else {
 		for k, v := range b.Vocabulary {
+			if old, ok := a.Vocabulary[k]; ok && old != v {
+				a.Conflicts = append(a.Conflicts, fmt.Sprintf("%s é traduzido como %q em %s e como %q em %s: um nome tem uma só tradução na integração", k, old, where(a.VocabularyPos[k]), v, where(b.VocabularyPos[k])))
+				continue
+			}
 			a.Vocabulary[k] = v
 		}
 	}
+	if a.VocabularyPos == nil {
+		a.VocabularyPos = b.VocabularyPos
+	} else {
+		for k, p := range b.VocabularyPos {
+			if _, ok := a.VocabularyPos[k]; !ok {
+				a.VocabularyPos[k] = p
+			}
+		}
+	}
+	a.Conflicts = append(a.Conflicts, b.Conflicts...)
 	if a.Messages == "" {
 		a.Messages = b.Messages
 	}
@@ -371,4 +401,11 @@ type RemoteExecutorDecl struct {
 type InitialFileDecl struct {
 	Entity, Path, Content string
 	Pos                   diagnostics.Position
+}
+
+func where(p diagnostics.Position) string {
+	if p.File == "" {
+		return fmt.Sprintf("linha %d", p.Line)
+	}
+	return fmt.Sprintf("%s:%d", p.File, p.Line)
 }

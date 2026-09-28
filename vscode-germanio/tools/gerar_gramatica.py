@@ -164,6 +164,7 @@ grammar = {
             {"match": r"^\s+(" + w("pertence a") + r")\s+(" + NAME + r")(?:\s+(" + w("opcional") + r"))?", "captures": {"1": {"name": "keyword.other.intent.germanio"}, "2": {"name": "entity.name.type.germanio"}, "3": {"name": "storage.modifier.germanio"}}},
             # renomeie <antigo> para <novo>, descarte <campo> (migração explícita, G93)
             {"match": r"^\s+(renomeie)\s+(" + NAME + r")\s+(para)\s+(" + NAME + r")\s*$", "captures": {"1": {"name": "keyword.other.intent.germanio"}, "2": {"name": "variable.other.property.field.germanio"}, "3": {"name": "keyword.other.intent.germanio"}, "4": {"name": "variable.other.property.field.germanio"}}},
+            {"match": r"^\s+(guarda\s+hist[oó]rico)\s*$", "captures": {"1": {"name": "keyword.other.intent.germanio"}}},
             {"match": r"^\s+(descarte)\s+(" + NAME + r")\s*$", "captures": {"1": {"name": "keyword.other.intent.germanio"}, "2": {"name": "variable.other.property.field.germanio"}}},
             # começa <estado>, singular <forma>
             {"match": r"^\s+(" + w("comeca") + r")\s+(" + NAME + r")\s*$", "captures": {"1": {"name": "keyword.other.intent.germanio"}, "2": {"name": "constant.other.state.germanio"}}},

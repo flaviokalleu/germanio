@@ -326,6 +326,11 @@ func (interp *Interpreter) Can(ctx *Context, atual map[string]any, e *ast.Entity
 	if interp.IsAdmin(atual) {
 		return true
 	}
+	if vt := e.ViewThrough; vt != nil && record != nil {
+		// the history (GEP 0011): seen by whoever sees what it describes;
+		// nobody but an administrator changes it
+		return verb == "ver" && interp.seesDescribed(ctx, atual, vt, record)
+	}
 	if verb == "ver" && record != nil {
 		// `X confidencial pode ser vista por …`: when the flag is set, only
 		// those listed see it, whatever else would allow it.
@@ -398,7 +403,7 @@ func (interp *Interpreter) RulePasses(ctx *Context, atual map[string]any, e *ast
 // RecordDependent reports whether seeing records of e depends on each
 // record (visibility, roles or ownership) — lists must then be filtered.
 func RecordDependent(e *ast.Entity) bool {
-	if e.Visibility != "" || len(e.Hooks["antes_ver"].GetBody()) > 0 {
+	if e.Visibility != "" || e.ViewThrough != nil || len(e.Hooks["antes_ver"].GetBody()) > 0 {
 		return true
 	}
 	for _, v := range []string{"ver", "editar", "excluir"} {
@@ -608,4 +613,25 @@ func (interp *Interpreter) hiddenMemberedAncestor(ctx *Context, atual map[string
 		}
 	}
 	return false
+}
+
+// seesDescribed: atual sees the record a history entry describes; once that
+// record is gone, its parent decides; with neither, only the author sees it.
+func (interp *Interpreter) seesDescribed(ctx *Context, atual map[string]any, vt *ast.ViewThrough, record map[string]any) bool {
+	look := func(kind, id string) (*ast.Entity, map[string]any) {
+		e := interp.App.Entities[toString(record[kind])]
+		if e == nil || record[id] == nil {
+			return nil, nil
+		}
+		res, _ := interp.Op(ctx, e.Singular, "buscar", record[id])
+		row, _ := res.(map[string]any)
+		return e, row
+	}
+	if e, row := look(vt.Kind, vt.ID); row != nil {
+		return interp.Can(ctx, atual, e, "ver", row)
+	}
+	if e, row := look(vt.ParentKind, vt.ParentID); row != nil {
+		return interp.Can(ctx, atual, e, "ver", row)
+	}
+	return atual != nil && record[vt.Author] != nil && toString(record[vt.Author]) == toString(atual["id"])
 }

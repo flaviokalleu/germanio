@@ -1,10 +1,12 @@
 package parser
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/flaviokalleu/germanio/compiler/ast"
+	"github.com/flaviokalleu/germanio/compiler/diagnostics"
 	"github.com/flaviokalleu/germanio/compiler/lexer"
 )
 
@@ -100,9 +102,12 @@ func (p *Parser) isIntentLine() bool {
 	if len(w) >= 5 && w[len(w)-2] == "somente" && w[len(w)-1] == "leitura" && w[len(w)-3] == "e" {
 		return true
 	}
-	for _, x := range w[1:] {
+	for i, x := range w[1:] {
 		if x == "tem" || x == "pode" || x == "podem" || x == "pertence" || x == "herda" || x == "comeca" || x == "recebe" || x == "executa" || x == "executam" || x == "precisa" || x == "gera" {
 			return true
+		}
+		if x == "guarda" && i+2 == len(w)-1 && w[i+2] == "historico" {
+			return true // issue guarda histórico (GEP 0011)
 		}
 	}
 	return false
@@ -270,7 +275,15 @@ func (p *Parser) intentFrom(head dline, body []dline) error {
 			if len(t) != 3 || t[1].Type != lexer.TokenE || t[2].Type != lexer.TokenString {
 				return p.errorf(t[0], `use: <nome> é "nome externo"`)
 			}
-			in.Vocabulary[strings.ToLower(foldWord(t[0].Name()))] = t[2].Value
+			k := strings.ToLower(foldWord(t[0].Name()))
+			if old, ok := in.Vocabulary[k]; ok && old != t[2].Value {
+				return p.teach(t[0], fmt.Sprintf("%s já é traduzido como %q (linha %d)", k, old, in.VocabularyPos[k].Line), "um nome tem uma só tradução na integração; a segunda substituiria a primeira em silêncio", fmt.Sprintf("fique com uma: %s é %q", k, old), "")
+			}
+			in.Vocabulary[k] = t[2].Value
+			if in.VocabularyPos == nil {
+				in.VocabularyPos = map[string]diagnostics.Position{}
+			}
+			in.VocabularyPos[k] = p.at(t[0])
 		}
 		return nil
 	case "mensagens":
@@ -351,6 +364,15 @@ func (p *Parser) intentFrom(head dline, body []dline) error {
 			in.Visibility = append(in.Visibility, rule)
 			return nil
 		}
+	}
+	if n := len(w); n >= 3 && w[n-2] == "guarda" && w[n-1] == "historico" {
+		// issue guarda histórico (GEP 0011, em teste)
+		subject, _ := phrase(w[:n-2])
+		if subject == "" {
+			return p.teach(head.toks[0], "\""+lineText(head)+"\" não diz de qual dado", "guarda histórico vem depois do dado", "escreva, por exemplo: issue guarda histórico (ou, no bloco do dado: guarda histórico)", "")
+		}
+		p.intent().History = append(p.intent().History, &ast.HistoryDecl{Entity: subject, Pos: pos})
+		return nil
 	}
 	for i, x := range w {
 		switch x {

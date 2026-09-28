@@ -36,6 +36,10 @@ hierarchical syntax. Nothing below is in a tagged release yet.
   field with data that disappears while another appears stops the start with an educational
   error, and `ge check` performs the same verification on the existing database without
   changing it.
+- History (GEP 0011, in test): `issue guarda histórico` records who did what to which record,
+  in the change's transaction, with the names of changed fields and never their values; each
+  activity is seen only by whoever sees the record it describes. A vocabulary that translates
+  the same name twice with different values is now an error instead of a silent override (G105).
 - External effects run after the commit (G86): inside a change, `chamar` with a writing
   method, webhooks and messages are recorded and run once the change is saved, in order,
   never holding the database's write lock. An undone change has no effects; a failing effect

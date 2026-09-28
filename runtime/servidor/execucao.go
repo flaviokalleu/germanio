@@ -340,6 +340,7 @@ func (a *intentAPI) advance(ctx *interp.Context, run *ast.Entity, runID any) {
 		a.in.Op(ctx, run.Singular, "atualizar", runID, change)
 		if res, _ := a.in.Op(ctx, run.Singular, "buscar", runID); res != nil {
 			a.emit(ctx, run, st, res.(map[string]any), nil) // run finished
+			a.history(ctx, nil, run, st, nil, res.(map[string]any))
 		}
 	}
 	for i, o := range orders {

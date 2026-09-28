@@ -1,0 +1,46 @@
+crie sistema Historico
+
+tenha usuarios, projetos, issues
+
+tenha login
+tenha cadastro
+
+usuarios
+    tem
+        nome
+        email obrigatório e único
+        senha min 8
+
+projetos
+    tem
+        nome obrigatório
+        issues
+    acesso
+        usuario
+            criar
+            ver
+            editar
+            excluir
+
+issues
+    tem
+        titulo obrigatório
+        descricao
+        autor
+    pertence a projeto
+    começa aberta
+    pode
+        fechar
+        reabrir
+        ser confidencial
+    regras
+        confidencial pode ser vista por
+            autor
+    acesso
+        usuario
+            criar
+            ver
+            editar
+            fechar
+            excluir
+    guarda histórico

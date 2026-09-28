@@ -140,7 +140,7 @@ var legacyBlockWords = map[string]bool{
 // sections are the aspects a data block may contain (folded words).
 var sections = []string{"tem", "pertence a", "comeca", "pode", "regras", "acesso", "permita",
 	"integracao", "quando", "antes de", "recebe", "executa", "executam", "repositorio", "singular", "pendencia para",
-	"renomeie", "descarte"}
+	"renomeie", "descarte", "guarda historico"}
 
 func sectionOf(w []string) string {
 	if len(w) == 0 {
@@ -154,6 +154,10 @@ func sectionOf(w []string) string {
 	case "pendencia":
 		if len(w) > 1 && w[1] == "para" {
 			return "pendencia para"
+		}
+	case "guarda":
+		if len(w) > 1 && w[1] == "historico" {
+			return "guarda historico"
 		}
 	case "antes":
 		if len(w) > 1 && w[1] == "de" {
@@ -360,6 +364,12 @@ func (p *Parser) dataSection(name string, header []lexer.Token, sec *node) error
 			return p.teach(at, "\""+lineText(sec.line)+"\" não diz qual campo", "descarte diz qual campo foi removido de propósito", "escreva: descarte telefone", name)
 		}
 		return flat(join(toks, synth(at, "de"), subject), nil)
+	case "guarda historico":
+		// guarda histórico → issue guarda histórico
+		if len(toks) != 2 || len(sec.children) > 0 {
+			return p.teach(at, "\""+lineText(sec.line)+"\" não é uma seção conhecida", "guarda histórico fica sozinho na linha, no bloco do dado", "escreva: guarda histórico", name)
+		}
+		return flat(join(subject, toks), nil)
 	case "pendencia para":
 		// pendência para › responsaveis → issue gera pendência para responsaveis
 		for _, c := range sec.children {

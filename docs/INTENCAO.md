@@ -351,6 +351,7 @@ válidas. `construcao_do_sistema` são as construções sem sujeito único (`ten
 | `pendência para` + campos de pessoas (um por linha) | `d gera pendência para responsaveis` (veja Pendências) |
 | `renomeie nome para nome_completo` | `renomeie nome de D para nome_completo` (veja Migração) |
 | `descarte fax` (GEP 0010, em teste) | `descarte fax de D` (veja Migração) |
+| `guarda histórico` ([GEP 0011](gep/0011-historico.md), em teste) | `d guarda histórico` |
 
 Uma **ação sem alvo** vale para o próprio dado (a coleção: `administrar` sem alvo inclui
 criar, como `administrar projetos`). Uma ação com alvo explícito (`adicionar membros`,

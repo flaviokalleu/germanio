@@ -2,7 +2,10 @@ package ast
 
 import (
 	"reflect"
+	"strings"
 	"testing"
+
+	"github.com/flaviokalleu/germanio/compiler/diagnostics"
 )
 
 // filled returns a non-zero value of type t (one element for slices and
@@ -64,5 +67,20 @@ func TestMergeIntentKeepsEveryField(t *testing.T) {
 				t.Fatalf("Login.%s declarado num segundo arquivo se perdeu na fusão", f.Name)
 			}
 		})
+	}
+}
+
+// Two files translating the same name differently: the merge records the
+// conflict with both origins instead of letting one win in silence.
+func TestMergeVocabularioEmConflito(t *testing.T) {
+	a := &Intent{Vocabulary: map[string]string{"acao": "action_name"}, VocabularyPos: map[string]diagnostics.Position{"acao": {File: "a.ge", Line: 3}}}
+	b := &Intent{Vocabulary: map[string]string{"acao": "event_name"}, VocabularyPos: map[string]diagnostics.Position{"acao": {File: "b.ge", Line: 9}}}
+	m := MergeIntent(a, b)
+	if len(m.Conflicts) != 1 || !strings.Contains(m.Conflicts[0], "a.ge:3") || !strings.Contains(m.Conflicts[0], "b.ge:9") || m.Vocabulary["acao"] != "action_name" {
+		t.Fatalf("conflito de vocabulário: %v %v", m.Conflicts, m.Vocabulary)
+	}
+	same := MergeIntent(&Intent{Vocabulary: map[string]string{"acao": "x"}}, &Intent{Vocabulary: map[string]string{"acao": "x"}})
+	if len(same.Conflicts) != 0 {
+		t.Fatalf("a mesma tradução duas vezes não é conflito: %v", same.Conflicts)
 	}
 }

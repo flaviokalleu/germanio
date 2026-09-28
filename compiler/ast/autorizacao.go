@@ -11,13 +11,16 @@ type App struct {
 	LoginEntity string             // model name of the people who sign in
 	// PendingEntity is the data of pending items ("" when none is asked for).
 	PendingEntity string
-	Login         *LoginDecl
-	Integration   string // prefix, default "/api"
-	Pages         []*PageDecl
-	Init          []*Statement
-	MemberModel   string // model holding memberships (polymorphic)
-	Messages      string // "pt" (default) or "en"
-	Vocabulary    map[string]string
+	// ActivityEntity is the data of the history ("" when no data keeps one;
+	// GEP 0011, em teste).
+	ActivityEntity string
+	Login          *LoginDecl
+	Integration    string // prefix, default "/api"
+	Pages          []*PageDecl
+	Init           []*Statement
+	MemberModel    string // model holding memberships (polymorphic)
+	Messages       string // "pt" (default) or "en"
+	Vocabulary     map[string]string
 	// GlobalSearch: entities searched together (`tenha busca geral em …`).
 	GlobalSearch []string
 	// InitialAdmin: `tenha administrador inicial "root"` — login name of the
@@ -67,6 +70,12 @@ type Entity struct {
 	// PendingFields: people fields whose new people receive a pending item
 	// (issue gera pendência para responsaveis; GEP 0009, em teste).
 	PendingFields []string
+	// History: every change of this data is recorded in the history
+	// (issue guarda histórico; GEP 0011, em teste).
+	History bool
+	// ViewThrough: a record of this data is seen by whoever sees the record
+	// it describes (the history); nil for ordinary data.
+	ViewThrough *ViewThrough
 	// Review: two branch fields make the record a proposal of changes
 	// (changes, commits, mergeability, mesclar performs the merge).
 	Review *Review
@@ -178,4 +187,14 @@ type Subscription struct {
 	Owner      string
 	OwnerField string
 	Kinds      []string // enviar_codigo, issues, merge_requests…
+}
+
+// ViewThrough names the fields of a record that point at the record it
+// describes (Kind holds the data, ID its id) and at that record's parent,
+// used once the described record no longer exists. Author: the person who
+// sees it when neither exists.
+type ViewThrough struct {
+	Kind, ID             string
+	ParentKind, ParentID string
+	Author               string
 }

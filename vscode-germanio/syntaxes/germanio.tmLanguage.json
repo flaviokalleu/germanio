@@ -568,6 +568,14 @@
           }
         },
         {
+          "match": "^\\s+(guarda\\s+hist[oó]rico)\\s*$",
+          "captures": {
+            "1": {
+              "name": "keyword.other.intent.germanio"
+            }
+          }
+        },
+        {
           "match": "^\\s+(descarte)\\s+([\\p{L}_][\\p{L}\\p{N}_]*)\\s*$",
           "captures": {
             "1": {

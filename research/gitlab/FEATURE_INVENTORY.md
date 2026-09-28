@@ -100,7 +100,7 @@ Escopo núcleo v1 = features marcadas **[N]** (fluxos 1–5 da missão + testes 
 |----|------|--------------|----------|---------|-------|-----------|------|---------|--------|-------|
 | WH-01 | Webhooks de projeto | eventos push/issue/MR/pipeline com `X-Gitlab-Token`, em worker | settings | `/hooks` | web_hooks | Maintainer+ | tarefas, http | G15 | PASS | TestWebhooks |
 | NT-01 | Todos | atribuição/menção gera todo | `/dashboard/todos` | `/todos` | todos | dono | | SUPPORTED (GEP 0009) | PARTIAL (atribuição; menção ainda não) | TestPendencias |
-| NT-02 | Eventos de atividade | feed de atividade | activity | `/events` | events | leitura | | | NOT_STARTED | |
+| NT-02 | Eventos de atividade | feed de atividade | activity | `/events` | events | leitura | | SUPPORTED (GEP 0011, em teste) | PARTIAL (`/api/v4/events` com os nomes do GitLab e sem vazamento; o histórico de um projeto é `?dentro=projeto&dentro_id=`, não `/projects/:id/events`; as ações saem em português: `criar`, `fechar`) | TestAtividade, TestHistorico |
 | NT-03 | E-mail de notificação | | | | | | email | PARTIAL | NOT_STARTED | |
 | AD-01 | Admin dashboard | contagens, usuários, projetos | `/admin` | `/admin` | | admin | | | NOT_STARTED | |
 | SR-01 | Busca global | projetos/issues/MRs | search | `/search` | | leitura | | | PASS | TestBuscaGeral (API; página de busca ainda não) |

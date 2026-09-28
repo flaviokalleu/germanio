@@ -145,6 +145,8 @@ func TestHierarquiaDemaisSecoes(t *testing.T) {
 			"projetos\n    tem\n        caminho único\n    tem repositório\n    começa aberto\n    pode fechar\n"},
 		{"pendência para", "tenha chamados\n\ncada chamado tem\n    titulo\n    responsaveis\n\nchamado gera pendência para responsaveis\n",
 			"chamados\n    tem\n        titulo\n        responsaveis\n    pendência para\n        responsaveis\n"},
+		{"guarda histórico", "tenha issues\n\ncada issue tem\n    titulo\n\nissue guarda histórico\n",
+			"issues\n    tem\n        titulo\n    guarda histórico\n"},
 		{"renomeie e descarte", "tenha clientes\n\ncada cliente tem\n    nome_completo\n\nrenomeie nome de clientes para nome_completo\ndescarte fax de clientes\n",
 			"clientes\n    tem\n        nome_completo\n    renomeie nome para nome_completo\n    descarte fax\n"},
 		{"singular", "tenha tokens de acesso\n\ncada token de acesso tem\n    nome\n",
@@ -220,6 +222,9 @@ func TestHierarquiaErros(t *testing.T) {
 		{"descarte de campo declarado", "tenha clientes\n\ncada cliente tem\n    nome\n\nclientes\n    descarte nome\n", []string{"nome continua declarado"}},
 		{"resposta de efeito usada no hook", "tenha pedidos\n\npedido tem\n    cliente\n\nquando criar pedido\n    r = chamar(\"https://x.example\", \"POST\", pedido.cliente)\n", []string{"depois que a mudança é salva", "numa linha sozinha"}},
 		{"efeito dentro de condição", "tenha pedidos\n\npedido tem\n    cliente\n\nquando criar pedido\n    se telegram_enviar(\"t\", \"oi\")\n        mostrar 1\n", []string{"telegram_enviar age fora do sistema"}},
+		{"histórico com linhas abaixo", "tenha issues\n\nissues\n    tem\n        titulo\n    guarda histórico\n        titulo\n", []string{"guarda histórico fica sozinho"}},
+		{"histórico de dado desconhecido", "tenha issues\n\ncada issue tem\n    titulo\n\nnoticia guarda histórico\n", []string{"noticia"}},
+		{"tradução repetida com outro valor", "tenha clientes\n\ncada cliente tem\n    nome\n\nvocabulário da integração\n    nome é \"name\"\n    nome é \"title\"\n", []string{"nome já é traduzido como \"name\""}},
 		{"integração em conflito", "projetos\n    tem\n        nome\n    integração\n        nome \"projects\"\n\ndisponibilize projetos para integração como \"repos\"\n", []string{"já é \"projects\""}},
 	}
 	for _, c := range cases {
