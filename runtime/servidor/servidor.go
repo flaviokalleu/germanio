@@ -278,25 +278,85 @@ func (s *Servidor) middleware(next http.Handler) http.Handler {
 	})
 }
 
-// getRealIP extrai o IP real do cliente considerando proxies confiáveis (Cloudflare, Nginx, etc.)
+// getRealIP returns the client address. Forwarding headers are believed only
+// when the connection comes from a proxy listed in GERMANIO_PROXIES_CONFIAVEIS
+// (IPs or CIDRs, comma-separated); otherwise any client could pick its own IP
+// and escape rate limits. In X-Forwarded-For the client is the rightmost
+// address that is not one of our proxies (the leftmost is client-supplied).
 func getRealIP(r *http.Request) string {
-	if cfIP := r.Header.Get("CF-Connecting-IP"); cfIP != "" {
-		return strings.TrimSpace(cfIP)
+	peer, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		peer = r.RemoteAddr
 	}
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		parts := strings.Split(xff, ",")
-		if len(parts) > 0 && strings.TrimSpace(parts[0]) != "" {
-			return strings.TrimSpace(parts[0])
+	trusted := trustedProxies()
+	if !isTrusted(trusted, peer) {
+		return peer
+	}
+	if cf := strings.TrimSpace(r.Header.Get("CF-Connecting-IP")); net.ParseIP(cf) != nil {
+		return cf
+	}
+	if xff := r.Header.Values("X-Forwarded-For"); len(xff) > 0 {
+		hops := strings.Split(strings.Join(xff, ","), ",")
+		for i := len(hops) - 1; i >= 0; i-- {
+			hop := strings.TrimSpace(hops[i])
+			if net.ParseIP(hop) == nil {
+				break
+			}
+			if !isTrusted(trusted, hop) {
+				return hop
+			}
 		}
 	}
-	if xrip := r.Header.Get("X-Real-IP"); xrip != "" {
-		return strings.TrimSpace(xrip)
+	if xr := strings.TrimSpace(r.Header.Get("X-Real-IP")); net.ParseIP(xr) != nil {
+		return xr
 	}
-	ip, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return r.RemoteAddr
+	return peer
+}
+
+var (
+	proxiesOnce sync.Once
+	proxiesNets []*net.IPNet
+)
+
+func trustedProxies() []*net.IPNet {
+	proxiesOnce.Do(func() { proxiesNets = parseProxies(os.Getenv("GERMANIO_PROXIES_CONFIAVEIS")) })
+	return proxiesNets
+}
+
+func parseProxies(list string) []*net.IPNet {
+	var out []*net.IPNet
+	for _, p := range strings.Split(list, ",") {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
+		}
+		if !strings.Contains(p, "/") {
+			if ip := net.ParseIP(p); ip != nil && ip.To4() != nil {
+				p += "/32"
+			} else {
+				p += "/128"
+			}
+		}
+		if _, n, err := net.ParseCIDR(p); err == nil {
+			out = append(out, n)
+		} else {
+			fmt.Printf("[germanio] GERMANIO_PROXIES_CONFIAVEIS: ignorando %q\n", p)
+		}
 	}
-	return ip
+	return out
+}
+
+func isTrusted(nets []*net.IPNet, addr string) bool {
+	ip := net.ParseIP(addr)
+	if ip == nil {
+		return false
+	}
+	for _, n := range nets {
+		if n.Contains(ip) {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *Servidor) getCachedHTML() string {

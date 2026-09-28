@@ -213,3 +213,17 @@ publica listar (busca, filtros, paginação com `X-Total`), ver (por id ou campo
 criar, editar, excluir, ações próprias, filhos (`/projects/:id/members`) e, para dados com
 repositório, `repository/{branches,commits,tree,files,compare}`. A pessoa conectada
 aparece em `/<prefixo>/<singular>` (`/api/v4/user`). As páginas usam as mesmas operações em `/_ge/api`.
+
+## Servidor (operação)
+
+Nada disto aparece no `.ge`; é configuração de quem hospeda a aplicação.
+
+| Variável | Para quê |
+|----------|----------|
+| `GERMANIO_SEGREDO` | chave das sessões e tokens (≥ 32 bytes); sem ela, uma chave aleatória por processo |
+| `GERMANIO_SQLITE` | arquivo do banco SQLite |
+| `GERMANIO_GIT_RAIZ` | pasta dos repositórios |
+| `GERMANIO_EXECUTOR` | `local` ou `docker` para executar etapas neste servidor (padrão: nenhum) |
+| `GERMANIO_JOB_TIMEOUT` | tempo máximo de uma etapa |
+| `GERMANIO_PROXIES_CONFIAVEIS` | IPs/CIDRs dos proxies reversos; só deles se aceita `X-Forwarded-For`/`X-Real-IP`/`CF-Connecting-IP` (padrão: nenhum — o IP é o da conexão) |
+| `GERMANIO_PERMITIR_REDE_LOCAL` | permite webhooks/chamadas para endereços internos (desligado por padrão, proteção SSRF) |

@@ -153,7 +153,8 @@ func buildDSN(config *ast.DatabaseConfig, appName string) (driver string, dsn st
 		if override := os.Getenv("GERMANIO_SQLITE"); override != "" {
 			dbName = override
 		}
-		return "sqlite", dbName + "?_pragma=journal_mode(WAL)&_pragma=foreign_keys(ON)"
+		// busy_timeout: concurrent writers (requests, task workers) wait instead of failing.
+		return "sqlite", dbName + "?_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)&_pragma=foreign_keys(ON)"
 	}
 }
 
