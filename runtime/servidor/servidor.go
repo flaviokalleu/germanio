@@ -110,8 +110,8 @@ func (s *Servidor) Handler() (http.Handler, error) {
 	mux.HandleFunc("/", s.handlePagina)
 	mux.HandleFunc("/api/", s.handleAPI)
 	mux.HandleFunc("/upload", s.handleUpload)
-	mux.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(s.assetsDir()))))
-	mux.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("uploads"))))
+	mux.Handle("/assets/", http.StripPrefix("/assets/", fileServer(s.assetsDir())))
+	mux.Handle("/uploads/", http.StripPrefix("/uploads/", fileServer("uploads")))
 	mux.HandleFunc("/media/stream", s.handleMediaStream)
 	mux.HandleFunc("/ws", s.WS.HandleWS)
 	mux.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
