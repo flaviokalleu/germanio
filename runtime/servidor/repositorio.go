@@ -243,10 +243,10 @@ func (a *intentAPI) serveGit(w http.ResponseWriter, r *http.Request, entities []
 // mountRepository adds browsing operations to an entity with a repository.
 func (a *intentAPI) mountRepository(mux *routeMux, base string, e *ast.Entity) {
 	seg := "repositorio"
-	names := map[string]string{"branches": "branches", "commits": "commits", "tree": "arvore", "files": "arquivos", "compare": "comparar", "diff": "diff"}
+	names := map[string]string{"branches": "branches", "tags": "tags", "commits": "commits", "tree": "arvore", "files": "arquivos", "compare": "comparar", "diff": "diff"}
 	if a.extern && a.app.Messages == "en" {
 		seg = "repository"
-		names = map[string]string{"branches": "branches", "commits": "commits", "tree": "tree", "files": "files", "compare": "compare", "diff": "diff"}
+		names = map[string]string{"branches": "branches", "tags": "tags", "commits": "commits", "tree": "tree", "files": "files", "compare": "compare", "diff": "diff"}
 	}
 	root := base + "/{ref}/" + seg
 	h := func(fn func(w http.ResponseWriter, r *http.Request, ctx *interp.Context, atual map[string]any, row map[string]any, repo string), write bool) http.HandlerFunc {
@@ -344,6 +344,48 @@ func (a *intentAPI) mountRepository(mux *routeMux, base string, e *ast.Entity) {
 			return
 		}
 		if err := a.s.Git.DeleteBranch(repo, name); err != nil {
+			gitErr(w, err)
+			return
+		}
+		a.json(w, 204, nil, nil)
+	}, true))
+	// tags: the same rules as code (see: baixar; create or remove: enviar)
+	mux.HandleFunc("GET "+root+"/"+names["tags"], h(func(w http.ResponseWriter, r *http.Request, ctx *interp.Context, atual, row map[string]any, repo string) {
+		list, err := a.s.Git.Tags(repo)
+		if err != nil {
+			gitErr(w, err)
+			return
+		}
+		out := []any{}
+		for _, b := range list {
+			c := b.Commit
+			out = append(out, map[string]any{"name": b.Name, "target": c.ID, "commit": commitJSON(&c)})
+		}
+		a.json(w, 200, out, nil)
+	}, false))
+	mux.HandleFunc("POST "+root+"/"+names["tags"], h(func(w http.ResponseWriter, r *http.Request, ctx *interp.Context, atual, row map[string]any, repo string) {
+		body, _ := readBody(r)
+		name := first(toStr(body["tag_name"]), toStr(body["nome"]))
+		from := first(toStr(body["ref"]), toStr(body["origem"]), defaultBranch(row))
+		if err := a.pushCheck(ctx, atual, e, row, []git.RefUpdate{{Old: git.ZeroID, New: "(novo)", Ref: "refs/tags/" + name}}); err != nil {
+			a.failErr(w, r, err)
+			return
+		}
+		id, err := a.s.Git.CreateTag(repo, name, from)
+		if err != nil {
+			gitErr(w, err)
+			return
+		}
+		c, _ := a.s.Git.GetCommit(repo, id)
+		a.json(w, 201, map[string]any{"name": name, "target": id, "commit": commitJSON(c)}, nil)
+	}, true))
+	mux.HandleFunc("DELETE "+root+"/"+names["tags"]+"/{tag...}", h(func(w http.ResponseWriter, r *http.Request, ctx *interp.Context, atual, row map[string]any, repo string) {
+		name := r.PathValue("tag")
+		if err := a.pushCheck(ctx, atual, e, row, []git.RefUpdate{{Old: "(atual)", New: git.ZeroID, Ref: "refs/tags/" + name}}); err != nil {
+			a.failErr(w, r, err)
+			return
+		}
+		if err := a.s.Git.DeleteTag(repo, name); err != nil {
 			gitErr(w, err)
 			return
 		}

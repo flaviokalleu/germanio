@@ -417,6 +417,31 @@ func (s *Store) DeleteBranch(rel, name string) error {
 	return s.UpdateRef(rel, "refs/heads/"+name, ZeroID, id)
 }
 
+// CreateTag creates the lightweight tag refs/tags/name at from (branch,
+// tag or commit); an existing tag is never moved.
+func (s *Store) CreateTag(rel, name, from string) (string, error) {
+	if !ValidRef(name) {
+		return "", &ErrInvalid{"tag", name}
+	}
+	id, err := s.Resolve(rel, from)
+	if err != nil {
+		return "", err
+	}
+	if _, err := s.Resolve(rel, "refs/tags/"+name); err == nil {
+		return "", fmt.Errorf("tag já existe: %s", name)
+	}
+	return id, s.UpdateRef(rel, "refs/tags/"+name, id, ZeroID)
+}
+
+// DeleteTag removes refs/tags/name.
+func (s *Store) DeleteTag(rel, name string) error {
+	id, err := s.Resolve(rel, "refs/tags/"+name)
+	if err != nil {
+		return err
+	}
+	return s.UpdateRef(rel, "refs/tags/"+name, ZeroID, id)
+}
+
 // TreeEntry is an item of a tree listing.
 type TreeEntry struct {
 	ID, Name, Type, Path, Mode string

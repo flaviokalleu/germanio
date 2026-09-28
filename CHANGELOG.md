@@ -40,6 +40,7 @@ hierarchical syntax. Nothing below is in a tagged release yet.
   in the change's transaction, with the names of changed fields and never their values; each
   activity is seen only by whoever sees the record it describes. A vocabulary that translates
   the same name twice with different values is now an error instead of a silent override (G105).
+- Repositories list, create and remove tags under the same rules as code.
 - Variables of executions (GEP 0015, in test): `pipelines usam as variaveis do projeto` gives
   every step the owner's variables; a `valor oculto` is never returned and is masked in logs
   (by whole lines, so a secret written in two pieces never leaks); the execution's own names win.
