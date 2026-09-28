@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/flaviokalleu/germanio/compiler/ast"
@@ -50,7 +51,13 @@ func peopleIn(row map[string]any, field string) map[int64]bool {
 
 func (a *intentAPI) pending(ctx *interp.Context, atual map[string]any, e *ast.Entity, before, after map[string]any) error {
 	pe := a.app.PendingEntity
-	if len(e.PendingFields) == 0 || pe == "" || after == nil {
+	if pe == "" || after == nil {
+		return nil
+	}
+	if err := a.mentioned(ctx, atual, e, before, after); err != nil {
+		return err
+	}
+	if len(e.PendingFields) == 0 {
 		return nil
 	}
 	self := int64(0)
@@ -154,4 +161,56 @@ func (a *intentAPI) noticeByEmail(ctx *interp.Context, id int64, motivo string) 
 	if err := run(); err != nil {
 		fmt.Printf("[germanio] aviso por e-mail: %v\n", err)
 	}
+}
+
+var mentionRe = regexp.MustCompile(`(?:^|[^\w@])@([A-Za-z0-9_][A-Za-z0-9_.-]*)`)
+
+// mentionsIn: the names written as @name in the long texts of row.
+func mentionsIn(e *ast.Entity, row map[string]any) map[string]bool {
+	out := map[string]bool{}
+	if row == nil {
+		return out
+	}
+	for _, f := range e.Model.Fields {
+		if f.Type != ast.FieldTextoLongo {
+			continue
+		}
+		for _, m := range mentionRe.FindAllStringSubmatch(toStr(row[strings.ToLower(f.Name)]), 50) {
+			out[strings.TrimRight(m[1], ".-")] = true
+		}
+	}
+	return out
+}
+
+// mentioned: people newly mentioned receive a pending item (GEP 0017),
+// only if they may see the record — a mention never reveals it.
+func (a *intentAPI) mentioned(ctx *interp.Context, atual map[string]any, e *ast.Entity, before, after map[string]any) error {
+	if !e.PendingMentions || a.app.HandleField == "" {
+		return nil
+	}
+	old, now := mentionsIn(e, before), mentionsIn(e, after)
+	self := int64(0)
+	if atual != nil {
+		self = int64(asNumber(atual["id"]))
+	}
+	for name := range now {
+		if old[name] {
+			continue
+		}
+		res, err := a.in.Op(ctx, a.app.LoginEntity, "encontrar", map[string]any{a.app.HandleField: name})
+		person, _ := res.(map[string]any)
+		if err != nil || person == nil {
+			continue
+		}
+		id := int64(asNumber(person["id"]))
+		if id == self || !a.in.Can(ctx, person, e, "ver", after) {
+			continue
+		}
+		motivo := fmt.Sprintf("Menção: %s %s", e.Label, titleOf(e, after))
+		if _, err := a.in.Op(ctx, a.app.PendingEntity, "criar", map[string]any{"dono_id": id, "recurso": e.Singular, "recurso_id": after["id"], "motivo": motivo}); err != nil {
+			return err
+		}
+		a.noticeByEmail(ctx, id, motivo)
+	}
+	return nil
 }

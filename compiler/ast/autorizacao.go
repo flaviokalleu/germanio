@@ -11,6 +11,9 @@ type App struct {
 	LoginEntity string             // model name of the people who sign in
 	// PendingEntity is the data of pending items ("" when none is asked for).
 	PendingEntity string
+	// HandleField: the login data's unique name people are mentioned by
+	// (@ana), "" when there is none (GEP 0017).
+	HandleField string
 	// ActivityEntity is the data of the history ("" when no data keeps one;
 	// GEP 0011, em teste).
 	ActivityEntity string
@@ -75,6 +78,9 @@ type Entity struct {
 	// PendingFields: people fields whose new people receive a pending item
 	// (issue gera pendência para responsaveis; GEP 0009, em teste).
 	PendingFields []string
+	// PendingMentions: people written as @name in the record's long texts
+	// receive a pending item (pendência para › mencionados; GEP 0017).
+	PendingMentions bool
 	// History: every change of this data is recorded in the history
 	// (issue guarda histórico; GEP 0011, em teste).
 	History bool

@@ -121,13 +121,26 @@ func TestFluxo3Issues(t *testing.T) {
 	// Só maintainer exclui
 	bob.must("DELETE", "/api/v4/projects/"+pid+"/issues/2", nil, 403)
 	ada.must("DELETE", "/api/v4/projects/"+pid+"/issues/2", nil, 204)
-	// Quem sai dos responsáveis perde a pendência aberta; eve não vê a de bob
+	// NT-01: menções num comentário (GEP 0017) — quem vê recebe; quem escreve não
+	before := len(pend(bob))
+	eve.must("POST", "/api/v4/projects/"+pid+"/issues/1/notes", map[string]any{"body": "@bob e @eve, olhem isto"}, 201)
+	if l := pend(bob); len(l) != before+1 || !strings.HasPrefix(l[0].(map[string]any)["motivo"].(string), "Menção") {
+		t.Fatalf("bob mencionado num comentário: %v", l)
+	}
 	if l := pend(eve); len(l) != 0 {
-		t.Fatalf("pendências são privadas: %v", l)
+		t.Fatalf("quem escreve não se menciona: %v", l)
+	}
+	// Quem sai dos responsáveis perde a pendência aberta; eve não vê a de bob
+	for _, it := range pend(eve) {
+		if it.(map[string]any)["dono_id"] != nil && jsonNum(it.(map[string]any)["dono_id"]) == jsonNum(bobID) {
+			t.Fatalf("pendências são privadas: %v", it)
+		}
 	}
 	ada.must("PUT", "/api/v4/projects/"+pid+"/issues/1", map[string]any{"assignee_ids": []any{}}, 200)
-	if l := pend(bob); len(l) != 0 {
-		t.Fatalf("quem saiu dos responsáveis mantém a pendência: %v", l)
+	for _, it := range pend(bob) {
+		if !strings.HasPrefix(it.(map[string]any)["motivo"].(string), "Menção") {
+			t.Fatalf("quem saiu dos responsáveis mantém a pendência: %v", it)
+		}
 	}
 }
 

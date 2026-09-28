@@ -24,6 +24,7 @@ issues
 
     pendência para
         responsaveis
+        mencionados
 
     guarda histórico
 
@@ -56,6 +57,9 @@ comentarios
     tem
         autor
         texto obrigatório e formatado
+
+    pendência para
+        mencionados
 
     integração
         nome "notes"

@@ -41,6 +41,8 @@ hierarchical syntax. Nothing below is in a tagged release yet.
   activity is seen only by whoever sees the record it describes. A vocabulary that translates
   the same name twice with different values is now an error instead of a silent override (G105).
 - Repositories list, create and remove tags under the same rules as code.
+- Mentions (GEP 0017, in test): `pendência para` › `mencionados` gives a pending item to people
+  written as `@username` in the record's texts, only if they may see the record.
 - Protected branches named by data (GEP 0016, in test): `somente maintainer pode enviar código para
   as branches protegidas dos projetos`, each record a branch or a pattern with `*`. The `singular`
   section now really names the data (G113).

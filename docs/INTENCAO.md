@@ -634,6 +634,9 @@ começa aberta; pode concluir; cada pessoa vê, conclui e exclui só as suas), q
 escreve quando o programa não o declara (`ge explain pendencias` mostra a origem). Para
 mostrá-las, a aplicação declara `página Pendências` + `mostre pendências`.
 
+Em `pendência para`, `mencionados` ([GEP 0017](gep/0017-mencoes.md), **em teste**) dá pendência a
+quem é escrito como `@nome de usuário` nos textos do registro, se essa pessoa puder vê-lo.
+
 `tenha avisos por e-mail` ([GEP 0013](gep/0013-avisos-por-email.md), **em teste**, não normativa
 até a decisão do mantenedor) manda cada nova pendência também por e-mail ao dono, depois de a
 mudança ser salva, com a configuração de e-mail da recuperação de senha.

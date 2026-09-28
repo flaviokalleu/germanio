@@ -236,6 +236,8 @@ func TestHierarquiaErros(t *testing.T) {
 		{"avisos sem pendências", "tenha issues\n\ncada issue tem\n    titulo\n\ntenha avisos por e-mail\n", []string{"nenhum dado gera pendências"}},
 		{"variáveis de outro dono", "projetos\n    tem\n        caminho único\n        pipelines\n    tem repositório\n    executa pipelines a cada envio de código conforme \"ci.yml\"\n\npipelines\n    tem\n        jobs\n\njobs\n    tem\n        nome\n\nvariaveis\n    tem\n        chave\n        valor texto oculto\n    pertence a projeto\n\npipelines usam as variaveis do grupo\n", []string{"são executados por projeto"}},
 		{"valor pelo nome é dinheiro", "projetos\n    tem\n        caminho único\n        pipelines\n    tem repositório\n    executa pipelines a cada envio de código conforme \"ci.yml\"\n\npipelines\n    tem\n        jobs\n\njobs\n    tem\n        nome\n\nvariaveis\n    tem\n        chave\n        valor oculto\n    pertence a projeto\n\npipelines usam as variaveis do projeto\n", []string{"valor texto oculto"}},
+		{"mencionados sem texto", "tenha chamados\n\ncada chamado tem\n    titulo\n\nchamado gera pendência para mencionados\n", []string{"não tem texto onde alguém seja mencionado"}},
+		{"mencionados sem nome de usuário", "tenha chamados\n\ncada chamado tem\n    descricao\n\nchamado gera pendência para mencionados\n", []string{"nome de usuário único"}},
 		{"integração em conflito", "projetos\n    tem\n        nome\n    integração\n        nome \"projects\"\n\ndisponibilize projetos para integração como \"repos\"\n", []string{"já é \"projects\""}},
 	}
 	for _, c := range cases {

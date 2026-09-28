@@ -99,3 +99,30 @@ func (r *resolver) protectedBranches(e, d *ast.Entity, g *ast.Grant, rule *ast.A
 	e.ProtectedBranches = append(e.ProtectedBranches, &ast.ProtectedBranches{Data: d.Singular, OwnerField: field, Role: rule.MinRole})
 	return nil
 }
+
+// mentions: people written as @<nome de usuário> in e's long texts receive
+// pending items (GEP 0017, em teste).
+func (r *resolver) mentions(e *ast.Entity, app *ast.App, pr *ast.PendingRule) error {
+	long := false
+	for _, f := range e.Model.Fields {
+		long = long || f.Type == ast.FieldTextoLongo
+	}
+	if !long {
+		return r.errAt(pr.Pos, "%s gera pendência para mencionados, mas %s não tem texto onde alguém seja mencionado (um campo como descricao ou texto)", e.Plural, e.Plural)
+	}
+	le := app.Entities[app.LoginEntity]
+	if le == nil {
+		return r.errAt(pr.Pos, "mencionados são pessoas: declare tenha login")
+	}
+	for _, name := range []string{"username", "usuario", "apelido", "login"} {
+		if f := fieldByNameAST(le.Model, name); f != nil && f.Unique {
+			app.HandleField = strings.ToLower(f.Name)
+			break
+		}
+	}
+	if app.HandleField == "" {
+		return r.errAt(pr.Pos, "mencionados são escritos como @nome: %s precisa de um nome de usuário único (por exemplo: username único)", le.Plural)
+	}
+	e.PendingMentions = true
+	return nil
+}

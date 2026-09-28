@@ -1,0 +1,29 @@
+crie sistema Suporte
+
+usuarios
+    tem
+        nome obrigatório
+        username obrigatório e único
+        email obrigatório e único
+        senha min 8
+
+tenha login
+tenha cadastro
+
+chamados
+    tem
+        titulo obrigatório
+        descricao
+        autor
+    pode
+        ser confidencial
+    regras
+        confidencial pode ser vista por
+            autor
+    pendência para
+        mencionados
+    acesso
+        usuario
+            ver
+            criar
+            editar

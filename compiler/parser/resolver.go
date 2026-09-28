@@ -1203,6 +1203,13 @@ func ResolveIntent(prog *ast.Program) error {
 			return err
 		}
 		for _, name := range pr.Fields {
+			if name == "mencionados" && fieldByNameAST(e.Model, "mencionados") == nil {
+				// pendência para › mencionados (GEP 0017, em teste)
+				if err := r.mentions(e, app, pr); err != nil {
+					return err
+				}
+				continue
+			}
 			var found string
 			for _, f := range e.Model.Fields {
 				fn := strings.ToLower(f.Name)

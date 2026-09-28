@@ -70,6 +70,7 @@ Rules:
 | [0014](0014-arquivos.md) | Files of a record (`anexo arquivo`, `foto imagem`) | Em teste |
 | [0015](0015-variaveis-das-execucoes.md) | Variables of executions (`pipelines usam as variaveis do projeto`) | Em teste |
 | [0016](0016-branches-protegidas.md) | Protected branches named by data (`enviar código para as branches protegidas`) | Em teste |
+| [0017](0017-mencoes.md) | Mentions create pending items (`pendência para` › `mencionados`) | Em teste |
 
 Pending decisions that will become GEPs are listed in
 [`docs/INTENCAO.md` › Pendências da sintaxe hierárquica](../INTENCAO.md#pendências-da-sintaxe-hierárquica)
