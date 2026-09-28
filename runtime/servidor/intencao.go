@@ -1118,9 +1118,18 @@ func (a *intentAPI) list(w http.ResponseWriter, r *http.Request, ctx *interp.Con
 		// Visibility depends on each record: read in batches, keep what this
 		// person may see, count all of it and keep the requested page.
 		a.narrowVisible(ctx, atual, e, filters)
+		interp.BeginReadCache(ctx)
+		defer interp.EndReadCache(ctx)
+		var groups []map[string]any
+		if g, ok := a.visibilityPrefilter(ctx, atual, e); ok {
+			groups = g
+		}
 		start := (page - 1) * per
 		for batch := 1; ; batch++ {
 			opts["limite"], opts["pagina"] = 500, batch
+			if groups != nil {
+				opts["ou"] = groups
+			}
 			res, err := a.in.Op(ctx, e.Singular, "filtrar", filters, opts)
 			if err != nil {
 				a.failErr(w, r, err)

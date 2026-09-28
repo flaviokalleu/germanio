@@ -39,6 +39,9 @@ type Consulta struct {
 	// Busca looks for a substring in BuscaCampos (or every text field).
 	Busca       string
 	BuscaCampos []string
+	// Ou: at least one of these groups must hold (each group is a set of
+	// filters that must all hold), besides Filtros.
+	Ou []map[string]any
 }
 
 // columns returns the set of queryable columns of a model.
@@ -69,95 +72,30 @@ func (b *Banco) where(modelo string, c Consulta) (string, []any, error) {
 	if model.SoftDelete {
 		where = append(where, q("deletado_em")+" IS NULL")
 	}
-	keys := make([]string, 0, len(c.Filtros))
-	for k := range c.Filtros {
-		keys = append(keys, k)
+	conds, cargs, err := b.filterSQL(modelo, cols, c.Filtros, &n)
+	if err != nil {
+		return "", nil, err
 	}
-	sort.Strings(keys) // deterministic SQL for identical filters
-	for _, key := range keys {
-		val := normalizeArg(c.Filtros[key])
-		field, op := key, "igual"
-		if i := strings.Index(key, "__"); i > 0 {
-			field, op = key[:i], key[i+2:]
+	where = append(where, conds...)
+	args = append(args, cargs...)
+	if len(c.Ou) > 0 {
+		var groups []string
+		always := false
+		for _, g := range c.Ou {
+			gc, gargs, err := b.filterSQL(modelo, cols, g, &n)
+			if err != nil {
+				return "", nil, err
+			}
+			if len(gc) == 0 {
+				always = true // an empty group always holds
+				break
+			}
+			groups = append(groups, "("+strings.Join(gc, " AND ")+")")
+			args = append(args, gargs...)
 		}
-		field = strings.ToLower(field)
-		if !cols[field] {
-			return "", nil, &ErrCampo{modelo, field}
+		if !always {
+			where = append(where, "("+strings.Join(groups, " OR ")+")")
 		}
-		col := q(field)
-		switch op {
-		case "igual":
-			if val == nil {
-				where = append(where, col+" IS NULL")
-				continue
-			}
-			where = append(where, col+" = "+b.ph(n))
-		case "diferente":
-			if val == nil {
-				where = append(where, col+" IS NOT NULL")
-				continue
-			}
-			where = append(where, "("+col+" IS NULL OR "+col+" <> "+b.ph(n)+")")
-		case "maior":
-			where = append(where, col+" > "+b.ph(n))
-		case "menor":
-			where = append(where, col+" < "+b.ph(n))
-		case "maior_igual":
-			where = append(where, col+" >= "+b.ph(n))
-		case "menor_igual":
-			where = append(where, col+" <= "+b.ph(n))
-		case "contem":
-			where = append(where, "LOWER("+col+") LIKE "+b.ph(n)+" ESCAPE '\\'")
-			val = "%" + escapeLike(strings.ToLower(fmt.Sprint(val))) + "%"
-		case "contem_algum":
-			// any of the values (a list field containing any of the given items)
-			list, ok := c.Filtros[key].([]any)
-			if !ok {
-				return "", nil, fmt.Errorf("o filtro '%s' exige uma lista", key)
-			}
-			if len(list) == 0 {
-				where = append(where, "1 = 0")
-				continue
-			}
-			var ors []string
-			for _, item := range list {
-				ors = append(ors, "LOWER("+col+") LIKE "+b.ph(n)+" ESCAPE '\\'")
-				args = append(args, "%"+escapeLike(strings.ToLower(fmt.Sprint(item)))+"%")
-				n++
-			}
-			where = append(where, "("+strings.Join(ors, " OR ")+")")
-			continue
-		case "comeca_com":
-			where = append(where, col+" LIKE "+b.ph(n)+" ESCAPE '\\'")
-			val = escapeLike(fmt.Sprint(val)) + "%"
-		case "em", "nao_em":
-			list, ok := c.Filtros[key].([]any)
-			if !ok {
-				return "", nil, fmt.Errorf("o filtro '%s' exige uma lista", key)
-			}
-			if len(list) == 0 {
-				if op == "em" {
-					where = append(where, "1 = 0")
-				}
-				continue
-			}
-			phs := make([]string, len(list))
-			for i, item := range list {
-				phs[i] = b.ph(n)
-				args = append(args, normalizeArg(item))
-				n++
-			}
-			not := ""
-			if op == "nao_em" {
-				not = "NOT "
-			}
-			where = append(where, col+" "+not+"IN ("+strings.Join(phs, ", ")+")")
-			continue
-		default:
-			return "", nil, fmt.Errorf("operador de filtro desconhecido '%s' em '%s'", op, key)
-		}
-		args = append(args, val)
-		n++
 	}
 	if c.Busca != "" {
 		fields := c.BuscaCampos
@@ -186,6 +124,104 @@ func (b *Banco) where(modelo string, c Consulta) (string, []any, error) {
 		return "", args, nil
 	}
 	return " WHERE " + strings.Join(where, " AND "), args, nil
+}
+
+// filterSQL turns a map of filters (field__operator → value) into SQL
+// conditions that must all hold, numbering placeholders from *n.
+func (b *Banco) filterSQL(modelo string, cols map[string]bool, filtros map[string]any, n *int) ([]string, []any, error) {
+	var where []string
+	var args []any
+	keys := make([]string, 0, len(filtros))
+	for k := range filtros {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys) // deterministic SQL for identical filters
+	for _, key := range keys {
+		val := normalizeArg(filtros[key])
+		field, op := key, "igual"
+		if i := strings.Index(key, "__"); i > 0 {
+			field, op = key[:i], key[i+2:]
+		}
+		field = strings.ToLower(field)
+		if !cols[field] {
+			return nil, nil, &ErrCampo{modelo, field}
+		}
+		col := q(field)
+		switch op {
+		case "igual":
+			if val == nil {
+				where = append(where, col+" IS NULL")
+				continue
+			}
+			where = append(where, col+" = "+b.ph(*n))
+		case "diferente":
+			if val == nil {
+				where = append(where, col+" IS NOT NULL")
+				continue
+			}
+			where = append(where, "("+col+" IS NULL OR "+col+" <> "+b.ph(*n)+")")
+		case "maior":
+			where = append(where, col+" > "+b.ph(*n))
+		case "menor":
+			where = append(where, col+" < "+b.ph(*n))
+		case "maior_igual":
+			where = append(where, col+" >= "+b.ph(*n))
+		case "menor_igual":
+			where = append(where, col+" <= "+b.ph(*n))
+		case "contem":
+			where = append(where, "LOWER("+col+") LIKE "+b.ph(*n)+" ESCAPE '\\'")
+			val = "%" + escapeLike(strings.ToLower(fmt.Sprint(val))) + "%"
+		case "contem_algum":
+			// any of the values (a list field containing any of the given items)
+			list, ok := filtros[key].([]any)
+			if !ok {
+				return nil, nil, fmt.Errorf("o filtro '%s' exige uma lista", key)
+			}
+			if len(list) == 0 {
+				where = append(where, "1 = 0")
+				continue
+			}
+			var ors []string
+			for _, item := range list {
+				ors = append(ors, "LOWER("+col+") LIKE "+b.ph(*n)+" ESCAPE '\\'")
+				args = append(args, "%"+escapeLike(strings.ToLower(fmt.Sprint(item)))+"%")
+				*n++
+			}
+			where = append(where, "("+strings.Join(ors, " OR ")+")")
+			continue
+		case "comeca_com":
+			where = append(where, col+" LIKE "+b.ph(*n)+" ESCAPE '\\'")
+			val = escapeLike(fmt.Sprint(val)) + "%"
+		case "em", "nao_em":
+			list, ok := filtros[key].([]any)
+			if !ok {
+				return nil, nil, fmt.Errorf("o filtro '%s' exige uma lista", key)
+			}
+			if len(list) == 0 {
+				if op == "em" {
+					where = append(where, "1 = 0")
+				}
+				continue
+			}
+			phs := make([]string, len(list))
+			for i, item := range list {
+				phs[i] = b.ph(*n)
+				args = append(args, normalizeArg(item))
+				*n++
+			}
+			not := ""
+			if op == "nao_em" {
+				not = "NOT "
+			}
+			where = append(where, col+" "+not+"IN ("+strings.Join(phs, ", ")+")")
+			continue
+		default:
+			return nil, nil, fmt.Errorf("operador de filtro desconhecido '%s' em '%s'", op, key)
+		}
+		args = append(args, val)
+		*n++
+	}
+	return where, args, nil
 }
 
 func escapeLike(s string) string {

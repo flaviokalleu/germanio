@@ -433,6 +433,12 @@ func (interp *Interpreter) dbCall(c *Call, model, method string, args []any) any
 						q.BuscaCampos = append(q.BuscaCampos, toString(f))
 					}
 				}
+			case "ou":
+				// groups of filters, at least one must hold (lists narrowed by
+				// what a person may reach)
+				if gs, ok := v.([]map[string]any); ok {
+					q.Ou = gs
+				}
 			default:
 				panic(c.Fail(0, "%s: opção desconhecida '%s' (use ordenar, limite, pagina, busca, campos_busca)", c.Name, k))
 			}

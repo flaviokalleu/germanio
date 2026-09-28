@@ -91,3 +91,32 @@ func TestAnexarTexto(t *testing.T) {
 		t.Fatalf("log: %q", got["log"])
 	}
 }
+
+// Ou: at least one group must hold, besides the other filters.
+func TestConsultaOu(t *testing.T) {
+	t.Setenv("GERMANIO_SQLITE", filepath.Join(t.TempDir(), "t.db"))
+	m := &ast.Model{Name: "item", Fields: []*ast.Field{{Name: "a", Type: ast.FieldTexto}, {Name: "b", Type: ast.FieldTexto}, {Name: "c", Type: ast.FieldTexto}}}
+	b, err := Abrir(&ast.DatabaseConfig{Driver: "sqlite"}, "t", []*ast.Model{m})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer b.Fechar()
+	for _, r := range []map[string]any{{"a": "1", "b": "x", "c": "k"}, {"a": "2", "b": "y", "c": "k"}, {"a": "3", "b": "x", "c": "z"}, {"a": "4", "b": "w", "c": "k"}} {
+		b.CriarMapa("item", r)
+	}
+	count := func(c Consulta) int64 {
+		n, err := b.ContarFiltro("item", c)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return n
+	}
+	// c = k AND (b = x OR a in [2])
+	if n := count(Consulta{Filtros: map[string]any{"c": "k"}, Ou: []map[string]any{{"b": "x"}, {"a__em": []any{"2"}}}}); n != 2 {
+		t.Fatalf("ou: %d", n)
+	}
+	// an empty group always holds
+	if n := count(Consulta{Ou: []map[string]any{{"b": "nada"}, {}}}); n != 4 {
+		t.Fatalf("grupo vazio: %d", n)
+	}
+}

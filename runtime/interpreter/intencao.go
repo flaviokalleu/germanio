@@ -189,11 +189,65 @@ func (interp *Interpreter) load(ctx *Context, e *ast.Entity, id any) map[string]
 	if e == nil || id == nil {
 		return nil
 	}
-	row, err := interp.dbOf(ctx).BuscarRegistro(e.Singular, int64(toNumber(id)))
+	key := levelKey{e.Singular, int64(toNumber(id))}
+	cache := readCache(ctx)
+	if cache != nil {
+		if row, ok := cache[key]; ok {
+			return row
+		}
+	}
+	row, err := interp.dbOf(ctx).BuscarRegistro(e.Singular, key.id)
 	if err != nil {
 		return nil
 	}
-	return stripSecrets(e.Model, row)
+	row = stripSecrets(e.Model, row)
+	if cache != nil {
+		cache[key] = row
+	}
+	return row
+}
+
+// readCacheKey marks a read-only scan (a list): while it runs, a record
+// loaded to decide visibility (the project of each issue) is read once, not
+// once per row (the N+1 that made one page of a big list take seconds).
+const readCacheKey = "__linhas_lidas"
+
+// BeginReadCache starts a read-only scan on ctx; EndReadCache ends it.
+func BeginReadCache(ctx *Context) {
+	if ctx == nil {
+		return
+	}
+	if ctx.Values == nil {
+		ctx.Values = map[string]any{}
+	}
+	ctx.Values[readCacheKey] = map[levelKey]map[string]any{}
+}
+
+func EndReadCache(ctx *Context) {
+	if ctx != nil && ctx.Values != nil {
+		delete(ctx.Values, readCacheKey)
+	}
+}
+
+func readCache(ctx *Context) map[levelKey]map[string]any {
+	if ctx == nil || ctx.Values == nil {
+		return nil
+	}
+	m, _ := ctx.Values[readCacheKey].(map[levelKey]map[string]any)
+	return m
+}
+
+// MayReach: atual has a role in record (directly or through its parents) or
+// the record is visible to atual (public, internal). A record that belongs to
+// something atual cannot reach is never visible through it; lists use this to
+// narrow what they read (a superset: Can still decides each row).
+func (interp *Interpreter) MayReach(ctx *Context, atual map[string]any, e *ast.Entity, record map[string]any) bool {
+	return interp.Level(ctx, atual, e, record) > 0 || interp.visible(ctx, atual, e, record)
+}
+
+// HasMembersChain: e or one of its ancestors has members.
+func (interp *Interpreter) HasMembersChain(e *ast.Entity) bool {
+	return interp.hasMembersChain(e, 0)
 }
 
 // Owns: the record is the person, or belongs to the person.

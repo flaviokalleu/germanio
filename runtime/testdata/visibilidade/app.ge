@@ -1,0 +1,55 @@
+crie sistema Visibilidade
+
+usuarios
+    tem
+        nome obrigatório
+        email obrigatório e único
+        senha min 8
+    acesso
+        usuario
+            editar seu perfil
+
+tenha login
+tenha cadastro
+login usa email
+
+tenha papeis
+    guest 10
+    reporter 20
+    developer 30
+
+projetos
+    tem
+        nome obrigatório
+        visibilidade
+        membros com papel
+        issues
+    acesso
+        usuario
+            criar
+        guest
+            ver
+        developer
+            editar
+
+quem cria projeto vira developer
+
+issues
+    tem
+        titulo obrigatório
+        autor
+        responsaveis
+    pode
+        ser confidencial
+    acesso
+        reporter
+            ver
+        usuario
+            criar
+        autor
+            editar seus
+
+issue confidencial pode ser vista por
+    autor
+    responsaveis
+    developer ou superior
