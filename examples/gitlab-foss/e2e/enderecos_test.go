@@ -23,6 +23,11 @@ func TestEnderecosHierarquicos(t *testing.T) {
 		t.Fatalf("endereços de projetos: %v %v", app["full_path"], mine["full_path"])
 	}
 
+	// O repositório começou com o README declarado ({nome} preenchido)
+	if f := ada.must("GET", "/api/v4/projects/"+id(app)+"/repository/files/README.md", nil, 200); f["content"] != "# App\n" {
+		t.Fatalf("README inicial: %q", f["content"])
+	}
+	ada.must("GET", "/api/v4/projects/"+id(mine)+"/repository/files/README.md", nil, 404) // sem initialize_with_readme
 	// Quem cria vira owner só do projeto pessoal; no grupo, os membros vêm do grupo.
 	if ms := ada.list("/api/v4/projects/" + id(mine) + "/members"); len(ms) != 1 || ms[0].(map[string]any)["access_level"] != float64(50) {
 		t.Fatalf("membros do projeto pessoal: %v", ms)

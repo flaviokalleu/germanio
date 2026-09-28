@@ -797,6 +797,10 @@ func (a *intentAPI) create(w http.ResponseWriter, r *http.Request, ctx *interp.C
 		a.failErr(w, r, err)
 		return
 	}
+	if err := a.initialFile(atual, e, row, body); err != nil {
+		a.failErr(w, r, err)
+		return
+	}
 	out := serializeFor(ctx, a.in, atual, e, row, false)
 	for _, f := range e.Model.Fields {
 		if f.Type == ast.FieldSegredo {

@@ -582,6 +582,21 @@ func (p *Parser) parsePode(head dline, body []dline, only bool) error {
 	if k == len(w) || k == i {
 		return p.errorf(head.toks[0], "use: <papel> pode <ação> <dados>")
 	}
+	// repositório do projeto pode começar com "README.md" contendo "# {nome}"
+	if !only && k+1 < len(w) && w[i] == "repositorio" && w[k+1] == "comecar" {
+		var strs []string
+		for _, t := range head.toks {
+			if t.Type == lexer.TokenString {
+				strs = append(strs, t.Value)
+			}
+		}
+		entity, _ := phrase(w[i+1 : k])
+		if entity == "" || len(strs) != 2 {
+			return p.errorf(head.toks[0], `use: repositório do <dado> pode começar com "arquivo" contendo "texto"`)
+		}
+		in.InitialFiles = append(in.InitialFiles, &ast.InitialFileDecl{Entity: entity, Path: strs[0], Content: strs[1], Pos: p.at(head.toks[0])})
+		return nil
+	}
 	// runner pode pertencer a projeto: an optional parent
 	if !only && k+1 < len(w) && w[k+1] == "pertencer" {
 		subject, _ := phrase(w[i:k])

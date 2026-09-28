@@ -12,6 +12,7 @@ vocabulário da integração
     visibilidade é "visibility"
     branch_padrao é "default_branch"
     arquivado é "archived"
+    iniciar_repositorio é "initialize_with_readme"
     grupo_id é "namespace_id"
     pai_id é "parent_id"
     criador_id é "creator_id"

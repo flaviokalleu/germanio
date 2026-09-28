@@ -553,6 +553,18 @@ func ResolveIntent(prog *ast.Program) error {
 		e.Model.Fields = append(e.Model.Fields, &ast.Field{Name: "endereco", Type: ast.FieldTexto, Unique: true, System: true, Index: true, Pos: pa.pos})
 	}
 
+	// Initial files of new repositories.
+	for _, f := range in.InitialFiles {
+		e, err := r.entity(f.Entity, f.Pos)
+		if err != nil {
+			return err
+		}
+		if !e.Repository {
+			return r.errAt(f.Pos, "repositório do %s: %s não tem repositório (use \"%s tem repositório\")", e.Singular, e.Singular, e.Singular)
+		}
+		e.InitialFile = &ast.RepoFile{Path: f.Path, Content: f.Content}
+	}
+
 	// Repository URL key: the address, else the first unique text field.
 	for _, n := range app.Order {
 		e := app.Entities[n]

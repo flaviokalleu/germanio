@@ -36,6 +36,7 @@ type Intent struct {
 	Subscriptions     []*SubscriptionDecl
 	RemoteExecutors   []*RemoteExecutorDecl
 	Translators       map[string]string // traduza <ponto> com <função> (integracoes/)
+	InitialFiles      []*InitialFileDecl
 	MinRoles          []*CreatorRole    // todo grupo precisa ter pelo menos um owner
 }
 
@@ -178,6 +179,7 @@ func MergeIntent(a, b *Intent) *Intent {
 		a.Translators[k] = v
 	}
 	a.MinRoles = append(a.MinRoles, b.MinRoles...)
+	a.InitialFiles = append(a.InitialFiles, b.InitialFiles...)
 	a.Visibility = append(a.Visibility, b.Visibility...)
 	if a.Vocabulary == nil {
 		a.Vocabulary = b.Vocabulary
@@ -284,4 +286,10 @@ type SubscriptionDecl struct {
 type RemoteExecutorDecl struct {
 	Executor, Steps string
 	Pos             diagnostics.Position
+}
+
+// InitialFileDecl: `repositório do projeto pode começar com "README.md" contendo "# {nome}"`.
+type InitialFileDecl struct {
+	Entity, Path, Content string
+	Pos                   diagnostics.Position
 }

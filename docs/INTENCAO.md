@@ -82,6 +82,7 @@ O nível 4 nunca é necessário para CRUD, login, permissões ou relações.
 | `projeto executa pipelines a cada envio de código conforme "arquivo.yml"` | o arquivo, no formato nativo (`estagios`, `etapas` com `comandos`, `depois`, `quando: automatico | manual | sempre`, `pode_falhar`, `imagem`), vira uma execução por envio; um adaptador pode ler outro formato com `traduza arquivos de execução com f` e dar variáveis às etapas com `traduza variáveis das etapas com f` (só em `integracoes/`) |
 | `quem cria projeto vira owner` | quem cria vira membro com esse papel — exceto quando o dado herda membros de um pai e foi criado dentro dele (os membros já vêm do pai) |
 | `todo grupo precisa ter pelo menos um owner` | ninguém remove nem rebaixa o último membro com esse papel (ou superior) |
+| `repositório do projeto pode começar com "README.md" contendo "# {nome}"` | ao criar com `iniciar_repositorio` (nome externo pelo vocabulário), o repositório nasce com esse arquivo; `{campo}` vira o valor do registro |
 | `projeto tem repositório` | cada registro tem um repositório Git criado e removido com ele e servido em `/<campo único>.git` |
 
 **Tipo pelo nome** (quando não há tipo): `email`→email · `senha`/`password`→senha protegida ·

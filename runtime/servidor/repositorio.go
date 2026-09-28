@@ -6,7 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
+	"time"
 
 	"github.com/flaviokalleu/germanio/compiler/ast"
 	"github.com/flaviokalleu/germanio/runtime/git"
@@ -44,6 +46,37 @@ func (a *intentAPI) createRepository(ctx *interp.Context, e *ast.Entity, row map
 		row[k] = v
 	}
 	return nil
+}
+
+// initialFile commits the file a new repository may start with, when the
+// creation asked for it (iniciar_repositorio).
+func (a *intentAPI) initialFile(atual map[string]any, e *ast.Entity, row, body map[string]any) error {
+	f := e.InitialFile
+	if f == nil || a.s.Git == nil || !truthy(body["iniciar_repositorio"]) {
+		return nil
+	}
+	content := placeholderRe.ReplaceAllStringFunc(f.Content, func(m string) string { return toStr(row[m[1:len(m)-1]]) })
+	author := git.Signature{Name: "Germanio", Email: "germanio@localhost", When: time.Now()}
+	if atual != nil {
+		author.Name, author.Email = first(toStr(atual["nome"]), toStr(atual["username"]), author.Name), first(toStr(atual["email"]), author.Email)
+	}
+	msg := map[string]string{"pt": "Primeiro commit", "en": "Initial commit"}[a.app.Messages]
+	_, err := a.s.Git.CommitFiles(toStr(row["repositorio"]), defaultBranch(row), "", msg, author, []git.Action{{Kind: "create", Path: f.Path, Content: []byte(content)}})
+	return err
+}
+
+var placeholderRe = regexp.MustCompile(`\{[a-z_]+\}`)
+
+func truthy(v any) bool {
+	switch x := v.(type) {
+	case bool:
+		return x
+	case string:
+		return x == "true" || x == "1" || x == "sim"
+	case float64:
+		return x != 0
+	}
+	return false
 }
 
 func (a *intentAPI) removeRepository(e *ast.Entity, row map[string]any) {

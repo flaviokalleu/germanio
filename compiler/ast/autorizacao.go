@@ -69,10 +69,12 @@ type Entity struct {
 	Remote *RemoteWork
 	// Address: `endereço dentro do grupo pai ou do criador`.
 	Address    *Address
-	Repository bool     // X tem repositório
-	RepoKey    string   // field whose value addresses the repository (<valor>.git)
-	Search     []string // fields searched by pesquisar
-	Filters    []string // fields accepted by filtrar
+	Repository bool // X tem repositório
+	// InitialFile: `repositório do projeto pode começar com "README.md" contendo "# {nome}"`.
+	InitialFile *RepoFile
+	RepoKey     string   // field whose value addresses the repository (<valor>.git)
+	Search      []string // fields searched by pesquisar
+	Filters     []string // fields accepted by filtrar
 }
 
 // Address: the record's address is its container's address + "/" + its
@@ -85,6 +87,9 @@ type Address struct {
 	Segment string // "caminho"
 	Within  []AddressRef
 }
+
+// RepoFile: a file a new repository may start with ({campo} is replaced by the record's value).
+type RepoFile struct{ Path, Content string }
 
 // AddressRef: a parent field and the entity it points to.
 type AddressRef struct{ Field, Entity string }

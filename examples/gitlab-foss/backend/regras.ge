@@ -10,7 +10,3 @@ logica
   # Nomes reservados valem para usuários e grupos (primeiro nível da URL).
   funcao caminho_valido(caminho)
     retornar caminho_de_projeto(caminho) e nao contem(RESERVADOS, minusculo(caminho))
-
-quando criar projeto
-    se obter(entrada, "initialize_with_readme", falso) == verdadeiro
-        git.commitar(projeto.repositorio, {branch: projeto.branch_padrao, mensagem: "Initial commit", autor: {nome: atual.nome, email: atual.email}, acoes: [{acao: "criar", caminho: "README.md", conteudo: "# " + projeto.nome + "\n"}]})
