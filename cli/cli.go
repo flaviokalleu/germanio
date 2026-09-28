@@ -1118,6 +1118,8 @@ import (
 var appFS embed.FS
 
 func main() {
+	os.Setenv("GERMANIO_PRODUCAO", "1") // a built application does not watch its files
+
 	// Extract embedded files to temp dir
 	tmpDir, err := os.MkdirTemp("", "germanio-app-*")
 	if err != nil {

@@ -251,6 +251,13 @@ banco
 
 **Recomendação:** Use variáveis de ambiente em produção — nunca commite credenciais no código.
 
+### 3.3b Produção (`GERMANIO_PRODUCAO`)
+
+Em desenvolvimento, `ge run` recarrega a aplicação quando um `.ge` muda (só se o programa novo
+compilar; senão o servidor continua com a versão anterior e mostra o erro). Em produção,
+defina `GERMANIO_PRODUCAO=1`: o servidor não observa os arquivos. A imagem Docker e os binários
+de `germanio build` já definem essa variável.
+
 ### 3.4 Endereço público e SEO técnico (`GERMANIO_URL_PUBLICA`)
 
 ```env

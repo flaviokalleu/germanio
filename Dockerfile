@@ -16,7 +16,7 @@ RUN apk add --no-cache ca-certificates git && adduser -D -h /app germanio && mkd
 COPY --from=builder /out/ge /usr/local/bin/ge
 USER germanio
 WORKDIR /app
-ENV GERMANIO_SQLITE=/data/app.db
+ENV GERMANIO_SQLITE=/data/app.db GERMANIO_PRODUCAO=1
 VOLUME ["/data"]
 EXPOSE 8080
 CMD ["ge", "run", "app.ge", "8080"]
