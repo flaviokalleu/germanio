@@ -198,6 +198,7 @@ func TestHierarquiaErros(t *testing.T) {
 			[]string{"\"reabrir\" está recuada abaixo de \"fechar\""}},
 		{"linha sob o alvo de pertence a", "tenha grupos\n\ncada grupo tem\n    nome\n\nprojetos\n    tem\n        nome\n    pertence a\n        grupo\n            opcional\n",
 			[]string{"\"opcional\" está recuada abaixo de \"grupo\""}},
+		{"frase de intenção em inglês", "create system Shop\n", []string{"não entendi a linha", "só entende português", "crie sistema Shop"}},
 		{"integração em conflito", "projetos\n    tem\n        nome\n    integração\n        nome \"projects\"\n\ndisponibilize projetos para integração como \"repos\"\n", []string{"já é \"projects\""}},
 	}
 	for _, c := range cases {

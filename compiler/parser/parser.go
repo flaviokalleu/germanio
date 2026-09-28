@@ -163,10 +163,40 @@ func (p *Parser) Parse() (*ast.Program, error) {
 		p.skipWhitespace()
 	}
 
-	if p.unknown != nil && p.program.Intent != nil {
+	if p.unknown != nil {
 		return nil, p.unknownLine(*p.unknown)
 	}
 	return p.program, nil
+}
+
+// englishWords: intent keywords people often write in English. The intent
+// layer understands Portuguese only (GEP 0007), so the error says so and
+// shows the Portuguese words.
+var englishWords = map[string]string{
+	"create": "crie", "system": "sistema", "has": "tem", "have": "tenha", "can": "pode",
+	"belongs": "pertence", "allow": "permita", "page": "página", "starts": "começa",
+	"show": "mostre", "access": "acesso", "rules": "regras", "when": "quando", "before": "antes de",
+}
+
+func englishHint(words []lexer.Token) string {
+	var pt []string
+	found := false
+	for _, w := range words {
+		raw := strings.ToLower(w.Raw)
+		if raw == "" {
+			raw = strings.ToLower(w.Value)
+		}
+		if t, ok := englishWords[raw]; ok {
+			pt = append(pt, t)
+			found = true
+		} else {
+			pt = append(pt, w.Value)
+		}
+	}
+	if !found {
+		return ""
+	}
+	return " (a camada de intenção só entende português por enquanto; em português: \"" + strings.Join(pt, " ") + "\")"
 }
 
 // unknownLine explains a column-1 line that no construction recognizes in
@@ -186,6 +216,9 @@ func (p *Parser) unknownLine(tok lexer.Token) error {
 				hint = " (você quis dizer \"" + known + "\" em vez de \"" + w + "\"?)"
 			}
 		}
+	}
+	if hint == "" {
+		hint = englishHint(words)
 	}
 	return p.teach(tok, "não entendi a linha \""+text+"\""+hint,
 		"cada linha precisa ser uma construção conhecida; uma linha desconhecida nunca é ignorada",
