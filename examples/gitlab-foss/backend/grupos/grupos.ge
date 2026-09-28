@@ -13,7 +13,7 @@ tenha papeis
 grupo tem
     nome obrigatório
     caminho obrigatório valida caminho_valido
-    caminho_completo único
+    endereço dentro do grupo pai
     descrição
     visibilidade
     subgrupos
@@ -35,6 +35,8 @@ maintainer pode
     editar membros
 
 membro pode sair do grupo
+
+quem cria grupo vira owner
 
 disponibilize para integração
     grupos como "groups"

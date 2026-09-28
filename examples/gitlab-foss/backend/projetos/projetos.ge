@@ -5,7 +5,7 @@ tenha projetos
 projeto tem
     nome obrigatório
     caminho obrigatório valida caminho_de_projeto
-    caminho_completo único
+    endereço dentro do grupo ou do criador
     descrição
     visibilidade
     branch_padrao começa com "main"

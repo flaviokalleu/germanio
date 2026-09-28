@@ -11,26 +11,7 @@ logica
   funcao caminho_valido(caminho)
     retornar caminho_de_projeto(caminho) e nao contem(RESERVADOS, minusculo(caminho))
 
-# O endereço de um grupo inclui o do grupo pai.
-antes de criar grupo
-    dados.caminho_completo = dados.caminho
-    se dados.pai_id != nulo
-        dados.caminho_completo = grupo.buscar(dados.pai_id).caminho_completo + "/" + dados.caminho
-    se usuario.existe({username: dados.caminho_completo})
-        recuse "Path has already been taken"
-
-quando criar grupo
-    membro.criar({recurso: "grupo", recurso_id: grupo.id, pessoa_id: atual.id, papel: "owner"})
-
-# Projeto pessoal fica no endereço do usuário; projeto de grupo, no do grupo.
-antes de criar projeto
-    se dados.grupo_id == nulo
-        dados.caminho_completo = atual.username + "/" + dados.caminho
-    senao
-        dados.caminho_completo = grupo.buscar(dados.grupo_id).caminho_completo + "/" + dados.caminho
-    se grupo.existe({caminho_completo: dados.caminho_completo})
-        recuse "Path has already been taken"
-
+# Projeto pessoal: quem cria é owner (em grupo, os membros vêm do grupo).
 quando criar projeto
     se projeto.grupo_id == nulo
         membro.criar({recurso: "projeto", recurso_id: projeto.id, pessoa_id: atual.id, papel: "owner"})

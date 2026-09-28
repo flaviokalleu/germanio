@@ -73,6 +73,7 @@ O nível 4 nunca é necessário para CRUD, login, permissões ou relações.
 | `cliente tem pedidos` | relação 1:N; cada pedido recebe `cliente_id` obrigatório |
 | `pedido pertence a cliente [opcional] [como dono]` | referência (`cliente_id`/`dono_id`) validada ("não existe") |
 | `grupo tem subgrupos` | hierarquia (`pai_id`) |
+| `endereço dentro do grupo pai ou do criador` (linha de `X tem`) | `endereco` = endereço do primeiro contêiner definido + `/` + `caminho` (`empresa/web/app`); calculado, nunca aceito da entrada; único entre todos os endereçados e os nomes das pessoas; renomear um contêiner (ou a pessoa) atualiza o que está dentro; repositórios passam a ser servidos pelo endereço |
 | `projeto tem repositório` | cada registro tem um repositório Git criado e removido com ele e servido em `/<campo único>.git` |
 
 **Tipo pelo nome** (quando não há tipo): `email`→email · `senha`/`password`→senha protegida ·

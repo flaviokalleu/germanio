@@ -189,8 +189,14 @@ func ResolveIntent(prog *ast.Program) error {
 		many bool
 		pos  diagnostics.Position
 	}
+	type pendingAddress struct {
+		e     *ast.Entity
+		words []string
+		pos   diagnostics.Position
+	}
 	var tems []pendingTem
 	var people []pendingPerson
+	var addresses []pendingAddress
 	for _, b := range in.FieldBlocks {
 		e, err := r.entity(b.Entity, b.Pos)
 		if err != nil {
@@ -205,6 +211,9 @@ func ResolveIntent(prog *ast.Program) error {
 				if err := r.membership(e, member, b.Pos); err != nil {
 					return err
 				}
+			case len(w) >= 3 && w[0] == "endereco" && w[1] == "dentro":
+				// endereço dentro do grupo pai [ou do criador]
+				addresses = append(addresses, pendingAddress{e, w[2:], b.Pos})
 			case joined == "repositorio" || joined == "repositorio_git":
 				e.Repository = true
 				e.Model.Fields = append(e.Model.Fields, &ast.Field{Name: "repositorio", Type: ast.FieldTexto, Hidden: true, System: true, Pos: b.Pos})
@@ -480,14 +489,54 @@ func ResolveIntent(prog *ast.Program) error {
 		}
 	}
 
-	// Repository URL key: first unique text field (e.g. full_path).
+	// Addresses: `endereço dentro do grupo pai ou do criador`.
+	for _, pa := range addresses {
+		e := pa.e
+		if fieldByNameAST(e.Model, "caminho") == nil {
+			return r.errAt(pa.pos, "%s tem endereço: declare também o campo caminho (a parte do endereço que é só de cada %s)", e.Singular, e.Singular)
+		}
+		if fieldByNameAST(e.Model, "endereco") != nil {
+			return r.errAt(pa.pos, "%s já tem o campo endereco", e.Singular)
+		}
+		addr := &ast.Address{Field: "endereco", Segment: "caminho"}
+		var part []string
+		flush := func() error {
+			name, _ := phrase(part)
+			part = nil
+			ref, err := r.addressRef(app, e, name, pa.pos)
+			if err != nil {
+				return err
+			}
+			addr.Within = append(addr.Within, ref)
+			return nil
+		}
+		for _, w := range pa.words {
+			if w == "ou" {
+				if err := flush(); err != nil {
+					return err
+				}
+				continue
+			}
+			part = append(part, w)
+		}
+		if err := flush(); err != nil {
+			return err
+		}
+		e.Address = addr
+		e.Model.Fields = append(e.Model.Fields, &ast.Field{Name: "endereco", Type: ast.FieldTexto, Unique: true, System: true, Index: true, Pos: pa.pos})
+	}
+
+	// Repository URL key: the address, else the first unique text field.
 	for _, n := range app.Order {
 		e := app.Entities[n]
 		if !e.Repository {
 			continue
 		}
+		if e.Address != nil {
+			e.RepoKey = e.Address.Field
+		}
 		for _, f := range e.Model.Fields {
-			if f.Unique && f.Type == ast.FieldTexto {
+			if e.RepoKey == "" && f.Unique && f.Type == ast.FieldTexto {
 				e.RepoKey = strings.ToLower(f.Name)
 				break
 			}
@@ -1062,6 +1111,38 @@ var personRoles = map[string]string{
 	"relator": "um", "solicitante": "um", "atendente": "um", "vendedor": "um", "cliente_responsavel": "um",
 	"responsaveis": "muitos", "revisores": "muitos", "aprovadores": "muitos", "participantes": "muitos",
 	"seguidores": "muitos", "atendentes": "muitos", "interessados": "muitos",
+}
+
+// addressRef resolves one container of an address: "grupo pai"/"pai" (the
+// hierarchy), a person (criador, dono) or an entity the record belongs to.
+func (r *resolver) addressRef(app *ast.App, e *ast.Entity, name string, pos diagnostics.Position) (ast.AddressRef, error) {
+	if name == "pai" || name == e.Singular+"_pai" {
+		if e.HierarchyField == "" {
+			return ast.AddressRef{}, r.errAt(pos, "%s: endereço dentro do %s pai precisa de \"%s tem sub%s\"", e.Singular, e.Singular, e.Singular, e.Plural)
+		}
+		return ast.AddressRef{Field: e.HierarchyField, Entity: e.Singular}, nil
+	}
+	if personRoles[name] != "" || name == app.LoginEntity {
+		field := name + "_id"
+		if e.Parents[field] == "" {
+			return ast.AddressRef{}, r.errAt(pos, "%s: endereço dentro do %s precisa de %s na lista do que %s tem", e.Singular, name, name, e.Singular)
+		}
+		return ast.AddressRef{Field: field, Entity: e.Parents[field]}, nil
+	}
+	target := r.byName[name]
+	if target == nil {
+		return ast.AddressRef{}, r.errAt(pos, "%s: endereço dentro de %q: não conheço esse dado", e.Singular, name)
+	}
+	var found []string
+	for field, t := range e.Parents {
+		if t == target.Singular {
+			found = append(found, field)
+		}
+	}
+	if len(found) != 1 {
+		return ast.AddressRef{}, r.errAt(pos, "%s: endereço dentro do %s precisa de \"%s pertence a %s\"", e.Singular, target.Singular, e.Singular, target.Singular)
+	}
+	return ast.AddressRef{Field: found[0], Entity: target.Singular}, nil
 }
 
 func (r *resolver) isAncestor(a, b *ast.Entity) bool {

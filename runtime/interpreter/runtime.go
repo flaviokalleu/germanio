@@ -515,11 +515,13 @@ func (interp *Interpreter) dbCall(c *Call, model, method string, args []any) any
 		return row
 	case "atualizar", "update":
 		id := c.Num(args, 0, "id")
+		before, _ := db.BuscarRegistro(model, int64(id))
 		data, _ := interp.prepareWrite(c, m, c.Map(args, 1, "dados"), false, int64(id))
 		row, err := db.AtualizarMapa(model, int64(id), data)
 		if err != nil {
 			fail(err)
 		}
+		interp.followAddress(m, int64(id), before, row)
 		return clean(row)
 	case "verificar_senha":
 		// modelo.verificar_senha(registro_ou_id, senha[, campo]) — tempo constante

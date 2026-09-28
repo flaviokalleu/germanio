@@ -135,6 +135,7 @@ func (interp *Interpreter) prepareWrite(c *Call, m *ast.Model, data map[string]a
 		}
 		out[strings.ToLower(f.Name)] = v
 	}
+	interp.dropAddress(m, out)
 	if create {
 		for _, f := range m.Fields {
 			key := strings.ToLower(f.Name)
@@ -245,6 +246,7 @@ func (interp *Interpreter) prepareWrite(c *Call, m *ast.Model, data map[string]a
 		}
 		out[key] = v
 	}
+	interp.address(m, out, create, id, errs)
 	if len(errs) > 0 {
 		lang := interp.Lang()
 		for k, list := range errs {

@@ -1,7 +1,7 @@
 # AGENT_STATE
 
 ## CURRENT_PHASE
-Fase 3 — GitLab em linguagem de intenção; próximo: endereço hierárquico (G41, em stash), notificações (todos/eventos), admin, busca global.
+Fase 3 — GitLab em linguagem de intenção; próximo: transação (G39), paginação SQL (G40), notificações (todos/eventos), admin, busca global.
 
 ## CURRENT_GOAL
 Continuar o GitLab por intenção: issues → merge requests → CI/CD → páginas (UI),
@@ -30,7 +30,7 @@ evoluindo o Germanio a cada parede encontrada.
 - Extensão VS Code (ícone cristal, gramática de intenção, temas) em `vscode-germanio/`.
 
 ## IN_PROGRESS
-- G41 endereço hierárquico: AST + resolver em `git stash` ("G41 endereço (em andamento)"); falta runtime (cálculo, espaço de nomes, cascata) e refatorar regras.ge.
+- Próximo: G39 (transação), G40 (paginação SQL), notificações/todos, admin, busca global.
 
 ## NEXT
 5. `ge explain`/`ge check`/`ge graph` sobre a camada de intenção.

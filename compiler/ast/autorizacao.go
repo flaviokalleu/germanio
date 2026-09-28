@@ -61,11 +61,27 @@ type Entity struct {
 	Execution *Execution
 	// Subscription: records of this entity receive events of an owner (webhooks).
 	Subscription *Subscription
-	Repository   bool     // X tem repositório
-	RepoKey      string   // field whose value addresses the repository (<valor>.git)
-	Search       []string // fields searched by pesquisar
-	Filters      []string // fields accepted by filtrar
+	// Address: `endereço dentro do grupo pai ou do criador`.
+	Address    *Address
+	Repository bool     // X tem repositório
+	RepoKey    string   // field whose value addresses the repository (<valor>.git)
+	Search     []string // fields searched by pesquisar
+	Filters    []string // fields accepted by filtrar
 }
+
+// Address: the record's address is its container's address + "/" + its
+// own segment (grupo pai "gitlab-org" + caminho "api" → "gitlab-org/api").
+// The first container set, in order, is used; without one the segment
+// alone is the address. Addresses (and, when people contain records, the
+// people's names) form one namespace: none repeats.
+type Address struct {
+	Field   string // "endereco"
+	Segment string // "caminho"
+	Within  []AddressRef
+}
+
+// AddressRef: a parent field and the entity it points to.
+type AddressRef struct{ Field, Entity string }
 
 // AccessRule says who may perform a verb on an entity.
 type AccessRule struct {

@@ -341,7 +341,7 @@ func display(v any) string {
 // formattedBody: a record without a title whose main text is formatted
 // (a comment) is shown whole, as safe Markdown, instead of a truncated title.
 func formattedBody(e *ast.Entity, row map[string]any) (template.HTML, bool) {
-	for _, k := range []string{"titulo", "nome", "name", "title", "caminho_completo", "username", "email"} {
+	for _, k := range []string{"titulo", "nome", "name", "title", "endereco", "caminho_completo", "username", "email"} {
 		if v, ok := row[k]; ok && v != nil && fmt.Sprint(v) != "" {
 			return "", false
 		}
@@ -360,7 +360,7 @@ func formattedBody(e *ast.Entity, row map[string]any) (template.HTML, bool) {
 }
 
 func titleOf(e *ast.Entity, row map[string]any) string {
-	for _, k := range []string{"titulo", "nome", "name", "title", "caminho_completo", "username", "email"} {
+	for _, k := range []string{"titulo", "nome", "name", "title", "endereco", "caminho_completo", "username", "email"} {
 		if v, ok := row[k]; ok && v != nil && fmt.Sprint(v) != "" {
 			if n, ok := row["numero"]; ok && n != nil {
 				return "#" + display(n) + " " + fmt.Sprint(v)

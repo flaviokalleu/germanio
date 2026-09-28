@@ -7,7 +7,7 @@ mensagens em inglês
 vocabulário da integração
     nome é "name"
     caminho é "path"
-    caminho_completo é "full_path"
+    endereco é "full_path"
     descricao é "description"
     visibilidade é "visibility"
     branch_padrao é "default_branch"
