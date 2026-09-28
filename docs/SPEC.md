@@ -50,7 +50,7 @@ Germanio e uma linguagem de programacao declarativa multilingual (20 idiomas) qu
 - Servidor web embutido com WebSocket
 - Autenticacao JWT com bcrypt integrada
 - Suporte a Soft Delete, paginacao, filtros, busca e exportacao
-- Tema presets, cores por nome, 4 estilos visuais
+- Tema presets e cores por nome (a linha `estilo` é aceita, mas hoje não muda a renderização: G75)
 - Rotas e paginas customizadas
 - Funcoes async e paralelismo
 - Compilacao para executavel standalone (`germanio build`)

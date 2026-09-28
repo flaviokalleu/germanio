@@ -1,5 +1,9 @@
 # Galeria de Exemplos - Germanio
 
+> **Galeria histórica.** Os caminhos `exemplos/...` citados abaixo são de uma versão anterior e
+> não existem mais, e a maior parte do código usa a sintaxe técnica anterior. Os exemplos
+> executáveis atuais, testados na CI, estão em [examples/](../examples/README.md).
+
 ## Comece pela intenção
 
 A referência normativa é [INTENCAO.md](INTENCAO.md). Aplicações novas começam por

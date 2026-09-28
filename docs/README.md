@@ -11,19 +11,41 @@
 `GERMANIO_INTENT_LAYER.md` é o nome usado na solicitação externa para a especificação
 que neste repositório permanece em `docs/INTENCAO.md`. Não criar uma cópia concorrente.
 
-## Referências por finalidade
+## Documentação pública (inglês, para quem chega ao projeto)
 
 | Documento | Uso |
 | --- | --- |
-| [TUTORIAL](TUTORIAL.md), [CHEATSHEET](CHEATSHEET.md), [EXAMPLES](EXAMPLES.md), [FAQ](FAQ.md) | entrada pela intenção; seções antigas identificadas para consulta técnica |
-| [SPEC da fundação](../SPEC.md) | gramática e execução do subconjunto da fundação |
-| [SPEC técnica anterior](SPEC.md) | sintaxe de blocos anterior; não governa o nível padrão |
-| [API](API.md), [INTEGRATIONS](INTEGRATIONS.md) | consumidores externos e adaptadores |
-| [SECURITY](SECURITY.md), [DEPLOY](DEPLOY.md) | implementação de segurança e operação |
-| [MCP](MCP.md) | ferramentas de autoria para agentes |
+| [README](../README.md) · [README.pt-BR](../README.pt-BR.md) | o que é, por que existe, como experimentar |
+| [getting-started](getting-started.md) | instalar, criar, rodar e ler a primeira aplicação |
+| [language-tour](language-tour.md) | a linguagem por partes, cada trecho verificado por `tooling/doctest` |
+| [comparisons](comparisons.md) | Germanio, Python, Go e JavaScript/TypeScript: filosofia e trade-offs |
+| [ARCHITECTURE](ARCHITECTURE.md) | do `.ge` à aplicação: pacotes, testes e dívidas conhecidas |
+| [examples](../examples/README.md) | exemplos executáveis, testados na CI |
+
+A documentação pública ensina; a norma define. Se discordarem, vale a norma, e a
+documentação pública é corrigida (o `tooling/doctest` recusa código `.ge` que não compila).
+
+## Norma, processo e acompanhamento
+
+| Documento | Uso |
+| --- | --- |
+| [INTENCAO](INTENCAO.md) | especificação normativa da camada de intenção |
+| [SPEC da fundação](../SPEC.md) | gramática e execução do núcleo estrito |
+| [GEPs](gep/README.md) | propostas de evolução da linguagem e decisões |
 | [GAPS](../GERMANIO_GAPS.md), [EVOLUTION](../GERMANIO_EVOLUTION.md), [AGENT_STATE](../AGENT_STATE.md) | acompanhamento; conferir evidência antes de afirmar conclusão |
-| [CHANGELOG](../CHANGELOG.md), [RELEASING](RELEASING.md), [PHASE1](PHASE1.md) | histórico de versões, processo de release, registro da fundação |
-| [FEATURES-200](FEATURES-200.md), `research/` | ideias e pesquisa, sem força normativa |
+| [CHANGELOG](../CHANGELOG.md), [RELEASING](RELEASING.md) | versões e processo de release |
+| [CONTRIBUTING](../CONTRIBUTING.md), [SECURITY](../SECURITY.md), [CODE_OF_CONDUCT](../CODE_OF_CONDUCT.md) | comunidade |
+
+## Referências técnicas e guias anteriores (português)
+
+| Documento | Uso |
+| --- | --- |
+| [TUTORIAL](TUTORIAL.md), [CHEATSHEET](CHEATSHEET.md), [EXAMPLES](EXAMPLES.md), [FAQ](FAQ.md) | guias escritos em boa parte na **sintaxe técnica anterior** (`dados`/`telas`, `campo: tipo`); para código novo use o tour e a norma |
+| [SPEC técnica anterior](SPEC.md) | sintaxe de blocos anterior; não governa o nível padrão |
+| [API](API.md), [INTEGRATIONS](INTEGRATIONS.md) | API da sintaxe anterior e integrações |
+| [SECURITY técnica](SECURITY.md), [DEPLOY](DEPLOY.md) | implementação de segurança e operação |
+| [PHASE1](PHASE1.md) | registro da entrega da fundação |
+| [FEATURES-200](FEATURES-200.md), [research](research/) | ideias e pesquisa, sem força normativa |
 
 ## Regra de conflito
 
@@ -34,6 +56,7 @@ Não anuncie um requisito normativo como implementado sem evidência de execuç�
 
 ## Limpeza documental
 
+`MCP.md` foi removido por documentar um comando (`ge mcp`) que não existe.
 `FLANG_LEGACY.md` e `FLANG_ROADMAP_LEGACY.md` foram removidos por duplicarem documentação
 antiga e planejamento superado. Permanecem recuperáveis pelo histórico Git. Capacidades
 técnicas continuam nas referências específicas; a remoção não desativa recursos da linguagem.

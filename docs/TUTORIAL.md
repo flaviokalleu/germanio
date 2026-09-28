@@ -929,7 +929,7 @@ tema
   estilo glassmorphism
 ```
 
-Estilos: `glassmorphism`, `flat`, `neumorphism`, `minimal`
+Estilos: `glassmorphism`, `flat`, `neumorphism`, `minimal`. **Aviso:** a linha `estilo` é aceita, mas hoje não muda a renderização (G75 em `GERMANIO_GAPS.md`).
 
 ### Exemplo Completo
 

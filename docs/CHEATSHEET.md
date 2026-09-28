@@ -170,6 +170,7 @@ tema
   estilo glassmorphism      # vidro translucido
   estilo flat               # sem sombras
   estilo neumorphism        # relevo suave
+  # aviso: `estilo` é aceito, mas hoje não muda a renderização (G75)
   estilo minimal            # espacamento amplo
 ```
 

@@ -109,10 +109,10 @@
 | 75 | Preset elegante | ✅ | `tema elegante` |
 | 76 | Preset corporativo | ✅ | `tema corporativo` |
 | 77 | Cores por nome | ✅ | `cor primaria azul` |
-| 78 | Estilo glassmorphism | ✅ | `estilo glassmorphism` |
-| 79 | Estilo flat | ✅ | `estilo flat` |
-| 80 | Estilo neumorphism | ✅ | `estilo neumorphism` |
-| 81 | Estilo minimal | ✅ | `estilo minimal` |
+| 78 | Estilo glassmorphism | aceito, sem efeito (G75) | `estilo glassmorphism` |
+| 79 | Estilo flat | aceito, sem efeito (G75) | `estilo flat` |
+| 80 | Estilo neumorphism | aceito, sem efeito (G75) | `estilo neumorphism` |
+| 81 | Estilo minimal | aceito, sem efeito (G75) | `estilo minimal` |
 | 82 | Fonte customizada | ✅ | `fonte "Poppins"` |
 | 83 | Borda arredondada | ✅ | `borda "16px"` |
 | 84 | CSS customizado | ✅ | `css ".minha-classe { ... }"` |

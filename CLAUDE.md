@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What is Germanio
 
-Germanio is a multilingual (20 languages) declarative programming language written in Go that generates full-stack web applications from `.ge` files. Users describe their app (models, screens, events, logic) and Germanio produces a running application with REST API, database, auth, and UI. Keywords can be written in Portuguese, English, Spanish, French, German, Italian, Chinese, Japanese, Korean, Arabic, Hindi, Bengali, Russian, Indonesian, Turkish, Vietnamese, Polish, Dutch, Thai, or Swahili — all interchangeable in the same file.
+Germanio is an intent-oriented declarative programming language written in Go that generates full-stack web applications from `.ge` files. The default level is the intent layer (`docs/INTENCAO.md`), which is **Portuguese only**. The older technical syntax (`dados`/`telas` blocks, `docs/SPEC.md`) also accepts keywords in 20 languages, normalized to canonical Portuguese tokens.
 
 ## Build & Run
 
@@ -31,14 +31,13 @@ CGO is disabled — uses pure-Go SQLite (`modernc.org/sqlite`).
 ## Testing
 
 ```bash
-go test ./compiler/... ./runtime/interpreter/
+go test ./...                 # everything, including the GitLab end-to-end flows
+go test -race ./runtime/... ./compiler/... ./tooling/...
+scripts/bench.sh              # benchmarks (bench/README.md)
 ```
 
-59 tests across lexer, parser, AST, and interpreter. Test files:
-- `compiler/lexer/lexer_test.go` (14 tests)
-- `compiler/parser/parser_test.go` (16 tests)
-- `compiler/ast/ast_test.go` (9 tests)
-- `runtime/interpreter/interpreter_test.go` (20 tests)
+Tests live next to each package; `tooling/doctest` checks that every ```ge block in the
+public documentation compiles; `runtime/examples_smoke_test.go` starts every example.
 
 ## Architecture
 
@@ -56,7 +55,7 @@ Pipeline: `.ge` file → Lexer → Parser/AST → Runtime Engine.
 - **`engine.go`** — Orchestrator: loads .env, creates DB, sets up auth with JWT from env, wires interpreter with HTTP client, starts hot reload, starts server.
 - **`interpreter/interpreter.go`** — Script engine with 30+ built-in functions including async (`paralelo`, `esperar`, `timeout`, `chamar_async`, `consultar_paralelo`), array indexing (`arr[0]`), HTTP calls (`chamar`), JSON parsing.
 - **`servidor/servidor.go`** — HTTP server with CRUD endpoints, role-based access control, rate limiting (100 POST/min), SSRF-protected proxy, body size limits, custom routes, custom pages, HTML caching.
-- **`servidor/renderizador.go`** — HTML/CSS/JS SPA renderer with 4 style variants (glassmorphism/flat/neumorphism/minimal), theme CSS variables, Chart.js, FK dropdowns, enum selects, textarea for texto_longo, smart sidebar.
+- **`servidor/renderizador.go`** — the older SPA renderer: theme CSS variables (the `estilo` field is parsed but not used: G75), Chart.js, FK dropdowns, enum selects, textarea for texto_longo, smart sidebar.
 - **`banco/banco.go`** — Database abstraction (SQLite/MySQL/PostgreSQL) with connection pooling, auto-migration, validation rules enforcement, join tables for many-to-many, relationship queries.
 - **`auth/auth.go`** — JWT (HMAC-SHA256) + bcrypt with role checking, login rate limiting (5 attempts = 5min lockout).
 - **`hotreload.go`** — File watcher that re-execs process on .ge changes.

@@ -103,6 +103,12 @@ stops with an error that says what is wrong, where, why and how to fix it.
 Add a field to `produtos`, below `estoque`:
 
 ```ge
+produtos
+    tem
+        nome obrigatório
+        descrição formatada
+        preco obrigatório
+        estoque começa com 0
         categoria
 ```
 
