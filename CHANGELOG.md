@@ -36,6 +36,11 @@ hierarchical syntax. Nothing below is in a tagged release yet.
   field with data that disappears while another appears stops the start with an educational
   error, and `ge check` performs the same verification on the existing database without
   changing it.
+- External effects run after the commit (G86): inside a change, `chamar` with a writing
+  method, webhooks and messages are recorded and run once the change is saved, in order,
+  never holding the database's write lock. An undone change has no effects; a failing effect
+  does not undo the change; using an effect's answer inside the change is an educational
+  error. `ge explain` lists each hook's effects in the order they run.
 
 ### Tooling
 
@@ -53,6 +58,10 @@ hierarchical syntax. Nothing below is in a tagged release yet.
 - Request transactions, hierarchical addresses, lists by name, minimum roles, read-only
   conditions, initial administrator from the environment, reserved addresses.
 - Git smart HTTP hosting, verified before references are updated.
+- Password recovery: a link sent several times at once now changes the password once (the link
+  is claimed in the same transaction that changes the password; before, concurrent requests
+  could all succeed), and the e-mail is sent off the answer's path, so the answer time does
+  not tell whether the account exists.
 - Security fixes: trusted proxies only for forwarded headers; outgoing requests protected
   against SSRF; list references must share the record's parent; `administrar` only governs
   data that belongs to the record; real time (`/ws`) requires a session, the same origin, and

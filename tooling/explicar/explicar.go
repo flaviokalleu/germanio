@@ -241,6 +241,12 @@ func Entidade(prog *ast.Program, nome string) (string, error) {
 				phase = "antes de"
 			}
 			w("  %s %s %s (%s:%d)\n", phase, h.Verb, e.Singular, h.Pos.File, h.Pos.Line)
+			if effects := ast.Effects(h.Body); len(effects) > 0 {
+				w("    efeitos externos, depois de salvar, nesta ordem (se a mudança for desfeita, nenhum acontece; se um falhar, a mudança continua salva):\n")
+				for i, ef := range effects {
+					w("      %d. %s (%s:%d)\n", i+1, ast.EffectKind(ef), ef.Pos.File, ef.Pos.Line)
+				}
+			}
 		}
 	}
 	if facts := origins(prog, app, e); len(facts) > 0 {

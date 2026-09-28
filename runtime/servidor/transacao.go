@@ -3,6 +3,7 @@ package servidor
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/flaviokalleu/germanio/runtime/banco"
@@ -15,11 +16,18 @@ import (
 // is held until the commit, so a client never sees success for a change that
 // was undone. Work outside the database (repositories on disk) registers an
 // undo step that runs if the transaction is rolled back.
+//
+// External effects (G86) never run while the transaction holds the write
+// lock: the interpreter records them (interp.Effects) and they run after the
+// commit, in the order they were asked, before the response is released. A
+// change that is undone discards its effects; an effect that fails after the
+// commit is logged and does not undo the change.
 
 type txState struct {
 	db         *banco.Banco
 	onRollback []func()
 	onCommit   []func()
+	effects    interp.Effects
 }
 
 type txKey struct{}
@@ -38,6 +46,7 @@ func newContext(w http.ResponseWriter, r *http.Request) *interp.Context {
 	ctx := &interp.Context{Request: r, Writer: w}
 	if st := txOf(r); st != nil {
 		ctx.DB = st.db
+		ctx.Effects = &st.effects
 	}
 	return ctx
 }
@@ -102,6 +111,7 @@ func (s *Servidor) transactional(w http.ResponseWriter, r *http.Request, serve f
 		return nil
 	})
 	if err != nil {
+		st.effects.Take() // the change was undone: nothing happens outside
 		for i := len(st.onRollback) - 1; i >= 0; i-- {
 			st.onRollback[i]()
 		}
@@ -113,6 +123,7 @@ func (s *Servidor) transactional(w http.ResponseWriter, r *http.Request, serve f
 		for _, fn := range st.onCommit {
 			fn()
 		}
+		runEffects(st.effects.Take())
 	}
 	for k, v := range held.header {
 		w.Header()[k] = v
@@ -127,3 +138,23 @@ func (s *Servidor) transactional(w http.ResponseWriter, r *http.Request, serve f
 type errRollback struct{}
 
 func (errRollback) Error() string { return "rollback" }
+
+// runEffects performs the effects of a kept change, one after the other,
+// outside any transaction. A failure is reported, never undone: the change
+// is already saved. (The single place a durable outbox would replace.)
+func runEffects(effects []interp.Effect) {
+	for _, e := range effects {
+		if err := safeEffect(e); err != nil {
+			fmt.Printf("[germanio] efeito depois de salvar falhou: %s: %v (a mudança continua salva)\n", e.Describe(), err)
+		}
+	}
+}
+
+func safeEffect(e interp.Effect) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("%v", r)
+		}
+	}()
+	return e.Run()
+}

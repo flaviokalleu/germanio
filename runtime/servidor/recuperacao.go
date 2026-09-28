@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/smtp"
@@ -14,6 +15,7 @@ import (
 	"time"
 
 	"github.com/flaviokalleu/germanio/compiler/ast"
+	"github.com/flaviokalleu/germanio/runtime/banco"
 	interp "github.com/flaviokalleu/germanio/runtime/interpreter"
 )
 
@@ -64,6 +66,8 @@ func mailerFromEnv() (mailer, string) {
 		return smtp.SendMail(host+":"+port, auth, from, []string{to}, []byte(msg))
 	}, ""
 }
+
+var errLinkUsed = errors.New("link de recuperação já usado")
 
 // recoveryResendGap: at most one recovery e-mail per account in this time,
 // however many requests arrive (from however many addresses): repeated
@@ -148,9 +152,14 @@ func (a *intentAPI) mountRecovery(mux *routeMux) {
 			}
 			text := "Para criar uma senha nova, abra o link abaixo em até 1 hora:\n\n" + public + "/redefinir?token=" + token +
 				"\n\nSe não foi você que pediu, ignore esta mensagem: sua senha continua a mesma."
-			if err := send(toStr(user[field]), "Recuperação de senha — "+a.s.Program.System.Name, text); err != nil {
-				fmt.Printf("[germanio] recuperação de senha: falha ao enviar o e-mail: %v\n", err)
-			}
+			// sent after the token is saved, off the answer's path: the time of
+			// the answer does not tell whether the account exists
+			to, subject := toStr(user[field]), "Recuperação de senha — "+a.s.Program.System.Name
+			go func() {
+				if err := send(to, subject, text); err != nil {
+					fmt.Printf("[germanio] recuperação de senha: falha ao enviar o e-mail: %v\n", err)
+				}
+			}()
 		}
 		// the same answer whether or not the account exists
 		if isForm(r) {
@@ -199,12 +208,35 @@ func (a *intentAPI) mountRecovery(mux *routeMux) {
 				change["bloqueado_ate"] = nil
 			}
 		}
-		if _, err := a.in.Op(ctx, le.Singular, "atualizar", pessoa, change); err != nil {
+		// one use, even when the same link is sent twice at once: the link is
+		// claimed (deleted) in the transaction that changes the password, and
+		// every other link of the person goes with it. A rejected password
+		// undoes the claim, so the link can be tried again.
+		ctx.Effects = &interp.Effects{}
+		err = a.s.DB.EmTransacao(func(tx *banco.Banco) error {
+			res, err := tx.Executar(fmt.Sprintf(`DELETE FROM %s WHERE hash = %s AND pessoa_id = %s`, recoveryTable, a.s.ph(1), a.s.ph(2)), hashToken(token), pessoa)
+			if err != nil {
+				return err
+			}
+			if n, _ := res.RowsAffected(); n != 1 {
+				return errLinkUsed
+			}
+			ctx.DB = tx
+			if _, err := a.in.Op(ctx, le.Singular, "atualizar", pessoa, change); err != nil {
+				return err
+			}
+			_, err = tx.Executar(fmt.Sprintf(`DELETE FROM %s WHERE pessoa_id = %s`, recoveryTable, a.s.ph(1)), pessoa)
+			return err
+		})
+		if err == errLinkUsed {
+			fail("Este link não vale mais. Peça um novo em Esqueci minha senha.")
+			return
+		}
+		if err != nil {
 			fail(interp.Friendly(err))
 			return
 		}
-		// one use: every recovery link of this person stops working
-		a.s.DB.Executar(fmt.Sprintf(`DELETE FROM %s WHERE pessoa_id = %s`, recoveryTable, a.s.ph(1)), pessoa)
+		runEffects(ctx.Effects.Take())
 		if isForm(r) {
 			http.Redirect(w, r, "/entrar?redefinida=1", http.StatusSeeOther)
 			return

@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/flaviokalleu/germanio/compiler/ast"
 	"github.com/flaviokalleu/germanio/compiler/lexer"
 	"github.com/flaviokalleu/germanio/compiler/parser"
 )
@@ -85,5 +86,46 @@ func TestExplicarPagina(t *testing.T) {
 	}
 	if _, err := Pagina(prog, "inexistente"); err == nil {
 		t.Error("página desconhecida aceita")
+	}
+}
+
+// ge explain shows the external effects of a hook in the order they run after
+// the commit (G86), and the declared migration (G93).
+func TestExplicarEfeitosEMigracao(t *testing.T) {
+	load := func(path string) *ast.Program {
+		src, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		toks, err := lexer.New(string(src)).Tokenize()
+		if err != nil {
+			t.Fatal(err)
+		}
+		prog, err := parser.New(toks).Parse()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := parser.ResolveIntent(prog); err != nil {
+			t.Fatal(err)
+		}
+		return prog
+	}
+	text, err := Entidade(load("../../runtime/testdata/efeitos/app.ge"), "pedidos")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"depois de salvar, nesta ordem", "1. chamar POST (:20)", "2. chamar POST (:21)"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("explicação sem %q:\n%s", want, text)
+		}
+	}
+	text, err = Entidade(load("../../runtime/testdata/composicao/unico.ge"), "tarefas")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"renomeie assunto para titulo", "descarte prazo"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("explicação sem %q:\n%s", want, text)
+		}
 	}
 }

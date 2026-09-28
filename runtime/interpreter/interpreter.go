@@ -263,6 +263,9 @@ func (interp *Interpreter) ExecStatement(stmt *ast.Statement, scope *Scope) {
 		interp.execCall(stmt.Call, scope, stmt.Pos)
 
 	case "expr":
+		if stmt.Expr != nil && stmt.Expr.Type == "call" && scope != nil && scope.ctx != nil {
+			scope.ctx.discard = stmt.Expr
+		}
 		interp.EvalExpr(stmt.Expr, scope)
 
 	case "try":
@@ -480,7 +483,11 @@ func (interp *Interpreter) execCall(call *ast.FuncCall, scope *Scope, pos diagno
 	if call == nil {
 		return nil
 	}
-	return interp.evalCall(&ast.Expression{Type: "call", Name: call.Name, Object: call.Object, Args: call.Args, Pos: pos}, scope)
+	expr := &ast.Expression{Type: "call", Name: call.Name, Object: call.Object, Args: call.Args, Pos: pos}
+	if scope != nil && scope.ctx != nil {
+		scope.ctx.discard = expr // a call on its own line: the result is thrown away
+	}
+	return interp.evalCall(expr, scope)
 }
 
 const maxCallDepth = 200

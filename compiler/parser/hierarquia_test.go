@@ -218,6 +218,8 @@ func TestHierarquiaErros(t *testing.T) {
 		{"rename em cadeia", "tenha clientes\n\ncada cliente tem\n    terceiro\n\nrenomeie primeiro de clientes para segundo\nrenomeie segundo de clientes para terceiro\n", []string{"segundo não está declarado"}},
 		{"rename sem para", "tenha clientes\n\ncada cliente tem\n    nome\n\nclientes\n    renomeie nome\n", []string{"não diz o que renomear"}},
 		{"descarte de campo declarado", "tenha clientes\n\ncada cliente tem\n    nome\n\nclientes\n    descarte nome\n", []string{"nome continua declarado"}},
+		{"resposta de efeito usada no hook", "tenha pedidos\n\npedido tem\n    cliente\n\nquando criar pedido\n    r = chamar(\"https://x.example\", \"POST\", pedido.cliente)\n", []string{"depois que a mudança é salva", "numa linha sozinha"}},
+		{"efeito dentro de condição", "tenha pedidos\n\npedido tem\n    cliente\n\nquando criar pedido\n    se telegram_enviar(\"t\", \"oi\")\n        mostrar 1\n", []string{"telegram_enviar age fora do sistema"}},
 		{"integração em conflito", "projetos\n    tem\n        nome\n    integração\n        nome \"projects\"\n\ndisponibilize projetos para integração como \"repos\"\n", []string{"já é \"projects\""}},
 	}
 	for _, c := range cases {

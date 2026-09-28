@@ -4,10 +4,26 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
+	"sync"
 	"testing"
+	"time"
 )
 
-// Password recovery (GEP 0008, em teste): the answer never reveals which
+// mails waits for n e-mails: they are sent off the answer's path.
+func mails(t *testing.T, dir string, n int) []string {
+	t.Helper()
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		files, _ := filepath.Glob(filepath.Join(dir, "*"))
+		if len(files) >= n || time.Now().After(deadline) {
+			return files
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
+// Password recovery (GEP 0008): the answer never reveals which
 // accounts exist; the e-mail carries a link that works once, expires, and
 // whose new password obeys the field's rules.
 func TestRecuperacaoDeSenha(t *testing.T) {
@@ -27,7 +43,9 @@ func TestRecuperacaoDeSenha(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		c.expect("POST", "/esqueci", map[string]any{"login": "ana@x.com"}, 202)
 	}
-	files, _ := filepath.Glob(filepath.Join(mail, "*"))
+	files := mails(t, mail, 1)
+	time.Sleep(100 * time.Millisecond) // a second e-mail, if any, would be here by now
+	files, _ = filepath.Glob(filepath.Join(mail, "*"))
 	if len(files) != 1 {
 		t.Fatalf("esperado 1 e-mail, vieram %d", len(files))
 	}
@@ -47,7 +65,7 @@ func TestRecuperacaoDeSenha(t *testing.T) {
 	// an expired link does not work (the resend gap is over once the first
 	// link was used: using it deletes the person's links)
 	c.expect("POST", "/esqueci", map[string]any{"login": "ana@x.com"}, 202)
-	files, _ = filepath.Glob(filepath.Join(mail, "*"))
+	files = mails(t, mail, 2)
 	var fresh string
 	for _, f := range files {
 		b, _ := os.ReadFile(f)
@@ -59,6 +77,48 @@ func TestRecuperacaoDeSenha(t *testing.T) {
 		t.Fatal(err)
 	}
 	c.expect("POST", "/redefinir", map[string]any{"token": fresh, "senha": "mais-uma-senha-1"}, 400)
+}
+
+// The same link sent many times at once changes the password once.
+func TestRecuperacaoUsoUnicoConcorrente(t *testing.T) {
+	mail := t.TempDir()
+	t.Setenv("GERMANIO_CORREIO_PASTA", mail)
+	t.Setenv("GERMANIO_URL_PUBLICA", "https://contas.example")
+	_, c := loadApp(t, "testdata/recuperacao/app.ge")
+	c.expect("POST", "/cadastro", map[string]any{"nome": "Ana", "email": "ana@x.com", "senha": "senha-antiga-1"}, 201)
+	c.expect("POST", "/sair", nil, 204)
+	c.expect("POST", "/esqueci", map[string]any{"login": "ana@x.com"}, 202)
+	files := mails(t, mail, 1)
+	if len(files) != 1 {
+		t.Fatalf("e-mails: %d", len(files))
+	}
+	msg, _ := os.ReadFile(files[0])
+	token := regexp.MustCompile(`token=([A-Za-z0-9_-]+)`).FindStringSubmatch(string(msg))[1]
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	ok := 0
+	for i := 0; i < 8; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			body := `{"token":"` + token + `","senha":"senha-nova-` + itoa(i) + `-x"}`
+			resp, err := c.http.Post(c.base+"/redefinir", "application/json", strings.NewReader(body))
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			resp.Body.Close()
+			mu.Lock()
+			if resp.StatusCode == 200 {
+				ok++
+			}
+			mu.Unlock()
+		}(i)
+	}
+	wg.Wait()
+	if ok != 1 {
+		t.Fatalf("o link foi usado %d vezes", ok)
+	}
 }
 
 // Without e-mail configured the application starts and says recovery is

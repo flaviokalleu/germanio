@@ -642,6 +642,11 @@ func ResolveIntent(prog *ast.Program) error {
 		if _, dup := e.Hooks[verb]; dup {
 			return r.errAt(h.Pos, "quando %s %s declarado duas vezes", h.Verb, h.Target)
 		}
+		// external effects run after the commit (G86): their answer does
+		// not exist yet inside the change
+		if used := ast.EffectsUsed(h.Body); len(used) > 0 {
+			return r.errAt(used[0].Pos, "%s age fora do sistema e só acontece depois que a mudança é salva, então a resposta ainda não existe dentro de quando %s %s. Chame %s numa linha sozinha, sem usar o resultado (acontece logo depois de salvar), ou use tarefas.enfileirar(\"funcao\", dados) para trabalhar com a resposta fora da mudança", ast.EffectKind(used[0]), h.Verb, h.Target, used[0].Name)
+		}
 		h.Target = e.Singular // the resolved name, whatever form was written
 		e.Hooks[verb] = h
 	}

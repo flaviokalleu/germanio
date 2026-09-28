@@ -497,10 +497,31 @@ quem concluiu) fica, sem o nome. A regra do último dono continua valendo: exclu
 pessoa com o papel mínimo de algo é recusado.
 
 Mudar os campos declarados nunca perde dados em silêncio: um campo novo vira coluna (a
-falha é erro, não é ignorada); uma coluna que ainda tem valores e deixou de ser declarada —
-tipicamente um campo renomeado — é avisada na partida, e os valores continuam nela; um campo
-`único` vale também no banco, mesmo quando se tornou único depois (valores repetidos impedem
-a partida com erro educativo).
+falha é erro, não é ignorada); uma coluna que ainda tem valores e deixou de ser declarada é
+avisada na partida, e os valores continuam nela; se ao mesmo tempo aparece um campo novo, a
+partida para, porque pode ser um rename e Germanio não infere renames (veja Migração); um
+campo `único` vale também no banco, mesmo quando se tornou único depois (valores repetidos
+impedem a partida com erro educativo).
+
+**Efeitos externos depois de salvar.** O que age fora do sistema dentro de uma alteração —
+`chamar` com POST, PUT, PATCH ou DELETE, `webhook_enviar`, `telegram_enviar`, `slack_enviar`,
+`discord_enviar`, `sms_enviar`, `mercadopago_link` — nunca acontece com a transação (e a trava
+de escrita do banco) presa. Germanio registra o efeito e o executa depois do commit, na ordem
+em que foi pedido, antes de responder:
+
+- se a alteração é desfeita (recusa, erro, falha do próprio commit), nenhum efeito acontece;
+- se um efeito falha depois do commit, a alteração continua salva: a falha vai para o log e os
+  efeitos seguintes rodam;
+- um efeito lento atrasa só a resposta de quem pediu, nunca as escritas dos outros;
+- a resposta de um efeito não existe dentro da alteração: usá-la (`r = chamar(url, "POST",
+  …)`) é erro de compilação no hook e erro de execução numa função chamada por ele. Para
+  trabalhar com a resposta, use `tarefas.enfileirar("funcao", dados)`, que roda fora da
+  alteração, com novas tentativas;
+- leituras (`chamar` com GET, as funções de IA) não são efeitos e rodam na hora;
+- `ge explain <dado>` lista, em cada hook, os efeitos na ordem em que acontecem.
+
+Eventos entregues a integrações (`recebe eventos`) já passavam pela fila persistente, gravada
+na mesma transação.
 
 ## Estados, condições e pessoas
 
@@ -707,7 +728,11 @@ login, como `tenha cadastro`) oferece `/esqueci` e `/redefinir`:
 - a resposta de `/esqueci` é a mesma exista ou não a conta;
 - o link vai por e-mail para o endereço público declarado (`GERMANIO_URL_PUBLICA`), nunca para o
   `Host` da requisição; o token é aleatório (32 bytes), guardado só como SHA-256, vale **uma
-  hora** e **uma vez**; usá-lo invalida todos os links da pessoa e limpa o bloqueio do login;
+  hora** e **uma vez**, mesmo com o mesmo link enviado várias vezes ao mesmo tempo (o link é
+  consumido na transação que troca a senha; uma senha recusada o devolve); usá-lo invalida
+  todos os links da pessoa e limpa o bloqueio do login;
+- o e-mail sai depois de o token estar salvo e fora do caminho da resposta: o tempo da resposta
+  não diz se a conta existe;
 - a senha nova obedece às regras do campo de senha;
 - no máximo um e-mail por conta a cada 2 minutos, e os pedidos contam no limite por endereço
   do login;

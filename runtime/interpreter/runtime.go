@@ -53,7 +53,12 @@ type Context struct {
 	// Output collects what mostrar printed during this execution.
 	Output      []string
 	AllowGlobal bool
-	depth       int
+	// Effects, when set, records external effects to run after the commit of
+	// the change this execution belongs to (efeitos.go).
+	Effects *Effects
+	// discard is the call whose result the current statement throws away.
+	discard *ast.Expression
+	depth   int
 	// stop, when set, interrupts the execution at its next instruction.
 	stop *atomic.Bool
 }
@@ -77,6 +82,8 @@ type Call struct {
 	Scope  *Scope
 	Pos    diagnostics.Position
 	Name   string
+	// Unused: the statement throws the result away (f(x) on its own line).
+	Unused bool
 }
 
 // dbOf is the database of an execution: its transaction, if any.
@@ -256,11 +263,12 @@ func (interp *Interpreter) knownFunctionNames() []string {
 //  2. variável.op(...) — op is a builtin applied to the value
 //  3. modulo.funcao(...) for registered capability modules
 func (interp *Interpreter) evalCall(expr *ast.Expression, scope *Scope) any {
+	unused := scope != nil && scope.ctx != nil && scope.ctx.discard == expr
 	args := make([]any, len(expr.Args))
 	for i, a := range expr.Args {
 		args[i] = interp.EvalExpr(a, scope)
 	}
-	c := &Call{Interp: interp, Scope: scope, Pos: expr.Pos, Name: expr.Name}
+	c := &Call{Interp: interp, Scope: scope, Pos: expr.Pos, Name: expr.Name, Unused: unused}
 	if expr.Object == "" {
 		return interp.callNamed(c, expr.Name, expr.Canon, args)
 	}
@@ -302,12 +310,18 @@ func (interp *Interpreter) callNamed(c *Call, name, canon string, args []any) an
 	if f, ok := interp.globalFuncs()[name]; ok {
 		return f(c, args)
 	}
+	if r, ok := interp.deferEffect(c, name, args); ok {
+		return r
+	}
 	if r, ok := interp.callBuiltin(name, args); ok {
 		return r
 	}
 	if canon != "" {
 		if fn, ok := interp.Functions[canon]; ok {
 			return interp.callFunctionIn(fn, args, c.Scope, c.Pos)
+		}
+		if r, ok := interp.deferEffect(c, canon, args); ok {
+			return r
 		}
 		if r, ok := interp.callBuiltin(canon, args); ok {
 			return r
@@ -319,6 +333,9 @@ func (interp *Interpreter) callNamed(c *Call, name, canon string, args []any) an
 // valueMethod applies builtin op to v: lista.tamanho() == tamanho(lista).
 func (interp *Interpreter) valueMethod(c *Call, v any, name string, args []any) any {
 	full := append([]any{v}, args...)
+	if r, ok := interp.deferEffect(c, name, full); ok {
+		return r
+	}
 	if r, ok := interp.callBuiltin(name, full); ok {
 		return r
 	}

@@ -52,10 +52,13 @@ login usa email
   SHA-256 is stored, with an expiry of 1 hour. The e-mail carries the link
   `GERMANIO_URL_PUBLICA/redefinir?token=…`.
 - `/redefinir`: a form for the new password, validated by the password field's own rules.
-  A token works once; using it deletes every recovery token of that person and clears the
-  login lock. The page then sends the person to `/entrar`.
+  A token works once, even when the same link arrives several times at once: it is claimed
+  (deleted) in the transaction that changes the password, and a rejected password gives it
+  back. Using it deletes every recovery token of that person and clears the login lock. The page then sends the person to `/entrar`.
 - Requests are limited like logins (per address), and at most one e-mail goes to an account
   every 2 minutes, however many requests arrive.
+- The e-mail is sent after the token is saved and off the answer's path, so the answer time
+  does not tell whether the account exists.
 - E-mail is configured outside the source: `GERMANIO_SMTP_HOST`, `GERMANIO_SMTP_PORTA`,
   `GERMANIO_SMTP_USUARIO`, `GERMANIO_SMTP_SENHA`, `GERMANIO_SMTP_REMETENTE`, plus
   `GERMANIO_URL_PUBLICA` for the link. Without them the application starts, and `/esqueci`
@@ -94,5 +97,5 @@ reason about.
 ## Tests
 
 The same answer for existing and unknown accounts; the e-mail carries a link whose token works
-once and expires; the new password obeys the field rules; the lock is cleared; without SMTP the
+once (also under concurrent use, `TestRecuperacaoUsoUnicoConcorrente`) and expires; the new password obeys the field rules; the lock is cleared; without SMTP the
 page says so.

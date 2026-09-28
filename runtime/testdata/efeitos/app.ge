@@ -1,0 +1,34 @@
+crie sistema Efeitos
+
+tenha pedidos, lentos, respostas
+
+pedido tem
+    cliente obrigatório
+
+lento tem
+    nome
+
+resposta tem
+    nome
+
+permita criar pedidos
+permita ver pedidos
+permita criar lentos
+permita criar respostas
+
+quando criar pedido
+    chamar(ambiente.ler("DESTINO") + "/um", "POST", pedido.cliente)
+    chamar(ambiente.ler("DESTINO") + "/dois", "POST", pedido.cliente)
+    se pedido.cliente == "recusado"
+        recuse "Cliente recusado"
+
+quando criar lento
+    chamar(ambiente.ler("DESTINO") + "/lento", "POST", lento.nome)
+
+quando criar resposta
+    guardar(resposta.nome)
+
+logica
+    funcao guardar(nome)
+        r = chamar(ambiente.ler("DESTINO") + "/um", "POST", nome)
+        retornar r
