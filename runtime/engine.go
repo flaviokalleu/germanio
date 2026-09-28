@@ -222,7 +222,9 @@ func checkRole(rel string, p *ast.Program, uses map[string]bool) error {
 				if target == "" {
 					target = pg.Manage
 				}
-				if target != "" && !uses[dataKey(target)] {
+				// pending items are written by Germanio itself (GEP 0009): there is
+				// nothing to import from the backend
+				if target != "" && !uses[dataKey(target)] && dataKey(target) != dataKey("pendencias") {
 					return fmt.Errorf("%s:%d: a página %s mostra %s, mas o arquivo não importa — escreva no início: importar %s do backend", file, pg.Pos.Line, pg.Name, target, target)
 				}
 			}

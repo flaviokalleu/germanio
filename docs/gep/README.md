@@ -62,6 +62,7 @@ Rules:
 | [0006](0006-pacotes.md) | Packages: principles now, a manager later (lockfile format reserved) | Rascunho |
 | [0007](0007-idiomas-da-intencao.md) | Languages of the intent layer (Portuguese only, with a clear error; phrase tables later) | Rascunho |
 | [0008](0008-recuperacao-de-senha.md) | Password recovery (`tenha recuperação de senha`) | Em teste |
+| [0009](0009-pendencias.md) | Pending items (`pendência para responsaveis`) | Em teste |
 
 Pending decisions that will become GEPs are listed in
 [`docs/INTENCAO.md` › Pendências da sintaxe hierárquica](../INTENCAO.md#pendências-da-sintaxe-hierárquica)

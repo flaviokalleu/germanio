@@ -45,6 +45,16 @@ type Intent struct {
 	GlobalSearch []string          // tenha busca geral em projetos, issues
 	ReadOnly     []*VisibilityRule // projeto arquivado é somente leitura (Flag; Who unused)
 	MinRoles     []*CreatorRole    // todo grupo precisa ter pelo menos um owner
+	// Pending items (GEP 0009, em teste): issue gera pendência para responsaveis.
+	PendingItems []*PendingRule
+}
+
+// PendingRule: a person placed in one of Fields of Entity receives a pending
+// item for the record.
+type PendingRule struct {
+	Entity string
+	Fields []string
+	Pos    diagnostics.Position
 }
 
 // EntityDecl: `tenha clientes` plus the fields from `cada cliente tem`.
@@ -218,6 +228,7 @@ func MergeIntent(a, b *Intent) *Intent {
 		a.Translators[k] = v
 	}
 	a.MinRoles = append(a.MinRoles, b.MinRoles...)
+	a.PendingItems = append(a.PendingItems, b.PendingItems...)
 	a.InitialFiles = append(a.InitialFiles, b.InitialFiles...)
 	a.ReservedAddresses = append(a.ReservedAddresses, b.ReservedAddresses...)
 	a.ReadOnly = append(a.ReadOnly, b.ReadOnly...)
@@ -252,6 +263,7 @@ func mergeLogin(a, b *LoginDecl) {
 		a.Fields = b.Fields
 	}
 	a.Signup = a.Signup || b.Signup
+	a.Recovery = a.Recovery || b.Recovery
 	if b.TokenEntity != "" {
 		a.TokenEntity, a.TokenHeader = b.TokenEntity, b.TokenHeader
 	}

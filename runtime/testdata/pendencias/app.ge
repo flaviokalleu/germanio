@@ -1,0 +1,30 @@
+crie sistema Suporte
+
+usuarios
+    tem
+        nome obrigatório
+        email obrigatório e único
+        senha min 8
+    acesso
+        usuario
+            editar seu perfil
+
+tenha login
+tenha cadastro
+login usa email
+
+chamados
+    tem
+        titulo obrigatório
+        responsaveis
+    pendência para
+        responsaveis
+    acesso
+        usuario
+            ver
+            criar
+            editar
+            excluir
+
+página Pendências
+    mostre pendências

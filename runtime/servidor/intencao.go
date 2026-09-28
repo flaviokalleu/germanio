@@ -601,6 +601,10 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 			}
 			urow = a.find(ctx, e, fmt.Sprint(row["id"]), nil)
 		}
+		if err := a.pending(ctx, atual, e, row, urow); err != nil {
+			a.failErr(w, r, err)
+			return
+		}
 		a.emit(ctx, e, "editar", urow, atual)
 		a.json(w, 200, serializeFor(ctx, a.in, atual, e, urow, false), nil)
 	case "excluir":
@@ -849,6 +853,10 @@ func (a *intentAPI) create(w http.ResponseWriter, r *http.Request, ctx *interp.C
 			return
 		}
 	}
+	if err := a.pending(ctx, atual, e, nil, row); err != nil {
+		a.failErr(w, r, err)
+		return
+	}
 	a.emit(ctx, e, "criar", row, atual)
 	a.json(w, 201, out, nil)
 }
@@ -1077,6 +1085,9 @@ func (a *intentAPI) cascade(ctx *interp.Context, e *ast.Entity, row map[string]a
 				}
 			}
 		}
+	}
+	if err := a.dropPending(ctx, e, row["id"], nil); err != nil {
+		return err
 	}
 	if _, err := a.in.Op(ctx, e.Singular, "deletar", row["id"]); err != nil {
 		return err

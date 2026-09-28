@@ -99,7 +99,7 @@ func (p *Parser) isIntentLine() bool {
 		return true
 	}
 	for _, x := range w[1:] {
-		if x == "tem" || x == "pode" || x == "podem" || x == "pertence" || x == "herda" || x == "comeca" || x == "recebe" || x == "executa" || x == "executam" || x == "precisa" {
+		if x == "tem" || x == "pode" || x == "podem" || x == "pertence" || x == "herda" || x == "comeca" || x == "recebe" || x == "executa" || x == "executam" || x == "precisa" || x == "gera" {
 			return true
 		}
 	}
@@ -312,6 +312,20 @@ func (p *Parser) intentFrom(head dline, body []dline) error {
 	}
 	for i, x := range w {
 		switch x {
+		case "gera":
+			// issue gera pendência para responsaveis (GEP 0009, em teste)
+			subject, _ := phrase(w[:i])
+			if subject == "" || i+3 >= len(w) || w[i+1] != "pendencia" || w[i+2] != "para" {
+				return p.teach(head.toks[0], "\""+lineText(head)+"\" não é uma frase conhecida", "gera só aparece em: <dado> gera pendência para <pessoas>", "escreva, por exemplo: issue gera pendência para responsaveis", "")
+			}
+			var fields []string
+			for _, f := range w[i+3:] {
+				if f != "e" && f != "," {
+					fields = append(fields, f)
+				}
+			}
+			p.intent().PendingItems = append(p.intent().PendingItems, &ast.PendingRule{Entity: subject, Fields: fields, Pos: pos})
+			return nil
 		case "precisa":
 			// todo grupo precisa ter pelo menos um owner
 			k := len(w) - 1

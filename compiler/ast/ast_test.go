@@ -261,3 +261,14 @@ func TestNodeTypes(t *testing.T) {
 		})
 	}
 }
+
+// Phrases about the login may live in different files: merging keeps all of
+// them (sign-up and password recovery included).
+func TestMergeIntentKeepsLoginPhrases(t *testing.T) {
+	a := &Intent{Login: &LoginDecl{Fields: []string{"email"}}}
+	b := &Intent{Login: &LoginDecl{Signup: true, Recovery: true}, PendingItems: []*PendingRule{{Entity: "issues", Fields: []string{"responsaveis"}}}}
+	m := MergeIntent(a, b)
+	if !m.Login.Signup || !m.Login.Recovery || len(m.Login.Fields) != 1 || len(m.PendingItems) != 1 {
+		t.Fatalf("fusão perdeu frases: %+v %+v", m.Login, m.PendingItems)
+	}
+}

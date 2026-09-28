@@ -118,6 +118,9 @@ func ResolveIntent(prog *ast.Program) error {
 	if in == nil {
 		return nil
 	}
+	if err := withPendingData(in); err != nil {
+		return err
+	}
 	app := &ast.App{Entities: map[string]*ast.Entity{}, Roles: in.Roles, Login: in.Login, Integration: in.IntegrationPrefix, Pages: in.Pages, Init: in.Init, Messages: "pt"}
 	if app.Integration == "" {
 		app.Integration = "/api"
@@ -1154,6 +1157,30 @@ func ResolveIntent(prog *ast.Program) error {
 		}
 		if err := r.pageSections(e, pg); err != nil {
 			return err
+		}
+	}
+
+	// 10. Pending items (GEP 0009, em teste): each field must hold people.
+	for _, pr := range in.PendingItems {
+		e, err := r.entity(pr.Entity, pr.Pos)
+		if err != nil {
+			return err
+		}
+		for _, name := range pr.Fields {
+			var found string
+			for _, f := range e.Model.Fields {
+				fn := strings.ToLower(f.Name)
+				if (fn == name && f.Type == ast.FieldLista && f.ListOf == app.LoginEntity) || (fn == name+"_id" && f.Reference == app.LoginEntity) {
+					found = fn
+				}
+			}
+			if found == "" {
+				return r.errAt(pr.Pos, "%s gera pendência para %s, mas %s não é um campo de pessoas de %s (use, por exemplo, responsaveis ou revisor)", e.Plural, name, name, e.Plural)
+			}
+			e.PendingFields = appendUnique(e.PendingFields, found)
+		}
+		if pe := r.byName["pendencias"]; pe != nil {
+			app.PendingEntity = pe.Singular
 		}
 	}
 

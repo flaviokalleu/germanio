@@ -139,7 +139,7 @@ var legacyBlockWords = map[string]bool{
 
 // sections are the aspects a data block may contain (folded words).
 var sections = []string{"tem", "pertence a", "comeca", "pode", "regras", "acesso", "permita",
-	"integracao", "quando", "antes de", "recebe", "executa", "executam", "repositorio", "singular"}
+	"integracao", "quando", "antes de", "recebe", "executa", "executam", "repositorio", "singular", "pendencia para"}
 
 func sectionOf(w []string) string {
 	if len(w) == 0 {
@@ -150,6 +150,10 @@ func sectionOf(w []string) string {
 		return w[0]
 	case "pertence":
 		return "pertence a"
+	case "pendencia":
+		if len(w) > 1 && w[1] == "para" {
+			return "pendencia para"
+		}
 	case "antes":
 		if len(w) > 1 && w[1] == "de" {
 			return "antes de"
@@ -333,6 +337,19 @@ func (p *Parser) dataSection(name string, header []lexer.Token, sec *node) error
 			}
 			if err := p.withContext(path+" › "+lineText(c.line), func() error {
 				return p.intentFrom(dline{toks: join(subject, synth(c.line.toks[0], "pertence", "a"), c.line.toks)}, nil)
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	case "pendencia para":
+		// pendência para › responsaveis → issue gera pendência para responsaveis
+		for _, c := range sec.children {
+			if err := p.leaf(c, "pendência para", path); err != nil {
+				return err
+			}
+			if err := p.withContext(path+" › "+lineText(c.line), func() error {
+				return p.intentFrom(dline{toks: join(subject, synth(c.line.toks[0], "gera", "pendencia", "para"), c.line.toks)}, nil)
 			}); err != nil {
 				return err
 			}

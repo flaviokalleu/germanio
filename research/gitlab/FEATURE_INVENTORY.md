@@ -99,7 +99,7 @@ Escopo núcleo v1 = features marcadas **[N]** (fluxos 1–5 da missão + testes 
 | ID | Nome | Comportamento | Frontend | Backend | Dados | Permissões | Deps | Support | Status | Tests |
 |----|------|--------------|----------|---------|-------|-----------|------|---------|--------|-------|
 | WH-01 | Webhooks de projeto | eventos push/issue/MR/pipeline com `X-Gitlab-Token`, em worker | settings | `/hooks` | web_hooks | Maintainer+ | tarefas, http | G15 | PASS | TestWebhooks |
-| NT-01 | Todos | atribuição/menção gera todo | `/dashboard/todos` | `/todos` | todos | dono | | | NOT_STARTED | |
+| NT-01 | Todos | atribuição/menção gera todo | `/dashboard/todos` | `/todos` | todos | dono | | PARTIAL (GEP 0009 em teste) | PARTIAL (atribuição; menção ainda não) | TestPendencias |
 | NT-02 | Eventos de atividade | feed de atividade | activity | `/events` | events | leitura | | | NOT_STARTED | |
 | NT-03 | E-mail de notificação | | | | | | email | PARTIAL | NOT_STARTED | |
 | AD-01 | Admin dashboard | contagens, usuários, projetos | `/admin` | `/admin` | | admin | | | NOT_STARTED | |

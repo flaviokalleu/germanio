@@ -9,6 +9,8 @@ type App struct {
 	Order       []string           // declaration order
 	Roles       []*Role            // lowest → highest
 	LoginEntity string             // model name of the people who sign in
+	// PendingEntity is the data of pending items ("" when none is asked for).
+	PendingEntity string
 	Login       *LoginDecl
 	Integration string // prefix, default "/api"
 	Pages       []*PageDecl
@@ -62,6 +64,9 @@ type Entity struct {
 	ProtectedBranchRole string
 	CreatorRole         string // quem cria X vira <papel>
 	MinRole             string // todo X precisa ter pelo menos um <papel>
+	// PendingFields: people fields whose new people receive a pending item
+	// (issue gera pendência para responsaveis; GEP 0009, em teste).
+	PendingFields []string
 	// Review: two branch fields make the record a proposal of changes
 	// (changes, commits, mergeability, mesclar performs the merge).
 	Review *Review

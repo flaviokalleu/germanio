@@ -17,3 +17,6 @@ página Grupos
         criar
         editar
         excluir
+
+página Pendências
+    mostre pendências
