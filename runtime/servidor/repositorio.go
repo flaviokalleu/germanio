@@ -34,6 +34,7 @@ func (a *intentAPI) createRepository(ctx *interp.Context, e *ast.Entity, row map
 	if err := a.s.Git.Init(path, branch); err != nil {
 		return err
 	}
+	undoOnRollback(ctx, func() { a.s.Git.Remove(path) })
 	res, err := a.in.Op(ctx, e.Singular, "atualizar", row["id"], map[string]any{"repositorio": path})
 	if err != nil {
 		a.s.Git.Remove(path)

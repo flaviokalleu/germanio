@@ -89,8 +89,9 @@ O nível 4 nunca é necessário para CRUD, login, permissões ou relações.
 
 **Garantias automáticas**: senha com bcrypt e nunca devolvida; e-mails normalizados;
 erros de validação reunidos por campo (`{"message": {"email": ["já está em uso"]}}`);
-excluir remove o que pertence ao registro; nada fica pela metade se `antes de`/`quando`
-falhar em uma criação.
+excluir remove o que pertence ao registro; cada alteração (criar, editar, excluir, ações)
+roda numa transação junto com seus `antes de`/`quando`: se algo falha ou é recusado, nada
+fica — nem registros criados pelos hooks, nem números consumidos, nem eventos na fila.
 
 ## Estados, condições e pessoas
 

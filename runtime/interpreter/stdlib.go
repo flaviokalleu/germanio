@@ -271,7 +271,7 @@ func registerStdlib(interp *Interpreter) {
 			if interp.DB == nil {
 				panic(c.Fail(0, "sequencia.proxima exige banco de dados"))
 			}
-			v, err := interp.DB.Sequencia(c.Str(args, 0, "chave"))
+			v, err := interp.dbOf(c.Ctx()).Sequencia(c.Str(args, 0, "chave"))
 			if err != nil {
 				panic(c.Fail(0, "sequencia.proxima: %s", err))
 			}

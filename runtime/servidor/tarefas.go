@@ -71,13 +71,19 @@ func (q *taskQueue) ph(n int) string {
 }
 
 // enqueue stores a task to run as soon as possible.
-func (q *taskQueue) enqueue(tipo string, dados map[string]any) error {
+// enqueue stores a task. Inside a transaction the task is part of it: it
+// runs only if the change that produced it is kept.
+func (q *taskQueue) enqueue(ctx *interp.Context, tipo string, dados map[string]any) error {
 	b, err := json.Marshal(dados)
 	if err != nil {
 		return err
 	}
 	now := time.Now().UTC().Format(time.RFC3339Nano)
-	_, err = q.s.DB.DB.Exec(fmt.Sprintf(`INSERT INTO %s (tipo, dados, estado, tentativas, proxima_em, criado_em) VALUES (%s, %s, 'pendente', 0, %s, %s)`,
+	db := q.s.DB
+	if ctx != nil && ctx.DB != nil {
+		db = ctx.DB
+	}
+	_, err = db.Executar(fmt.Sprintf(`INSERT INTO %s (tipo, dados, estado, tentativas, proxima_em, criado_em) VALUES (%s, %s, 'pendente', 0, %s, %s)`,
 		tasksTable, q.ph(1), q.ph(2), q.ph(3), q.ph(4)), tipo, string(b), now, now)
 	select {
 	case q.wake <- struct{}{}:
@@ -171,7 +177,7 @@ func (s *Servidor) registerTaskModule() {
 			if len(args) > 1 {
 				dados = args[1]
 			}
-			if err := q.enqueue("funcao", map[string]any{"funcao": name, "dados": dados}); err != nil {
+			if err := q.enqueue(c.Ctx(), "funcao", map[string]any{"funcao": name, "dados": dados}); err != nil {
 				panic(c.Fail(0, "tarefas.enfileirar: %v", err))
 			}
 			return true

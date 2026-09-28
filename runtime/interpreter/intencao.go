@@ -132,7 +132,7 @@ func (interp *Interpreter) level(ctx *Context, memo map[levelKey]int, atual map[
 	lv := 0
 	if e.Singular == app.MemberModel {
 		if target, ok := app.Entities[toString(record["recurso"])]; ok {
-			lv = interp.level(ctx, memo, atual, target, interp.load(target, record["recurso_id"]), depth+1)
+			lv = interp.level(ctx, memo, atual, target, interp.load(ctx, target, record["recurso_id"]), depth+1)
 		}
 	} else {
 		if e.HasMembers && id > 0 {
@@ -142,7 +142,7 @@ func (interp *Interpreter) level(ctx *Context, memo map[levelKey]int, atual map[
 			}
 		}
 		if e.HierarchyField != "" && record[e.HierarchyField] != nil {
-			lv = max(lv, interp.level(ctx, memo, atual, e, interp.load(e, record[e.HierarchyField]), depth+1))
+			lv = max(lv, interp.level(ctx, memo, atual, e, interp.load(ctx, e, record[e.HierarchyField]), depth+1))
 		}
 		via := e.InheritVia
 		if via == "" && !e.HasMembers {
@@ -157,7 +157,7 @@ func (interp *Interpreter) level(ctx *Context, memo map[levelKey]int, atual map[
 		}
 		if via != "" && record[via] != nil {
 			parent := app.Entities[e.Parents[via]]
-			lv = max(lv, interp.level(ctx, memo, atual, parent, interp.load(parent, record[via]), depth+1))
+			lv = max(lv, interp.level(ctx, memo, atual, parent, interp.load(ctx, parent, record[via]), depth+1))
 		}
 	}
 	if id > 0 && memo != nil {
@@ -181,11 +181,11 @@ func (interp *Interpreter) hasMembersChain(e *ast.Entity, depth int) bool {
 	return false
 }
 
-func (interp *Interpreter) load(e *ast.Entity, id any) map[string]any {
+func (interp *Interpreter) load(ctx *Context, e *ast.Entity, id any) map[string]any {
 	if e == nil || id == nil {
 		return nil
 	}
-	row, err := interp.DB.BuscarRegistro(e.Singular, int64(toNumber(id)))
+	row, err := interp.dbOf(ctx).BuscarRegistro(e.Singular, int64(toNumber(id)))
 	if err != nil {
 		return nil
 	}
@@ -215,14 +215,14 @@ func (interp *Interpreter) Owns(atual map[string]any, e *ast.Entity, record map[
 
 // visible applies the visibilidade field: public → anyone, internal →
 // signed in; private falls through to the rules.
-func (interp *Interpreter) visible(atual map[string]any, e *ast.Entity, record map[string]any) bool {
-	return interp.visibleDepth(atual, e, record, 0)
+func (interp *Interpreter) visible(ctx *Context, atual map[string]any, e *ast.Entity, record map[string]any) bool {
+	return interp.visibleDepth(ctx, atual, e, record, 0)
 }
 
 // visibleDepth: records without their own visibility take it from their
 // parent — what belongs to something public is public (issues of a public
 // project). Confidentiality is expressed with `antes de ver`.
-func (interp *Interpreter) visibleDepth(atual map[string]any, e *ast.Entity, record map[string]any, depth int) bool {
+func (interp *Interpreter) visibleDepth(ctx *Context, atual map[string]any, e *ast.Entity, record map[string]any, depth int) bool {
 	if record == nil || depth > 8 {
 		return false
 	}
@@ -235,7 +235,7 @@ func (interp *Interpreter) visibleDepth(atual map[string]any, e *ast.Entity, rec
 			if target == interp.App.LoginEntity || record[field] == nil || (pe.Visibility == "" && len(pe.Parents) == 0) {
 				continue
 			}
-			if interp.visibleDepth(atual, pe, interp.load(pe, record[field]), depth+1) {
+			if interp.visibleDepth(ctx, atual, pe, interp.load(ctx, pe, record[field]), depth+1) {
 				return true
 			}
 		}
@@ -280,10 +280,10 @@ func (interp *Interpreter) Can(ctx *Context, atual map[string]any, e *ast.Entity
 				continue
 			}
 			pe := interp.App.Entities[target]
-			return interp.Can(ctx, atual, pe, "ver", interp.load(pe, record[field]))
+			return interp.Can(ctx, atual, pe, "ver", interp.load(ctx, pe, record[field]))
 		}
 	}
-	if (verb == "ver" || verb == "baixar_codigo") && interp.visible(atual, e, record) {
+	if (verb == "ver" || verb == "baixar_codigo") && interp.visible(ctx, atual, e, record) {
 		return true
 	}
 	rules := e.Rules[verb]
@@ -309,7 +309,7 @@ func (interp *Interpreter) RulePasses(ctx *Context, atual map[string]any, e *ast
 	// Inside something that has members, generic rules (anyone, any signed-in
 	// person) only count when that thing is public/internal; otherwise only
 	// roles decide. Ownership rules keep their own meaning.
-	if (r.Anyone || r.SignedIn) && !r.Own && record != nil && interp.hiddenMemberedAncestor(atual, e, record, 0) {
+	if (r.Anyone || r.SignedIn) && !r.Own && record != nil && interp.hiddenMemberedAncestor(ctx, atual, e, record, 0) {
 		return false
 	}
 	switch {
@@ -420,8 +420,8 @@ func nilMap(m map[string]any) any {
 }
 
 // VisibleByVisibility reports visibility through the visibility field only.
-func (interp *Interpreter) VisibleByVisibility(atual map[string]any, e *ast.Entity, record map[string]any) bool {
-	return interp.visible(atual, e, record)
+func (interp *Interpreter) VisibleByVisibility(ctx *Context, atual map[string]any, e *ast.Entity, record map[string]any) bool {
+	return interp.visible(ctx, atual, e, record)
 }
 
 // InheritsView: the entity has no rule about seeing it and belongs to
@@ -510,14 +510,14 @@ func (interp *Interpreter) external(name string) string {
 
 // hiddenMemberedAncestor: the nearest ancestor that has members (or the
 // record itself when it has members) is not visible through visibility.
-func (interp *Interpreter) hiddenMemberedAncestor(atual map[string]any, e *ast.Entity, record map[string]any, depth int) bool {
+func (interp *Interpreter) hiddenMemberedAncestor(ctx *Context, atual map[string]any, e *ast.Entity, record map[string]any, depth int) bool {
 	if depth > 8 || record == nil || interp.App == nil {
 		return false
 	}
 	app := interp.App
 	if e.Singular == app.MemberModel {
 		if target, ok := app.Entities[toString(record["recurso"])]; ok {
-			return interp.hiddenMemberedAncestor(atual, target, interp.load(target, record["recurso_id"]), depth+1)
+			return interp.hiddenMemberedAncestor(ctx, atual, target, interp.load(ctx, target, record["recurso_id"]), depth+1)
 		}
 		return false
 	}
@@ -525,7 +525,7 @@ func (interp *Interpreter) hiddenMemberedAncestor(atual map[string]any, e *ast.E
 		if record["id"] == nil && depth == 0 {
 			// being created: judged by its parent below
 		} else {
-			return !interp.visible(atual, e, record)
+			return !interp.visible(ctx, atual, e, record)
 		}
 	}
 	for field, target := range e.Parents {
@@ -534,7 +534,7 @@ func (interp *Interpreter) hiddenMemberedAncestor(atual map[string]any, e *ast.E
 		}
 		pe := app.Entities[target]
 		if interp.hasMembersChain(pe, 0) {
-			return interp.hiddenMemberedAncestor(atual, pe, interp.load(pe, record[field]), depth+1)
+			return interp.hiddenMemberedAncestor(ctx, atual, pe, interp.load(ctx, pe, record[field]), depth+1)
 		}
 	}
 	return false

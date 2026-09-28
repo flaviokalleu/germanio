@@ -38,6 +38,8 @@ func (e *RuntimeError) Error() string {
 // startup scripts and background tasks), call depth and whether top-level
 // globals may be written.
 type Context struct {
+	// DB, when set, is the transaction every operation of this execution joins.
+	DB      *banco.Banco
 	Request *http.Request
 	Writer  http.ResponseWriter
 	// Written is set by a capability that answered the request itself
@@ -72,6 +74,14 @@ type Call struct {
 	Scope  *Scope
 	Pos    diagnostics.Position
 	Name   string
+}
+
+// dbOf is the database of an execution: its transaction, if any.
+func (interp *Interpreter) dbOf(ctx *Context) *banco.Banco {
+	if ctx != nil && ctx.DB != nil {
+		return ctx.DB
+	}
+	return interp.DB
 }
 
 // Ctx returns the execution context (never nil).
@@ -386,7 +396,7 @@ func (interp *Interpreter) assignTo(target *ast.Expression, val any, scope *Scop
 // dbCall implements modelo.operação(...). Failures raise errors with HTTP
 // meaning (400 validação, 404 inexistente, 409 conflito) instead of nulo.
 func (interp *Interpreter) dbCall(c *Call, model, method string, args []any) any {
-	db := interp.DB
+	db := interp.dbOf(c.Ctx())
 	m := interp.modelAST(model)
 	clean := func(row map[string]any) map[string]any { return stripSecrets(m, row) }
 	fail := func(err error) {
@@ -521,7 +531,7 @@ func (interp *Interpreter) dbCall(c *Call, model, method string, args []any) any
 		if err != nil {
 			fail(err)
 		}
-		interp.followAddress(m, int64(id), before, row)
+		interp.followAddress(db, m, int64(id), before, row)
 		return clean(row)
 	case "verificar_senha":
 		// modelo.verificar_senha(registro_ou_id, senha[, campo]) — tempo constante

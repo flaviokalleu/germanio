@@ -73,7 +73,13 @@ func (a *intentAPI) mountLevel(mux *http.ServeMux, base string, chain []*ast.Ent
 	e := chain[len(chain)-1]
 	item := base + "/{r" + strconv.Itoa(len(chain)-1) + "}"
 	h := func(op, verb string) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) { a.serve(w, r, chain, op, verb) }
+		return func(w http.ResponseWriter, r *http.Request) {
+			if !unsafeMethods[r.Method] {
+				a.serve(w, r, chain, op, verb)
+				return
+			}
+			a.s.transactional(w, r, func(w http.ResponseWriter, r *http.Request) { a.serve(w, r, chain, op, verb) })
+		}
 	}
 	mux.HandleFunc("GET "+base, h("listar", ""))
 	mux.HandleFunc("POST "+base, h("criar", ""))
@@ -407,7 +413,7 @@ func (a *intentAPI) writable(atual map[string]any, e *ast.Entity, body map[strin
 
 func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.Entity, op string, verb string) {
 	root := chain[0]
-	ctx := &interp.Context{Request: r, Writer: w}
+	ctx := newContext(w, r)
 	atual, err := a.s.identify(ctx, r)
 	if err != nil {
 		a.fail(w, 401, a.msg("401", root))
@@ -766,13 +772,11 @@ func (a *intentAPI) create(w http.ResponseWriter, r *http.Request, ctx *interp.C
 	row := res.(map[string]any)
 	if e.CreatorRole != "" && atual != nil {
 		if _, err := a.in.Op(ctx, a.app.MemberModel, "criar", map[string]any{"recurso": e.Singular, "recurso_id": row["id"], "pessoa_id": atual["id"], "papel": e.CreatorRole}); err != nil {
-			a.in.Op(ctx, e.Singular, "deletar", row["id"])
-			a.failErr(w, r, err)
+			a.failErr(w, r, err) // the transaction undoes the creation
 			return
 		}
 	}
 	if err := a.createRepository(ctx, e, row); err != nil {
-		a.in.Op(ctx, e.Singular, "deletar", row["id"])
 		a.failErr(w, r, err)
 		return
 	}
@@ -784,9 +788,7 @@ func (a *intentAPI) create(w http.ResponseWriter, r *http.Request, ctx *interp.C
 	}
 	if h := e.Hooks["criar"]; h != nil {
 		if _, _, err := a.in.RunHook(ctx, h, a.hookVars(atual, e, row, body)); err != nil {
-			a.removeRepository(e, row)
-			a.in.Op(ctx, e.Singular, "deletar", row["id"]) // nothing stays half-created
-			a.failErr(w, r, err)
+			a.failErr(w, r, err) // nothing stays half-created: the transaction is undone
 			return
 		}
 		fresh := serializeFor(a.in, atual, e, a.find(ctx, e, fmt.Sprint(row["id"]), nil), false)
@@ -1008,7 +1010,7 @@ func (a *intentAPI) visibleParent(ctx *interp.Context, atual map[string]any, e *
 		}
 		pe := a.app.Entities[target]
 		res, _ := a.in.Op(ctx, pe.Singular, "buscar", data[field])
-		if row, ok := res.(map[string]any); ok && a.in.VisibleByVisibility(atual, pe, row) {
+		if row, ok := res.(map[string]any); ok && a.in.VisibleByVisibility(ctx, atual, pe, row) {
 			return true
 		}
 	}

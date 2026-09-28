@@ -19,6 +19,7 @@ import (
 // Banco wraps the database connection and model metadata.
 type Banco struct {
 	DB     *sql.DB
+	tx     *sql.Tx // set inside EmTransacao: every data operation joins it
 	Models map[string]*ast.Model
 	Driver string      // "sqlite", "mysql", "postgres"
 	Rules  []*ast.Rule // user-defined validation rules
@@ -153,8 +154,9 @@ func buildDSN(config *ast.DatabaseConfig, appName string) (driver string, dsn st
 		if override := os.Getenv("GERMANIO_SQLITE"); override != "" {
 			dbName = override
 		}
-		// busy_timeout: concurrent writers (requests, task workers) wait instead of failing.
-		return "sqlite", dbName + "?_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)&_pragma=foreign_keys(ON)"
+		// busy_timeout: concurrent writers wait instead of failing; _txlock=immediate:
+		// transactions take the write lock up front, so two never deadlock upgrading.
+		return "sqlite", dbName + "?_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)&_pragma=foreign_keys(ON)&_txlock=immediate"
 	}
 }
 
@@ -391,14 +393,14 @@ func (b *Banco) Listar(modelo string, params *ListarParams) ([]map[string]any, i
 	// Count total
 	var total int64
 	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM %s%s", q(modelo), whereSQL)
-	b.DB.QueryRow(countQuery, args...).Scan(&total)
+	b.x().QueryRow(countQuery, args...).Scan(&total)
 
 	// Order + Pagination
 	offset := (params.Pagina - 1) * params.Limite
 	query := fmt.Sprintf("SELECT * FROM %s%s ORDER BY %s %s LIMIT %d OFFSET %d",
 		q(modelo), whereSQL, q(params.Ordenar), params.Ordem, params.Limite, offset)
 
-	rows, err := b.DB.Query(query, args...)
+	rows, err := b.x().Query(query, args...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -414,7 +416,7 @@ func (b *Banco) Buscar(modelo string, id int64) (map[string]any, error) {
 		return nil, fmt.Errorf("modelo '%s' não encontrado", modelo)
 	}
 
-	rows, err := b.DB.Query(fmt.Sprintf("SELECT * FROM %s WHERE %s = %s", q(modelo), q("id"), b.ph(1)), id)
+	rows, err := b.x().Query(fmt.Sprintf("SELECT * FROM %s WHERE %s = %s", q(modelo), q("id"), b.ph(1)), id)
 	if err != nil {
 		return nil, err
 	}
@@ -471,14 +473,14 @@ func (b *Banco) Criar(modelo string, dados json.RawMessage) (map[string]any, err
 	if b.Driver == "postgres" || b.Driver == "postgresql" {
 		query += " RETURNING " + q("id")
 		var id int64
-		err := b.DB.QueryRow(query, vals...).Scan(&id)
+		err := b.x().QueryRow(query, vals...).Scan(&id)
 		if err != nil {
 			return nil, err
 		}
 		return b.Buscar(modelo, id)
 	}
 
-	result, err := b.DB.Exec(query, vals...)
+	result, err := b.x().Exec(query, vals...)
 	if err != nil {
 		return nil, err
 	}
@@ -524,7 +526,7 @@ func (b *Banco) Atualizar(modelo string, id int64, dados json.RawMessage) (map[s
 
 	query := fmt.Sprintf("UPDATE %s SET %s WHERE %s = %s",
 		q(modelo), strings.Join(sets, ", "), q("id"), b.ph(n))
-	_, err := b.DB.Exec(query, vals...)
+	_, err := b.x().Exec(query, vals...)
 	if err != nil {
 		return nil, err
 	}
@@ -539,11 +541,11 @@ func (b *Banco) Deletar(modelo string, id int64) error {
 		return fmt.Errorf("modelo '%s' não encontrado", modelo)
 	}
 	if model.SoftDelete {
-		_, err := b.DB.Exec(fmt.Sprintf("UPDATE %s SET %s = CURRENT_TIMESTAMP WHERE %s = %s",
+		_, err := b.x().Exec(fmt.Sprintf("UPDATE %s SET %s = CURRENT_TIMESTAMP WHERE %s = %s",
 			q(modelo), q("deletado_em"), q("id"), b.ph(1)), id)
 		return err
 	}
-	_, err := b.DB.Exec(fmt.Sprintf("DELETE FROM %s WHERE %s = %s", q(modelo), q("id"), b.ph(1)), id)
+	_, err := b.x().Exec(fmt.Sprintf("DELETE FROM %s WHERE %s = %s", q(modelo), q("id"), b.ph(1)), id)
 	return err
 }
 
@@ -556,7 +558,7 @@ func (b *Banco) Restaurar(modelo string, id int64) (map[string]any, error) {
 	if !model.SoftDelete {
 		return nil, fmt.Errorf("modelo '%s' não suporta soft delete", modelo)
 	}
-	_, err := b.DB.Exec(fmt.Sprintf("UPDATE %s SET %s = NULL WHERE %s = %s",
+	_, err := b.x().Exec(fmt.Sprintf("UPDATE %s SET %s = NULL WHERE %s = %s",
 		q(modelo), q("deletado_em"), q("id"), b.ph(1)), id)
 	if err != nil {
 		return nil, err
@@ -577,7 +579,7 @@ func (b *Banco) Contar(modelo string) (int64, error) {
 	if model != nil && model.SoftDelete {
 		whereSQL = " WHERE " + q("deletado_em") + " IS NULL"
 	}
-	err := b.DB.QueryRow(fmt.Sprintf("SELECT COUNT(*) FROM %s%s", q(modelo), whereSQL)).Scan(&count)
+	err := b.x().QueryRow(fmt.Sprintf("SELECT COUNT(*) FROM %s%s", q(modelo), whereSQL)).Scan(&count)
 	return count, err
 }
 
@@ -592,7 +594,7 @@ func (b *Banco) BuscarRelacionados(modelo string, id int64, relacao string) ([]m
 			if f.Reference == modelo || strings.ToLower(f.Reference) == modelLower {
 				query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %s ORDER BY %s DESC",
 					q(relLower), q(strings.ToLower(f.Name)), b.ph(1), q("id"))
-				rows, err := b.DB.Query(query, id)
+				rows, err := b.x().Query(query, id)
 				if err != nil {
 					return nil, err
 				}
@@ -611,7 +613,7 @@ func (b *Banco) BuscarRelacionados(modelo string, id int64, relacao string) ([]m
 
 	query := fmt.Sprintf("SELECT r.* FROM %s r INNER JOIN %s j ON r.%s = j.%s WHERE j.%s = %s",
 		q(relLower), q(joinTable), q("id"), q(relLower+"_id"), q(modelLower+"_id"), b.ph(1))
-	rows, err := b.DB.Query(query, id)
+	rows, err := b.x().Query(query, id)
 	if err != nil {
 		return nil, err
 	}
@@ -645,7 +647,7 @@ func (b *Banco) ContarPorStatus(modelo string) (map[string]int64, error) {
 
 	query := fmt.Sprintf("SELECT COALESCE(%s, 'sem_status'), COUNT(*) FROM %s%s GROUP BY %s",
 		q(statusField), q(modelo), whereSQL, q(statusField))
-	rows, err := b.DB.Query(query)
+	rows, err := b.x().Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -676,7 +678,7 @@ func (b *Banco) ListarTodos(modelo string) ([]map[string]any, error) {
 	}
 
 	query := fmt.Sprintf("SELECT * FROM %s%s ORDER BY %s DESC", q(modelo), whereSQL, q("id"))
-	rows, err := b.DB.Query(query)
+	rows, err := b.x().Query(query)
 	if err != nil {
 		return nil, err
 	}

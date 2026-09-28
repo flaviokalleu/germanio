@@ -1,0 +1,41 @@
+crie sistema Pedidos
+
+tenha lojas, pedidos, itens, avisos
+
+loja tem
+    nome obrigatório único
+    pedidos
+    repositório
+
+pedido tem
+    numero por loja
+    cliente obrigatório
+    itens
+
+item tem
+    nome obrigatório
+
+aviso tem
+    texto
+
+permita criar lojas
+permita ver lojas
+permita criar pedidos
+permita ver pedidos
+permita ver itens
+permita ver avisos
+
+logica
+  funcao notificar(info)
+    retornar verdadeiro
+
+quando criar pedido
+    item.criar({pedido_id: pedido.id, nome: "brinde"})
+    aviso.criar({texto: "novo pedido"})
+    tarefas.enfileirar("notificar", {pedido: pedido.id})
+    se pedido.cliente == "recusado"
+        recuse "Cliente recusado"
+
+quando criar loja
+    se loja.nome == "falha"
+        recuse "Loja recusada"

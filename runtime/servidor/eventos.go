@@ -81,7 +81,7 @@ func (a *intentAPI) emit(ctx *interp.Context, e *ast.Entity, action string, row 
 				le := a.app.Entities[a.app.LoginEntity]
 				payload["quem"] = serializeFor(a.in, nil, le, atual, false)
 			}
-			a.s.tasks().enqueue("entrega", map[string]any{"entidade": sub.Singular, "id": hook["id"], "evento": kind, "payload": payload})
+			a.s.tasks().enqueue(ctx, "entrega", map[string]any{"entidade": sub.Singular, "id": hook["id"], "evento": kind, "payload": payload})
 		}
 	}
 }

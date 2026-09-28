@@ -181,7 +181,7 @@ func (b *Banco) Filtrar(modelo string, c Consulta) ([]map[string]any, int64, err
 		return nil, 0, err
 	}
 	var total int64
-	if err := b.DB.QueryRow(fmt.Sprintf("SELECT COUNT(*) FROM %s%s", q(modelo), whereSQL), args...).Scan(&total); err != nil {
+	if err := b.x().QueryRow(fmt.Sprintf("SELECT COUNT(*) FROM %s%s", q(modelo), whereSQL), args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 	order, dir := "id", "ASC"
@@ -206,7 +206,7 @@ func (b *Banco) Filtrar(modelo string, c Consulta) ([]map[string]any, int64, err
 		}
 		query += fmt.Sprintf(" LIMIT %d OFFSET %d", c.Limite, (pagina-1)*c.Limite)
 	}
-	rows, err := b.DB.Query(query, args...)
+	rows, err := b.x().Query(query, args...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -287,7 +287,7 @@ func (b *Banco) ContarFiltro(modelo string, c Consulta) (int64, error) {
 		return 0, err
 	}
 	var total int64
-	err = b.DB.QueryRow(fmt.Sprintf("SELECT COUNT(*) FROM %s%s", q(modelo), whereSQL), args...).Scan(&total)
+	err = b.x().QueryRow(fmt.Sprintf("SELECT COUNT(*) FROM %s%s", q(modelo), whereSQL), args...).Scan(&total)
 	return total, err
 }
 
@@ -350,10 +350,10 @@ func (b *Banco) CriarMapa(modelo string, dados map[string]any) (map[string]any, 
 	}
 	var id int64
 	if b.Driver == "postgres" || b.Driver == "postgresql" {
-		err = b.DB.QueryRow(query+" RETURNING "+q("id"), vals...).Scan(&id)
+		err = b.x().QueryRow(query+" RETURNING "+q("id"), vals...).Scan(&id)
 	} else {
 		var res sql.Result
-		res, err = b.DB.Exec(query, vals...)
+		res, err = b.x().Exec(query, vals...)
 		if err == nil {
 			id, err = res.LastInsertId()
 		}
@@ -384,7 +384,7 @@ func (b *Banco) AtualizarMapa(modelo string, id int64, dados map[string]any) (ma
 	}
 	sets = append(sets, q("atualizado_em")+" = CURRENT_TIMESTAMP")
 	vals = append(vals, id)
-	res, err := b.DB.Exec(fmt.Sprintf("UPDATE %s SET %s WHERE %s = %s", q(modelo), strings.Join(sets, ", "), q("id"), b.ph(len(keys)+1)), vals...)
+	res, err := b.x().Exec(fmt.Sprintf("UPDATE %s SET %s WHERE %s = %s", q(modelo), strings.Join(sets, ", "), q("id"), b.ph(len(keys)+1)), vals...)
 	if err != nil {
 		return nil, classify(err)
 	}
@@ -406,9 +406,9 @@ func (b *Banco) DeletarFiltro(modelo string, c Consulta) (int64, error) {
 	}
 	var res sql.Result
 	if b.Models[modelo].SoftDelete {
-		res, err = b.DB.Exec(fmt.Sprintf("UPDATE %s SET %s = CURRENT_TIMESTAMP%s", q(modelo), q("deletado_em"), whereSQL), args...)
+		res, err = b.x().Exec(fmt.Sprintf("UPDATE %s SET %s = CURRENT_TIMESTAMP%s", q(modelo), q("deletado_em"), whereSQL), args...)
 	} else {
-		res, err = b.DB.Exec(fmt.Sprintf("DELETE FROM %s%s", q(modelo), whereSQL), args...)
+		res, err = b.x().Exec(fmt.Sprintf("DELETE FROM %s%s", q(modelo), whereSQL), args...)
 	}
 	if err != nil {
 		return 0, classify(err)
@@ -423,15 +423,24 @@ func (b *Banco) ValidarParcial(modelo string, dados map[string]any) error {
 
 // Sequencia atomically increments and returns the counter named chave,
 // starting at 1. It backs per-scope numbering such as #1, #2 per project.
-func (b *Banco) Sequencia(chave string) (int64, error) {
-	if _, err := b.DB.Exec(`CREATE TABLE IF NOT EXISTS ` + q("_germanio_sequencias") + ` (` + q("chave") + ` VARCHAR(255) PRIMARY KEY, ` + q("valor") + ` BIGINT NOT NULL)`); err != nil {
+func (b *Banco) Sequencia(chave string) (v int64, err error) {
+	if _, err := b.x().Exec(`CREATE TABLE IF NOT EXISTS ` + q("_germanio_sequencias") + ` (` + q("chave") + ` VARCHAR(255) PRIMARY KEY, ` + q("valor") + ` BIGINT NOT NULL)`); err != nil {
 		return 0, err
 	}
-	tx, err := b.DB.Begin()
-	if err != nil {
-		return 0, err
+	var tx executor = b.tx
+	if b.tx == nil {
+		t, e := b.DB.Begin()
+		if e != nil {
+			return 0, e
+		}
+		defer t.Rollback()
+		defer func() {
+			if err == nil {
+				err = t.Commit()
+			}
+		}()
+		tx = t
 	}
-	defer tx.Rollback()
 	// Upsert then read inside one transaction; SQLite serialises writers and
 	// PostgreSQL/MySQL lock the row for the rest of the transaction.
 	var upsert string
@@ -444,11 +453,56 @@ func (b *Banco) Sequencia(chave string) (int64, error) {
 	if _, err := tx.Exec(upsert, chave); err != nil {
 		return 0, err
 	}
-	var v int64
-	if err := tx.QueryRow("SELECT "+q("valor")+" FROM "+q("_germanio_sequencias")+" WHERE "+q("chave")+" = "+b.ph(1), chave).Scan(&v); err != nil {
+	if err = tx.QueryRow("SELECT "+q("valor")+" FROM "+q("_germanio_sequencias")+" WHERE "+q("chave")+" = "+b.ph(1), chave).Scan(&v); err != nil {
 		return 0, err
 	}
-	return v, tx.Commit()
+	return v, nil
+}
+
+// executor is what data operations run on: the pool or the current transaction.
+type executor interface {
+	Exec(query string, args ...any) (sql.Result, error)
+	Query(query string, args ...any) (*sql.Rows, error)
+	QueryRow(query string, args ...any) *sql.Row
+}
+
+// Executar runs a statement on the current transaction (or the pool).
+func (b *Banco) Executar(query string, args ...any) (sql.Result, error) {
+	return b.x().Exec(query, args...)
+}
+
+func (b *Banco) x() executor {
+	if b.tx != nil {
+		return b.tx
+	}
+	return b.DB
+}
+
+// EmTransacao runs fn with a Banco whose operations share one transaction:
+// all of them are kept if fn succeeds, none if it fails or panics. Nested
+// calls join the outer transaction.
+func (b *Banco) EmTransacao(fn func(tx *Banco) error) (err error) {
+	if b.tx != nil {
+		return fn(b)
+	}
+	t, err := b.DB.Begin()
+	if err != nil {
+		return err
+	}
+	inner := *b
+	inner.tx = t
+	defer func() {
+		if r := recover(); r != nil {
+			t.Rollback()
+			panic(r)
+		}
+		if err != nil {
+			t.Rollback()
+			return
+		}
+		err = t.Commit()
+	}()
+	return fn(&inner)
 }
 
 func classify(err error) error {
@@ -543,7 +597,7 @@ func (b *Banco) AtualizarOnde(modelo string, c Consulta, dados map[string]any) (
 		// '?' placeholders are positional in textual order: SET values first.
 		all = append(append([]any{}, vals...), args...)
 	}
-	res, err := b.DB.Exec(query, all...)
+	res, err := b.x().Exec(query, all...)
 	if err != nil {
 		return 0, classify(err)
 	}

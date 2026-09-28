@@ -128,6 +128,7 @@ func (interp *Interpreter) prepareWrite(c *Call, m *ast.Model, data map[string]a
 	out := map[string]any{}
 	reveal := map[string]any{}
 	errs := fieldErrors{}
+	db := interp.dbOf(c.Ctx())
 	for k, v := range data {
 		f := fieldByName(m, k)
 		if f == nil {
@@ -153,7 +154,7 @@ func (interp *Interpreter) prepareWrite(c *Call, m *ast.Model, data map[string]a
 			case f.Type == ast.FieldVisibilidade:
 				out[key] = "private"
 			case f.NumberedBy != "" && out[strings.ToLower(f.NumberedBy)] != nil:
-				n, err := interp.DB.Sequencia(fmt.Sprintf("%s.%s:%v", strings.ToLower(m.Name), key, toString(out[strings.ToLower(f.NumberedBy)])))
+				n, err := db.Sequencia(fmt.Sprintf("%s.%s:%v", strings.ToLower(m.Name), key, toString(out[strings.ToLower(f.NumberedBy)])))
 				if err != nil {
 					panic(c.Fail(0, "numeração de %s: %s", f.Name, err))
 				}
@@ -189,7 +190,7 @@ func (interp *Interpreter) prepareWrite(c *Call, m *ast.Model, data map[string]a
 			continue
 		}
 		if f.Type == ast.FieldLista {
-			list, msg := interp.checkList(f, v)
+			list, msg := interp.checkList(db, f, v)
 			if msg != "" {
 				errs.add(f.Name, msg)
 				continue
@@ -233,20 +234,20 @@ func (interp *Interpreter) prepareWrite(c *Call, m *ast.Model, data map[string]a
 			if !create {
 				filters["id__diferente"] = id
 			}
-			if n, err := interp.DB.ContarFiltro(strings.ToLower(m.Name), banco.Consulta{Filtros: filters}); err == nil && n > 0 {
+			if n, err := db.ContarFiltro(strings.ToLower(m.Name), banco.Consulta{Filtros: filters}); err == nil && n > 0 {
 				errs.add(f.Name, "has already been taken")
 				continue
 			}
 		}
 		if f.Reference != "" {
-			if row, _ := interp.DB.BuscarRegistro(strings.ToLower(f.Reference), int64(toNumber(v))); row == nil {
+			if row, _ := db.BuscarRegistro(strings.ToLower(f.Reference), int64(toNumber(v))); row == nil {
 				errs.add(strings.TrimSuffix(f.Name, "_id"), "must exist")
 				continue
 			}
 		}
 		out[key] = v
 	}
-	interp.address(m, out, create, id, errs)
+	interp.address(db, m, out, create, id, errs)
 	if len(errs) > 0 {
 		lang := interp.Lang()
 		for k, list := range errs {
@@ -437,7 +438,7 @@ func secretActive(m *ast.Model, row map[string]any) bool {
 
 // checkList normalizes a list field ("a, b" or [..]) and validates that
 // referenced records exist. It is stored as JSON text.
-func (interp *Interpreter) checkList(f *ast.Field, v any) (string, string) {
+func (interp *Interpreter) checkList(db *banco.Banco, f *ast.Field, v any) (string, string) {
 	var items []any
 	switch x := v.(type) {
 	case []any:
@@ -464,7 +465,7 @@ func (interp *Interpreter) checkList(f *ast.Field, v any) (string, string) {
 			if !ok {
 				return "", "must contain ids"
 			}
-			if row, _ := interp.DB.BuscarRegistro(f.ListOf, int64(id)); row == nil {
+			if row, _ := db.BuscarRegistro(f.ListOf, int64(id)); row == nil {
 				return "", "must exist"
 			}
 			sv = toString(id)

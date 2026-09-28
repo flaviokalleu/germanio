@@ -1,7 +1,7 @@
 # AGENT_STATE
 
 ## CURRENT_PHASE
-Fase 3 — GitLab em linguagem de intenção; próximo: transação (G39), paginação SQL (G40), notificações (todos/eventos), admin, busca global.
+Fase 3 — GitLab em linguagem de intenção; próximo: paginação SQL (G40), notificações (todos/eventos), admin, busca global.
 
 ## CURRENT_GOAL
 Continuar o GitLab por intenção: issues → merge requests → CI/CD → páginas (UI),
@@ -30,7 +30,7 @@ evoluindo o Germanio a cada parede encontrada.
 - Extensão VS Code (ícone cristal, gramática de intenção, temas) em `vscode-germanio/`.
 
 ## IN_PROGRESS
-- Próximo: G39 (transação), G40 (paginação SQL), notificações/todos, admin, busca global.
+- Próximo: G40 (paginação SQL), notificações/todos, admin, busca global, G54/G55 (runner externo, artefatos).
 
 ## NEXT
 5. `ge explain`/`ge check`/`ge graph` sobre a camada de intenção.
