@@ -1,15 +1,9 @@
 # GitLab FOSS reimplementado em Germanio.
-# O que existe, quem pode fazer o quê, o que deve acontecer.
+#
+#   backend/   o que existe, quem pode fazer o quê, o que acontece
+#   frontend/  o que aparece para as pessoas
 
 crie sistema gitlab
 
-importar "identidade/usuarios.ge"
-importar "grupos/grupos.ge"
-importar "projetos/projetos.ge"
-importar "issues/issues.ge"
-importar "merge_requests/merge_requests.ge"
-importar "ci/pipelines.ge"
-importar "webhooks/webhooks.ge"
-importar "web/paginas.ge"
-importar "regras.ge"
-importar "compatibilidade.ge"
+importar "backend"
+importar "frontend"

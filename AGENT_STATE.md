@@ -1,7 +1,7 @@
 # AGENT_STATE
 
 ## CURRENT_PHASE
-Fase 3 — GitLab em linguagem de intenção; próximo: webhooks, notificações (todos/eventos), admin, markdown, busca global.
+Fase 3 — GitLab em linguagem de intenção; próximo: endereço hierárquico (G41, em stash), notificações (todos/eventos), admin, busca global.
 
 ## CURRENT_GOAL
 Continuar o GitLab por intenção: issues → merge requests → CI/CD → páginas (UI),
@@ -23,9 +23,14 @@ evoluindo o Germanio a cada parede encontrada.
 - `ge explain <dado>` / `ge check` entendem a camada de intenção.
 - Skill de simplicidade em `skills/germanio-simplicity/SKILL.md` (gate no CLAUDE.md); issues refeitas por ela.
 - Domínio GitLab em português; nomes da API v4 em `compatibilidade.ge`.
+- Webhooks (fila persistente), escopos de token, Markdown seguro (`formatado`), bloqueio de usuário com E2E.
+- Segurança: IP real só de proxies declarados (G25); SQLite com busy_timeout.
+- Estrutura de projeto `backend/` + `frontend/` (`germanio init`, importação de pastas,
+  `importar X do backend`, papéis por pasta); GitLab reorganizado nela.
+- Extensão VS Code (ícone cristal, gramática de intenção, temas) em `vscode-germanio/`.
 
 ## IN_PROGRESS
-- Webhooks/notificações.
+- G41 endereço hierárquico: AST + resolver em `git stash` ("G41 endereço (em andamento)"); falta runtime (cálculo, espaço de nomes, cascata) e refatorar regras.ge.
 
 ## NEXT
 5. `ge explain`/`ge check`/`ge graph` sobre a camada de intenção.
