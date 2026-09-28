@@ -492,7 +492,10 @@ func (p *Parser) parseCrie(head dline, body []dline) error {
 					kw := wordsOf(k.toks)
 					if len(kw) == 3 && kw[1] == "por" && kw[2] == "pagina" {
 						pg.PerPage, _ = strconv.Atoi(kw[0])
+						continue
 					}
+					return p.teach(k.toks[0], "\""+lineText(k)+"\" não é algo que mostre aceite",
+						"abaixo de mostre só cabe quantos registros aparecem por página", "escreva, por exemplo: 20 por página", "")
 				}
 				i += len(children(body, i))
 			case bw[0] == "permita":
@@ -506,8 +509,13 @@ func (p *Parser) parseCrie(head dline, body []dline) error {
 					}
 				}
 				i += len(children(body, i))
+			case len(bw) == 3 && bw[1] == "por" && bw[2] == "pagina":
+				return p.teach(body[i].toks[0], "\""+lineText(body[i])+"\" está no nível da página",
+					"quantos registros aparecem por página é uma propriedade do que a página mostra",
+					"escreva a linha recuada abaixo de mostre:\n    mostre <dados>\n        "+lineText(body[i]), "")
 			default:
-				return p.errorf(body[i].toks[0], "na página use mostre <dados> e permita <ações>")
+				return p.teach(body[i].toks[0], "\""+lineText(body[i])+"\" não é uma parte de página",
+					"uma página diz o que mostra e o que permite fazer", "use mostre <dados> e permita <ações>", "")
 			}
 		}
 		p.intent().Pages = append(p.intent().Pages, pg)

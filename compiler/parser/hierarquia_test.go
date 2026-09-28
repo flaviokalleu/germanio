@@ -200,6 +200,8 @@ func TestHierarquiaErros(t *testing.T) {
 			[]string{"\"opcional\" está recuada abaixo de \"grupo\""}},
 		{"frase de intenção em inglês", "create system Shop\n", []string{"não entendi a linha", "só entende português", "crie sistema Shop"}},
 		{"login com complemento", "tenha login com email e senha\n", []string{"mistura a declaração do login", "login usa email"}},
+		{"por página no nível da página", "tenha clientes\n\ncada cliente tem\n    nome\n\npágina Clientes\n    mostre clientes\n    20 por página\n", []string{"está no nível da página", "abaixo de mostre"}},
+		{"linha desconhecida sob mostre", "tenha clientes\n\ncada cliente tem\n    nome\n\npágina Clientes\n    mostre clientes\n        em ordem\n", []string{"não é algo que mostre aceite"}},
 		{"integração em conflito", "projetos\n    tem\n        nome\n    integração\n        nome \"projects\"\n\ndisponibilize projetos para integração como \"repos\"\n", []string{"já é \"projects\""}},
 	}
 	for _, c := range cases {

@@ -201,7 +201,7 @@ func (a *intentAPI) msg(kind string, e *ast.Entity) string {
 	}
 	switch kind {
 	case "404":
-		return label + " não encontrado"
+		return label + " inexistente" // "inexistente" has no gender: a tarefa, o projeto
 	case "403":
 		return "Você não tem permissão para fazer isso"
 	case "401":
