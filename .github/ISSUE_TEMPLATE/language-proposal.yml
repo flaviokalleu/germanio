@@ -1,0 +1,28 @@
+name: Language proposal (GEP)
+description: A change to syntax, semantics, the runtime contract, the standard library or a capability.
+labels: [gep]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Read [docs/gep/README.md](https://github.com/flaviokalleu/germanio/blob/master/docs/gep/README.md) first. Bug fixes and typos do not need a GEP. This issue is for the discussion; the proposal itself is a pull request adding a file under `docs/gep/`.
+  - type: textarea
+    id: intent
+    attributes:
+      label: Intent
+      description: The human intent this makes possible or simpler.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: The .ge before and after, and what `ge explain` would show.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: true

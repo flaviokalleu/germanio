@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Germanio social preview</title>
+<!-- Source of assets/social/social-preview.png (1280x640). Render with:
+     firefox --headless --window-size=1280,640 --screenshot social-preview.png file://$PWD/social-preview.html -->
+<style>
+  html, body { margin: 0; width: 1280px; height: 640px; overflow: hidden; }
+  body {
+    background: radial-gradient(circle at 26% 50%, #0b2a4a 0%, #070b14 58%);
+    color: #e8f4ff; font-family: "DejaVu Sans", "Liberation Sans", Arial, sans-serif;
+    display: flex; align-items: center; box-sizing: border-box; padding: 0 88px 0 64px; gap: 56px;
+  }
+  img { width: 420px; height: 420px; flex: none; }
+  h1 { margin: 0 0 18px; font-size: 92px; letter-spacing: 4px; font-weight: 800; color: #ffffff; }
+  .tag { font-size: 40px; margin: 0 0 34px; color: #bfe9ff; }
+  ul { list-style: none; margin: 0; padding: 0; font-size: 34px; line-height: 1.55; }
+  li::before { content: ""; display: inline-block; width: 14px; height: 14px; margin-right: 18px;
+               background: #00b8ff; transform: rotate(45deg) translateY(-4px); }
+  .foot { margin-top: 36px; font-size: 24px; color: #7fa7c9; }
+</style>
+</head>
+<body>
+  <img src="../germanio.png" alt="">
+  <div>
+    <h1>GERMANIO</h1>
+    <p class="tag">Programming for humans.</p>
+    <ul>
+      <li>Simple.</li>
+      <li>Deterministic.</li>
+      <li>AI optional.</li>
+    </ul>
+    <p class="foot">Open-source intent-oriented language · built in Go</p>
+  </div>
+</body>
+</html>

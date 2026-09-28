@@ -1,0 +1,24 @@
+name: Bug report
+description: Something does not work as the documentation says (a confusing error message counts).
+labels: [bug]
+body:
+  - type: textarea
+    id: ge
+    attributes:
+      label: The .ge that shows the problem
+      description: The smallest program you can make. Remove secrets.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected and what happened
+      description: Include the full output or error message.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `ge versao` or the commit (`git rev-parse --short HEAD`), and your OS.
