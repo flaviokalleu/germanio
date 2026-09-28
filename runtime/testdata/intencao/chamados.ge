@@ -1,0 +1,31 @@
+crie sistema Chamados
+
+tenha usuarios, chamados
+
+cada usuario tem
+    nome obrigatório
+    email obrigatório e único
+    senha
+
+tenha login
+tenha cadastro
+login usa email
+
+cada chamado tem
+    titulo obrigatório
+    autor
+
+chamado começa aberto
+
+chamado pode
+    fechar
+    reabrir
+
+usuario pode
+    criar chamados
+    ver chamados
+
+autor pode
+    editar chamados
+    fechar chamados
+    reabrir chamados
