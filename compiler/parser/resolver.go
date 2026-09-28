@@ -1192,10 +1192,27 @@ func (r *resolver) checkVerb(e *ast.Entity, verb string, pos diagnostics.Positio
 
 // governed lists entities administered through e: its children and, when
 // e has members, the membership records.
+// governed: what `administrar X` also covers — the data that belongs to X
+// (a required reference to it), never data that only refers to X optionally
+// (an issue may sit in a milestone; it does not belong to it).
 func (r *resolver) governed(e *ast.Entity) []*ast.Entity {
 	var out []*ast.Entity
 	for _, c := range e.Children {
-		out = append(out, r.app.Entities[c])
+		child := r.app.Entities[c]
+		if child == nil {
+			continue
+		}
+		owned := false
+		for field, target := range child.Parents {
+			if target == e.Singular {
+				if f := fieldByNameAST(child.Model, field); f != nil && f.Required {
+					owned = true
+				}
+			}
+		}
+		if owned {
+			out = append(out, child)
+		}
 	}
 	if e.HasMembers && r.app.MemberModel != "" {
 		out = append(out, r.app.Entities[r.app.MemberModel])

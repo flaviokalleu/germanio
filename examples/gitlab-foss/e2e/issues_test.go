@@ -198,3 +198,18 @@ func TestBuscaGeral(t *testing.T) {
 	}
 	ada.must("GET", "/api/v4/search?scope=wikis&search=farol", nil, 400)
 }
+
+// Administrar milestones não dá poder sobre as issues que apenas estão num
+// milestone: só maintainer exclui issues (regressão).
+func TestAdministrarNaoGovernaReferenciaOpcional(t *testing.T) {
+	base := gitlab(t)
+	ada := signup(t, base, "ada")
+	bob := signup(t, base, "bob")
+	p := ada.must("POST", "/api/v4/projects", map[string]any{"name": "P", "path": "p"}, 201)
+	bobID := bob.must("GET", "/api/v4/user", nil, 200)["id"]
+	ada.must("POST", "/api/v4/projects/"+id(p)+"/members", map[string]any{"user_id": bobID, "access_level": 20}, 201)
+	m := bob.must("POST", "/api/v4/projects/"+id(p)+"/milestones", map[string]any{"title": "v1"}, 201) // reporter administra milestones
+	ada.must("POST", "/api/v4/projects/"+id(p)+"/issues", map[string]any{"title": "x", "milestone_id": m["id"]}, 201)
+	bob.must("DELETE", "/api/v4/projects/"+id(p)+"/issues/1", nil, 403)
+	ada.must("DELETE", "/api/v4/projects/"+id(p)+"/issues/1", nil, 204)
+}
