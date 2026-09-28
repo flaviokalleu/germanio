@@ -90,15 +90,16 @@ loja/
 
 | Nível | Uso | Exemplos |
 | --- | --- | --- |
-| 1 — Intenção / declaração | padrão: existência, relações, permissões, estados e páginas | `tenha clientes`, `cliente tem pedidos`, `issue pode fechar` |
+| 1 — Intenção / declaração | padrão: existência, relações, permissões, estados e páginas | `clientes` + `tem`, `issue pode fechar`, `acesso` |
 | 2 — Configuração | personalizar comportamento sem implementar mecanismos | `login bloqueia após 10 tentativas por 10 minutos` |
 | 3 — Lógica | último recurso para regra específica não expressável declarativamente | `quando`, `antes de`, `se`, `para cada` |
 | 4 — Primitivas | controle técnico avançado | `git.*`, `cripto.*`, `acesso.*`, `rotas`, `requisicao`, `responder` |
+| 5 — Interop / adaptadores | protocolos de sistemas externos, só em `integracoes/` | `integracoes/gitlab_runner.ge` |
 
-Antes de usar nível 3, verifique se falta uma abstração genérica. Nível 4 não deve ser
-necessário para aplicações comuns. A progressão é **intenção → configuração → lógica →
-primitivas → interop/adaptador**. Adaptador é uma fronteira arquitetural, não um quinto
-nível obrigatório para o iniciante.
+Antes de usar nível 3, verifique se falta uma abstração genérica. Níveis 4 e 5 não devem ser
+necessários para aplicações comuns. O iniciante começa no nível 1 e só desce quando precisa;
+nenhuma operação comum pode exigir aprender um nível inferior. Os níveis são subconjuntos da
+mesma linguagem: um arquivo de nível 1 continua válido quando o projeto usa os demais.
 
 Simplicidade não significa linguagem natural livre: cada construção tem significado formal,
 determinístico e documentado. Não há IA interpretando programas em runtime.
@@ -125,6 +126,166 @@ ADAPTADOR DE COMPATIBILIDADE**, pode conhecer `/api/v4/...`, `CI_JOB_ID`, `JOB-T
 mundo externo ↔ capabilities genéricas. Não pode substituir autorização ou invariantes.
 HTTP e Git são protocolos genéricos permitidos no core; a proibição é acoplar o core ao
 contrato particular de um produto, mesmo que seus campos sejam renomeados em português.
+
+## Sintaxe hierárquica e contextual
+
+**O que está abaixo pertence ao contexto que está acima.** A indentação carrega significado:
+o caminho de blocos fornece o sujeito, o aspecto e o ator que uma frase plana precisaria repetir.
+
+```ge
+projetos
+
+    tem
+        nome obrigatório
+        caminho obrigatório
+        visibilidade
+        repositório
+        membros com papel
+
+    pertence a
+        grupo opcional
+
+    pode
+        ser arquivado
+
+    regras
+        herda membros do grupo
+        quem cria vira owner
+        precisa de pelo menos um owner
+        não pode ser mais visível que o grupo
+        arquivado é somente leitura
+
+    acesso
+        guest
+            ver
+        reporter
+            baixar código
+        developer
+            criar
+            enviar código
+        somente maintainer
+            enviar código para a branch padrão
+        somente owner
+            excluir
+
+    integração
+        nome "projects"
+```
+
+`projetos › acesso › developer › enviar código` **é** `developer pode enviar código para projetos`:
+os dois produzem o mesmo fato, com a mesma semântica, validação e diagnóstico. A forma
+hierárquica é a forma recomendada para descrever um dado; a frase plana continua válida para
+fatos isolados e para quem ainda não sabe onde encaixar a regra. O formatter não converte uma
+na outra.
+
+Germanio não busca o menor número de caracteres; busca o menor número de conceitos. Por isso
+o aspecto nunca é omitido: `projetos` › `developer` › `enviar` é inválido; `acesso` diz que o
+que vem abaixo são pessoas e o que elas podem fazer.
+
+### Layout (normativo)
+
+- Indentação só com **espaços**. Tab no início de linha é erro; `ge fmt` o substitui.
+- Uma linha mais recuada que a anterior **abre um nível** filho dela; voltar a um recuo
+  **fecha** os níveis até ele. Voltar para um recuo que não pertence a nenhum nível aberto
+  é erro (a linha não tem pai). O fim do arquivo fecha todos os níveis.
+- A forma canônica é **4 espaços por nível**; `ge fmt` a produz. Outros passos consistentes
+  (por exemplo 2) são aceitos, porque só a estrutura tem significado.
+- Linhas vazias e linhas só de comentário (`#`) não abrem nem fecham níveis.
+- Comentário no fim da linha pertence à linha. Texto entre aspas nunca é indentação.
+- Uma linha lógica não continua na linha seguinte; listas longas usam um item por linha.
+
+### Gramática (sobre os símbolos do layout)
+
+`NL` é fim de linha; `ABRE`/`FECHA` são as mudanças de nível do layout. Palavras em
+português podem ser escritas com ou sem acento e em qualquer idioma do léxico.
+
+```ebnf
+programa     = { item } ;
+item         = frase_plana | bloco_dado | bloco_pagina | construcao_do_sistema ;
+bloco_dado   = nome_do_dado NL ABRE secao { secao } FECHA ;
+bloco_pagina = "página" Nome NL ABRE { secao_pagina } FECHA ;
+
+secao        = "tem" ( itens NL | NL ABRE { linha_de_campo NL } FECHA )
+             | "pertence a" ( alvo NL | NL ABRE { alvo NL } FECHA )
+             | "começa" estado NL
+             | "pode" ( capacidades NL | NL ABRE { capacidade NL } FECHA )
+             | "regras" NL ABRE { regra } FECHA
+             | "acesso" NL ABRE { bloco_ator } FECHA
+             | "permita" NL ABRE { permissao NL } FECHA
+             | "integração" NL [ ABRE "nome" Texto NL FECHA ]
+             | ("quando" | "antes de") verbo NL ABRE instrucoes FECHA
+             | frase_do_dado NL [ ABRE { linha NL } FECHA ] ;
+
+bloco_ator   = [ "somente" ] ator { "ou" ator } NL ABRE { acao NL } FECHA ;
+acao         = verbo [ "seu" | "sua" | "seus" | "suas" ] [ alvo ] ;
+```
+
+`nome_do_dado` é o nome no plural usado em `tenha` (o bloco também **declara** o dado, dispensando
+`tenha`). `frase_do_dado` são as frases cujo sujeito é o próprio dado (tabela abaixo). Uma seção
+fora desta lista, uma seção vazia ou uma palavra de outro contexto são erros que listam as seções
+válidas. `construcao_do_sistema` são as construções sem sujeito único (`tenha papeis`,
+`tenha login`, `login …`, `crie sistema`, `importar`, `vocabulário da integração`,
+`integração em`, `mensagens em`, `escopo`, `ao iniciar`, `tenha busca geral em`,
+`tenha administrador inicial`, `endereços reservados`, `traduza`).
+
+### Tabela de seções (dentro de um dado D)
+
+| Seção e conteúdo | Frase plana equivalente |
+| --- | --- |
+| `tem` + campos, relações e pessoas (um por linha) ou `tem a, b` | `cada d tem` + linhas / `d tem a, b` |
+| `pertence a` + `grupo opcional`, `cliente como dono` | `d pertence a grupo opcional` |
+| `começa aberta` | `d começa aberta` |
+| `pode` + `fechar`, `reabrir`, `ser confidencial` | `d pode fechar` … |
+| `regras` › `quem cria vira owner` | `quem cria d vira owner` |
+| `regras` › `precisa de pelo menos um owner` | `todo d precisa ter pelo menos um owner` |
+| `regras` › `herda membros do grupo` | `d herda membros do grupo` |
+| `regras` › `não pode ser mais visível que o grupo` | `d não pode ser mais visível que o grupo` |
+| `regras` › `arquivado é somente leitura` | `d arquivado é somente leitura` |
+| `regras` › `mesclado é final` | `d mesclado é final` |
+| `regras` › `confidencial pode ser vista por` + pessoas | `d confidencial pode ser vista por` + pessoas |
+| `acesso` › `developer` › `enviar código` | `developer pode enviar código para D` |
+| `acesso` › `usuario` › `criar seus` | `usuario pode criar seus D` |
+| `acesso` › `maintainer` › `adicionar membros` | `maintainer pode adicionar membros` |
+| `acesso` › `somente owner` › `excluir` | `somente owner pode excluir D` |
+| `acesso` › `somente maintainer` › `enviar código para a branch padrão` | `somente maintainer pode enviar código para a branch padrão dos D` |
+| `permita` › `pesquisar`, `filtrar por estado, autor` | `permita pesquisar D`, `permita filtrar D por estado, autor` |
+| `integração` / `integração` › `nome "projects"` | `disponibilize D para integração [como "projects"]` |
+| `quando criar` / `antes de excluir` + corpo | `quando criar d` / `antes de excluir d` |
+| `recebe aprovações`, `recebe eventos do projeto` + tipos | `d recebe …` |
+| `executa pipelines a cada envio de código conforme "arquivo"` | `d executa …` |
+| `executam jobs` (em `runners`) | `runners executam jobs` |
+| `repositório pode começar com "README.md" contendo "# {nome}"` | `repositório do d pode começar com …` |
+
+Uma **ação sem alvo** vale para o próprio dado. Uma ação com alvo explícito (`adicionar membros`,
+`ver labels`) só é aceita se o alvo for o dado ou algo que pertence a ele; para outro dado, a
+regra vai no bloco dele. `seu/seus` restringe aos registros da própria pessoa.
+
+### Página
+
+`página Clientes` + `mostre clientes`, `permita` + ações e `20 por página` **é** `crie página
+Clientes` com o mesmo corpo. `pagina "/caminho"` (com texto entre aspas) continua sendo a página
+estática do nível técnico; os dois se distinguem pelo que vem depois da palavra.
+
+### Fusão e conflitos
+
+O mesmo dado pode ser descrito em vários blocos e arquivos, e em forma plana ou hierárquica:
+os fatos se somam. O mesmo fato repetido não muda nada. Um valor que só pode ter um valor
+(estado inicial, nome de integração) declarado com valores diferentes é erro que mostra as
+duas origens. A ordem dos arquivos não muda o resultado.
+
+### Erros
+
+Linhas que nenhuma construção reconhece são erro, nunca ignoradas. Todo erro de layout ou de
+contexto diz **o que aconteceu, onde (arquivo:linha e caminho do bloco), por que e como
+corrigir**, e, dentro de um bloco, a frase plana equivalente do que foi entendido:
+
+```text
+backend/projetos.ge:12 — "enviar código" não tem um nível aberto acima dele.
+Por quê: cada nível abre embaixo da linha de cima; este recuo (6) não corresponde a nenhum
+bloco aberto (4 = acesso, 8 = developer).
+Como corrigir: recue para 12 espaços para ficar dentro de "developer".
+Equivale a: developer pode enviar código para projetos
+```
 
 ## O que existe
 
@@ -367,7 +528,9 @@ Não invente sintaxe para destinos arbitrários neste documento.
 
 ## Inspeção: `ge explain`
 
-Toda inferência deve ser inspecionável. `ge explain issue` deve mostrar campos declarados,
+Toda inferência deve ser inspecionável. Para cada fato, `ge explain` mostra a origem
+(arquivo, linha e caminho hierárquico, como `projetos › acesso › developer`) e a frase plana
+equivalente. `ge explain issue` deve mostrar campos declarados,
 campos e tipos inferidos com motivo, campos internos, relações, estados, transições,
 permissões, visibilidade, validações, capabilities ativadas, integrações e persistência derivada.
 Nunca deve revelar valores secretos. Exemplo **conceitual**, não transcrição da CLI atual:
@@ -386,7 +549,9 @@ de cada inferência são requisitos normativos, não cobertura integral comprova
 
 ## Verificação: `ge check`
 
-`ge check app.ge` deve detectar, quando estaticamente possível: relações inválidas,
+`ge check app.ge` deve detectar, quando estaticamente possível: indentação inválida (tab,
+recuo sem pai), seção fora do lugar ou desconhecida, linha não reconhecida, valor único
+declarado com valores diferentes, relações inválidas,
 entidades desconhecidas, ações inexistentes, permissões contraditórias, estados ou transições
 impossíveis, inferências ambíguas, capabilities incompletas, integrações inválidas e regras
 contraditórias. Campos não utilizados devem gerar aviso quando a análise puder demonstrá-lo;
@@ -505,6 +670,11 @@ A tabela é um contrato de aceitação, não uma declaração de que todos os te
 | `runners executam jobs` | mesma capability com executor sem GitLab; claim concorrente, expiração, retry, cancelamento, log e token limitado ao trabalho |
 | `valor texto` | declaração explícita vence heurística; explain informa a origem; contexto ambíguo gera diagnóstico educativo |
 | adaptador | traduz protocolo; não declara domínio, páginas nem regras do produto; não contorna permissões |
+| sintaxe hierárquica | cada linha da tabela de seções produz o mesmo aplicativo que sua frase plana; um app inteiro (GitLab) em forma hierárquica passa nos mesmos testes de execução |
+| layout | tab e recuo sem pai são erros com posição; linhas vazias e comentários não mudam a estrutura; EOF fecha os níveis |
+| contexto | seção desconhecida, seção fora do lugar e linha não reconhecida são erros com sugestão; ação com alvo de outro dado é recusada |
+| fusão | blocos do mesmo dado em arquivos diferentes se somam; valor único com dois valores é erro com as duas origens |
+| `ge fmt` | idempotente; 4 espaços por nível; preserva comentários; os fatos antes e depois são idênticos |
 
 ## Decisões e limites que exigem acompanhamento
 
@@ -521,6 +691,14 @@ A tabela é um contrato de aceitação, não uma declaração de que todos os te
   operações em lote (ainda não existem).
 - Verificar a fronteira entre configuração externa e adaptador para cada construção já
   suportada. Não presumir que mover um arquivo para `integracoes/` torna qualquer sintaxe válida.
+
+### Pendências da sintaxe hierárquica
+
+- Verbos que ligam e desligam uma condição sem máquina de estados (`pode` › `arquivar`,
+  `restaurar`) ainda não existem; hoje a forma é `pode` › `ser arquivado`.
+- Seções de página além de `mostre`, `permita` e `N por página` (`topo`, `vazio`, `gráfico`,
+  `lista`, indicadores como `total de clientes`) são direção, não contrato implementado.
+- `ge check --nivel N` (avisar construções acima de um nível) ainda não existe.
 
 ## Checklist de design de novas construções
 

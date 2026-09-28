@@ -96,6 +96,50 @@ issue confidencial pode ser vista por
 
 Referência de simplicidade, não sintaxe a copiar cegamente.
 
+## 19b. Hierarquia e contexto
+
+A indentação carrega significado: **o que está abaixo pertence ao contexto que está acima**
+(`docs/INTENCAO.md` › Sintaxe hierárquica). Antes de escrever uma linha, pergunte:
+
+- Qual é a intenção? Qual é o contexto pai?
+- Essa informação precisa ser repetida, ou a hierarquia já a fornece?
+- Estou expressando intenção ou implementação?
+- Um leigo entende aproximadamente? É determinístico?
+- Estou criando keyword específica demais? Isso deveria ser capability?
+- Isto pertence ao domínio, ao core ou a um adaptador?
+
+Bom — o dado é o contexto; cada aspecto tem um nome; o ator fica sob `acesso`:
+
+```ge
+issues
+    tem
+        titulo obrigatório até 255
+        autor
+        responsaveis
+    começa aberta
+    pode
+        fechar
+        reabrir
+    acesso
+        guest
+            ver
+        autor ou planner
+            editar
+            fechar
+```
+
+Ruim — repete o sujeito em toda linha (`issue pode fechar`, `issue pode reabrir`,
+`guest pode ver issues`, `autor pode editar issues`…) quando um bloco já o daria.
+
+Ruim — omite o aspecto e perde o significado: `issues` › `guest` › `ver`
+(guest é campo? papel? estado?). `acesso` diz que abaixo vêm pessoas.
+
+Ruim — alvo de outro dado dentro do bloco: `issues` › `acesso` › `guest` › `ver projetos`.
+A regra de projetos vai no bloco de `projetos`.
+
+Não otimize caracteres: otimize conceitos. Na dúvida entre uma frase plana isolada e um
+bloco, use o bloco quando o dado tem vários aspectos, e a frase para um fato solto.
+
 ## 20–22. Compiler e runtime
 
 O compiler deriva modelos, relações, índices, CRUD, busca, filtros, paginação, transições,
@@ -171,6 +215,7 @@ runtime independente da aplicação.
 [ ] Um profissional consegue inspecionar/personalizar?
 [ ] É determinístico?
 [ ] Está na camada certa (domínio simples, core genérico, adaptador em integracoes/)?
+[ ] A hierarquia fornece o contexto em vez de repetir o sujeito?
 ```
 
 Se houver problema, não finalize: refatore Germanio ou o `.ge`.

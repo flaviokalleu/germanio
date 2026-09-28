@@ -1,8 +1,10 @@
 # AGENT_STATE
 
 ## CURRENT_PHASE
-Fase 3 — GitLab em linguagem de intenção. PAUSADO em ponto seguro (2026-09-28) aguardando nova
-diretriz do usuário sobre evolução da sintaxe e da documentação normativa. Não iniciar features.
+Evolução da sintaxe oficial (hierárquica/contextual). Norma escrita em `docs/INTENCAO.md` ›
+Sintaxe hierárquica (Fase 4 concluída); implementação em andamento: layout formal, redução de
+blocos a frases planas com origem, linhas desconhecidas como erro, `ge fmt`/`check`/`explain`,
+migração do GitLab. Pesquisa em `docs/research/sintaxe-hierarquica.md`.
 
 ## CURRENT_GOAL
 Continuar o GitLab por intenção: issues → merge requests → CI/CD → páginas (UI),
