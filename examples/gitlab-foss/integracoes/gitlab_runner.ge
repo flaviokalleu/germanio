@@ -6,82 +6,82 @@
 # avança está em backend/.
 
 logica
-  funcao estado_gitlab(s)
-    se s.cancelado
-      retornar "canceled"
-    se s.estado == "sucesso"
-      retornar "success"
-    se s.estado == "falhou"
-      retornar "failed"
-    retornar "running"
+    funcao estado_gitlab(s)
+        se s.cancelado
+            retornar "canceled"
+        se s.estado == "sucesso"
+            retornar "success"
+        se s.estado == "falhou"
+            retornar "failed"
+        retornar "running"
 
-  funcao resultado_germanio(state)
-    se state == "success"
-      retornar "sucesso"
-    se state == "failed"
-      retornar "falhou"
-    retornar nulo
+    funcao resultado_germanio(state)
+        se state == "success"
+            retornar "sucesso"
+        se state == "failed"
+            retornar "falhou"
+        retornar nulo
 
-  # Variáveis do job no formato do runner; os nomes CI_* vêm de gitlab_ci.ge.
-  funcao variaveis_do_runner(t, servidor, repo)
-    definir v = variaveis_gitlab(t)
-    v.CI_SERVER_URL = servidor
-    definir lista = [{key: "CI_JOB_TOKEN", value: t.token, public: falso, masked: verdadeiro}, {key: "CI_REPOSITORY_URL", value: repo, public: falso, masked: verdadeiro}]
-    para cada nome em chaves(v)
-      lista = adicionar(lista, {key: nome, value: texto(v[nome]), public: verdadeiro, masked: falso})
-    retornar lista
+    # Variáveis do job no formato do runner; os nomes CI_* vêm de gitlab_ci.ge.
+    funcao variaveis_do_runner(t, servidor, repo)
+        definir v = variaveis_gitlab(t)
+        v.CI_SERVER_URL = servidor
+        definir lista = [{key: "CI_JOB_TOKEN", value: t.token, public: falso, masked: verdadeiro}, {key: "CI_REPOSITORY_URL", value: repo, public: falso, masked: verdadeiro}]
+        para cada nome em chaves(v)
+            lista = adicionar(lista, {key: nome, value: texto(v[nome]), public: verdadeiro, masked: falso})
+        retornar lista
 
-  funcao job_gitlab(t, host)
-    definir servidor = "http://" + host
-    definir repo = "http://gitlab-ci-token:" + t.token + "@" + host + "/" + t.repositorio + ".git"
-    definir ref = t.execucao.branch
-    definir variaveis = variaveis_do_runner(t, servidor, repo)
-    definir passos = [{name: "script", script: t.comandos, timeout: t.limite_segundos, when: "on_success", allow_failure: falso}]
-    se tamanho(t.depois) > 0
-      passos = adicionar(passos, {name: "after_script", script: t.depois, timeout: t.limite_segundos, when: "always", allow_failure: verdadeiro})
-    definir job = {id: t.id, token: t.token, allow_git_fetch: verdadeiro, job_info: {id: t.id, name: t.dados.nome, stage: t.dados.etapa, project_id: t.dono.id, project_name: t.dono.nome}, git_info: {repo_url: repo, ref: ref, sha: t.execucao.versao, before_sha: "0000000000000000000000000000000000000000", ref_type: "branch", refspecs: ["+refs/heads/" + ref + ":refs/remotes/origin/" + ref], depth: 20}, runner_info: {timeout: t.limite_segundos}, variables: variaveis, steps: passos, services: [], artifacts: [], cache: [], credentials: [], dependencies: [], features: {trace_sections: verdadeiro}}
-    se t.dados.imagem != nulo
-      job.image = {name: t.dados.imagem}
-    retornar job
+    funcao job_gitlab(t, host)
+        definir servidor = "http://" + host
+        definir repo = "http://gitlab-ci-token:" + t.token + "@" + host + "/" + t.repositorio + ".git"
+        definir ref = t.execucao.branch
+        definir variaveis = variaveis_do_runner(t, servidor, repo)
+        definir passos = [{name: "script", script: t.comandos, timeout: t.limite_segundos, when: "on_success", allow_failure: falso}]
+        se tamanho(t.depois) > 0
+            passos = adicionar(passos, {name: "after_script", script: t.depois, timeout: t.limite_segundos, when: "always", allow_failure: verdadeiro})
+        definir job = {id: t.id, token: t.token, allow_git_fetch: verdadeiro, job_info: {id: t.id, name: t.dados.nome, stage: t.dados.etapa, project_id: t.dono.id, project_name: t.dono.nome}, git_info: {repo_url: repo, ref: ref, sha: t.execucao.versao, before_sha: "0000000000000000000000000000000000000000", ref_type: "branch", refspecs: ["+refs/heads/" + ref + ":refs/remotes/origin/" + ref], depth: 20}, runner_info: {timeout: t.limite_segundos}, variables: variaveis, steps: passos, services: [], artifacts: [], cache: [], credentials: [], dependencies: [], features: {trace_sections: verdadeiro}}
+        se t.dados.imagem != nulo
+            job.image = {name: t.dados.imagem}
+        retornar job
 
-  funcao situacao_do_job(token, id)
-    definir s = trabalho_remoto.estado(token)
-    se s == nulo ou texto(s.id) != texto(id)
-      falhar(403, "403 Forbidden")
-    retornar s
+    funcao situacao_do_job(token, id)
+        definir s = trabalho_remoto.estado(token)
+        se s == nulo ou texto(s.id) != texto(id)
+            falhar(403, "403 Forbidden")
+        retornar s
 
 rotas
-  rota POST "/api/v4/runners/verify"
-    definir r = trabalho_remoto.executor(obter(requisicao.corpo, "token", ""))
-    se r == nulo
-      responder(403, {message: "403 Forbidden"})
-    responder(200, {id: r.id, token: requisicao.corpo.token, token_expires_at: nulo})
+    rota POST "/api/v4/runners/verify"
+        definir r = trabalho_remoto.executor(obter(requisicao.corpo, "token", ""))
+        se r == nulo
+            responder(403, {message: "403 Forbidden"})
+        responder(200, {id: r.id, token: requisicao.corpo.token, token_expires_at: nulo})
 
-  rota POST "/api/v4/jobs/request"
-    definir r = trabalho_remoto.executor(obter(requisicao.corpo, "token", ""))
-    se r == nulo
-      responder(403, {message: "403 Forbidden"})
-    definir t = trabalho_remoto.pegar(r)
-    se t == nulo
-      responder(204, nulo)
-    responder(201, job_gitlab(t, obter(requisicao.cabecalhos, "host", "localhost")))
+    rota POST "/api/v4/jobs/request"
+        definir r = trabalho_remoto.executor(obter(requisicao.corpo, "token", ""))
+        se r == nulo
+            responder(403, {message: "403 Forbidden"})
+        definir t = trabalho_remoto.pegar(r)
+        se t == nulo
+            responder(204, nulo)
+        responder(201, job_gitlab(t, obter(requisicao.cabecalhos, "host", "localhost")))
 
-  rota PUT "/api/v4/jobs/:id"
-    definir token = obter(requisicao.corpo, "token", "")
-    definir s = situacao_do_job(token, requisicao.parametros.id)
-    definir resultado = resultado_germanio(obter(requisicao.corpo, "state", ""))
-    se resultado != nulo
-      s = trabalho_remoto.concluir(token, resultado)
-    senao
-      s = trabalho_remoto.renovar(token)
-    responder(200, nulo, {"Job-Status": estado_gitlab(s)})
+    rota PUT "/api/v4/jobs/:id"
+        definir token = obter(requisicao.corpo, "token", "")
+        definir s = situacao_do_job(token, requisicao.parametros.id)
+        definir resultado = resultado_germanio(obter(requisicao.corpo, "state", ""))
+        se resultado != nulo
+            s = trabalho_remoto.concluir(token, resultado)
+        senao
+            s = trabalho_remoto.renovar(token)
+        responder(200, nulo, {"Job-Status": estado_gitlab(s)})
 
-  rota PATCH "/api/v4/jobs/:id/trace"
-    definir token = obter(requisicao.cabecalhos, "job-token", "")
-    situacao_do_job(token, requisicao.parametros.id)
-    definir inicio = numero(dividir(obter(requisicao.cabecalhos, "content-range", "0-0"), "-")[0])
-    definir s = trabalho_remoto.adicionar_log(token, obter(requisicao, "corpo", ""), inicio)
-    definir cabecalhos = {"Range": "0-" + texto(s.tamanho), "Job-Status": estado_gitlab(s), "X-GitLab-Trace-Update-Interval": "3"}
-    se nao s.aceito e nao s.cancelado
-      responder(416, nulo, cabecalhos)
-    responder(202, nulo, cabecalhos)
+    rota PATCH "/api/v4/jobs/:id/trace"
+        definir token = obter(requisicao.cabecalhos, "job-token", "")
+        situacao_do_job(token, requisicao.parametros.id)
+        definir inicio = numero(dividir(obter(requisicao.cabecalhos, "content-range", "0-0"), "-")[0])
+        definir s = trabalho_remoto.adicionar_log(token, obter(requisicao, "corpo", ""), inicio)
+        definir cabecalhos = {"Range": "0-" + texto(s.tamanho), "Job-Status": estado_gitlab(s), "X-GitLab-Trace-Update-Interval": "3"}
+        se nao s.aceito e nao s.cancelado
+            responder(416, nulo, cabecalhos)
+        responder(202, nulo, cabecalhos)

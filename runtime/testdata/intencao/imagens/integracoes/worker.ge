@@ -2,29 +2,29 @@
 # Protocolo mínimo de um worker próprio (JSON). Só traduz para trabalho_remoto.
 
 rotas
-  rota POST "/worker/pegar"
-    definir ex = trabalho_remoto.executor(obter(requisicao.corpo, "credencial", ""))
-    se ex == nulo
-      responder(403, {erro: "credencial inválida"})
-    definir t = trabalho_remoto.pegar(ex, obter(requisicao.corpo, "chave", ""))
-    se t == nulo
-      responder(204, nulo)
-    responder(200, {id: t.id, token: t.token, arquivo: t.dados.arquivo, formato: t.dados.formato, reserva_segundos: t.reserva_segundos})
+    rota POST "/worker/pegar"
+        definir ex = trabalho_remoto.executor(obter(requisicao.corpo, "credencial", ""))
+        se ex == nulo
+            responder(403, {erro: "credencial inválida"})
+        definir t = trabalho_remoto.pegar(ex, obter(requisicao.corpo, "chave", ""))
+        se t == nulo
+            responder(204, nulo)
+        responder(200, {id: t.id, token: t.token, arquivo: t.dados.arquivo, formato: t.dados.formato, reserva_segundos: t.reserva_segundos})
 
-  rota POST "/worker/log"
-    definir s = trabalho_remoto.adicionar_log(obter(requisicao.corpo, "token", ""), requisicao.corpo.texto, requisicao.corpo.inicio)
-    se s == nulo
-      responder(403, {erro: "token inválido"})
-    retornar s
+    rota POST "/worker/log"
+        definir s = trabalho_remoto.adicionar_log(obter(requisicao.corpo, "token", ""), requisicao.corpo.texto, requisicao.corpo.inicio)
+        se s == nulo
+            responder(403, {erro: "token inválido"})
+        retornar s
 
-  rota POST "/worker/renovar"
-    definir s = trabalho_remoto.renovar(obter(requisicao.corpo, "token", ""))
-    se s == nulo
-      responder(403, {erro: "token inválido"})
-    retornar s
+    rota POST "/worker/renovar"
+        definir s = trabalho_remoto.renovar(obter(requisicao.corpo, "token", ""))
+        se s == nulo
+            responder(403, {erro: "token inválido"})
+        retornar s
 
-  rota POST "/worker/concluir"
-    definir s = trabalho_remoto.concluir(obter(requisicao.corpo, "token", ""), requisicao.corpo.resultado)
-    se s == nulo
-      responder(403, {erro: "token inválido"})
-    retornar s
+    rota POST "/worker/concluir"
+        definir s = trabalho_remoto.concluir(obter(requisicao.corpo, "token", ""), requisicao.corpo.resultado)
+        se s == nulo
+            responder(403, {erro: "token inválido"})
+        retornar s

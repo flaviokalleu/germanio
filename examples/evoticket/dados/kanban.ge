@@ -1,24 +1,24 @@
 dados
 
-  quadro
-    nome: texto obrigatorio
-    empresa: texto pertence_a empresa
-    tipo: enum(pessoal, equipe)
-    status: enum(ativo, arquivado)
-    tem_muitos coluna_kanban
+    quadro
+        nome: texto obrigatorio
+        empresa: texto pertence_a empresa
+        tipo: enum(pessoal, equipe)
+        status: enum(ativo, arquivado)
+        tem_muitos coluna_kanban
 
-  coluna_kanban
-    nome: texto obrigatorio
-    cor: texto
-    ordem: numero
-    quadro: texto pertence_a quadro
-    tem_muitos tarefa
+    coluna_kanban
+        nome: texto obrigatorio
+        cor: texto
+        ordem: numero
+        quadro: texto pertence_a quadro
+        tem_muitos tarefa
 
-  tarefa
-    titulo: texto obrigatorio
-    descricao: texto_longo
-    coluna: texto pertence_a coluna_kanban
-    responsavel: texto pertence_a usuario
-    prioridade: enum(baixa, media, alta, urgente)
-    prazo: data
-    status: enum(pendente, fazendo, concluida)
+    tarefa
+        titulo: texto obrigatorio
+        descricao: texto_longo
+        coluna: texto pertence_a coluna_kanban
+        responsavel: texto pertence_a usuario
+        prioridade: enum(baixa, media, alta, urgente)
+        prazo: data
+        status: enum(pendente, fazendo, concluida)

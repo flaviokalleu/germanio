@@ -1,16 +1,16 @@
 dados
 
-  contato
-    nome: texto obrigatorio
-    telefone: telefone obrigatorio
-    email: email
-    avatar: imagem
-    canal: enum(whatsapp, telegram, instagram, facebook, widget)
-    empresa: texto pertence_a empresa
-    notas: texto_longo
-    aniversario: data
-    cidade: texto
-    estado: texto
-    bloqueado: booleano
-    situacao: enum(ativo, inativo)
-    tem_muitos ticket
+    contato
+        nome: texto obrigatorio
+        telefone: telefone obrigatorio
+        email: email
+        avatar: imagem
+        canal: enum(whatsapp, telegram, instagram, facebook, widget)
+        empresa: texto pertence_a empresa
+        notas: texto_longo
+        aniversario: data
+        cidade: texto
+        estado: texto
+        bloqueado: booleano
+        situacao: enum(ativo, inativo)
+        tem_muitos ticket

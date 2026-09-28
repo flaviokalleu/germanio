@@ -26,8 +26,8 @@ permita ver itens
 permita ver avisos
 
 logica
-  funcao notificar(info)
-    retornar verdadeiro
+    funcao notificar(info)
+        retornar verdadeiro
 
 quando criar pedido
     item.criar({pedido_id: pedido.id, nome: "brinde"})
@@ -47,8 +47,8 @@ quando excluir loja
         recuse "Loja protegida"
 
 rotas
-  rota POST "/eco"
-    retornar {corpo: requisicao.corpo, host: requisicao.cabecalhos.host}
+    rota POST "/eco"
+        retornar {corpo: requisicao.corpo, host: requisicao.cabecalhos.host}
 
-  rota GET "/_ge/api/avisos/:id"
-    retornar {substituida: verdadeiro}
+    rota GET "/_ge/api/avisos/:id"
+        retornar {substituida: verdadeiro}

@@ -1,40 +1,40 @@
 pagina "/blog"
-  titulo "Blog & Changelog — Germanio"
+    titulo "Blog & Changelog — Germanio"
 
-  navbar
-    logo "/assets/germanio.png" "Germanio"
-    link "Início" "/"
-    link "Documentação" "/docs"
-    link "Exemplos" "/exemplos"
-    botao "Instalar" "/instalar"
+    navbar
+        logo "/assets/germanio.png" "Germanio"
+        link "Início" "/"
+        link "Documentação" "/docs"
+        link "Exemplos" "/exemplos"
+        botao "Instalar" "/instalar"
 
-  hero
-    badge "CHANGELOG & NOTAS DE VERSÃO"
-    titulo "Evolução Contínua da Linguagem."
-    descricao "Acompanhe os lançamentos de novas versões, melhorias de compilação e avanços do compilador Germanio."
-    botao primario "Ver no GitHub" "https://github.com/flaviokalleu/germanio/commits/master"
-    botao secundario "Documentação" "/docs"
+    hero
+        badge "CHANGELOG & NOTAS DE VERSÃO"
+        titulo "Evolução Contínua da Linguagem."
+        descricao "Acompanhe os lançamentos de novas versões, melhorias de compilação e avanços do compilador Germanio."
+        botao primario "Ver no GitHub" "https://github.com/flaviokalleu/germanio/commits/master"
+        botao secundario "Documentação" "/docs"
 
-  secao "Histórico de Versões"
-    subtitulo "Registro transparente das melhorias e arquitetura do projeto."
-    grade 3 colunas
-      card
-        icone "🚀"
-        tag "v1.0.0-alpha.3"
-        titulo "UI Declarativa Pura"
-        texto "Páginas inteiras escritas em .ge puro sem qualquer HTML ou CSS embutido. Renderização automatizada em design system profissional."
-      card
-        icone "⚡"
-        tag "v1.0.0-alpha.2"
-        titulo "CLI ge & OpenAPI Automático"
-        texto "Comandos 'ge check', 'ge rodar', geração dinâmica de documentação Swagger 3.0 e mascaramento de dados sensíveis."
-      card
-        icone "🔷"
-        tag "v1.0.0-alpha.1"
-        titulo "Migração para Germanio"
-        texto "Consolidação da extensão .ge, SQLite puro integrado e compilação nativa em Go."
+    secao "Histórico de Versões"
+        subtitulo "Registro transparente das melhorias e arquitetura do projeto."
+        grade 3 colunas
+            card
+                icone "🚀"
+                tag "v1.0.0-alpha.3"
+                titulo "UI Declarativa Pura"
+                texto "Páginas inteiras escritas em .ge puro sem qualquer HTML ou CSS embutido. Renderização automatizada em design system profissional."
+            card
+                icone "⚡"
+                tag "v1.0.0-alpha.2"
+                titulo "CLI ge & OpenAPI Automático"
+                texto "Comandos 'ge check', 'ge rodar', geração dinâmica de documentação Swagger 3.0 e mascaramento de dados sensíveis."
+            card
+                icone "🔷"
+                tag "v1.0.0-alpha.1"
+                titulo "Migração para Germanio"
+                texto "Consolidação da extensão .ge, SQLite puro integrado e compilação nativa em Go."
 
-  rodape
-    copyright "Germanio © 2026 — Blog e Changelog Oficial."
-    link "GitHub" "https://github.com/flaviokalleu/germanio"
-    link "Início" "/"
+    rodape
+        copyright "Germanio © 2026 — Blog e Changelog Oficial."
+        link "GitHub" "https://github.com/flaviokalleu/germanio"
+        link "Início" "/"

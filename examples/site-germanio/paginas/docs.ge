@@ -1,68 +1,68 @@
 pagina "/docs"
-  titulo "Documentação — Germanio"
+    titulo "Documentação — Germanio"
 
-  navbar
-    logo "/assets/germanio.png" "Germanio"
-    link "Início" "/"
-    link "Documentação" "/docs"
-    link "Exemplos" "/exemplos"
-    link "Aprender" "/aprender"
-    botao "Instalar" "/instalar"
+    navbar
+        logo "/assets/germanio.png" "Germanio"
+        link "Início" "/"
+        link "Documentação" "/docs"
+        link "Exemplos" "/exemplos"
+        link "Aprender" "/aprender"
+        botao "Instalar" "/instalar"
 
-  hero
-    badge "DOCUMENTAÇÃO OFICIAL"
-    titulo "Aprenda a Sintaxe e o Runtime."
-    descricao "Referência completa de modelos, eventos, rotas, páginas declarativas e comandos da CLI."
-    botao primario "Guia Passo a Passo" "/aprender"
-    botao secundario "Ver no GitHub" "https://github.com/flaviokalleu/germanio"
-    codigo "exemplo.ge" "app MeuApp\nbanco sqlite\n\ntabela Usuario\n  nome: texto obrigatorio\n  email: email unico\n\nquando receber criar_usuario com nome, email\n  novo = criar Usuario\n  responder sucesso"
+    hero
+        badge "DOCUMENTAÇÃO OFICIAL"
+        titulo "Aprenda a Sintaxe e o Runtime."
+        descricao "Referência completa de modelos, eventos, rotas, páginas declarativas e comandos da CLI."
+        botao primario "Guia Passo a Passo" "/aprender"
+        botao secundario "Ver no GitHub" "https://github.com/flaviokalleu/germanio"
+        codigo "exemplo.ge" "app MeuApp\nbanco sqlite\n\ntabela Usuario\n  nome: texto obrigatorio\n  email: email unico\n\nquando receber criar_usuario com nome, email\n  novo = criar Usuario\n  responder sucesso"
 
-  secao "Comandos da CLI ge"
-    subtitulo "Ferramentas essenciais para desenvolvimento e deploy."
-    grade 4 colunas
-      card
-        icone "⚡"
-        titulo "ge check"
-        texto "Valida sintaxe e semântica sem rodar o servidor."
-      card
-        icone "▶️"
-        titulo "ge rodar"
-        texto "Inicia a aplicação com banco de dados e servidor HTTP."
-      card
-        icone "📁"
-        titulo "ge init"
-        texto "Cria um novo projeto estruturado em Germanio."
-      card
-        icone "✨"
-        titulo "ge novo"
-        texto "Gera um arquivo único .ge inicial para testes rápidos."
+    secao "Comandos da CLI ge"
+        subtitulo "Ferramentas essenciais para desenvolvimento e deploy."
+        grade 4 colunas
+            card
+                icone "⚡"
+                titulo "ge check"
+                texto "Valida sintaxe e semântica sem rodar o servidor."
+            card
+                icone "▶️"
+                titulo "ge rodar"
+                texto "Inicia a aplicação com banco de dados e servidor HTTP."
+            card
+                icone "📁"
+                titulo "ge init"
+                texto "Cria um novo projeto estruturado em Germanio."
+            card
+                icone "✨"
+                titulo "ge novo"
+                texto "Gera um arquivo único .ge inicial para testes rápidos."
 
-  secao "Conceitos Fundamentais"
-    subtitulo "Os 4 blocos de construção de qualquer sistema Germanio."
-    grade 2 colunas
-      card
-        icone "🗃️"
-        titulo "1. Modelos e Tabelas"
-        texto "Use 'tabela' para declarar suas entidades. O runtime em Go gera as tabelas SQLite e schemas automaticamente."
-        code "tabela Tarefa\n  titulo: texto obrigatorio\n  concluida: booleano"
-      card
-        icone "⚡"
-        titulo "2. Eventos (quando receber)"
-        texto "Define endpoints de API que recebem parâmetros, executam ações e respondem JSON."
-        code "quando receber concluir_tarefa com id\n  responder sucesso"
-      card
-        icone "📄"
-        titulo "3. Páginas Declarativas"
-        texto "Crie páginas web completas usando blocos semânticos (navbar, hero, secao, grade, card, rodape)."
-        code "pagina \"/sobre\"\n  hero\n    titulo \"Sobre o Projeto\""
-      card
-        icone "📦"
-        titulo "4. Modularidade (importar)"
-        texto "Divida seu código em arquivos menores e importe livremente no arquivo de entrada."
-        code "importar \"dados/usuarios.ge\"\nimportar \"rotas/auth.ge\""
+    secao "Conceitos Fundamentais"
+        subtitulo "Os 4 blocos de construção de qualquer sistema Germanio."
+        grade 2 colunas
+            card
+                icone "🗃️"
+                titulo "1. Modelos e Tabelas"
+                texto "Use 'tabela' para declarar suas entidades. O runtime em Go gera as tabelas SQLite e schemas automaticamente."
+                code "tabela Tarefa\n  titulo: texto obrigatorio\n  concluida: booleano"
+            card
+                icone "⚡"
+                titulo "2. Eventos (quando receber)"
+                texto "Define endpoints de API que recebem parâmetros, executam ações e respondem JSON."
+                code "quando receber concluir_tarefa com id\n  responder sucesso"
+            card
+                icone "📄"
+                titulo "3. Páginas Declarativas"
+                texto "Crie páginas web completas usando blocos semânticos (navbar, hero, secao, grade, card, rodape)."
+                code "pagina \"/sobre\"\n  hero\n    titulo \"Sobre o Projeto\""
+            card
+                icone "📦"
+                titulo "4. Modularidade (importar)"
+                texto "Divida seu código em arquivos menores e importe livremente no arquivo de entrada."
+                code "importar \"dados/usuarios.ge\"\nimportar \"rotas/auth.ge\""
 
-  rodape
-    copyright "Germanio © 2026 — Documentação Oficial."
-    link "GitHub" "https://github.com/flaviokalleu/germanio"
-    link "Início" "/"
-    link "Exemplos" "/exemplos"
+    rodape
+        copyright "Germanio © 2026 — Documentação Oficial."
+        link "GitHub" "https://github.com/flaviokalleu/germanio"
+        link "Início" "/"
+        link "Exemplos" "/exemplos"

@@ -1,13 +1,13 @@
 telas
 
-  tela contatos
-    titulo "Contatos"
-    busca contato
-    lista contato
-      mostrar nome
-      mostrar telefone
-      mostrar email
-      mostrar canal
-      mostrar status
-    botao azul
-      texto "Novo Contato"
+    tela contatos
+        titulo "Contatos"
+        busca contato
+        lista contato
+            mostrar nome
+            mostrar telefone
+            mostrar email
+            mostrar canal
+            mostrar status
+        botao azul
+            texto "Novo Contato"

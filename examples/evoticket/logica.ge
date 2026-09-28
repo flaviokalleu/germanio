@@ -1,110 +1,110 @@
 logica
 
-  definir versao = "2.0.0"
-  definir max_tickets_atendente = 15
-  definir sla_padrao_minutos = 60
+    definir versao = "2.0.0"
+    definir max_tickets_atendente = 15
+    definir sla_padrao_minutos = 60
 
-  # Gerar protocolo automatico
-  funcao gerar_protocolo()
-    definir count = ticket.contar()
-    retornar "TK-" + texto(count + 1)
+    # Gerar protocolo automatico
+    funcao gerar_protocolo()
+        definir count = ticket.contar()
+        retornar "TK-" + texto(count + 1)
 
-  # Verificar SLA
-  funcao verificar_sla(ticket_id)
-    definir t = ticket.buscar(ticket_id)
-    se t.status == "aberto"
-      mostrar "Ticket " + t.protocolo + " em atendimento"
-      retornar verdadeiro
-    se t.status == "pendente"
-      mostrar "Ticket " + t.protocolo + " aguardando atendente"
-      retornar falso
-    retornar verdadeiro
+    # Verificar SLA
+    funcao verificar_sla(ticket_id)
+        definir t = ticket.buscar(ticket_id)
+        se t.status == "aberto"
+            mostrar "Ticket " + t.protocolo + " em atendimento"
+            retornar verdadeiro
+        se t.status == "pendente"
+            mostrar "Ticket " + t.protocolo + " aguardando atendente"
+            retornar falso
+        retornar verdadeiro
 
-  # Verificar se ticket esta aberto
-  funcao ticket_aberto(status)
-    retornar status == "aberto"
+    # Verificar se ticket esta aberto
+    funcao ticket_aberto(status)
+        retornar status == "aberto"
 
-  # Verificar se ticket esta pendente
-  funcao ticket_pendente(status)
-    retornar status == "pendente"
+    # Verificar se ticket esta pendente
+    funcao ticket_pendente(status)
+        retornar status == "pendente"
 
-  # Verificar se ticket esta fechado
-  funcao ticket_fechado(status)
-    retornar status == "fechado"
+    # Verificar se ticket esta fechado
+    funcao ticket_fechado(status)
+        retornar status == "fechado"
 
-  # Verificar se atendente pode aceitar mais tickets
-  funcao pode_aceitar_ticket(tickets_atuais)
-    retornar tickets_atuais < max_tickets_atendente
+    # Verificar se atendente pode aceitar mais tickets
+    funcao pode_aceitar_ticket(tickets_atuais)
+        retornar tickets_atuais < max_tickets_atendente
 
-  # Calcular prioridade numerica
-  funcao prioridade_valor(prioridade)
-    se prioridade == "urgente"
-      retornar 4
-    se prioridade == "alta"
-      retornar 3
-    se prioridade == "media"
-      retornar 2
-    retornar 1
+    # Calcular prioridade numerica
+    funcao prioridade_valor(prioridade)
+        se prioridade == "urgente"
+            retornar 4
+        se prioridade == "alta"
+            retornar 3
+        se prioridade == "media"
+            retornar 2
+        retornar 1
 
-  # Metricas do dashboard
-  funcao calcular_metricas()
-    definir total = ticket.contar()
-    definir contatos_total = contato.contar()
-    definir negocios_total = negocio.contar()
-    mostrar "Tickets: " + texto(total) + " | Contatos: " + texto(contatos_total) + " | Negocios: " + texto(negocios_total)
-    retornar total
+    # Metricas do dashboard
+    funcao calcular_metricas()
+        definir total = ticket.contar()
+        definir contatos_total = contato.contar()
+        definir negocios_total = negocio.contar()
+        mostrar "Tickets: " + texto(total) + " | Contatos: " + texto(contatos_total) + " | Negocios: " + texto(negocios_total)
+        retornar total
 
-  # Calcular receita total
-  funcao calcular_receita_total()
-    definir lista_fin = financeiro.listar()
-    definir total = 0
-    para cada item em lista_fin
-      se item.tipo == "receita"
-        total = total + item.valor
-    retornar total
+    # Calcular receita total
+    funcao calcular_receita_total()
+        definir lista_fin = financeiro.listar()
+        definir total = 0
+        para cada item em lista_fin
+            se item.tipo == "receita"
+                total = total + item.valor
+        retornar total
 
-  # Calcular despesa total
-  funcao calcular_despesa_total()
-    definir lista_fin = financeiro.listar()
-    definir total = 0
-    para cada item em lista_fin
-      se item.tipo == "despesa"
-        total = total + item.valor
-    retornar total
+    # Calcular despesa total
+    funcao calcular_despesa_total()
+        definir lista_fin = financeiro.listar()
+        definir total = 0
+        para cada item em lista_fin
+            se item.tipo == "despesa"
+                total = total + item.valor
+        retornar total
 
-  # Calcular saldo
-  funcao calcular_saldo()
-    retornar calcular_receita_total() - calcular_despesa_total()
+    # Calcular saldo
+    funcao calcular_saldo()
+        retornar calcular_receita_total() - calcular_despesa_total()
 
-  # Calcular valor ponderado do negocio
-  funcao valor_ponderado(valor, probabilidade)
-    retornar valor * probabilidade / 100
+    # Calcular valor ponderado do negocio
+    funcao valor_ponderado(valor, probabilidade)
+        retornar valor * probabilidade / 100
 
-  # Verificar status do negocio
-  funcao negocio_aberto(status)
-    retornar status == "aberto"
+    # Verificar status do negocio
+    funcao negocio_aberto(status)
+        retornar status == "aberto"
 
-  funcao negocio_ganho(status)
-    retornar status == "ganho"
+    funcao negocio_ganho(status)
+        retornar status == "ganho"
 
-  funcao negocio_perdido(status)
-    retornar status == "perdido"
+    funcao negocio_perdido(status)
+        retornar status == "perdido"
 
-  # Resumo financeiro
-  funcao resumo_financeiro()
-    definir receita = calcular_receita_total()
-    definir despesa = calcular_despesa_total()
-    definir saldo = receita - despesa
-    mostrar "Receita: R$" + texto(receita) + " | Despesa: R$" + texto(despesa) + " | Saldo: R$" + texto(saldo)
-    retornar saldo
+    # Resumo financeiro
+    funcao resumo_financeiro()
+        definir receita = calcular_receita_total()
+        definir despesa = calcular_despesa_total()
+        definir saldo = receita - despesa
+        mostrar "Receita: R$" + texto(receita) + " | Despesa: R$" + texto(despesa) + " | Saldo: R$" + texto(saldo)
+        retornar saldo
 
-  # Verificar campanha
-  funcao campanha_pronta(status)
-    retornar status == "agendada"
+    # Verificar campanha
+    funcao campanha_pronta(status)
+        retornar status == "agendada"
 
-  funcao campanha_ativa(status)
-    retornar status == "rodando"
+    funcao campanha_ativa(status)
+        retornar status == "rodando"
 
-  # Executar ao iniciar
-  calcular_metricas()
-  mostrar "Evoticket v" + versao + " iniciado!"
+    # Executar ao iniciar
+    calcular_metricas()
+    mostrar "Evoticket v" + versao + " iniciado!"

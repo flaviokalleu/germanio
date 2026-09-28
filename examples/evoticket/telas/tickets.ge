@@ -1,18 +1,18 @@
 telas
 
-  tela tickets
-    titulo "Tickets"
-    busca ticket
-    lista ticket
-      mostrar protocolo
-      mostrar contato
-      mostrar atendente
-      mostrar fila
-      mostrar prioridade
-      mostrar canal
-      mostrar status
-      mostrar reaberturas
-      mostrar transferencias
-      mostrar avaliacao
-    botao azul
-      texto "Novo Ticket"
+    tela tickets
+        titulo "Tickets"
+        busca ticket
+        lista ticket
+            mostrar protocolo
+            mostrar contato
+            mostrar atendente
+            mostrar fila
+            mostrar prioridade
+            mostrar canal
+            mostrar status
+            mostrar reaberturas
+            mostrar transferencias
+            mostrar avaliacao
+        botao azul
+            texto "Novo Ticket"

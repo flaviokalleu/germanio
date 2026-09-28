@@ -1,10 +1,10 @@
 dados
 
-  fila
-    nome: texto obrigatorio
-    cor: texto
-    empresa: texto pertence_a empresa
-    sla_primeira_resposta: numero
-    sla_resolucao: numero
-    status: enum(ativo, inativo)
-    tem_muitos ticket
+    fila
+        nome: texto obrigatorio
+        cor: texto
+        empresa: texto pertence_a empresa
+        sla_primeira_resposta: numero
+        sla_resolucao: numero
+        status: enum(ativo, inativo)
+        tem_muitos ticket

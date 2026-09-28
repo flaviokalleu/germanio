@@ -1,9 +1,9 @@
 telas
 
-  tela tags
-    titulo "Tags"
-    lista tag
-      mostrar nome
-      mostrar cor
-    botao azul
-      texto "Nova Tag"
+    tela tags
+        titulo "Tags"
+        lista tag
+            mostrar nome
+            mostrar cor
+        botao azul
+            texto "Nova Tag"

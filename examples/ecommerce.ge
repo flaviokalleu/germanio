@@ -1,267 +1,267 @@
 sistema ecommerce
 
 tema
-  cor primaria "#111827"
-  cor secundaria "#ef4444"
-  cor destaque "#f97316"
+    cor primaria "#111827"
+    cor secundaria "#ef4444"
+    cor destaque "#f97316"
 
 autenticacao
-  modelo: usuario
-  campo_login: email
-  campo_senha: senha
-  roles: admin, estoque, financeiro, suporte
+    modelo: usuario
+    campo_login: email
+    campo_senha: senha
+    roles: admin, estoque, financeiro, suporte
 
 dados
 
-  usuario
-    nome: texto obrigatorio
-    email: email obrigatorio unico
-    senha: senha obrigatorio
-    role: enum(admin, estoque, financeiro, suporte)
-    status: status
+    usuario
+        nome: texto obrigatorio
+        email: email obrigatorio unico
+        senha: senha obrigatorio
+        role: enum(admin, estoque, financeiro, suporte)
+        status: status
 
-  categoria
-    nome: texto obrigatorio
-    slug: texto unico
-    descricao: texto
-    imagem: imagem
-    categoria_pai: texto pertence_a categoria
-    status: status
+    categoria
+        nome: texto obrigatorio
+        slug: texto unico
+        descricao: texto
+        imagem: imagem
+        categoria_pai: texto pertence_a categoria
+        status: status
 
-  marca
-    nome: texto obrigatorio
-    logo: imagem
-    site: texto
-    status: status
+    marca
+        nome: texto obrigatorio
+        logo: imagem
+        site: texto
+        status: status
 
-  produto
-    nome: texto obrigatorio
-    sku: texto unico obrigatorio
-    descricao: texto_longo
-    preco: dinheiro obrigatorio
-    preco_promocional: dinheiro
-    custo: dinheiro
-    estoque: numero
-    estoque_minimo: numero
-    peso: numero
-    categoria: texto pertence_a categoria obrigatorio
-    marca: texto pertence_a marca
-    imagem: imagem
-    destaque: booleano
-    status: enum(ativo, inativo, esgotado)
+    produto
+        nome: texto obrigatorio
+        sku: texto unico obrigatorio
+        descricao: texto_longo
+        preco: dinheiro obrigatorio
+        preco_promocional: dinheiro
+        custo: dinheiro
+        estoque: numero
+        estoque_minimo: numero
+        peso: numero
+        categoria: texto pertence_a categoria obrigatorio
+        marca: texto pertence_a marca
+        imagem: imagem
+        destaque: booleano
+        status: enum(ativo, inativo, esgotado)
 
-  cliente
-    nome: texto obrigatorio
-    email: email obrigatorio unico
-    cpf: texto unico
-    telefone: telefone
-    data_nascimento: data
-    status: status
+    cliente
+        nome: texto obrigatorio
+        email: email obrigatorio unico
+        cpf: texto unico
+        telefone: telefone
+        data_nascimento: data
+        status: status
 
-  endereco
-    cliente: texto pertence_a cliente obrigatorio
-    apelido: texto
-    cep: texto obrigatorio
-    logradouro: texto obrigatorio
-    numero: texto obrigatorio
-    complemento: texto
-    bairro: texto
-    cidade: texto obrigatorio
-    estado: texto obrigatorio
-    principal: booleano
+    endereco
+        cliente: texto pertence_a cliente obrigatorio
+        apelido: texto
+        cep: texto obrigatorio
+        logradouro: texto obrigatorio
+        numero: texto obrigatorio
+        complemento: texto
+        bairro: texto
+        cidade: texto obrigatorio
+        estado: texto obrigatorio
+        principal: booleano
 
-  pedido
-    cliente: texto pertence_a cliente obrigatorio
-    endereco_entrega: texto pertence_a endereco
-    subtotal: dinheiro
-    desconto: dinheiro
-    frete: dinheiro
-    total: dinheiro obrigatorio
-    forma_pagamento: enum(cartao, boleto, pix, transferencia)
-    status_pagamento: enum(pendente, pago, estornado, cancelado)
-    status: enum(aguardando, confirmado, separando, enviado, entregue, cancelado)
-    rastreio: texto
-    observacoes: texto_longo
-    criado_em: data
+    pedido
+        cliente: texto pertence_a cliente obrigatorio
+        endereco_entrega: texto pertence_a endereco
+        subtotal: dinheiro
+        desconto: dinheiro
+        frete: dinheiro
+        total: dinheiro obrigatorio
+        forma_pagamento: enum(cartao, boleto, pix, transferencia)
+        status_pagamento: enum(pendente, pago, estornado, cancelado)
+        status: enum(aguardando, confirmado, separando, enviado, entregue, cancelado)
+        rastreio: texto
+        observacoes: texto_longo
+        criado_em: data
 
-  item_pedido
-    pedido: texto pertence_a pedido obrigatorio
-    produto: texto pertence_a produto obrigatorio
-    quantidade: numero obrigatorio
-    preco_unitario: dinheiro obrigatorio
-    desconto: dinheiro
-    subtotal: dinheiro
+    item_pedido
+        pedido: texto pertence_a pedido obrigatorio
+        produto: texto pertence_a produto obrigatorio
+        quantidade: numero obrigatorio
+        preco_unitario: dinheiro obrigatorio
+        desconto: dinheiro
+        subtotal: dinheiro
 
-  cupom
-    codigo: texto unico obrigatorio
-    tipo: enum(percentual, fixo, frete_gratis)
-    valor: dinheiro
-    percentual: numero
-    uso_maximo: numero
-    usos: numero
-    validade: data
-    minimo_pedido: dinheiro
-    ativo: booleano
+    cupom
+        codigo: texto unico obrigatorio
+        tipo: enum(percentual, fixo, frete_gratis)
+        valor: dinheiro
+        percentual: numero
+        uso_maximo: numero
+        usos: numero
+        validade: data
+        minimo_pedido: dinheiro
+        ativo: booleano
 
-  avaliacao
-    produto: texto pertence_a produto obrigatorio
-    cliente: texto pertence_a cliente obrigatorio
-    nota: numero obrigatorio
-    titulo: texto
-    comentario: texto_longo
-    aprovada: booleano
-    criada_em: data
+    avaliacao
+        produto: texto pertence_a produto obrigatorio
+        cliente: texto pertence_a cliente obrigatorio
+        nota: numero obrigatorio
+        titulo: texto
+        comentario: texto_longo
+        aprovada: booleano
+        criada_em: data
 
 telas
 
-  tela pedidos
-    titulo "Pedidos"
-    lista pedido
-      mostrar cliente
-      mostrar total
-      mostrar forma_pagamento
-      mostrar status_pagamento
-      mostrar status
-      mostrar criado_em
-    botao azul
-      texto "Novo Pedido"
+    tela pedidos
+        titulo "Pedidos"
+        lista pedido
+            mostrar cliente
+            mostrar total
+            mostrar forma_pagamento
+            mostrar status_pagamento
+            mostrar status
+            mostrar criado_em
+        botao azul
+            texto "Novo Pedido"
 
-  tela produtos
-    titulo "Produtos"
-    lista produto
-      mostrar nome
-      mostrar sku
-      mostrar preco
-      mostrar estoque
-      mostrar categoria
-      mostrar status
-    botao verde
-      texto "Novo Produto"
+    tela produtos
+        titulo "Produtos"
+        lista produto
+            mostrar nome
+            mostrar sku
+            mostrar preco
+            mostrar estoque
+            mostrar categoria
+            mostrar status
+        botao verde
+            texto "Novo Produto"
 
-  tela clientes
-    titulo "Clientes"
-    lista cliente
-      mostrar nome
-      mostrar email
-      mostrar cpf
-      mostrar telefone
-      mostrar status
-    botao azul
-      texto "Novo Cliente"
+    tela clientes
+        titulo "Clientes"
+        lista cliente
+            mostrar nome
+            mostrar email
+            mostrar cpf
+            mostrar telefone
+            mostrar status
+        botao azul
+            texto "Novo Cliente"
 
-  tela categorias
-    titulo "Categorias"
-    lista categoria
-      mostrar nome
-      mostrar slug
-      mostrar status
-    botao verde
-      texto "Nova Categoria"
+    tela categorias
+        titulo "Categorias"
+        lista categoria
+            mostrar nome
+            mostrar slug
+            mostrar status
+        botao verde
+            texto "Nova Categoria"
 
-  tela marcas
-    titulo "Marcas"
-    lista marca
-      mostrar nome
-      mostrar site
-      mostrar status
-    botao azul
-      texto "Nova Marca"
+    tela marcas
+        titulo "Marcas"
+        lista marca
+            mostrar nome
+            mostrar site
+            mostrar status
+        botao azul
+            texto "Nova Marca"
 
-  tela cupons
-    titulo "Cupons de Desconto"
-    lista cupom
-      mostrar codigo
-      mostrar tipo
-      mostrar valor
-      mostrar usos
-      mostrar validade
-      mostrar ativo
-    botao verde
-      texto "Novo Cupom"
+    tela cupons
+        titulo "Cupons de Desconto"
+        lista cupom
+            mostrar codigo
+            mostrar tipo
+            mostrar valor
+            mostrar usos
+            mostrar validade
+            mostrar ativo
+        botao verde
+            texto "Novo Cupom"
 
-  tela avaliacoes
-    titulo "Avaliacoes"
-    lista avaliacao
-      mostrar produto
-      mostrar cliente
-      mostrar nota
-      mostrar aprovada
-      mostrar criada_em
-    botao azul
-      texto "Moderar"
+    tela avaliacoes
+        titulo "Avaliacoes"
+        lista avaliacao
+            mostrar produto
+            mostrar cliente
+            mostrar nota
+            mostrar aprovada
+            mostrar criada_em
+        botao azul
+            texto "Moderar"
 
-  tela estoque
-    titulo "Controle de Estoque"
-    requer estoque
-    lista produto
-      mostrar nome
-      mostrar sku
-      mostrar estoque
-      mostrar estoque_minimo
-      mostrar status
-    botao verde
-      texto "Atualizar Estoque"
+    tela estoque
+        titulo "Controle de Estoque"
+        requer estoque
+        lista produto
+            mostrar nome
+            mostrar sku
+            mostrar estoque
+            mostrar estoque_minimo
+            mostrar status
+        botao verde
+            texto "Atualizar Estoque"
 
-  tela financeiro
-    titulo "Financeiro"
-    requer financeiro
-    lista pedido
-      mostrar cliente
-      mostrar total
-      mostrar forma_pagamento
-      mostrar status_pagamento
-      mostrar criado_em
-    botao azul
-      texto "Exportar Relatorio"
+    tela financeiro
+        titulo "Financeiro"
+        requer financeiro
+        lista pedido
+            mostrar cliente
+            mostrar total
+            mostrar forma_pagamento
+            mostrar status_pagamento
+            mostrar criado_em
+        botao azul
+            texto "Exportar Relatorio"
 
-  tela equipe
-    titulo "Equipe"
-    requer admin
-    lista usuario
-      mostrar nome
-      mostrar email
-      mostrar role
-      mostrar status
-    botao azul
-      texto "Novo Usuario"
+    tela equipe
+        titulo "Equipe"
+        requer admin
+        lista usuario
+            mostrar nome
+            mostrar email
+            mostrar role
+            mostrar status
+        botao azul
+            texto "Novo Usuario"
 
 eventos
 
-  quando clicar "Novo Pedido"
-    criar pedido
+    quando clicar "Novo Pedido"
+        criar pedido
 
-  quando clicar "Novo Produto"
-    criar produto
+    quando clicar "Novo Produto"
+        criar produto
 
-  quando clicar "Novo Cliente"
-    criar cliente
+    quando clicar "Novo Cliente"
+        criar cliente
 
-  quando clicar "Nova Categoria"
-    criar categoria
+    quando clicar "Nova Categoria"
+        criar categoria
 
-  quando clicar "Nova Marca"
-    criar marca
+    quando clicar "Nova Marca"
+        criar marca
 
-  quando clicar "Novo Cupom"
-    criar cupom
+    quando clicar "Novo Cupom"
+        criar cupom
 
-  quando clicar "Novo Usuario"
-    criar usuario
+    quando clicar "Novo Usuario"
+        criar usuario
 
 logica
 
-  definir versao = "1.0.0"
-  definir frete_gratis_acima = 299
+    definir versao = "1.0.0"
+    definir frete_gratis_acima = 299
 
-  funcao calcular_total(subtotal, desconto, frete)
-    retornar subtotal - desconto + frete
+    funcao calcular_total(subtotal, desconto, frete)
+        retornar subtotal - desconto + frete
 
-  funcao verificar_estoque(estoque, quantidade)
-    se estoque >= quantidade
-      retornar verdadeiro
-    retornar falso
+    funcao verificar_estoque(estoque, quantidade)
+        se estoque >= quantidade
+            retornar verdadeiro
+        retornar falso
 
-  funcao calcular_lucro(preco, custo)
-    retornar preco - custo
+    funcao calcular_lucro(preco, custo)
+        retornar preco - custo
 
-  mostrar "E-commerce Germanio v" + versao + " online!"
+    mostrar "E-commerce Germanio v" + versao + " online!"

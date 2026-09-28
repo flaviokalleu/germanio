@@ -1,21 +1,21 @@
 system store
 
 models
-  product
-    name: text required
-    price: money
-    status: status
+    product
+        name: text required
+        price: money
+        status: status
 
 screens
-  screen products
-    title "Products"
-    list product
-      show name
-      show price
-      show status
-    button blue
-      text "New Product"
+    screen products
+        title "Products"
+        list product
+            show name
+            show price
+            show status
+        button blue
+            text "New Product"
 
 events
-  when click "New Product"
-    create product
+    when click "New Product"
+        create product

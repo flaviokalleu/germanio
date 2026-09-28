@@ -1,135 +1,135 @@
 sistema blog
 
 tema
-  cor primaria "#0f172a"
-  cor secundaria "#3b82f6"
-  cor destaque "#f59e0b"
+    cor primaria "#0f172a"
+    cor secundaria "#3b82f6"
+    cor destaque "#f59e0b"
 
 autenticacao
-  modelo: usuario
-  campo_login: email
-  campo_senha: senha
-  roles: admin, autor, leitor
+    modelo: usuario
+    campo_login: email
+    campo_senha: senha
+    roles: admin, autor, leitor
 
 dados
 
-  usuario
-    nome: texto obrigatorio
-    email: email obrigatorio unico
-    senha: senha obrigatorio
-    bio: texto_longo
-    avatar: imagem
-    role: enum(admin, autor, leitor)
-    status: status
+    usuario
+        nome: texto obrigatorio
+        email: email obrigatorio unico
+        senha: senha obrigatorio
+        bio: texto_longo
+        avatar: imagem
+        role: enum(admin, autor, leitor)
+        status: status
 
-  categoria
-    nome: texto obrigatorio
-    slug: texto unico
-    descricao: texto
-    cor: texto
+    categoria
+        nome: texto obrigatorio
+        slug: texto unico
+        descricao: texto
+        cor: texto
 
-  post
-    titulo: texto obrigatorio
-    slug: texto unico
-    conteudo: texto_longo obrigatorio
-    resumo: texto
-    imagem_capa: imagem
-    autor: texto pertence_a usuario obrigatorio
-    categoria: texto pertence_a categoria
-    tags: texto
-    visualizacoes: numero
-    status: enum(rascunho, publicado, arquivado)
-    publicado_em: data
+    post
+        titulo: texto obrigatorio
+        slug: texto unico
+        conteudo: texto_longo obrigatorio
+        resumo: texto
+        imagem_capa: imagem
+        autor: texto pertence_a usuario obrigatorio
+        categoria: texto pertence_a categoria
+        tags: texto
+        visualizacoes: numero
+        status: enum(rascunho, publicado, arquivado)
+        publicado_em: data
 
-  comentario
-    post: texto pertence_a post obrigatorio
-    autor_nome: texto obrigatorio
-    autor_email: email obrigatorio
-    conteudo: texto_longo obrigatorio
-    aprovado: booleano
-    criado_em: data
+    comentario
+        post: texto pertence_a post obrigatorio
+        autor_nome: texto obrigatorio
+        autor_email: email obrigatorio
+        conteudo: texto_longo obrigatorio
+        aprovado: booleano
+        criado_em: data
 
-  newsletter
-    email: email obrigatorio unico
-    nome: texto
-    ativo: booleano
-    inscrito_em: data
+    newsletter
+        email: email obrigatorio unico
+        nome: texto
+        ativo: booleano
+        inscrito_em: data
 
 telas
 
-  tela posts
-    titulo "Posts"
-    lista post
-      mostrar titulo
-      mostrar autor
-      mostrar categoria
-      mostrar visualizacoes
-      mostrar status
-      mostrar publicado_em
-    botao azul
-      texto "Novo Post"
+    tela posts
+        titulo "Posts"
+        lista post
+            mostrar titulo
+            mostrar autor
+            mostrar categoria
+            mostrar visualizacoes
+            mostrar status
+            mostrar publicado_em
+        botao azul
+            texto "Novo Post"
 
-  tela categorias
-    titulo "Categorias"
-    lista categoria
-      mostrar nome
-      mostrar slug
-      mostrar descricao
-    botao verde
-      texto "Nova Categoria"
+    tela categorias
+        titulo "Categorias"
+        lista categoria
+            mostrar nome
+            mostrar slug
+            mostrar descricao
+        botao verde
+            texto "Nova Categoria"
 
-  tela comentarios
-    titulo "Comentarios"
-    lista comentario
-      mostrar autor_nome
-      mostrar post
-      mostrar aprovado
-      mostrar criado_em
-    botao azul
-      texto "Moderar"
+    tela comentarios
+        titulo "Comentarios"
+        lista comentario
+            mostrar autor_nome
+            mostrar post
+            mostrar aprovado
+            mostrar criado_em
+        botao azul
+            texto "Moderar"
 
-  tela newsletter
-    titulo "Newsletter"
-    lista newsletter
-      mostrar email
-      mostrar nome
-      mostrar ativo
-      mostrar inscrito_em
-    botao verde
-      texto "Exportar Lista"
+    tela newsletter
+        titulo "Newsletter"
+        lista newsletter
+            mostrar email
+            mostrar nome
+            mostrar ativo
+            mostrar inscrito_em
+        botao verde
+            texto "Exportar Lista"
 
-  tela equipe
-    titulo "Equipe do Blog"
-    requer admin
-    lista usuario
-      mostrar nome
-      mostrar email
-      mostrar role
-      mostrar status
-    botao azul
-      texto "Novo Autor"
+    tela equipe
+        titulo "Equipe do Blog"
+        requer admin
+        lista usuario
+            mostrar nome
+            mostrar email
+            mostrar role
+            mostrar status
+        botao azul
+            texto "Novo Autor"
 
 eventos
 
-  quando clicar "Novo Post"
-    criar post
+    quando clicar "Novo Post"
+        criar post
 
-  quando clicar "Nova Categoria"
-    criar categoria
+    quando clicar "Nova Categoria"
+        criar categoria
 
-  quando clicar "Novo Autor"
-    criar usuario
+    quando clicar "Novo Autor"
+        criar usuario
 
 logica
 
-  definir versao = "1.0.0"
-  definir max_posts_pagina = 10
+    definir versao = "1.0.0"
+    definir max_posts_pagina = 10
 
-  funcao calcular_leitura(conteudo)
-    definir palavras = conteudo / 200
-    retornar palavras + " min de leitura"
+    funcao calcular_leitura(conteudo)
+        definir palavras = conteudo / 200
+        retornar palavras + " min de leitura"
 
-  funcao gerar_slug(titulo)
-    retornar titulo
+    funcao gerar_slug(titulo)
+        retornar titulo
 
-  mostrar "Blog Germanio v" + versao + " iniciado!"
+    mostrar "Blog Germanio v" + versao + " iniciado!"

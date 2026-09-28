@@ -1,21 +1,21 @@
 sistema cadastro
 
 dados
-  usuario
-    nome: texto obrigatorio
-    email: email obrigatorio unico
-    status: status
+    usuario
+        nome: texto obrigatorio
+        email: email obrigatorio unico
+        status: status
 
 telas
-  tela usuarios
-    titulo "Usuarios"
-    lista usuario
-      mostrar nome
-      mostrar email
-      mostrar status
-    botao azul
-      texto "Novo Usuario"
+    tela usuarios
+        titulo "Usuarios"
+        lista usuario
+            mostrar nome
+            mostrar email
+            mostrar status
+        botao azul
+            texto "Novo Usuario"
 
 eventos
-  quando clicar "Novo Usuario"
-    criar usuario
+    quando clicar "Novo Usuario"
+        criar usuario

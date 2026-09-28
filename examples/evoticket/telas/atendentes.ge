@@ -1,13 +1,13 @@
 telas
 
-  tela atendentes
-    titulo "Atendentes"
-    requer admin
-    lista usuario
-      mostrar nome
-      mostrar email
-      mostrar role
-      mostrar online
-      mostrar status
-    botao azul
-      texto "Novo Atendente"
+    tela atendentes
+        titulo "Atendentes"
+        requer admin
+        lista usuario
+            mostrar nome
+            mostrar email
+            mostrar role
+            mostrar online
+            mostrar status
+        botao azul
+            texto "Novo Atendente"

@@ -1,5 +1,5 @@
 logica
 
-  definir nome = "Germanio"
+    definir nome = "Germanio"
 
-  mostrar "Olá " + nome
+    mostrar "Olá " + nome

@@ -1,38 +1,38 @@
 pagina "/pacotes"
-  titulo "Pacotes — Germanio"
+    titulo "Pacotes — Germanio"
 
-  navbar
-    logo "/assets/germanio.png" "Germanio"
-    link "Início" "/"
-    link "Documentação" "/docs"
-    link "Roadmap" "/roadmap"
-    botao "Instalar" "/instalar"
+    navbar
+        logo "/assets/germanio.png" "Germanio"
+        link "Início" "/"
+        link "Documentação" "/docs"
+        link "Roadmap" "/roadmap"
+        botao "Instalar" "/instalar"
 
-  hero
-    badge "ECOSSISTEMA & MÓDULOS"
-    titulo "Gerenciamento e Pacotes no Germanio."
-    descricao "Reutilize código declarativo via importações modulares nativas. O gerenciador de dependências oficial está em desenvolvimento."
-    botao primario "Ver Roadmap" "/roadmap"
-    botao secundario "Documentação" "/docs"
-    codigo "import.ge" "importar \"dados/usuarios.ge\"\nimportar \"rotas/auth.ge\"\nimportar \"paginas/dashboard.ge\""
+    hero
+        badge "ECOSSISTEMA & MÓDULOS"
+        titulo "Gerenciamento e Pacotes no Germanio."
+        descricao "Reutilize código declarativo via importações modulares nativas. O gerenciador de dependências oficial está em desenvolvimento."
+        botao primario "Ver Roadmap" "/roadmap"
+        botao secundario "Documentação" "/docs"
+        codigo "import.ge" "importar \"dados/usuarios.ge\"\nimportar \"rotas/auth.ge\"\nimportar \"paginas/dashboard.ge\""
 
-  secao "Reutilização de Código"
-    subtitulo "Como estruturar projetos modulares hoje."
-    grade 3 colunas
-      card
-        icone "📦"
-        titulo "Importação Direta"
-        texto "Use 'importar' para dividir seu projeto em pastas 'dados', 'rotas' e 'paginas'."
-      card
-        icone "🔒"
-        titulo "Isolamento e Segurança"
-        texto "Módulos importados são compilados em uma única AST verificada pelo compilador Go."
-      card
-        icone "🚀"
-        titulo "Próximo: ge adicionar"
-        texto "Gerenciador central com lockfiles e resolução semântica versionada."
+    secao "Reutilização de Código"
+        subtitulo "Como estruturar projetos modulares hoje."
+        grade 3 colunas
+            card
+                icone "📦"
+                titulo "Importação Direta"
+                texto "Use 'importar' para dividir seu projeto em pastas 'dados', 'rotas' e 'paginas'."
+            card
+                icone "🔒"
+                titulo "Isolamento e Segurança"
+                texto "Módulos importados são compilados em uma única AST verificada pelo compilador Go."
+            card
+                icone "🚀"
+                titulo "Próximo: ge adicionar"
+                texto "Gerenciador central com lockfiles e resolução semântica versionada."
 
-  rodape
-    copyright "Germanio © 2026 — Pacotes e Módulos."
-    link "GitHub" "https://github.com/flaviokalleu/germanio"
-    link "Início" "/"
+    rodape
+        copyright "Germanio © 2026 — Pacotes e Módulos."
+        link "GitHub" "https://github.com/flaviokalleu/germanio"
+        link "Início" "/"

@@ -1,14 +1,14 @@
 rotas
 
-  rota GET "/api/dashboard/metricas"
-    definir tickets_total = ticket.contar()
-    definir contatos_total = contato.contar()
-    mostrar texto(tickets_total)
+    rota GET "/api/dashboard/metricas"
+        definir tickets_total = ticket.contar()
+        definir contatos_total = contato.contar()
+        mostrar texto(tickets_total)
 
-  rota GET "/api/tickets/pendentes"
-    definir resultado = ticket.listar()
-    mostrar "pendentes"
+    rota GET "/api/tickets/pendentes"
+        definir resultado = ticket.listar()
+        mostrar "pendentes"
 
-  rota GET "/api/tickets/abertos"
-    definir resultado = ticket.listar()
-    mostrar "abertos"
+    rota GET "/api/tickets/abertos"
+        definir resultado = ticket.listar()
+        mostrar "abertos"

@@ -1,11 +1,11 @@
 telas
 
-  tela agentes_ia
-    titulo "Agentes de IA"
-    lista agente_ia
-      mostrar nome
-      mostrar provedor
-      mostrar modelo
-      mostrar status
-    botao azul
-      texto "Novo Agente"
+    tela agentes_ia
+        titulo "Agentes de IA"
+        lista agente_ia
+            mostrar nome
+            mostrar provedor
+            mostrar modelo
+            mostrar status
+        botao azul
+            texto "Novo Agente"

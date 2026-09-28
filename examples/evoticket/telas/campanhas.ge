@@ -1,15 +1,15 @@
 telas
 
-  tela campanhas
-    titulo "Campanhas"
-    lista campanha
-      mostrar nome
-      mostrar tipo
-      mostrar total_contatos
-      mostrar enviados
-      mostrar entregues
-      mostrar lidos
-      mostrar erros
-      mostrar status
-    botao azul
-      texto "Nova Campanha"
+    tela campanhas
+        titulo "Campanhas"
+        lista campanha
+            mostrar nome
+            mostrar tipo
+            mostrar total_contatos
+            mostrar enviados
+            mostrar entregues
+            mostrar lidos
+            mostrar erros
+            mostrar status
+        botao azul
+            texto "Nova Campanha"

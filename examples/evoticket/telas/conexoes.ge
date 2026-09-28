@@ -1,13 +1,13 @@
 telas
 
-  tela conexoes
-    titulo "Conexoes WhatsApp"
-    requer admin
-    lista conexao
-      mostrar nome
-      mostrar tipo
-      mostrar telefone
-      mostrar qualidade
-      mostrar status
-    botao azul
-      texto "Nova Conexao"
+    tela conexoes
+        titulo "Conexoes WhatsApp"
+        requer admin
+        lista conexao
+            mostrar nome
+            mostrar tipo
+            mostrar telefone
+            mostrar qualidade
+            mostrar status
+        botao azul
+            texto "Nova Conexao"

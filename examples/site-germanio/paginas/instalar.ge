@@ -1,44 +1,44 @@
 pagina "/instalar"
-  titulo "Instalar o Germanio — Linux, macOS e Windows"
+    titulo "Instalar o Germanio — Linux, macOS e Windows"
 
-  navbar
-    logo "/assets/germanio.png" "Germanio"
-    link "Início" "/"
-    link "Documentação" "/docs"
-    link "Exemplos" "/exemplos"
-    link "Aprender" "/aprender"
+    navbar
+        logo "/assets/germanio.png" "Germanio"
+        link "Início" "/"
+        link "Documentação" "/docs"
+        link "Exemplos" "/exemplos"
+        link "Aprender" "/aprender"
 
-  hero
-    badge "DOWNLOAD E INSTALAÇÃO"
-    titulo "Obtenha a CLI e o Compilador."
-    descricao "Instale o Germanio com um único comando e comece a desenvolver sistemas full-stack em minutos."
-    botao primario "Ver Documentação" "/docs"
-    botao secundario "Ver no GitHub" "https://github.com/flaviokalleu/germanio"
-    comando "curl -fsSL https://raw.githubusercontent.com/flaviokalleu/germanio/master/install.sh | bash"
+    hero
+        badge "DOWNLOAD E INSTALAÇÃO"
+        titulo "Obtenha a CLI e o Compilador."
+        descricao "Instale o Germanio com um único comando e comece a desenvolver sistemas full-stack em minutos."
+        botao primario "Ver Documentação" "/docs"
+        botao secundario "Ver no GitHub" "https://github.com/flaviokalleu/germanio"
+        comando "curl -fsSL https://raw.githubusercontent.com/flaviokalleu/germanio/master/install.sh | bash"
 
-  secao "Métodos de Instalação"
-    subtitulo "Escolha o fluxo ideal para seu ambiente de desenvolvimento."
-    grade 3 colunas
-      card
-        icone "🐧"
-        tag "RECOMENDADO"
-        titulo "1. Script Automático"
-        texto "Baixa o binário pré-compilado para seu sistema operacional e configura no seu PATH."
-        code "curl -fsSL https://raw.githubusercontent.com/flaviokalleu/germanio/master/install.sh | bash"
-      card
-        icone "🐹"
-        tag "GO DEV"
-        titulo "2. Compilação via Go"
-        texto "Se você tem o Go instalado, compile o executável diretamente a partir do código fonte."
-        code "git clone https://github.com/flaviokalleu/germanio\ncd germanio\ngo build -o ge ./cmd/ge"
-      card
-        icone "✅"
-        tag "VERIFICAÇÃO"
-        titulo "3. Validação"
-        texto "Confirme que o binário está funcionando executando o comando de ajuda."
-        code "ge --help"
+    secao "Métodos de Instalação"
+        subtitulo "Escolha o fluxo ideal para seu ambiente de desenvolvimento."
+        grade 3 colunas
+            card
+                icone "🐧"
+                tag "RECOMENDADO"
+                titulo "1. Script Automático"
+                texto "Baixa o binário pré-compilado para seu sistema operacional e configura no seu PATH."
+                code "curl -fsSL https://raw.githubusercontent.com/flaviokalleu/germanio/master/install.sh | bash"
+            card
+                icone "🐹"
+                tag "GO DEV"
+                titulo "2. Compilação via Go"
+                texto "Se você tem o Go instalado, compile o executável diretamente a partir do código fonte."
+                code "git clone https://github.com/flaviokalleu/germanio\ncd germanio\ngo build -o ge ./cmd/ge"
+            card
+                icone "✅"
+                tag "VERIFICAÇÃO"
+                titulo "3. Validação"
+                texto "Confirme que o binário está funcionando executando o comando de ajuda."
+                code "ge --help"
 
-  rodape
-    copyright "Germanio © 2026 — Guia Oficial de Instalação."
-    link "GitHub" "https://github.com/flaviokalleu/germanio"
-    link "Início" "/"
+    rodape
+        copyright "Germanio © 2026 — Guia Oficial de Instalação."
+        link "GitHub" "https://github.com/flaviokalleu/germanio"
+        link "Início" "/"

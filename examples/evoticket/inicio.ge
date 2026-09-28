@@ -3,10 +3,10 @@ sistema evoticket
 tema moderno escuro
 
 autenticacao
-  modelo: usuario
-  campo_login: email
-  campo_senha: senha
-  roles: superadmin, admin, gerente, atendente
+    modelo: usuario
+    campo_login: email
+    campo_senha: senha
+    roles: superadmin, admin, gerente, atendente
 
 importar "dados/empresa.ge"
 importar "dados/usuario.ge"
@@ -48,19 +48,19 @@ importar "integracoes.ge"
 importar "rotas.ge"
 
 sidebar
-  item "Dashboard" icone "layout" link dashboard
-  item "Tickets" icone "clip" link screen-tickets
-  item "Contatos" icone "users" link screen-contatos
-  item "Campanhas" icone "activity" link screen-campanhas
-  item "Fluxos" icone "zap" link screen-fluxos
-  item "Agentes IA" icone "settings" link screen-agentes_ia
-  item "CRM" icone "dollar" link screen-crm
-  item "Kanban" icone "grid" link screen-kanban
-  item "Financeiro" icone "dollar" link screen-financeiro
-  item "Respostas" icone "list" link screen-respostas_rapidas
-  item "Conexoes" icone "zap" link screen-conexoes
-  item "Filas" icone "list" link screen-filas
-  item "Tags" icone "tag" link screen-tags
-  item "Atendentes" icone "users" link screen-atendentes
-  item "Webhooks" icone "activity" link screen-webhooks
-  item "Config" icone "settings" link screen-configuracoes
+    item "Dashboard" icone "layout" link dashboard
+    item "Tickets" icone "clip" link screen-tickets
+    item "Contatos" icone "users" link screen-contatos
+    item "Campanhas" icone "activity" link screen-campanhas
+    item "Fluxos" icone "zap" link screen-fluxos
+    item "Agentes IA" icone "settings" link screen-agentes_ia
+    item "CRM" icone "dollar" link screen-crm
+    item "Kanban" icone "grid" link screen-kanban
+    item "Financeiro" icone "dollar" link screen-financeiro
+    item "Respostas" icone "list" link screen-respostas_rapidas
+    item "Conexoes" icone "zap" link screen-conexoes
+    item "Filas" icone "list" link screen-filas
+    item "Tags" icone "tag" link screen-tags
+    item "Atendentes" icone "users" link screen-atendentes
+    item "Webhooks" icone "activity" link screen-webhooks
+    item "Config" icone "settings" link screen-configuracoes

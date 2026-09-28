@@ -2,6 +2,8 @@ package formatter
 
 import (
 	"os"
+
+	"github.com/flaviokalleu/germanio/compiler/parser"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -11,7 +13,7 @@ import (
 // para todos os .ge de intenção do repositório.
 func TestFormatoAplicacaoIdempotenteNoRepositorio(t *testing.T) {
 	var files []string
-	for _, dir := range []string{"../../examples/gitlab-foss", "../../runtime/testdata/intencao", "../../cli/modelos"} {
+	for _, dir := range []string{"../../examples", "../../runtime/testdata", "../../cli/modelos"} {
 		filepath.WalkDir(dir, func(p string, d os.DirEntry, err error) error {
 			if err == nil && !d.IsDir() && filepath.Ext(p) == ".ge" {
 				files = append(files, p)
@@ -22,6 +24,9 @@ func TestFormatoAplicacaoIdempotenteNoRepositorio(t *testing.T) {
 	formatted := 0
 	for _, f := range files {
 		src, _ := os.ReadFile(f)
+		if _, err := parser.ParseGermanio(f, string(src)); err == nil {
+			continue // núcleo estrito: formatado pelo outro caminho do ge fmt
+		}
 		once, err := formatApplication(f, string(src))
 		if err == errNotApplication {
 			continue // adaptadores só com lógica/rotas
@@ -35,7 +40,7 @@ func TestFormatoAplicacaoIdempotenteNoRepositorio(t *testing.T) {
 		}
 		formatted++
 	}
-	if formatted < 20 {
+	if formatted < 60 {
 		t.Fatalf("poucos arquivos formatados: %d", formatted)
 	}
 }

@@ -33,7 +33,9 @@ func parseApplication(filename, src string) (*ast.Program, error) {
 	if err != nil {
 		return nil, err
 	}
-	if prog.Intent == nil {
+	if prog.Intent == nil && prog.System == nil && prog.Theme == nil && len(prog.Functions)+len(prog.Routes)+len(prog.Models)+
+		len(prog.Screens)+len(prog.Events)+len(prog.Actions)+len(prog.Rules)+len(prog.Pages)+len(prog.Scripts)+
+		len(prog.Imports)+len(prog.SidebarItems)+len(prog.Crons) == 0 {
 		return nil, errNotApplication
 	}
 	return prog, nil
@@ -42,14 +44,7 @@ func parseApplication(filename, src string) (*ast.Program, error) {
 // meaning is the program without positions: two sources with the same
 // meaning format to programs that are equal here.
 func meaning(prog *ast.Program) (any, error) {
-	b, err := json.Marshal(struct {
-		Intent    *ast.Intent
-		Functions []*ast.FuncDecl
-		Routes    []*ast.CustomRoute
-		Scripts   []*ast.Statement
-		System    *ast.System
-		Imports   []*ast.Import
-	}{prog.Intent, prog.Functions, prog.Routes, prog.Scripts, prog.System, prog.Imports})
+	b, err := json.Marshal(prog) // the whole program: intent, models, screens, routes, functions…
 	if err != nil {
 		return nil, err
 	}

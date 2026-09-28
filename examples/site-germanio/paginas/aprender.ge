@@ -1,51 +1,51 @@
 pagina "/aprender"
-  titulo "Aprenda Germanio — Guia Passo a Passo"
+    titulo "Aprenda Germanio — Guia Passo a Passo"
 
-  navbar
-    logo "/assets/germanio.png" "Germanio"
-    link "Início" "/"
-    link "Documentação" "/docs"
-    link "Exemplos" "/exemplos"
-    link "Playground" "/playground"
-    botao "Instalar" "/instalar"
+    navbar
+        logo "/assets/germanio.png" "Germanio"
+        link "Início" "/"
+        link "Documentação" "/docs"
+        link "Exemplos" "/exemplos"
+        link "Playground" "/playground"
+        botao "Instalar" "/instalar"
 
-  hero
-    badge "TRILHA DE APRENDIZADO"
-    titulo "Aprenda Germanio em 4 Passos."
-    descricao "Do primeiro modelo relacional até uma aplicação full-stack completa com banco, API REST e interface declarativa."
-    botao primario "Iniciar com Germanio →" "/docs"
-    botao secundario "Ver Exemplos" "/exemplos"
+    hero
+        badge "TRILHA DE APRENDIZADO"
+        titulo "Aprenda Germanio em 4 Passos."
+        descricao "Do primeiro modelo relacional até uma aplicação full-stack completa com banco, API REST e interface declarativa."
+        botao primario "Iniciar com Germanio →" "/docs"
+        botao secundario "Ver Exemplos" "/exemplos"
 
-  secao "Passo a Passo"
-    subtitulo "Construa entendimento sólido em poucos minutos."
-    grade 2 colunas
-      card
-        icone "1️⃣"
-        tag "PASSO 1"
-        titulo "1. Definindo o App e Banco"
-        texto "Toda aplicação Germanio começa declarando o nome do sistema e o banco de dados."
-        code "app MeuApp\nbanco sqlite"
-      card
-        icone "2️⃣"
-        tag "PASSO 2"
-        titulo "2. Declarando Tabelas"
-        texto "Use 'tabela' para declarar seus modelos com campos e restrições obrigatórias ou únicas."
-        code "tabela Tarefa\n  titulo: texto obrigatorio\n  status: status"
-      card
-        icone "3️⃣"
-        tag "PASSO 3"
-        titulo "3. Eventos e Lógica de Negócio"
-        texto "Use 'quando receber' para processar dados de entrada e gerar respostas de sucesso."
-        code "quando receber criar_tarefa com titulo\n  tarefa = criar Tarefa\n  responder sucesso"
-      card
-        icone "4️⃣"
-        tag "PASSO 4"
-        titulo "4. Páginas e Componentes"
-        texto "Crie a interface web declarativa usando blocos nativos de UI."
-        code "pagina \"/\"\n  hero\n    titulo \"Olá Germanio\""
+    secao "Passo a Passo"
+        subtitulo "Construa entendimento sólido em poucos minutos."
+        grade 2 colunas
+            card
+                icone "1️⃣"
+                tag "PASSO 1"
+                titulo "1. Definindo o App e Banco"
+                texto "Toda aplicação Germanio começa declarando o nome do sistema e o banco de dados."
+                code "app MeuApp\nbanco sqlite"
+            card
+                icone "2️⃣"
+                tag "PASSO 2"
+                titulo "2. Declarando Tabelas"
+                texto "Use 'tabela' para declarar seus modelos com campos e restrições obrigatórias ou únicas."
+                code "tabela Tarefa\n  titulo: texto obrigatorio\n  status: status"
+            card
+                icone "3️⃣"
+                tag "PASSO 3"
+                titulo "3. Eventos e Lógica de Negócio"
+                texto "Use 'quando receber' para processar dados de entrada e gerar respostas de sucesso."
+                code "quando receber criar_tarefa com titulo\n  tarefa = criar Tarefa\n  responder sucesso"
+            card
+                icone "4️⃣"
+                tag "PASSO 4"
+                titulo "4. Páginas e Componentes"
+                texto "Crie a interface web declarativa usando blocos nativos de UI."
+                code "pagina \"/\"\n  hero\n    titulo \"Olá Germanio\""
 
-  rodape
-    copyright "Germanio © 2026 — Guia Oficial."
-    link "GitHub" "https://github.com/flaviokalleu/germanio"
-    link "Início" "/"
-    link "Documentação" "/docs"
+    rodape
+        copyright "Germanio © 2026 — Guia Oficial."
+        link "GitHub" "https://github.com/flaviokalleu/germanio"
+        link "Início" "/"
+        link "Documentação" "/docs"

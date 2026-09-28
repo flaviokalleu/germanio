@@ -1,30 +1,30 @@
 integracoes
 
-  whatsapp
-    provedor: whatsmeow
-    multi_sessao: verdadeiro
-    presenca: verdadeiro
-    qr_code: verdadeiro
+    whatsapp
+        provedor: whatsmeow
+        multi_sessao: verdadeiro
+        presenca: verdadeiro
+        qr_code: verdadeiro
 
-    quando criar ticket
-      enviar mensagem para contato.telefone
-        texto "Seu ticket {protocolo} foi aberto. Em breve um atendente ira te ajudar!"
+        quando criar ticket
+            enviar mensagem para contato.telefone
+                texto "Seu ticket {protocolo} foi aberto. Em breve um atendente ira te ajudar!"
 
-    quando atualizar ticket
-      enviar mensagem para contato.telefone
-        texto "Seu ticket {protocolo} foi atualizado. Status: {status}"
+        quando atualizar ticket
+            enviar mensagem para contato.telefone
+                texto "Seu ticket {protocolo} foi atualizado. Status: {status}"
 
-  email
-    servidor: "smtp.gmail.com"
-    porta: "587"
+    email
+        servidor: "smtp.gmail.com"
+        porta: "587"
 
-    quando criar ticket
-      enviar email para contato.email
-        assunto "Ticket {protocolo} aberto"
-        texto "<h2>Seu ticket foi aberto</h2><p>Protocolo: {protocolo}</p><p>Status: {status}</p><p>Prioridade: {prioridade}</p>"
+        quando criar ticket
+            enviar email para contato.email
+                assunto "Ticket {protocolo} aberto"
+                texto "<h2>Seu ticket foi aberto</h2><p>Protocolo: {protocolo}</p><p>Status: {status}</p><p>Prioridade: {prioridade}</p>"
 
-  cron
-    cada 5 minutos
-      chamar api "http://localhost:8080/api/_eval"
-    cada 1 hora
-      chamar api "http://localhost:8080/api/_stats"
+    cron
+        cada 5 minutos
+            chamar api "http://localhost:8080/api/_eval"
+        cada 1 hora
+            chamar api "http://localhost:8080/api/_stats"

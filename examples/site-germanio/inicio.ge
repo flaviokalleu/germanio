@@ -3,10 +3,10 @@ app GermanioSite
 banco sqlite
 
 tema
-  cor primaria "#00D9FF"
-  cor secundaria "#080B10"
-  cor destaque "#168BFF"
-  estilo "moderno"
+    cor primaria "#00D9FF"
+    cor secundaria "#080B10"
+    cor destaque "#168BFF"
+    estilo "moderno"
 
 importar "dados/leads.ge"
 importar "rotas/contato.ge"
