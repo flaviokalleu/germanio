@@ -327,6 +327,7 @@ type Field struct {
 	Private      bool     // privado: shown only to its owner and administrators
 	NumberedBy   string   // numerado por <entidade>: sequence per parent (holds the FK field after resolution)
 	ListOf       string   // lista de <texto|entidade>
+	ByName       string   // labels por nome: items are named by this field of ListOf
 	System       bool     // maintained by the runtime (estado, fechada_em); never written by people
 	Label        string   // spelling for people (accents kept): "descrição"
 	Formatted    bool     // formatado: Markdown rendered safely on pages

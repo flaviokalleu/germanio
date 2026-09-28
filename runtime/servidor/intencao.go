@@ -282,10 +282,10 @@ func readBody(r *http.Request) (map[string]any, error) {
 // serialize produces the public representation of a record. Private
 // fields appear only to the record's owner and administrators.
 func serialize(e *ast.Entity, row map[string]any) map[string]any {
-	return serializeFor(nil, nil, e, row, true)
+	return serializeFor(nil, nil, nil, e, row, true)
 }
 
-func serializeFor(in *interp.Interpreter, atual map[string]any, e *ast.Entity, row map[string]any, trusted bool) map[string]any {
+func serializeFor(ctx *interp.Context, in *interp.Interpreter, atual map[string]any, e *ast.Entity, row map[string]any, trusted bool) map[string]any {
 	if row == nil {
 		return nil
 	}
@@ -297,6 +297,11 @@ func serializeFor(in *interp.Interpreter, atual map[string]any, e *ast.Entity, r
 			hidden[strings.ToLower(f.Name)] = true
 		}
 	}
+	defer func() {
+		if in != nil && ctx != nil {
+			namesOut(ctx, in, e, out)
+		}
+	}()
 	for k, v := range row {
 		switch {
 		case hidden[k]:
@@ -481,7 +486,7 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 			a.reviewView(w, r, ctx, e, row, op)
 			return
 		}
-		out := serializeFor(a.in, atual, e, row, false)
+		out := serializeFor(ctx, a.in, atual, e, row, false)
 		if e.Review != nil && e.Review.Target != "" && fmt.Sprint(row[e.StateField]) == e.Initial {
 			if check := a.mergeCheck(ctx, e, row); check != nil {
 				out["pode_mesclar"] = check["pode"]
@@ -500,6 +505,10 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 			scope = map[string]any{}
 		}
 		data := a.writable(atual, e, body, scope)
+		if err := a.namesIn(ctx, atual, e, data, nil); err != nil {
+			a.failErr(w, r, err)
+			return
+		}
 		if e.Execution != nil && e.Execution.Role == "run" {
 			a.manualRun(w, r, ctx, atual, e, data)
 			return
@@ -532,6 +541,10 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 		data := a.writable(atual, e, body, nil)
 		for k := range scope {
 			delete(data, k)
+		}
+		if err := a.namesIn(ctx, atual, e, data, row); err != nil {
+			a.failErr(w, r, err)
+			return
 		}
 		if h := e.Hooks["antes_editar"]; h != nil {
 			if _, _, err := a.in.RunHook(ctx, h, map[string]any{"atual": nilIfEmpty(atual), "registro": row, e.Singular: row, "dados": data, "entrada": body}); err != nil {
@@ -570,7 +583,7 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 			urow = a.find(ctx, e, fmt.Sprint(row["id"]), nil)
 		}
 		a.emit(ctx, e, "editar", urow, atual)
-		a.json(w, 200, serializeFor(a.in, atual, e, urow, false), nil)
+		a.json(w, 200, serializeFor(ctx, a.in, atual, e, urow, false), nil)
 	case "excluir":
 		row := a.find(ctx, e, ref, scope)
 		if row == nil || !a.in.Can(ctx, atual, e, "ver", row) {
@@ -616,7 +629,7 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 				a.failErr(w, r, err)
 				return
 			}
-			a.json(w, 200, serializeFor(a.in, atual, e, updated, false), nil)
+			a.json(w, 200, serializeFor(ctx, a.in, atual, e, updated, false), nil)
 			return
 		}
 		if verb == "aprovar" || verb == "desaprovar" {
@@ -631,7 +644,7 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 				a.failErr(w, r, err)
 				return
 			}
-			a.json(w, 200, serializeFor(a.in, atual, e, updated, false), nil)
+			a.json(w, 200, serializeFor(ctx, a.in, atual, e, updated, false), nil)
 			return
 		}
 		if tr := e.Transitions[verb]; tr != nil && verb == "mesclar" && e.Review != nil && e.Review.Target != "" {
@@ -655,7 +668,7 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 				updated = a.find(ctx, e, fmt.Sprint(row["id"]), nil)
 			}
 			a.emit(ctx, e, verb, updated, atual)
-			a.json(w, 200, serializeFor(a.in, atual, e, updated, false), nil)
+			a.json(w, 200, serializeFor(ctx, a.in, atual, e, updated, false), nil)
 			return
 		}
 		if verb == "revogar" && e.Hooks[verb] == nil {
@@ -664,7 +677,7 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 				a.failErr(w, r, err)
 				return
 			}
-			a.json(w, 200, serializeFor(a.in, atual, e, res.(map[string]any), false), nil)
+			a.json(w, 200, serializeFor(ctx, a.in, atual, e, res.(map[string]any), false), nil)
 			return
 		}
 		result, resp, err := a.in.RunHook(ctx, e.Hooks[verb], a.hookVars(atual, e, row, body))
@@ -677,7 +690,7 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 			return
 		}
 		if result == nil {
-			result = serializeFor(a.in, atual, e, a.find(ctx, e, fmt.Sprint(row["id"]), nil), false)
+			result = serializeFor(ctx, a.in, atual, e, a.find(ctx, e, fmt.Sprint(row["id"]), nil), false)
 		}
 		a.json(w, 200, result, nil)
 	}
@@ -780,7 +793,7 @@ func (a *intentAPI) create(w http.ResponseWriter, r *http.Request, ctx *interp.C
 		a.failErr(w, r, err)
 		return
 	}
-	out := serializeFor(a.in, atual, e, row, false)
+	out := serializeFor(ctx, a.in, atual, e, row, false)
 	for _, f := range e.Model.Fields {
 		if f.Type == ast.FieldSegredo {
 			out[strings.ToLower(f.Name)] = row[strings.ToLower(f.Name)] // shown once
@@ -791,7 +804,7 @@ func (a *intentAPI) create(w http.ResponseWriter, r *http.Request, ctx *interp.C
 			a.failErr(w, r, err) // nothing stays half-created: the transaction is undone
 			return
 		}
-		fresh := serializeFor(a.in, atual, e, a.find(ctx, e, fmt.Sprint(row["id"]), nil), false)
+		fresh := serializeFor(ctx, a.in, atual, e, a.find(ctx, e, fmt.Sprint(row["id"]), nil), false)
 		for k, v := range fresh {
 			out[k] = v
 		}
@@ -898,6 +911,11 @@ func (a *intentAPI) list(w http.ResponseWriter, r *http.Request, ctx *interp.Con
 			continue
 		}
 		if fd := fieldOf(e, f); fd != nil && fd.Type == ast.FieldLista {
+			if fd.ByName != "" {
+				ids, _ := a.nameFilter(ctx, e, fd, v, filters)
+				filters[f+"__contem_algum"] = ids // no match: an empty list matches nothing
+				continue
+			}
 			filters[f+"__contem"] = `"` + strings.ReplaceAll(v, `"`, "") + `"`
 			continue
 		}
@@ -932,7 +950,7 @@ func (a *intentAPI) list(w http.ResponseWriter, r *http.Request, ctx *interp.Con
 		}
 		m := res.(map[string]any)
 		for _, it := range m["itens"].([]any) {
-			items = append(items, serializeFor(a.in, atual, e, it.(map[string]any), false))
+			items = append(items, serializeFor(ctx, a.in, atual, e, it.(map[string]any), false))
 		}
 		total = int(m["total"].(float64))
 	} else {
@@ -954,7 +972,7 @@ func (a *intentAPI) list(w http.ResponseWriter, r *http.Request, ctx *interp.Con
 					continue
 				}
 				if total >= start && total < start+per {
-					items = append(items, serializeFor(a.in, atual, e, row, false))
+					items = append(items, serializeFor(ctx, a.in, atual, e, row, false))
 				}
 				total++
 			}
@@ -1296,5 +1314,5 @@ func (a *intentAPI) manualRun(w http.ResponseWriter, r *http.Request, ctx *inter
 		a.fail(w, 400, msg)
 		return
 	}
-	a.json(w, 201, serializeFor(a.in, atual, e, row, false), nil)
+	a.json(w, 201, serializeFor(ctx, a.in, atual, e, row, false), nil)
 }

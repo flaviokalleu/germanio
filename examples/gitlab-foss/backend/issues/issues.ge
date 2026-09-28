@@ -11,7 +11,7 @@ issue tem
     titulo obrigatório até 255
     descrição formatada
     autor
-    labels
+    labels por nome
     responsaveis
     comentarios
 

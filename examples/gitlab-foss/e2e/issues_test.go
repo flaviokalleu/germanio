@@ -15,10 +15,13 @@ func TestFluxo3Issues(t *testing.T) {
 
 	p := ada.must("POST", "/api/v4/projects", map[string]any{"name": "Tracker", "path": "tracker", "visibility": "public"}, 201)
 	pid := id(p)
-	bug := ada.must("POST", "/api/v4/projects/"+pid+"/labels", map[string]any{"name": "bug", "color": "#ff0000"}, 201)
+	ada.must("POST", "/api/v4/projects/"+pid+"/labels", map[string]any{"name": "bug", "color": "#ff0000"}, 201)
 	eve.must("POST", "/api/v4/projects/"+pid+"/labels", map[string]any{"name": "wontfix"}, 403)
 
-	i1 := bob.must("POST", "/api/v4/projects/"+pid+"/issues", map[string]any{"title": "Crash on start", "description": "stack", "labels": []any{bug["id"]}}, 201)
+	i1 := bob.must("POST", "/api/v4/projects/"+pid+"/issues", map[string]any{"title": "Crash on start", "description": "stack", "labels": "bug"}, 201)
+	if l, _ := i1["labels"].([]any); len(l) != 1 || l[0] != "bug" {
+		t.Fatalf("labels por nome: %v", i1["labels"])
+	}
 	i2 := ada.must("POST", "/api/v4/projects/"+pid+"/issues", map[string]any{"title": "Docs"}, 201)
 	if i1["iid"].(float64) != 1 || i2["iid"].(float64) != 2 || i1["state"] != "opened" || i1["author_id"] != bobID {
 		t.Fatalf("iid por projeto / autor / estado inicial: %v %v", i1, i2)
@@ -43,9 +46,21 @@ func TestFluxo3Issues(t *testing.T) {
 	if l := ada.list("/api/v4/projects/" + pid + "/issues?assignee_ids=" + jsonNum(bobID)); len(l) != 1 {
 		t.Fatalf("filtro por responsável: %v", l)
 	}
-	if l := ada.list("/api/v4/projects/" + pid + "/issues?labels=" + jsonNum(bug["id"])); len(l) != 1 {
+	if l := ada.list("/api/v4/projects/" + pid + "/issues?labels=bug"); len(l) != 1 {
 		t.Fatalf("filtro por label: %v", l)
 	}
+	if l := ada.list("/api/v4/projects/" + pid + "/issues?labels=nenhuma"); len(l) != 0 {
+		t.Fatalf("filtro por label inexistente: %v", l)
+	}
+	// Label nova pelo nome: criada no projeto por quem pode (reporter+); guest não cria.
+	up := ada.must("PUT", "/api/v4/projects/"+pid+"/issues/2", map[string]any{"labels": "docs,bug"}, 200)
+	if l, _ := up["labels"].([]any); len(l) != 2 || l[0] != "docs" || l[1] != "bug" {
+		t.Fatalf("labels criadas pelo nome: %v", up["labels"])
+	}
+	if ls := ada.list("/api/v4/projects/" + pid + "/labels"); len(ls) != 2 {
+		t.Fatalf("labels do projeto: %v", ls)
+	}
+	eve.must("POST", "/api/v4/projects/"+pid+"/issues", map[string]any{"title": "x", "labels": "inventada"}, 400)
 	if l := ada.list("/api/v4/projects/" + pid + "/issues?search=docs"); len(l) != 1 || l[0].(map[string]any)["title"] != "Docs" {
 		t.Fatalf("pesquisa: %v", l)
 	}
@@ -117,9 +132,16 @@ func TestLabelsDeOutroProjetoNaoEntram(t *testing.T) {
 	ada := signup(t, base, "ada")
 	eve := signup(t, base, "eve")
 	priv := ada.must("POST", "/api/v4/projects", map[string]any{"name": "Secret", "path": "secret"}, 201)
-	secret := ada.must("POST", "/api/v4/projects/"+id(priv)+"/labels", map[string]any{"name": "segredo"}, 201)
+	secret := ada.must("POST", "/api/v4/projects/"+id(priv)+"/labels", map[string]any{"name": "segredo", "color": "#123456"}, 201)
 	mine := eve.must("POST", "/api/v4/projects", map[string]any{"name": "Mine", "path": "mine"}, 201)
 	eve.must("POST", "/api/v4/projects/"+id(mine)+"/issues", map[string]any{"title": "x", "labels": []any{secret["id"]}}, 400)
 	i := eve.must("POST", "/api/v4/projects/"+id(mine)+"/issues", map[string]any{"title": "y"}, 201)
 	eve.must("PUT", "/api/v4/projects/"+id(mine)+"/issues/"+jsonNum(i["iid"]), map[string]any{"labels": []any{secret["id"]}}, 400)
+	// Pelo nome, é outra label: a do próprio projeto (criada), nunca a de Ada.
+	eve.must("PUT", "/api/v4/projects/"+id(mine)+"/issues/"+jsonNum(i["iid"]), map[string]any{"labels": "segredo"}, 200)
+	for _, l := range eve.list("/api/v4/projects/" + id(mine) + "/labels") {
+		if l.(map[string]any)["color"] == "#123456" {
+			t.Fatalf("label do projeto privado vazou: %v", l)
+		}
+	}
 }

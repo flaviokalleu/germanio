@@ -61,7 +61,7 @@ Escopo núcleo v1 = features marcadas **[N]** (fluxos 1–5 da missão + testes 
 | IS-02 [N] | Editar / fechar / reabrir | `state_event=close|reopen`, `closed_at`, `closed_by` | issue | `PUT /projects/:id/issues/:iid` | issues | autor ou Planner/Reporter+ | | | PASS | TestFluxo3 |
 | IS-03 [N] | Comentários | notas + notas de sistema | issue | `/issues/:iid/notes` | notes | Guest+ | markdown | G18 | PASS | TestFluxo3 |
 | IS-04 [N] | Assignees | um ou mais | issue | `assignee_ids` | issue_assignees | Reporter+ | | | PASS | TestFluxo3 |
-| IS-05 [N] | Labels | por projeto, cor, vínculo | labels | `/labels`, `labels=` | labels, label_links | Reporter+ administra | | | PARTIAL (labels por id) | TestFluxo3 |
+| IS-05 [N] | Labels | por projeto, cor, vínculo | labels | `/labels`, `labels=` | labels, label_links | Reporter+ administra | | | PASS | TestFluxo3, TestLabelsDeOutroProjetoNaoEntram |
 | IS-06 | Milestones | | milestones | `/milestones` | milestones | Reporter+ | | | NOT_STARTED | |
 | IS-07 [N] | Filtros e busca | state, labels, assignee, author, search | lista | `GET /issues?state&labels&search` | issues | leitura | | | PASS | TestFluxo3 |
 | IS-08 [N] | Confidencial | visível só a Reporter+, autor, assignees | | `confidential` | issues | | | | PASS | TestFluxo3, TestIssuesPrivadasNaoVazam |

@@ -197,6 +197,12 @@ func ResolveIntent(prog *ast.Program) error {
 	var tems []pendingTem
 	var people []pendingPerson
 	var addresses []pendingAddress
+	type pendingNamed struct {
+		e, child *ast.Entity
+		key      string
+		pos      diagnostics.Position
+	}
+	var named []pendingNamed
 	for _, b := range in.FieldBlocks {
 		e, err := r.entity(b.Entity, b.Pos)
 		if err != nil {
@@ -211,6 +217,10 @@ func ResolveIntent(prog *ast.Program) error {
 				if err := r.membership(e, member, b.Pos); err != nil {
 					return err
 				}
+			case len(w) == 3 && w[1] == "por" && r.byName[w[0]] != nil:
+				// labels por nome: a list whose items are named, not numbered
+				tems = append(tems, pendingTem{e, r.byName[w[0]], b.Pos})
+				named = append(named, pendingNamed{e, r.byName[w[0]], w[2], b.Pos})
 			case len(w) >= 3 && w[0] == "endereco" && w[1] == "dentro":
 				// endereço dentro do grupo pai [ou do criador]
 				addresses = append(addresses, pendingAddress{e, w[2:], b.Pos})
@@ -291,6 +301,23 @@ func ResolveIntent(prog *ast.Program) error {
 				t.owner.Model.Fields = append(t.owner.Model.Fields, &ast.Field{Name: child.Plural, Type: ast.FieldLista, ListOf: child.Singular, Pos: t.pos})
 			}
 		}
+	}
+
+	// 2c. Lists named by a field: `labels por nome`.
+	for _, n := range named {
+		var list *ast.Field
+		for _, f := range n.e.Model.Fields {
+			if f.Type == ast.FieldLista && f.ListOf == n.child.Singular {
+				list = f
+			}
+		}
+		if list == nil {
+			return r.errAt(n.pos, "%s por %s: vale para dados que %s usa de outro dono (ex.: issue tem labels por nome, e projeto tem labels)", n.child.Plural, n.key, n.e.Singular)
+		}
+		if fieldByNameAST(n.child.Model, n.key) == nil {
+			return r.errAt(n.pos, "%s por %s: %s não tem o campo %s", n.child.Plural, n.key, n.child.Singular, n.key)
+		}
+		list.ByName = n.key
 	}
 
 	// 3. pertence a

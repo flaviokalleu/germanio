@@ -109,11 +109,29 @@ func (b *Banco) where(modelo string, c Consulta) (string, []any, error) {
 		case "contem":
 			where = append(where, "LOWER("+col+") LIKE "+b.ph(n)+" ESCAPE '\\'")
 			val = "%" + escapeLike(strings.ToLower(fmt.Sprint(val))) + "%"
+		case "contem_algum":
+			// any of the values (a list field containing any of the given items)
+			list, ok := c.Filtros[key].([]any)
+			if !ok {
+				return "", nil, fmt.Errorf("o filtro '%s' exige uma lista", key)
+			}
+			if len(list) == 0 {
+				where = append(where, "1 = 0")
+				continue
+			}
+			var ors []string
+			for _, item := range list {
+				ors = append(ors, "LOWER("+col+") LIKE "+b.ph(n)+" ESCAPE '\\'")
+				args = append(args, "%"+escapeLike(strings.ToLower(fmt.Sprint(item)))+"%")
+				n++
+			}
+			where = append(where, "("+strings.Join(ors, " OR ")+")")
+			continue
 		case "comeca_com":
 			where = append(where, col+" LIKE "+b.ph(n)+" ESCAPE '\\'")
 			val = escapeLike(fmt.Sprint(val)) + "%"
 		case "em", "nao_em":
-			list, ok := val.([]any)
+			list, ok := c.Filtros[key].([]any)
 			if !ok {
 				return "", nil, fmt.Errorf("o filtro '%s' exige uma lista", key)
 			}
