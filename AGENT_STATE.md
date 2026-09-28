@@ -1,15 +1,24 @@
 # AGENT_STATE
 
 ## CURRENT_PHASE
-Estudo dirigido (pedido do usuário, 2026-09-28): implementações open source de linguagens
-(`docs/research/languages/`) e de frontend (`docs/research/frontend/`). Nenhuma mudança de
-arquitetura, sintaxe, parser, runtime, formatter ou tooling até a pesquisa ser confrontada com
-a norma (`docs/INTENCAO.md`, a skill, AGENTS.md, EVOLUTION, GAPS).
-Antes da pausa: sintaxe hierárquica implementada; G64 (`ge fmt` para todo arquivo de
-aplicação) commitado em e562a8c. Os arquivos `auth.ge` com o bloco `autenticacao` indentado
-em 2 espaços (examples/legacy/whaticket, demo/organizado) não são formatáveis (o `fmt` também recusava
-antes); anotado para depois.
-Depois da pesquisa: G62 (seções de página), G61, G63; retomar o GitLab pelo inventário.
+2026-09-28, em ordem:
+1. Estudo dirigido de linguagens, frontend e performance: FEITO (`docs/research/languages/`,
+   `docs/research/frontend/`, `docs/research/performance/`; divergências em G67–G75, riscos
+   de performance em G85–G90).
+2. Norma de eficiência ("simples para o humano, eficiente para a máquina") e suíte de
+   benchmarks (`bench/`): FEITO. Falta publicar o primeiro baseline numa máquina ociosa.
+3. Lançamento e descoberta: FEITO. README em inglês e pt-BR, docs públicos com
+   `tooling/doctest`, exemplos reais testados, CONTRIBUTING/SECURITY/CoC, GEP 0001, release
+   (goreleaser + workflow + Docker), CHANGELOG verdadeiro, About do GitHub aplicado, SEO do
+   site, plano editorial (`docs/launch/LANCAMENTO.md`, com o que só o proprietário pode fazer:
+   social preview, push, primeira tag, hospedar o site, publicar a extensão). Correções de
+   segurança no caminho: `/ws` (G65), bloqueio de login padrão (G83), pastas servidas (G91).
+4. Pesquisa profunda do ecossistema (pedido de 2026-09-28): EM ANDAMENTO. Triagem do tópico
+   programming-language, mais 13 linguagens, pacotes, concorrência, segurança; depois
+   ECOSYSTEM_MATRIX.md, atualização do GERMANIO_LESSONS.md e GEPs em rascunho.
+   Regra: documentar primeiro, propor depois, implementar só com decisão justificada.
+Depois: retomar o GitLab pelo inventário, com as lacunas P0/P1 abertas priorizadas
+(G85 visibilidade como SQL, G86 escritor único, G89 `paralelo`, G67 linhas ignoradas).
 
 ## CURRENT_GOAL
 Continuar o GitLab por intenção: issues → merge requests → CI/CD → páginas (UI),
