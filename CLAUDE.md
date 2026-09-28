@@ -1,98 +1,364 @@
-# CLAUDE.md
+## CONTRATO INVIOLÁVEL DO GERMANIO
 
-## Leitura obrigatória e autoridade
+Estas regras têm prioridade sobre conveniência de implementação, exemplos antigos, APIs já existentes no runtime e sintaxe técnica legada.
 
-Leia `AGENTS.md`, `docs/INTENCAO.md` e `skills/germanio-simplicity/SKILL.md` antes de trabalhar.
-A camada de intenção é normativa; `docs/README.md` distingue guias técnicos e histórico.
-Contagens e descrições antigas abaixo não provam o estado atual: confira código e testes.
+Germanio NÃO é uma linguagem tradicional traduzida para português.
 
+Germanio NÃO deve ensinar o usuário a pensar como Go, Python, JavaScript, Rust, Java ou C.
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Germanio permite que o usuário descreva um software pela intenção:
 
-## What is Germanio
+- o que existe;
+- quem pode fazer;
+- o que pode acontecer;
+- quais regras existem;
+- o que aparece.
 
-Germanio is an intent-oriented declarative programming language written in Go that generates full-stack web applications from `.ge` files. The default level is the intent layer (`docs/INTENCAO.md`), which is **Portuguese only**. The older technical syntax (`dados`/`telas` blocks, `docs/SPEC.md`) also accepts keywords in 20 languages, normalized to canonical Portuguese tokens.
+O compilador e o runtime resolvem o mecanismo.
 
-## Build & Run
+**Go constrói mecanismos. Germanio constrói produtos.**
 
-```bash
-go build -o germanio .
+### REGRA FUNDAMENTAL
 
-./germanio run demo/plano/inicio.ge [port]
-./germanio check demo/plano/inicio.ge
-./germanio new <name>          # flat mode (single file)
-./germanio init <name>         # organized mode (folders)
-./germanio build app.ge -o app # compile to standalone executable
-./germanio docker              # generate Dockerfile
+A existência de uma função, keyword, primitive ou API no parser/runtime NÃO significa que ela deve ser usada no nível padrão.
+
+Sempre diferencie:
+
+```text
+SUPORTADO PELO RUNTIME ≠ APROPRIADO PARA O DOMÍNIO
+SINTAXE LEGADA ≠ SINTAXE RECOMENDADA
+COMPATIBILIDADE ≠ DESIGN ATUAL
+PRIMITIVA DISPONÍVEL ≠ AUTORIZAÇÃO PARA USÁ-LA
 ```
 
-CGO is disabled — uses pure-Go SQLite (`modernc.org/sqlite`).
+Nunca escolha uma construção apenas porque ela já existe.
 
-## Testing
+---
 
-```bash
-go test ./...                 # everything, including the GitLab end-to-end flows
-go test -race ./runtime/... ./compiler/... ./tooling/...
-scripts/bench.sh              # benchmarks (bench/README.md)
+## ORDEM OBRIGATÓRIA DE ABSTRAÇÃO
+
+Antes de escrever qualquer solução `.ge`, tente resolver nesta ordem:
+
+1. intenção;
+2. declaração;
+3. configuração;
+4. regra de domínio;
+5. lógica explícita;
+6. primitive técnica;
+7. adaptador externo.
+
+Nunca pule diretamente para lógica ou primitive porque é mais fácil implementar.
+
+Se uma necessidade comum só puder ser resolvida nos níveis 5 ou 6, considere primeiro que pode existir uma capability faltante no Germanio.
+
+---
+
+## PROIBIÇÃO DE VAZAMENTO TÉCNICO
+
+Código normal de aplicação em `backend/` e `frontend/` NÃO DEVE expor detalhes técnicos quando Germanio puder derivá-los.
+
+Considere um alerta arquitetural encontrar no domínio:
+
+```text
+GET
+POST
+PUT
+PATCH
+DELETE
+HTTP
+JSON
+SQL
+header
+status code
+payload
+URL montada manualmente
+ID usado como relação
+CRUD manual
+serialização
+JWT
+bcrypt
+WebSocket
+fila
+worker
+goroutine
+mutex
+transação
+controller
+service
+repository
+middleware
 ```
 
-Tests live next to each package; `tooling/doctest` checks that every ```ge block in the
-public documentation compiles; `runtime/examples_smoke_test.go` starts every example.
+Também considere suspeitas construções como:
 
-## Architecture
+```ge
+chamar(...)
+ambiente.ler(...)
+chamar_async(...)
+consultar_paralelo(...)
+```
 
-Pipeline: `.ge` file → Lexer → Parser/AST → Runtime Engine.
+Elas podem existir por compatibilidade ou níveis avançados.
 
-### Compiler (`compiler/`)
+Sua existência NÃO autoriza seu uso no domínio.
 
-- **`lexer/lexer.go`** — Tokenizer with 150+ keywords. For the older technical syntax, maps keywords of 20 languages to canonical Portuguese tokens via `idiomas/idiomas.go` (global map; collisions recorded as G92). The intent layer is Portuguese only.
-- **`idiomas/idiomas.go`** — Translation map: foreign word → canonical PT keyword. Supports ES, FR, DE, IT, ZH, JA, KO, AR, HI, BN, RU, ID, TR, VI, PL, NL, TH, SW.
-- **`parser/parser.go`** — Recursive descent parser. Handles: `sistema`, `dados`, `telas`, `eventos`, `acoes`, `tema`, `logica`, `banco`, `autenticacao`, `integracoes`, `rotas`, `paginas`, `sidebar`.
-- **`ast/ast.go`** — Node definitions including `CustomRoute`, `CustomPage`, `SidebarItem`, theme presets (`ThemePreset()`), color names (`ColorName` map, `ResolveColor()`).
+---
 
-### Runtime (`runtime/`)
+## TESTE DA INTENÇÃO
 
-- **`engine.go`** — Orchestrator: loads .env, creates DB, sets up auth with JWT from env, wires interpreter with HTTP client, starts hot reload, starts server.
-- **`interpreter/interpreter.go`** — Script engine with 30+ built-in functions including async (`paralelo`, `esperar`, `timeout`, `chamar_async`, `consultar_paralelo`), array indexing (`arr[0]`), HTTP calls (`chamar`), JSON parsing.
-- **`servidor/servidor.go`** — HTTP server with CRUD endpoints, role-based access control, rate limiting (100 POST/min), SSRF-protected proxy, body size limits, custom routes, custom pages, HTML caching.
-- **`servidor/renderizador.go`** — the older SPA renderer: theme CSS variables (the `estilo` field is parsed but not used: G75), Chart.js, FK dropdowns, enum selects, textarea for texto_longo, smart sidebar.
-- **`banco/banco.go`** — Database abstraction (SQLite/MySQL/PostgreSQL) with connection pooling, auto-migration, validation rules enforcement, join tables for many-to-many, relationship queries.
-- **`auth/auth.go`** — JWT (HMAC-SHA256) + bcrypt with role checking, login rate limiting (5 attempts = 5min lockout).
-- **`hotreload.go`** — File watcher that re-execs process on .ge changes.
+Sempre que estiver prestes a escrever uma linha técnica, pergunte:
 
-### CLI (`cli/cli.go`)
+> Qual é a intenção humana por trás desta operação?
 
-Commands: `run`, `check`, `new`, `init`, `build`, `docker`, `version`, `help`.
+Exemplo inadequado para domínio:
 
-`germanio build` creates a standalone executable by generating a temp Go project with `go:embed`, compiling the .ge files + runtime into a single binary.
+```ge
+quando criar pedido
+    chamar(ambiente.ler("DESTINO") + "/um", "POST", pedido.cliente)
+```
 
-## Key Design Decisions
+Isso descreve COMO executar.
 
-- **Multilingual (older syntax only)**: 20 languages normalized to canonical PT tokens via `idiomas.go`; the intent layer is Portuguese only (G74, G92).
-- **Theme presets**: `tema moderno/simples/elegante/corporativo/claro` — one word for a complete design.
-- **Color names**: `cor primaria azul` — the AST resolves names to hex via `ColorName` map.
-- **Smart sidebar**: If user defines screens, sidebar shows those; models without custom screens get auto-generated entries.
-- **Security**: Auth bypass fixed, SSRF blocked, eval requires admin, XSS escaped, path traversal prevented, uploads whitelisted, body limited, JWT from env, CSV injection protected.
-- **Async**: Go goroutines exposed to the scripting engine via `paralelo()`, `timeout()`, etc.
-- **Validation rules**: `validar` statements in logic blocks are enforced in `banco.Validar()` on create and update.
+A intenção real pode ser algo conceitualmente equivalente a:
 
-## Germanio Simplicity Gate
+```text
+quando um pedido for criado
+    envie o cliente ao destino
+```
 
-Antes de criar, modificar ou revisar qualquer arquivo `.ge`, leia obrigatoriamente
-`skills/germanio-simplicity/SKILL.md`. Nenhum `.ge` é considerado concluído sem passar pelo
-checklist dessa skill. Quando `.ge` não conseguir expressar algo de forma simples: não
-implemente a regra da aplicação em Go; identifique a capability genérica faltante,
-implemente o mecanismo no Germanio, exponha uma interface simples para `.ge`, teste, volte à
-aplicação e refatore o `.ge` obsoleto. A aplicação descreve intenção; Go implementa mecanismos.
-Referência da linguagem de intenção: `docs/INTENCAO.md`.
+ATENÇÃO:
 
-### Três camadas (domínio, core, adaptador)
+O exemplo acima NÃO autoriza inventar uma nova sintaxe `envie`.
 
-- **Domínio** (`backend/`, `frontend/` de cada app): intenção, simples para leigos.
-- **Core** (`compiler/`, `runtime/`): mecanismos genéricos. Não pode conter nomes, caminhos,
-  formatos ou protocolos de sistemas externos (ex.: nada de `/api/v4`, `CI_JOB_ID`, `JOB-TOKEN`).
-- **Adaptador** (`integracoes/`): traduz um protocolo externo para capabilities do core; pode
-  ser técnico; marcado `NÍVEL AVANÇADO / ADAPTADOR DE COMPATIBILIDADE`; sem regras do produto.
+Primeiro procure uma construção normativa existente.
 
-Adaptadores podem conhecer a complexidade do sistema externo. O domínio não.
-Detalhes em `skills/germanio-simplicity/SKILL.md` (seção 34b).
+Se ela não existir, trate isso como uma possível capability faltante.
+
+---
+
+## NÃO INVENTE SINTAXE
+
+Claude NÃO tem autorização para inventar silenciosamente sintaxe Germanio.
+
+Antes de utilizar uma construção `.ge`:
+
+1. procure em `docs/INTENCAO.md`;
+2. procure nos GEPs aceitos;
+3. procure nos testes normativos;
+4. confira parser/compiler/runtime;
+5. confirme que a construção pertence ao nível correto.
+
+Se não existir, NÃO apresente como Germanio válido.
+
+Uma ideia de sintaxe ainda inexistente deve ser identificada explicitamente como:
+
+```text
+PROPOSTA DE SINTAXE — NÃO IMPLEMENTADA
+```
+
+Nunca misture proposta e sintaxe implementada sem deixar a diferença explícita.
+
+---
+
+## QUANDO FALTAR UMA CAPABILITY
+
+Se a intenção for válida e genérica, mas Germanio não conseguir expressá-la de maneira simples:
+
+NÃO:
+
+- coloque regra específica da aplicação em Go;
+- esconda mecanismo dentro de uma função `.ge`;
+- use primitive técnica apenas para terminar rapidamente;
+- copie uma solução de outra linguagem;
+- invente sintaxe e continue como se estivesse implementada.
+
+Faça:
+
+```text
+necessidade da aplicação
+        ↓
+identificar intenção
+        ↓
+verificar capability existente
+        ↓
+não existe?
+        ↓
+verificar se é generalizável
+        ↓
+definir semântica
+        ↓
+GEP quando necessário
+        ↓
+implementar mecanismo genérico
+        ↓
+parser/compiler/runtime
+        ↓
+testes
+        ↓
+ge check / ge explain
+        ↓
+documentação
+        ↓
+usar sintaxe simples na aplicação
+```
+
+A capability deve servir potencialmente a mais de um domínio.
+
+CRM, ERP, e-commerce, projetos, atendimento ou qualquer outro sistema devem poder reutilizar o mecanismo quando fizer sentido.
+
+---
+
+## PRINCÍPIO DA COMPLEXIDADE PROGRESSIVA
+
+Germanio deve ser simples para iniciantes sem limitar profissionais.
+
+O caso comum deve exigir poucos conceitos.
+
+Recursos avançados devem aparecer somente quando necessários.
+
+Não remova poder para obter simplicidade.
+
+Esconda complexidade até ela ser necessária.
+
+Um iniciante não deve precisar aprender infraestrutura para criar software comum.
+
+Um profissional deve conseguir descer aos níveis avançados quando realmente precisar.
+
+---
+
+## HIERARQUIA ANTES DE REPETIÇÃO
+
+A indentação fornece contexto.
+
+Prefira:
+
+```ge
+pedidos
+    tem
+        cliente obrigatório
+
+    acesso
+        usuario
+            criar
+            ver
+```
+
+em vez de repetir continuamente:
+
+```ge
+pedido tem cliente obrigatório
+usuario pode criar pedidos
+usuario pode ver pedidos
+```
+
+quando a estrutura hierárquica puder representar a mesma intenção com clareza.
+
+Não busque o menor número de caracteres.
+
+Busque o menor número de conceitos necessários.
+
+---
+
+## SEGURANÇA É PADRÃO
+
+Simplicidade nunca justifica comportamento inseguro.
+
+Germanio deve preferir automaticamente:
+
+- validação;
+- autorização;
+- escaping;
+- limites;
+- paginação;
+- proteção contra operações perigosas;
+- concorrência limitada;
+- timeouts;
+- backpressure;
+- transações seguras;
+- tratamento previsível de erros.
+
+O usuário não deve precisar conhecer a vulnerabilidade para estar protegido dela.
+
+Operações realmente perigosas devem exigir intenção explícita.
+
+---
+
+## EFICIÊNCIA É RESPONSABILIDADE DO CORE
+
+Uma frase simples não autoriza implementação ingênua.
+
+```ge
+mostre clientes
+```
+
+não significa:
+
+```text
+SELECT * FROM clientes
+carregar tudo na memória
+```
+
+Germanio deve resolver paginação, projeção, índices e limites adequados.
+
+A regra permanece:
+
+**simples para o humano, eficiente para a máquina.**
+
+---
+
+## DIAGNÓSTICOS FAZEM PARTE DA LINGUAGEM
+
+Quando o usuário errar, não apenas rejeite.
+
+Explique:
+
+1. o que está errado;
+2. onde está errado;
+3. por que está errado;
+4. como corrigir;
+5. mostre uma forma válida quando apropriado.
+
+O objetivo é permitir que uma pessoa aprenda Germanio pelo próprio compilador.
+
+---
+
+## GATE OBRIGATÓRIO ANTES DE FINALIZAR
+
+Antes de concluir qualquer alteração envolvendo Germanio, responda internamente:
+
+```text
+[ ] Estou descrevendo intenção e não mecanismo?
+[ ] Usei o nível mais alto possível?
+[ ] Introduzi algum conceito técnico desnecessário?
+[ ] Usei primitive simplesmente porque ela já existe?
+[ ] Copiei um padrão de outra linguagem sem necessidade?
+[ ] Existe uma capability declarativa para isso?
+[ ] Estou inventando sintaxe?
+[ ] Toda sintaxe apresentada como válida realmente funciona neste commit?
+[ ] Um iniciante consegue aproximadamente entender o código?
+[ ] Um profissional ainda consegue obter controle quando necessário?
+[ ] A solução é determinística?
+[ ] O padrão é seguro?
+[ ] O mecanismo é genérico?
+[ ] Está na camada correta?
+[ ] docs/INTENCAO.md continua sendo respeitado?
+[ ] ge check passa?
+[ ] testes relevantes passam?
+```
+
+Se qualquer resposta importante for negativa, a tarefa NÃO está concluída.
+
+---
+
+## REGRA SUPREMA
+
+Quando houver duas soluções corretas, prefira a que exige menos conhecimento técnico do usuário sem sacrificar:
+
+- determinismo;
+- segurança;
+- desempenho;
+- capacidade;
+- clareza;
+- previsibilidade.
+
+Não faça o humano aprender como o computador trabalha quando o compilador puder aprender como o humano descreve o problema.

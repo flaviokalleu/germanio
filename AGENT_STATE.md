@@ -15,11 +15,12 @@
    G91, G98–G102 (segurança); G85 (visibilidade 220× mais rápida), G87, G88, G89 (quase),
    G93 (parcial), G94, G95, G96 (performance/dados); G67, G68, G74, G84, G103 (linguagem);
    G75 (acessibilidade, parcial); G76, G80 (parcial).
-6. GEPs em teste (implementados, não normativos até a decisão do mantenedor): 0002 (seções
-   de página) e 0008 (recuperação de senha). Rascunhos esperando decisão: 0003–0007.
-Próximo: GitLab pelo inventário (NT-01 pendências, NT-02 atividade, AD-01 painel — depende
-de agregados), com uma GEP por construção nova; G86 e G93 esperam decisões (efeitos após o
-commit; renomear campos sem perder dados).
+6. GEPs 0002 (seções de página), 0008 (recuperação de senha) e 0009 (pendências): ACEITAS
+   pelo mantenedor e normativas. Rascunhos esperando decisão: 0003–0007.
+7. G86 (efeitos externos depois do commit) e G93 (renames explícitos, nenhum inferido): FEITO,
+   com testes; composição de arquivos protegida por teste de reflexão e de equivalência.
+Próximo: GitLab pelo inventário (NT-02 atividade, AD-01 painel — depende de agregados), com
+uma GEP por construção nova.
 
 ## CURRENT_GOAL
 Continuar o GitLab por intenção: issues → merge requests → CI/CD → páginas (UI),

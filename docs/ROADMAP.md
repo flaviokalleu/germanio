@@ -12,6 +12,7 @@ não todo o full-stack. Não há data de lançamento anunciada.
 | Fundação, tipos e módulos | subconjunto implementado, evolução em andamento | `../SPEC.md`, `compiler/semantic/` |
 | Camada de intenção full-stack | existe; não está limitada a HTML estático | `compiler/parser/intencao.go`, `resolver.go`, `runtime/servidor/intencao.go`, `paginas.go`, `runtime/intencao_test.go` |
 | Relações, login, papéis, estados | mecanismos presentes; cobertura deve ser validada por caso | `compiler/ast/intencao.go`, `runtime/interpreter/intencao.go`, testes do runtime |
+| Migração do banco e efeitos externos | renames só explícitos (`renomeie`, `descarte`; G93); efeitos externos depois do commit, fora da trava (G86); outbox durável ainda não | `runtime/banco/migracao.go`, `runtime/interpreter/efeitos.go`, `runtime/servidor/transacao.go`, `runtime/efeitos_test.go` |
 | Trabalho remoto genérico | mecanismo e testes presentes | `runtime/servidor/trabalho_remoto.go`, `runtime/trabalho_remoto_test.go` |
 | `ge explain` e `ge check` | suporte parcial ao contrato normativo ampliado | `tooling/explicar/explicar.go`, `tooling/gecli/` |
 | HIR/MIR, FFI, WASM, JIT, SIMD e GPU | não anunciados como entregues por este documento | exigir evidência por backend |

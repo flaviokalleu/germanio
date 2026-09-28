@@ -350,7 +350,7 @@ válidas. `construcao_do_sistema` são as construções sem sujeito único (`ten
 | `singular token de acesso` | `cada token de acesso tem` (a forma que nomeia um registro, quando o plural admite duas leituras: tokens → token ou tokem) |
 | `pendência para` + campos de pessoas (um por linha) | `d gera pendência para responsaveis` (veja Pendências) |
 | `renomeie nome para nome_completo` | `renomeie nome de D para nome_completo` (veja Migração) |
-| `descarte fax` | `descarte fax de D` (veja Migração) |
+| `descarte fax` (GEP 0010, em teste) | `descarte fax de D` (veja Migração) |
 
 Uma **ação sem alvo** vale para o próprio dado (a coleção: `administrar` sem alvo inclui
 criar, como `administrar projetos`). Uma ação com alvo explícito (`adicionar membros`,
@@ -642,14 +642,14 @@ clientes
         nome_completo
         email
     renomeie nome para nome_completo
-    descarte fax
 ```
 
 - `renomeie nome para nome_completo` troca o nome da coluna, com os dados, numa transação: todos
   os renames de um dado acontecem, ou nenhum. `nome_completo` precisa estar em `tem` e `nome`
   não. Num banco novo, ou já migrado, a frase não faz nada; ela pode ficar no programa.
-- `descarte fax` diz que o campo saiu de propósito: a aplicação deixa de usá-lo, e os valores
-  antigos continuam guardados no banco (nada é apagado).
+- `descarte fax` ([GEP 0010](gep/0010-descarte-de-campo.md), **em teste**, não normativa até a
+  decisão do mantenedor) diz que o campo saiu de propósito: a aplicação deixa de usá-lo, e os
+  valores antigos continuam guardados no banco (nada é apagado).
 - Se um campo **com dados** some do programa enquanto outro aparece, a partida para e explica:
   pode ser um rename, pode ser remover um e criar outro, e os nomes sozinhos não provam nada.
   O erro sugere as duas frases. `ge check` faz a mesma verificação no banco existente, sem mudar
@@ -803,6 +803,8 @@ Capabilities: entidade persistente, estados, transições
 A implementação em `tooling/explicar/explicar.go` já descreve campos, relações, estados,
 permissões e operações; a separação completa declarado/inferido/interno e a justificativa
 de cada inferência são requisitos normativos, não cobertura integral comprovada nesta revisão.
+Também mostra, em cada hook, os efeitos externos na ordem em que acontecem depois de salvar, e
+a migração declarada (`renomeie`, `descarte`) com a origem.
 
 ## Verificação: `ge check`
 
@@ -818,8 +820,11 @@ Erros de validade impedem aceitação; avisos descrevem situações válidas que
 Condições dependentes de dados ou concorrência exigem verificação em runtime e testes.
 `check` não prova ausência de todos os erros nem substitui testes de execução.
 Hoje o parser/resolver faz validações estruturais; `explicar.Verificar` avisa sobre dados
-inacessíveis e ações que herdam permissão de edição. A lista normativa completa acima não
-é uma alegação de que todos os diagnósticos já foram implementados.
+inacessíveis e ações que herdam permissão de edição. Com um banco já existente, `ge check`
+também planeja a migração sem mudar nada: anuncia os renames que a próxima partida aplicará e
+para, com o erro educativo, quando um campo com dados sumiu enquanto outro apareceu. Usar a
+resposta de um efeito externo dentro de um hook é erro de compilação. A lista normativa
+completa acima não é uma alegação de que todos os diagnósticos já foram implementados.
 
 ## Erros educativos
 

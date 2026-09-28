@@ -87,7 +87,9 @@ func (interp *Interpreter) deferEffect(c *Call, name string, args []any) (any, b
 	if !c.Unused {
 		panic(c.Fail(0, "%s age fora do sistema e é chamado durante uma mudança usando a resposta. Um efeito externo só acontece depois que a mudança é salva, então a resposta ainda não existe aqui. Chame %s sem usar o resultado (ele acontece logo depois de salvar), ou use tarefas.enfileirar(\"funcao\", dados) para trabalhar com a resposta fora da mudança", kind, name))
 	}
-	saved := append([]any(nil), args...)
+	// the effect sends the values as they were when it was asked, even if
+	// the change edits a map or list afterwards
+	saved := snapshot(args).([]any)
 	ctx.Effects.Add(Effect{Kind: kind, Args: saved, Pos: c.Pos, Run: func() error {
 		r, _ := interp.callBuiltin(name, saved)
 		if r == nil || r == false {
@@ -96,4 +98,23 @@ func (interp *Interpreter) deferEffect(c *Call, name string, args []any) (any, b
 		return nil
 	}})
 	return nil, true
+}
+
+// snapshot copies maps and lists deeply; other values are immutable.
+func snapshot(v any) any {
+	switch x := v.(type) {
+	case map[string]any:
+		out := make(map[string]any, len(x))
+		for k, e := range x {
+			out[k] = snapshot(e)
+		}
+		return out
+	case []any:
+		out := make([]any, len(x))
+		for i, e := range x {
+			out[i] = snapshot(e)
+		}
+		return out
+	}
+	return v
 }
