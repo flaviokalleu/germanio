@@ -11,13 +11,13 @@ type App struct {
 	LoginEntity string             // model name of the people who sign in
 	// PendingEntity is the data of pending items ("" when none is asked for).
 	PendingEntity string
-	Login       *LoginDecl
-	Integration string // prefix, default "/api"
-	Pages       []*PageDecl
-	Init        []*Statement
-	MemberModel string // model holding memberships (polymorphic)
-	Messages    string // "pt" (default) or "en"
-	Vocabulary  map[string]string
+	Login         *LoginDecl
+	Integration   string // prefix, default "/api"
+	Pages         []*PageDecl
+	Init          []*Statement
+	MemberModel   string // model holding memberships (polymorphic)
+	Messages      string // "pt" (default) or "en"
+	Vocabulary    map[string]string
 	// GlobalSearch: entities searched together (`tenha busca geral em …`).
 	GlobalSearch []string
 	// InitialAdmin: `tenha administrador inicial "root"` — login name of the
