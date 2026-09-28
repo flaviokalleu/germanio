@@ -148,3 +148,33 @@ BenchmarkVisibilidade-12                      	      36	  32135108 ns/op	 223487
 BenchmarkVisibilidade-12                      	      36	  32748192 ns/op	 2239295 B/op	   50119 allocs/op
 PASS
 ok  	github.com/flaviokalleu/germanio/bench	243.277s
+
+## stress (gerador em ciclo fechado; mesmo computador para servidor e gerador)
+comando: bench/stress -c <conexões> -d 20s -url <listar página 3>
+alvo=germanio url=http://127.0.0.1:18380/_ge/api/clientes?page=3 conexoes=1000 duracao=20s go=go1.27.1 cpus=12
+respostas_ok=324957 erros=0 req_por_s=16210
+latencia p50=52.887842ms p90=113.684193ms p99=194.538378ms max=478.548576ms
+memoria_servidor rss_antes=39800KB rss_pico=124212KB rss_depois=112420KB
+alvo=go url=http://127.0.0.1:18381/clientes?page=3 conexoes=1000 duracao=20s go=go1.27.1 cpus=12
+respostas_ok=557049 erros=0 req_por_s=27808
+latencia p50=31.500875ms p90=64.548453ms p99=106.187249ms max=263.03879ms
+memoria_servidor rss_antes=19460KB rss_pico=89048KB rss_depois=80872KB
+alvo=germanio url=http://127.0.0.1:18380/_ge/api/clientes?page=3 conexoes=10000 duracao=20s go=go1.27.1 cpus=12
+respostas_ok=298466 erros=0 req_por_s=14459
+latencia p50=574.618016ms p90=1.305550499s p99=2.23033161s max=5.532308304s
+memoria_servidor rss_antes=87476KB rss_pico=803356KB rss_depois=766504KB
+alvo=go url=http://127.0.0.1:18381/clientes?page=3 conexoes=10000 duracao=20s go=go1.27.1 cpus=12
+respostas_ok=437673 erros=0 req_por_s=21534
+latencia p50=386.733156ms p90=873.917563ms p99=1.485808362s max=4.187095554s
+memoria_servidor rss_antes=80880KB rss_pico=546320KB rss_depois=538628KB
+
+## análise (comparação com 2026-09-28-e421c8e)
+
+- Nenhum benchmark piorou 1,5× ou mais. A variação geral (+2% a +16%) aparece também no Go
+  direto, que não mudou entre os commits: é o estado da máquina (a execução teve comandos leves
+  em paralelo), não o Germanio. Razão Germanio/Go no stress: 1k 0,59 → 0,58; 10k 0,57 → 0,67.
+- CompilarProjeto/gitlab apareceu com 1,29×. Remedido lado a lado, 6 repetições, mesmo estado da
+  máquina: e421c8e mediana ≈ 7,8 ms, 043f2ca ≈ 7,7 ms — sem regressão de tempo. As alocações
+  cresceram 9% (60,4k → 65,9k por compilação): o exemplo ganhou seções de página e pendências e
+  o resolver ganhou renames e a verificação de efeitos. Registrado, não otimizado.
+- BenchmarkEscritaConcorrente é novo desde o baseline (sem comparação).
