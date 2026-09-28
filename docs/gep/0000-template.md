@@ -7,17 +7,25 @@
 - **Level:** 1 (default) · 2 · 3 · 4 (see `docs/INTENCAO.md` › Níveis)
 - **Layer:** domain · core · adapter
 
-## Intent
+## Problem
 
-What a person wants to describe, in plain words. No syntax yet.
+What a person wants to describe, in plain words, and what goes wrong today.
 
-## Today
+## Evidence
 
-How it is written now (the `.ge`), and what is hard, technical or ambiguous about it.
+Measurements, gaps (`GERMANIO_GAPS.md`), research (`docs/research/`), failing examples.
+
+## Current state
+
+How it is written now (the `.ge`) and what the implementation does (files).
+
+## Alternatives studied
+
+What other languages and systems do, and what was learned (with sources).
 
 ## Proposal
 
-The `.ge` after the change. For block syntax, include the equivalent flat phrases.
+Syntax before and after. For block syntax, include the equivalent flat phrases.
 
 ## Semantics
 
@@ -35,14 +43,23 @@ Against `docs/INTENCAO.md` › *Como avaliar uma sintaxe*: technical concepts re
 cognitive load, repetition without loss of context, predictable hierarchy, clarity,
 determinism, fast reading. Include the cost for the machine (efficiency norm).
 
-## Compatibility
+## Impact
+
+Parser, AST, resolver/compiler, runtime, tooling (`ge fmt`, `ge explain`, `ge check`, the
+VS Code grammar).
+
+## Performance and security
+
+The cost for the machine (norm: Eficiência) and the security consequences (defaults).
+
+## Compatibility and migration
 
 What existing `.ge` programs do after the change. If something breaks: the deprecation
 period and the migration (`ge fmt` rewriting it when that is safe).
 
-## Alternatives
+## Trade-offs and alternatives
 
-At least "do nothing", and why each alternative was not chosen.
+What this costs, and at least "do nothing" with the reason each alternative was not chosen.
 
 ## Tests
 
