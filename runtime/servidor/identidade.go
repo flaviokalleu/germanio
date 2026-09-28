@@ -307,18 +307,22 @@ func (a *intentAPI) mountIdentity(mux *http.ServeMux) {
 			a.json(w, 200, map[string]any{"access_token": t, "token_type": "Bearer", "expires_in": app.Login.OAuthSeconds, "created_at": time.Now().Unix()}, nil)
 		})
 	}
-	me := func(w http.ResponseWriter, r *http.Request) {
-		ctx := &interp.Context{Request: r, Writer: w}
-		user, err := a.s.identify(ctx, r)
-		if err != nil || user == nil {
-			a.fail(w, 401, a.msg("401", le))
-			return
+	me := func(a *intentAPI) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			ctx := &interp.Context{Request: r, Writer: w}
+			user, err := a.s.identify(ctx, r)
+			if err != nil || user == nil {
+				a.fail(w, 401, a.msg("401", le))
+				return
+			}
+			a.json(w, 200, serialize(le, user), nil)
 		}
-		a.json(w, 200, serialize(le, user), nil)
 	}
-	mux.HandleFunc("GET /_ge/eu", me)
+	mux.HandleFunc("GET /_ge/eu", me(a))
 	if le.Integrate != "" {
-		mux.HandleFunc("GET "+app.Integration+"/"+parser.Singular(le.Integrate), me)
+		ext := *a
+		ext.extern = true // same names and state values as the rest of the integration
+		mux.HandleFunc("GET "+app.Integration+"/"+parser.Singular(le.Integrate), me(&ext))
 	}
 }
 
