@@ -4,7 +4,10 @@
 ([docs/README.md](../../README.md): `research/` não é norma). Nenhuma lição aqui altera
 `docs/INTENCAO.md`, `SPEC.md`, `GERMANIO_GAPS.md` ou a skill; as que contradizem a norma
 estão marcadas **exige decisão deliberada** e ficam para o responsável pelo design.
-Revisão do código conferida: `fc31daf` (master).
+Revisão do código conferida: `fc31daf` (master). A seção
+[Segunda rodada (ecossistema)](#segunda-rodada-ecossistema), no fim, e as anotações
+"conferido em `0c12051`" foram acrescentadas depois, sobre a revisão `0c12051`; o texto da
+primeira rodada não foi reescrito.
 
 **Não é um ranking de linguagens.** As linguagens aparecem só como fonte de evidência. Para
 evitar o Frankenstein, cada lição passou por uma pergunta: *isso resolve um problema
@@ -373,6 +376,14 @@ origem. Onde a inferência seria ambígua, o Germanio pergunta ou recusa (A19), 
 | configurar banco, pool, cache, transação | o runtime decide ("complexidade com um dono e poucos botões", o GC do Go) e `ge explain` diz o que foi decidido | [go.md](go.md) | parcialmente |
 | aprender um segundo "dialeto" de layout (2 × 4 espaços) | uma convenção só | D6 | falta |
 | escrever tipos quando o nome ou o uso bastam | tabela de tipos pelo nome; explícito sempre vence; ambíguo é erro | norma atual, A19 | existe |
+| configurar proteção contra tentativa de senha em massa | bloqueio da conta por padrão (10 tentativas, 10 minutos) | G83 | existe (conferido em `0c12051`); falta o limite por IP no login de intenção e mostrar os valores no `ge explain` |
+| autenticar e filtrar o tempo real | `/ws` exige sessão e a mesma origem; o aviso leva só tipo, modelo e id | G65 | existe; salas por destinatário faltam (G66) |
+| esconder arquivos ocultos e listagens das pastas servidas | pastas servidas só entregam arquivos | G91 | existe |
+| saber que o dialeto anterior não protegia ordem, proxy, cadastro, senha e upload | as mesmas defesas em todo caminho | G98–G101, A23–A25 | existe (conferido em `0c12051`) |
+| escolher limite, cancelamento e coleta de erro do trabalho concorrente | concorrência estruturada no runtime | A21, A22, P19 | falta (G89, G96; [GEP 0005](../../gep/0005-concorrencia-por-intencao.md)) |
+| pagar por capabilities que o app não declara | só inicializa e só embute o que é declarado | A28 | falta (G90) |
+| escrever migração ou temer perder dados ao renomear | snapshot do esquema e diff explicado | P16 | falta (G93) |
+| conhecer as palavras de 19 idiomas que não pode usar como nome | um idioma por arquivo | A32 | falta (G92; [GEP 0007](../../gep/0007-idiomas-da-intencao.md)) |
 
 **Limites da subtração** (o que o Germanio **não** deve deixar de exigir, porque removeria
 contexto ou decidiria pela pessoa): o aspecto do bloco (`acesso`, `tem`...; `INTENCAO.md:242`);
@@ -471,7 +482,9 @@ Confirmado (corrigido depois: renumerados para G61-G64). G57, G58 e G59 aparecia
 
 Achados laterais durante a verificação (fora da lista pedida):
 
-**D9. `ge check` entra em pânico sem `crie sistema`.** Reproduzido. Um arquivo de intenção
+**D9. `ge check` entra em pânico sem `crie sistema`.** **Corrigido** (conferido em `0c12051`:
+o mesmo arquivo dá "programa verificado — 1 dados"; G73 continua aberto pelos outros itens).
+Texto original: Reproduzido. Um arquivo de intenção
 válido sem `crie sistema` termina em `panic: runtime error: invalid memory address or nil
 pointer dereference` em `tooling/gecli/cli.go:225` (`prog.System.Name` com `prog.System == nil`);
 `ge explain` no mesmo arquivo funciona. Classe: implementação errada.
@@ -490,6 +503,30 @@ uso de `l.line/l.col`, mas o caminho não foi exercitado aqui.
 **D12. Lista de papéis com item vazio.** Reproduzido: `papel "maintainer" não declarado. Use
 tenha papeis ou um papel existente (administrador, todos, )` quando não há entidade de login
 (`resolver.go:1027`, `app.LoginEntity` vazio). Classe: implementação errada, menor.
+
+**Estado em `0c12051`** (reconferido com `go build ./cmd/ge` e arquivos temporários no
+scratchpad, segunda rodada): D1 continua (`nome obrigatório › email` vira o campo irmão
+`email`; a linha abaixo de `todos › ver` some sem erro; G67); D2 continua (`cliente já tem o
+campo nome` para o mesmo fato repetido; G68); D4 continua (`tme` dá "não entendi a linha
+\"clientes\"", sem sugestão; G69); D12 continua ("administrador, todos, )"; G73); D9 foi
+corrigido. D3, D5, D6, D7, D10 e D11 não foram reconferidos nesta rodada; as lacunas
+correspondentes (G69, G70, G71, G72, G73) seguem OPEN em `GERMANIO_GAPS.md`.
+
+**Correções de segurança feitas depois da primeira rodada** (não eram divergências D, mas
+mudam o que a pesquisa pode afirmar; estado conforme `GERMANIO_GAPS.md` em `0c12051`):
+
+| Lacuna | O que era | Correção e teste | Estado |
+|---|---|---|---|
+| G65 | `/ws` aceitava conexão sem sessão e difundia o registro inteiro | token e mesma origem; aviso com tipo, modelo e id (`TestTempoRealNaoVazaDados`) | DONE; G66 (salas) aberto |
+| G83 | `tenha login` sem nenhuma proteção contra tentativa em massa | bloqueio por padrão, 10/10 min (`TestLoginBloqueiaPorPadrao`) | **IN_PROGRESS**: falta o limite por IP no login de intenção e mostrar os valores no `ge explain` |
+| G91 | pastas servidas listavam o conteúdo e entregavam `.env` | só arquivos; diretório e nome com ponto dão 404 (`TestPastaServidaNaoListaNemEntregaOcultos`) | DONE |
+| G98 | `?ordem=` cru no `ORDER BY` do dialeto anterior | só coluna existente e ASC/DESC; identificadores escapados; página de até 1000 (`TestListarRecusaOrdemInjetada`) | DONE |
+| G99 | SSRF em `/api/_proxy` por filtro de texto | destino verificado sobre o IP resolvido, sem redirects, sem CORS (`TestProxyNaoAlcancaRedeLocal`) | DONE |
+| G100 | cadastro aceitava `role: "admin"`, IDOR, leitura anônima, senha em texto | colunas reais, dono ou admin, leitura com login, bcrypt em todo caminho (`TestDialetoAnteriorNaoAbrePortas`, `TestSenhaNuncaGravadaComoTexto`) | DONE |
+| G101 | SVG servido inline; upload sem teto | CSP `sandbox`, `nosniff`, SVG como anexo, 64 MB (`TestUploadSVGNaoExecuta`) | DONE |
+
+A pesquisa de segurança ([SECURITY_DEFAULTS.md](SECURITY_DEFAULTS.md), V1–V4) descreve o estado
+**anterior** a G98–G101; o texto dela não foi reescrito.
 
 **Verificado e coerente com a norma:** tab numa linha só de espaço em branco é erro
 (`linha 6: tab na indentação`, `lexer.go:458-462`); a norma diz "Tab no início de linha é
@@ -514,3 +551,337 @@ lições convergem em cinco decisões, não em vinte recursos:
 
 Nenhuma delas acrescenta um conceito ao `.ge`. Todas acrescentam complexidade só dentro do
 compilador e do tooling, que é onde ela deve ficar.
+
+---
+
+## Segunda rodada (ecossistema)
+
+**Data:** 2026-09-28. **Revisão conferida:** `0c12051` (master). **Fontes:** os estudos de
+[kotlin.md](kotlin.md), [java.md](java.md), [csharp.md](csharp.md),
+[javascript.md](javascript.md), [ruby.md](ruby.md), [dart.md](dart.md), [scala.md](scala.md),
+[c.md](c.md), [cpp.md](cpp.md), [v.md](v.md), [crystal.md](crystal.md), [julia.md](julia.md),
+[lua.md](lua.md), [haskell.md](haskell.md) e os transversais [CONCURRENCY.md](CONCURRENCY.md),
+[PACKAGE_MANAGEMENT.md](PACKAGE_MANAGEMENT.md), [SECURITY_DEFAULTS.md](SECURITY_DEFAULTS.md),
+[ECOSYSTEM_TRIAGE.md](ECOSYSTEM_TRIAGE.md) e [DISCOVERIES.md](DISCOVERIES.md), mais
+`docs/research/performance/{AUDITORIA,ARQUITETURA}.md` e
+`docs/research/frontend/GERMANIO_FRONTEND.md`. A matriz está em
+[ECOSYSTEM_MATRIX.md](ECOSYSTEM_MATRIX.md); as respostas às 15 perguntas, em
+[RESPOSTAS.md](RESPOSTAS.md). As URLs estão nos estudos citados.
+
+Os ids continuam a numeração da primeira rodada (A21…, P15…, E20…, I12…). Formato de cada
+item: **Fonte** · **Problema do Germanio** · **Arquivo afetado** · **Remove da cabeça** ·
+**Estado**. Estados: **IMPLEMENTADO** (existe no código, com teste citado), **PROPOSTO** (não
+existe), **EXPERIMENTAL** (existe sem força normativa) e **REJEITADO** (EVITAR). Quando só
+parte existe, o estado diz qual parte.
+
+A regra desta rodada foi procurar onde o Germanio está errado. Por isso vários itens são
+correções do que o runtime já faz, não recursos novos.
+
+### ADOTAR
+
+**A21. Concorrência estruturada como invariante do runtime, invisível ao autor.**
+Fonte: [CONCURRENCY.md](CONCURRENCY.md), [kotlin.md](kotlin.md), [java.md](java.md) (JEP 505),
+[go.md](go.md) (`errgroup`); convergência de quatro linguagens. Problema: `paralelo` cria uma
+goroutine por item sem teto; o pânico vira a string `"erro: …"` e não cancela as irmãs;
+`timeout` devolve nulo e deixa a goroutine rodando (G89, G96). Arquivo:
+`runtime/interpreter/interpreter.go:1128-1280`. Remove da cabeça: limite, cancelamento, coleta
+de erro, limpeza e "isso continua rodando depois?". Estado: **PROPOSTO**
+([GEP 0005](../../gep/0005-concorrencia-por-intencao.md)).
+
+**A22. Fila com teto que contém o produtor ou recusa na borda; nunca descarta.**
+Fonte: [CONCURRENCY.md](CONCURRENCY.md) (Tokio, .NET Pipelines),
+`performance/ARQUITETURA.md` §7.2. Problema: `jobs.Submit` devolve `false` quando a fila de 256
+enche (`runtime/jobs/jobs.go:56-67`) e os três chamadores ignoram o retorno
+(`runtime/servidor/servidor.go:976, 989, 1076`): a notificação some sem registro. Arquivo:
+`runtime/jobs`, `runtime/servidor/servidor.go`. Remove: descobrir em produção que avisos se
+perderam. Estado: **PROPOSTO** (GEP 0005).
+
+**A23. Um único cliente HTTP de saída, o seguro, em todo caminho.**
+Fonte: [SECURITY_DEFAULTS.md](SECURITY_DEFAULTS.md) (V2; OWASP SSRF). Problema: o proxy
+(`servidor.go:1182`, G99), os webhooks (`eventos.go:123`) e as tarefas usam `safeHTTPClient`
+(`tarefas.go:194`). **Mas `chamar` do nível 3, `chamar_async`, as chamadas de IA e o cron
+usam `httpclient.Novo()`** (`runtime/engine.go:396, 409`; `runtime/cron/cron.go:24`), um
+`http.Client` sem verificação do IP resolvido, que segue redirects e lê a resposta inteira
+com `io.ReadAll` sem teto (`runtime/httpclient/httpclient.go:17-49`). Lido no código, não
+reproduzido em execução; contradiz a descrição de G59 ("httpclient aceitava qualquer
+destino" → DONE). Arquivo: `runtime/httpclient`, `runtime/engine.go`, `runtime/cron`. Remove:
+saber quais caminhos protegem a rede interna. Estado: **IMPLEMENTADO** no proxy, webhooks e
+tarefas; **PROPOSTO** para `chamar` e cron (achado desta rodada, a registrar em
+`GERMANIO_GAPS.md` pelo orquestrador).
+
+**A24. Nenhum identificador de SQL vem do cliente.**
+Fonte: [SECURITY_DEFAULTS.md](SECURITY_DEFAULTS.md) (V1, CWE-89). Problema: era o `ORDER BY`
+cru do dialeto anterior. Arquivo: `runtime/banco/banco.go`, `runtime/banco/consulta.go`.
+Remove: pensar em injeção. Estado: **IMPLEMENTADO** para ordem e coluna
+(G98, `TestListarRecusaOrdemInjetada`); o construtor único de consultas derivado de `ast.App`,
+com a visibilidade como predicado SQL, é **PROPOSTO** (G85, `performance/ARQUITETURA.md` §3.2).
+
+**A25. Lista branca de campos graváveis em todo caminho de escrita.**
+Fonte: [ruby.md](ruby.md) (mass assignment, GitHub 2012), [SECURITY_DEFAULTS.md](SECURITY_DEFAULTS.md)
+(V3). Problema: o cadastro do dialeto anterior copiava o corpo inteiro; no dialeto de
+intenção, quem edita pode alterar qualquer campo declarado e só `admin`/`papel` têm proteção,
+por nome (G97). Arquivo: `runtime/servidor/intencao.go:378` (`writable`), `runtime/auth`.
+Remove: auditar formulários à procura do campo que ninguém deveria mandar. Estado:
+**IMPLEMENTADO** (`writable`; G100, `TestDialetoAnteriorNaoAbrePortas`); a frase "quem altera
+um campo" é **PROPOSTO** (G97, exige GEP).
+
+**A26. Nenhum comportamento indefinido na lógica de nível 3.**
+Fonte: [c.md](c.md) (UB não se remove depois). Problema: `+` concatena se um lado é texto,
+`toNumber` converte texto em silêncio, e não há tabela normativa dessas conversões. Arquivo:
+`runtime/interpreter/interpreter.go`, `SPEC.md`. Remove: "o que acontece se…". Estado:
+**PROPOSTO**.
+
+**A27. Toda afirmação pública tem um teste ou uma medição citada.**
+Fonte: [v.md](v.md) (distância entre promessa e implementação). Problema: "secure by default"
+e "20 languages" estavam no texto público sem teste que os sustentasse. Arquivo: `README.md`,
+`CLAUDE.md`, `SECURITY.md`. Remove: desconfiar do que o site diz. Estado: **IMPLEMENTADO em
+parte**: `bf3cd51` alinhou as afirmações ao que está provado (o README lista "Known limits",
+inclusive "The intent layer is in Portuguese only") e cada correção de segurança tem teste
+nomeado; falta o teste de determinismo (A31).
+
+**A28. "Pague só pelo que usar" como critério verificável.**
+Fonte: [cpp.md](cpp.md) (zero overhead), [lua.md](lua.md) (núcleo embutível),
+`performance/AUDITORIA.md` §4. Problema: um app de uma entidade carrega WhatsApp (+9,1 MB),
+goldmark, três drivers e Git, e inicializa WebSocket, filas e hot reload; RSS 26,9 MB contra
+12,4 MB (G90). Arquivo: `runtime/engine.go`, `runtime/servidor/servidor.go`, `cli/cli.go`.
+Remove: nada que o autor pense hoje; remove custo que ele não escolheu. Estado: **PROPOSTO**.
+
+**A29. Recarga só depois de `ge check`; hot reload só em desenvolvimento.**
+Fonte: [dart.md](dart.md), [csharp.md](csharp.md). Problema: o hot reload troca o processo
+sem validar o `.ge` e roda a migração a cada recarga (G95); fica ligado em produção e no
+binário de `germanio build`, varrendo o diretório a cada segundo (G88). Arquivo:
+`runtime/hotreload.go`, `runtime/engine.go`. Remove: "salvei com erro e o servidor morreu" e
+colunas criadas por nomes digitados errado. Estado: **PROPOSTO**.
+
+**A30. `único` sempre vira índice único no banco.**
+Fonte: [ruby.md](ruby.md). Problema: só na criação da tabela (G94); campo único acrescentado
+depois fica só com a checagem da aplicação (condição de corrida). Arquivo:
+`runtime/banco/banco.go` (criação das tabelas; `GERMANIO_GAPS.md` cita `schema.go`). Remove: uma corrida que o autor nem sabe que existe. Estado:
+**PROPOSTO**.
+
+**A31. Teste de determinismo por propriedade.**
+Fonte: [v.md](v.md), [haskell.md](haskell.md) (ordem não escrita), [julia.md](julia.md).
+Problema: a promessa "determinístico" não tem teste nomeado que permute a ordem dos arquivos
+e repita a compilação comparando `ast.App` e `ge explain`. Arquivo: testes de
+`compiler/parser` e `tooling/explicar`. Remove: "a ordem dos arquivos importa?". Estado:
+**PROPOSTO** (complementa A4).
+
+**A32. Um idioma por arquivo e teste de colisão com palavras comuns do português.**
+Fonte: [DISCOVERIES.md](DISCOVERIES.md) (Hedy, D3). Problema: o mapa global
+`compiler/idiomas/idiomas.go` transforma "no" em `nao`, "o" em `ou`, "estado" em `status`
+(`idiomas.go:30, 39`; `lexer.go:762-769`) (G92); a camada de intenção só existe em português
+e um programa em inglês passa no `ge check` com 0 dados (G74, reproduzido em `0c12051`).
+Arquivo: `compiler/idiomas`, `compiler/lexer`, `tooling/gecli`. Remove: a lista invisível de
+palavras de 19 idiomas que não se podem usar como nome. Estado: **PROPOSTO**
+([GEP 0007](../../gep/0007-idiomas-da-intencao.md)); **exige decisão deliberada**, porque
+`INTENCAO.md:288-289` ainda diz "em qualquer idioma do léxico".
+
+**A33. Princípios de pacotes antes de qualquer gerenciador: nada executa na instalação,
+lockfile com hash, registro imutável, resolução mínima (MVS).**
+Fonte: [PACKAGE_MANAGEMENT.md](PACKAGE_MANAGEMENT.md) (npm 2025, Go modules, crates.io,
+Deno). Problema: não há gerenciador (o que é bom); o risco é criar um às pressas quando
+adaptadores de terceiros aparecerem. Arquivo: nenhum hoje; futuro `cli`. Remove: resolver
+conflitos de versão à mão; confiar no registro. Estado: **PROPOSTO** como princípio
+([GEP 0006](../../gep/0006-pacotes.md), que conclui que ainda não é hora de um gerenciador).
+
+**A34. A inferência sobre um dado vem do próprio bloco ou de fatos declarados, nunca de como
+ele é usado em outro lugar.**
+Fonte: [crystal.md](crystal.md) (inferência global: compilação e LSP caros). Problema: o
+resolver funde blocos de vários arquivos; sem a regra, uma inferência futura por uso tornaria
+o LSP caro e a origem difícil de mostrar. Arquivo: `compiler/parser/resolver.go`,
+`docs/INTENCAO.md`. Remove: procurar em todos os arquivos a origem de um fato. Estado:
+**IMPLEMENTADO de fato** (o resolver infere pelo nome e pela declaração), **PROPOSTO** como
+regra escrita.
+
+**A35. Limites seguros por padrão, com o valor visível.**
+Fonte: [SECURITY_DEFAULTS.md](SECURITY_DEFAULTS.md), [lua.md](lua.md),
+`performance/ARQUITETURA.md` §7.2. Problema: limites existem em pontos soltos e não aparecem
+no `ge explain` como a norma exige ("`ge explain` mostra os limites em vigor"). Arquivo:
+`runtime/servidor`, `runtime/engine.go`, `tooling/explicar`. Remove: calcular limites. Estado:
+**IMPLEMENTADO em parte**: `ReadHeaderTimeout` de 10 s (`engine.go:466`,
+`servidor.go:99`), upload até 64 MB (G101), página de até 1000 (G98), bloqueio de login
+(G83); **PROPOSTO**: mostrar no `ge explain`, teto para a resposta de `chamar`, limite por IP
+no login de intenção.
+
+### ADAPTAR
+
+**P15. Supervisão declarativa (OTP) para trabalho em segundo plano; uma capability de
+"trabalho", local ou remota.**
+Fonte: [elixir.md](elixir.md), [CONCURRENCY.md](CONCURRENCY.md). Adaptação: sem mailbox nem
+estratégias de supervisão; o autor diz "tente de novo 3 vezes" e o runtime é o supervisor.
+Problema: três mecanismos (fila `jobs` em memória, tabela `tarefas` com polling 4×/s sem
+índice nem limpeza, trabalho remoto com lease) e só o terceiro tem a disciplina certa (G87).
+Arquivo: `runtime/servidor/trabalho_remoto.go`, `tarefas.go`, `runtime/jobs`. Remove: escolher
+entre filas. Estado: **IMPLEMENTADO** para trabalho remoto
+(`runtime/trabalho_remoto_test.go`); **PROPOSTO** para o local (GEP 0005).
+
+**P16. Snapshot do esquema aplicado e diff explicado, sem arquivos de migração.**
+Fonte: [csharp.md](csharp.md) (EF Core), [dart.md](dart.md). Adaptação: sem arquivos de
+migração escritos pelo autor; mudança aditiva segue automática; renomear ou remover para com
+erro educativo. Problema: renomear um campo cria coluna vazia e os dados somem da aplicação
+sem aviso; o valor padrão vai colado no SQL e o erro do `ALTER` é engolido (G93). Arquivo:
+`runtime/banco/banco.go`. Remove: SQL, arquivos de migração e medo de perder dados. Estado:
+**PROPOSTO** (a frase de renomeação exige GEP).
+
+**P17. Efeitos visíveis sem mônadas: `ge explain` lista, por ação, o que ela dispara.**
+Fonte: [haskell.md](haskell.md); reforça P12 (Roc). Adaptação: marcação feita pelo
+`ge explain`, nunca pelo autor. Problema: o efeito de uma ação (webhook, e-mail, tarefa) só se
+descobre lendo vários blocos. Arquivo: `tooling/explicar`, `compiler/parser/resolver.go`.
+Remove: rastrear "o que acontece quando clico". Estado: **PROPOSTO**.
+
+**P18. Acesso externo por camada e lógica em sandbox.**
+Fonte: [javascript.md](javascript.md) (permissões do Deno), [lua.md](lua.md) (sandbox do
+Luau). Adaptação: sem flags de permissão na linha de comando; a camada decide: rede, arquivo e
+processo só em `integracoes/` ou em declarações com destino nomeado. Problema: `chamar` está
+disponível a qualquer hook do domínio, e o core conhece `OPENAI_KEY`, `STRIPE_KEY`
+(`interpreter.go:1303, 1441`), contra a regra das três camadas. Arquivo:
+`runtime/interpreter/interpreter.go`, `runtime/httpclient`. Remove: auditar hooks à procura
+de chamadas externas. Estado: **PROPOSTO**.
+
+**P19. Orçamento de execução por request ligado ao `context`.**
+Fonte: [lua.md](lua.md) (interrupção do Luau pelo host). Adaptação: o prazo é do request ou
+da tarefa, não um limite fixo por laço. Problema: o limite de 10 000 iterações por laço recusa
+casos legítimos e não limita o aninhamento; nada cancela (AUDITORIA §3.4). Arquivo:
+`runtime/interpreter`, `runtime/servidor`. Remove: temer travar o servidor. Estado:
+**PROPOSTO** (GEP 0005).
+
+**P20. O formulário espelha as regras que o servidor verifica.**
+Fonte: [java.md](java.md) (Bean Validation). Adaptação: a mesma fonte (`ast.Field`) gera
+`minlength`, `maxlength`, `pattern`; o servidor continua a autoridade. Problema:
+`min`, `max` e `formato` não viram atributos (`runtime/servidor/paginas.go`). Remove:
+descobrir o erro só depois de enviar. Estado: **PROPOSTO** (junto de
+[GEP 0003](../../gep/0003-contrato-de-formulario.md)).
+
+**P21. Artefato de execução pré-resolvido (planos imutáveis a partir de `ast.App`).**
+Fonte: [julia.md](julia.md) (package images), `performance/ARQUITETURA.md` §3.2 (IR
+executada). Adaptação: sem gerar Go; os planos (colunas projetadas, statements preparados,
+visibilidade em SQL, páginas sem JSON interno) são a mesma semântica pré-avaliada. Problema:
+reparse a cada partida, `germanio build` embute os fontes e os extrai para um diretório
+temporário, visibilidade O(tabela) (G85). Arquivo: `runtime/`, `cli/cli.go`. Remove: nada
+visível; remove latência e memória. Estado: **PROPOSTO**.
+
+**P22. Modelo de custo explícito, sem expor memória.**
+Fonte: [c.md](c.md), `performance/ARQUITETURA.md` §8 (`ge profile`). Adaptação: o
+`ge explain` diz quando uma regra obriga a ler a tabela inteira e o futuro `ge profile`
+atribui tempo a linhas do `.ge`, nunca a funções Go. Problema: a visibilidade O(tabela) é
+invisível ao autor (414 ms e 88 MB por página com 50 000 linhas). Arquivo: `tooling/explicar`.
+Remove: descobrir lentidão em produção. Estado: **PROPOSTO**.
+
+**P23. Toda convenção aplicada aparece no `ge explain` com o motivo.**
+Fonte: [ruby.md](ruby.md) (convenção sem explicação), [java.md](java.md) (autoconfiguração
+só no log). Adaptação: o Germanio já tem convenções (tabela, tipo pelo nome); a diferença é
+explicá-las. Problema: a separação declarado/inferido/interno e o motivo de cada inferência
+ainda não estão completos (`INTENCAO.md` › Inspeção). Arquivo: `tooling/explicar`. Remove:
+"de onde veio isto?". Estado: **IMPLEMENTADO em parte** (origem de cada fato);
+**PROPOSTO** (motivo de cada inferência).
+
+**P24. Reescrita entre forma plana e hierárquica, nos dois sentidos, com equivalência
+provada.**
+Fonte: [scala.md](scala.md) (duas sintaxes no Scala 3). Adaptação: um comando explícito, não o
+`ge fmt` padrão. Problema: duas formas válidas sem conversão. Arquivo: `tooling/formatter`.
+Remove: "qual forma uso e como passo de uma para a outra?". Estado: **PROPOSTO**.
+
+**P25. Construção nova nasce em *preview* ou como aviso com prazo.**
+Fonte: [java.md](java.md) (JEP 12), [kotlin.md](kotlin.md) (KEEP), [csharp.md](csharp.md)
+(NRT como avisos). Adaptação: sem os quatro modos do C#; o status "Em teste" da GEP já é o
+preview; uma checagem nova do `ge check` nasce aviso e vira erro na versão seguinte.
+Problema: toda nova checagem quebraria projetos de uma vez. Arquivo: `docs/gep/README.md`,
+`compiler/diagnostics`. Remove: "a atualização vai quebrar meu projeto?". Estado:
+**IMPLEMENTADO em parte** (status "Em teste" no processo de GEP); **PROPOSTO** (aviso com
+prazo).
+
+**P26. Remoção só com reescrita automática verificada.**
+Fonte: [javascript.md](javascript.md) (não poder remover), [lua.md](lua.md) (remover sem
+migração); reforça P7. Adaptação: a reescrita prova por reparse que `ast.App` não mudou.
+Arquivo: `tooling/formatter`. Remove: migrar à mão. Estado: **PROPOSTO**.
+
+**P27. Ausência explícita na fronteira externa.**
+Fonte: [kotlin.md](kotlin.md) (*platform types*), [crystal.md](crystal.md) (`Nil` em uniões).
+Adaptação: sem símbolos de nulidade no `.ge`; o adaptador declara a forma do que recebe e o
+campo ausente vira erro educativo na borda. Problema: campo ausente vira `nil` num
+`map[string]any` e segue em silêncio na lógica. Arquivo: `runtime/interpreter` (`chamar`),
+`integracoes/`. Remove: checar nulo em cada uso. Estado: **PROPOSTO**.
+
+**P28. Mudança de sintaxe ou de estilo decidida com o diff sobre o corpus.**
+Fonte: [dart.md](dart.md) (estilo *tall*), [scala.md](scala.md). Adaptação: o corpus são
+`demo/` e `examples/` (o GitLab tem 687 linhas). Problema: decidir sintaxe por gosto. Arquivo:
+`docs/gep/0000-template.md` (seção Evaluation). Remove: nada do autor; protege o autor de
+mudanças não medidas. Estado: **PROPOSTO**.
+
+### EVITAR
+
+Todos com estado **REJEITADO** para o nível padrão.
+
+| # | O que evitar | Fonte | Por que (problema que criaria no Germanio) |
+|---|---|---|---|
+| E20 | coloração de função (`async`, `suspend`), atores, `Sendable`, goroutine, canal ou mutex no `.ge` | [CONCURRENCY.md](CONCURRENCY.md), [rust.md](rust.md), [swift.md](swift.md) | conceitos técnicos que `INTENCAO.md` › Eficiência proíbe no nível padrão |
+| E21 | registro com scripts de instalação, mutável, micro-dependências, tokens amplos | [PACKAGE_MANAGEMENT.md](PACKAGE_MANAGEMENT.md) (npm 2025, left-pad) | é o vetor dos ataques estudados |
+| E22 | resolução de versão "nearest wins" | [PACKAGE_MANAGEMENT.md](PACKAGE_MANAGEMENT.md) (Maven) | o resultado depende da forma da árvore; não determinístico |
+| E23 | tradução palavra a palavra para línguas de outra ordem de frase | [DISCOVERIES.md](DISCOVERIES.md) D3 (Hedy), D4 (Kip) | `developer pode enviar código dos projetos` não se traduz por substituição |
+| E24 | editor ou IDE próprios | [DISCOVERIES.md](DISCOVERIES.md) D5, D7 (Eve, Darklang) | foi a parte mais cara e menos amada; o caminho é LSP (A17) |
+| E25 | gerar código de terceiros para o autor manter (eject, scaffold, arquivos de migração) | [DISCOVERIES.md](DISCOVERIES.md) D2, [ruby.md](ruby.md) | traria de volta tudo o que o Germanio remove |
+| E26 | garantias que só se leem entendendo um sistema de tipos | [DISCOVERIES.md](DISCOVERIES.md) D6 (Ur/Web) | as garantias vêm de o runtime ser o único autor |
+| E27 | modos, flags ou extensões por arquivo que mudam o significado | [cpp.md](cpp.md), [csharp.md](csharp.md), [haskell.md](haskell.md), [v.md](v.md) | "este programa roda com qual modo?"; reforça E17 |
+| E28 | dois gerenciadores de pacote oficiais | [haskell.md](haskell.md) (Cabal e Stack) | escolher ferramenta |
+| E29 | "mecanismos, não políticas" no domínio | [lua.md](lua.md) | cada app montaria sua autorização |
+| E30 | sinônimos como forma de compatibilidade | [javascript.md](javascript.md) (SmooshGate) | custo permanente; preferir reescrita (P26) |
+| E31 | amplitude antes de profundidade | [v.md](v.md) | WhatsApp embutido antes de estabilizar o núcleo (G90) |
+| E32 | fila que descarta e prazo que abandona | [CONCURRENCY.md](CONCURRENCY.md) | é o comportamento atual de `jobs` e `timeout` (A21, A22) |
+| E33 | semântica que depende de ordem não escrita (preguiça, ordem de arquivos) | [haskell.md](haskell.md) | `importar "backend"` em ordem alfabética não pode mudar o significado (A31) |
+| E34 | "sem IA" como diferencial único | [DISCOVERIES.md](DISCOVERIES.md) D2 | três pares de 2026 dizem o mesmo; o diferencial precisa de aplicações reais e medidas |
+
+### INVESTIGAR
+
+Estado de todos: **PROPOSTO (a investigar)**, salvo indicação.
+
+| # | O quê | Fonte | Condição para decidir |
+|---|---|---|---|
+| I12 | ambiente sem instalação: `ge check` e `ge explain` em WebAssembly no navegador | [DISCOVERIES.md](DISCOVERIES.md) D4 (Portugol Webstudio, Hedy, IDEgua) | medir o tamanho do WASM do front-end (Go puro, sem CGO) |
+| I13 | tipo decimal interno para `dinheiro` | [c.md](c.md) | auditar onde a lógica usa `float64` para valores monetários |
+| I14 | ordem dos resultados paralelos e o que paralelizar sob o escritor único | [CONCURRENCY.md](CONCURRENCY.md) | depende de G86 e da suíte STRESS |
+| I15 | quantos idiomas prometer | [DISCOVERIES.md](DISCOVERIES.md) I2 | usuários reais de algum idioma além do português |
+| I16 | blocos `.ge` compartilháveis são necessários? | [PACKAGE_MANAGEMENT.md](PACKAGE_MANAGEMENT.md) | um caso real que `importar` local e capabilities do core não cubram |
+| I17 | onde o valor traduzido (`Value`) é usado no lugar da grafia (`Raw`) | [DISCOVERIES.md](DISCOVERIES.md) I1 | teste com palavras colidentes em `logica`, `telas`, `eventos` |
+| I18 | traces das últimas requisições em desenvolvimento | [DISCOVERIES.md](DISCOVERIES.md) D7 (Darklang) | segurança: só em `ge run`, sem segredos |
+| I19 | tempo real por diff do servidor (Blazor Server, LiveView) contra aviso + rebusca | [csharp.md](csharp.md), [elixir.md](elixir.md), `frontend/GERMANIO_FRONTEND.md` | custo por espectador medido; G66 resolvido antes |
+| I20 | padrão de opcionalidade dos campos | [kotlin.md](kotlin.md) | teste do leigo; no mínimo `ge explain` mostrar "opcional (padrão)" |
+| I21 | bloco colado no nível errado; blocos longos | [scala.md](scala.md) | teste de propriedade sobre `examples/` |
+| I22 | conjunto curado e auditado de adaptadores (Stackage, cargo-vet) | [haskell.md](haskell.md), [PACKAGE_MANAGEMENT.md](PACKAGE_MANAGEMENT.md) | primeiro adaptador de terceiros |
+| I23 | arena ou `sync.Pool` por request | [cpp.md](cpp.md) | medir depois de P21 |
+
+### Checagem anti-Frankenstein (segunda rodada)
+
+As oito perguntas para cada ADOTAR e ADAPTAR novo. "Problema" é a lacuna ou o arquivo que o
+item resolve; "Conceito novo no `.ge`?" é a pergunta de custo cognitivo.
+
+| Item | Problema do Germanio | Generaliza? | Reduz complexidade? | Determinístico? | Ensinável/explicável? | Eficiente? | Combina? | Conceito novo no `.ge`? |
+|---|---|---|---|---|---|---|---|---|
+| A21, A22, P19 | G89, G96, `jobs` | sim | sim | sim (ordem da entrada) | sim, pelo `ge explain` | sim | sim | só com a GEP 0005, e em palavras de intenção |
+| A23, A24, A25, A35 | G59 parcial, G97–G101 | sim | sim | sim | sim | sim | sim | não (A25 por campo exige GEP) |
+| A26 | conversões silenciosas | sim | sim | sim | sim | neutro | sim | não |
+| A27, A31 | promessas sem teste | sim | sim | é o próprio teste | sim | neutro | sim | não |
+| A28, P21 | G90, G85 | sim | sim | sim | sim | é o objetivo | sim | não |
+| A29, A30, P16 | G88, G93–G95 | sim | sim | sim | sim | sim | sim | uma frase de renomeação (GEP) |
+| A32 | G74, G92 | sim | sim | sim | sim | sim | **contradiz a promessa de 20 idiomas** | uma declaração de idioma (GEP 0007) |
+| A33 | nenhum ainda | sim | sim | sim | sim | sim | sim | não, enquanto não houver pacotes |
+| A34 | inferência futura | sim | sim | sim | sim | sim | sim | não |
+| P15 | três filas | sim | sim | sim | sim | sim | sim | "tente de novo N vezes" (GEP 0005) |
+| P17, P22, P23 | explicação incompleta | sim | sim | sim | é a explicação | sim | sim | não |
+| P18, P27 | `chamar` em qualquer hook; `nil` silencioso | sim | sim | sim | sim | sim | sim (três camadas) | não |
+| P20, P24, P25, P26, P28 | forma, evolução | sim | sim | sim | sim | sim | sim | não |
+
+As lições desta rodada convergem em cinco decisões, que se somam às cinco da primeira:
+
+6. **O runtime é dono de todo trabalho, e todo trabalho tem limite**: concorrência
+   estruturada, filas que não descartam, prazos que cancelam, limites visíveis.
+7. **A mesma defesa em todo caminho**: um cliente HTTP de saída, um construtor de consultas,
+   uma lista branca de campos. Onde há dois caminhos, um deles fica sem defesa (foi o
+   dialeto anterior, G98–G101; ainda é o `chamar`, A23).
+8. **Pague só pelo que usar** como teste, não como intenção (G90).
+9. **Uma língua por arquivo**, ou nenhuma promessa de outras línguas (GEP 0007).
+10. **Nada executa na instalação** quando houver pacotes; até lá, nenhum gerenciador
+    (GEP 0006).
+
+Nenhuma acrescenta conceito técnico ao `.ge`. Três pedem uma frase nova de intenção, e cada
+uma passa por GEP: o trabalho concorrente (GEP 0005), a declaração de idioma (GEP 0007) e a
+renomeação de campo (P16).

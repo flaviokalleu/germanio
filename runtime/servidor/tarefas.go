@@ -1,13 +1,10 @@
 package servidor
 
 import (
-	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"net"
+	"github.com/flaviokalleu/germanio/runtime/httpclient"
 	"net/http"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -187,33 +184,12 @@ func (s *Servidor) registerTaskModule() {
 
 // ---------- safe outbound HTTP ----------
 
-var errLocalNetwork = errors.New("endereço de rede local bloqueado (defina GERMANIO_PERMITIR_REDE_LOCAL=1 para permitir)")
+var errLocalNetwork = httpclient.ErrRedeLocal
 
-// safeHTTPClient refuses loopback, private and link-local destinations,
-// checking the resolved address at connect time (no DNS rebinding).
+// safeHTTPClient refuses the server's own networks (httpclient.Transport)
+// and does not follow redirects.
 func safeHTTPClient() *http.Client {
-	allowLocal := os.Getenv("GERMANIO_PERMITIR_REDE_LOCAL") == "1"
-	dialer := &net.Dialer{Timeout: 5 * time.Second}
-	transport := &http.Transport{
-		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-			host, port, err := net.SplitHostPort(addr)
-			if err != nil {
-				return nil, err
-			}
-			ips, err := net.DefaultResolver.LookupIPAddr(ctx, host)
-			if err != nil {
-				return nil, err
-			}
-			for _, ip := range ips {
-				if !allowLocal && (ip.IP.IsLoopback() || ip.IP.IsPrivate() || ip.IP.IsLinkLocalUnicast() || ip.IP.IsLinkLocalMulticast() || ip.IP.IsUnspecified()) {
-					return nil, errLocalNetwork
-				}
-			}
-			return dialer.DialContext(ctx, network, net.JoinHostPort(ips[0].IP.String(), port))
-		},
-		TLSHandshakeTimeout: 5 * time.Second,
-	}
-	return &http.Client{Transport: transport, Timeout: 10 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+	return &http.Client{Transport: httpclient.Transport(), Timeout: 10 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 }
 
 func isLocalURL(u string) bool {

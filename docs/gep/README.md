@@ -58,6 +58,9 @@ Rules:
 | [0002](0002-secoes-de-pagina.md) | Page sections (top, actions, filters, columns, empty) | Rascunho |
 | [0003](0003-contrato-de-formulario.md) | The form contract (422, errors per field, no notices in the URL) | Rascunho |
 | [0004](0004-tema-como-tokens.md) | Theme as deterministic tokens with guaranteed contrast | Rascunho |
+| [0005](0005-concorrencia-por-intencao.md) | Concurrency by intent (bounded, cancellable, never dropped) | Rascunho |
+| [0006](0006-pacotes.md) | Packages: principles now, a manager later (lockfile format reserved) | Rascunho |
+| [0007](0007-idiomas-da-intencao.md) | Languages of the intent layer (Portuguese only, with a clear error; phrase tables later) | Rascunho |
 
 Pending decisions that will become GEPs are listed in
 [`docs/INTENCAO.md` › Pendências da sintaxe hierárquica](../INTENCAO.md#pendências-da-sintaxe-hierárquica)
