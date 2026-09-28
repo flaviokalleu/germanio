@@ -1,7 +1,8 @@
 # AGENT_STATE
 
 ## CURRENT_PHASE
-Fase 3 — GitLab em linguagem de intenção; próximo: paginação SQL (G40), notificações (todos/eventos), admin, busca global.
+Fase 3 — GitLab em linguagem de intenção. PAUSADO em ponto seguro (2026-09-28) aguardando nova
+diretriz do usuário sobre evolução da sintaxe e da documentação normativa. Não iniciar features.
 
 ## CURRENT_GOAL
 Continuar o GitLab por intenção: issues → merge requests → CI/CD → páginas (UI),
@@ -28,13 +29,29 @@ evoluindo o Germanio a cada parede encontrada.
 - Estrutura de projeto `backend/` + `frontend/` (`germanio init`, importação de pastas,
   `importar X do backend`, papéis por pasta); GitLab reorganizado nela.
 - Extensão VS Code (ícone cristal, gramática de intenção, temas) em `vscode-germanio/`.
+- Três camadas (domínio/core/adaptador) com teste de arquitetura `runtime/arquitetura_test.go`.
+- Trabalho remoto genérico (`X executam Y`, `trabalho_remoto.*`, lease/heartbeat/cancelamento/
+  idempotência) + adaptadores `integracoes/gitlab_runner.ge` e `integracoes/gitlab_ci.ge`;
+  gitlab-runner oficial 19.4.1 passa (`TestRunnerOficial`, precisa `GITLAB_RUNNER_BIN`).
+- Transações por requisição (G39), endereços hierárquicos (G41), labels por nome, milestones,
+  busca geral, arquivamento (`X <condição> é somente leitura`), papel mínimo com herança e
+  concorrência, administrador inicial, validação de segmentos e `endereços reservados`.
+- Domínio GitLab (`backend/`, `frontend/`) sem nenhuma lógica: `regras.ge` removido.
 
 ## IN_PROGRESS
-- Próximo: G40 (paginação SQL), notificações/todos, admin, busca global, G54/G55 (runner externo, artefatos).
+Nenhum trabalho pela metade. Último commit verde: `afeba1b` (busca geral). Árvore limpa.
+Parado ANTES de começar pendências/todos (NT-01): só houve leitura de código, nenhuma edição.
+Desenho previsto para quando retomar (sujeito à nova diretriz de sintaxe):
+`tenha pendências`, `issue avisa responsaveis e mencionados`, `comentario avisa mencionados`;
+só avisa quem pode ver o registro; quem agiu não avisa a si mesmo.
 
-## NEXT
-5. `ge explain`/`ge check`/`ge graph` sobre a camada de intenção.
-6. Escopos de token (G33), transação (G39), paginação SQL (G40).
+## NEXT (depois da nova diretriz)
+- Pendências/todos (NT-01), painel de administração (AD-01), página de busca.
+- G40: pré-filtro SQL de visibilidade para pessoas conectadas.
+- G55: artefatos de job; trava `FOR UPDATE` do papel mínimo testada em PostgreSQL/MySQL.
+
+## BACKLOG (antigo)
+- `ge explain`/`ge check` completos conforme docs/INTENCAO.md (proveniência de inferências).
 
 ## FUTURE_PHASE (pedido do usuário, 2026-09-28)
 Depois do GitLab, provar os formatos que ele não cobre, cada um com um app de referência
