@@ -1,0 +1,18 @@
+sistema notas
+
+autenticacao
+    modelo: usuario
+    campo_login: email
+    campo_senha: senha
+    roles: admin, leitor
+
+dados
+
+    usuario
+        nome: texto obrigatorio
+        email: email obrigatorio unico
+        senha: senha obrigatorio
+
+    nota
+        titulo: texto obrigatorio
+        segredo: texto

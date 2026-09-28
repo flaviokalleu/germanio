@@ -5,11 +5,11 @@ Estudo dirigido (pedido do usuário, 2026-09-28): implementações open source d
 (`docs/research/languages/`) e de frontend (`docs/research/frontend/`). Nenhuma mudança de
 arquitetura, sintaxe, parser, runtime, formatter ou tooling até a pesquisa ser confrontada com
 a norma (`docs/INTENCAO.md`, a skill, AGENTS.md, EVOLUTION, GAPS).
-Antes da pausa: sintaxe hierárquica implementada; G60 (`ge fmt` para todo arquivo de
+Antes da pausa: sintaxe hierárquica implementada; G64 (`ge fmt` para todo arquivo de
 aplicação) commitado em e562a8c. Os arquivos `auth.ge` com o bloco `autenticacao` indentado
 em 2 espaços (examples/whaticket, demo/organizado) não são formatáveis (o `fmt` também recusava
 antes); anotado para depois.
-Depois da pesquisa: G58 (seções de página), G57, G59; retomar o GitLab pelo inventário.
+Depois da pesquisa: G62 (seções de página), G61, G63; retomar o GitLab pelo inventário.
 
 ## CURRENT_GOAL
 Continuar o GitLab por intenção: issues → merge requests → CI/CD → páginas (UI),

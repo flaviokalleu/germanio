@@ -208,7 +208,7 @@ func (a *Auth) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Skip auth for login/register endpoints
 		if r.URL.Path == "/api/login" || r.URL.Path == "/api/registro" ||
-			r.URL.Path == "/api/register" || r.URL.Path == "/ws" ||
+			r.URL.Path == "/api/register" ||
 			r.Method == http.MethodOptions {
 			next.ServeHTTP(w, r)
 			return
@@ -225,7 +225,7 @@ func (a *Auth) Middleware(next http.Handler) http.Handler {
 			// Allow GET on root (frontend), static files, and health
 			if r.Method == http.MethodGet && (r.URL.Path == "/" ||
 				strings.HasPrefix(r.URL.Path, "/uploads/") ||
-				r.URL.Path == "/health" || r.URL.Path == "/ws") {
+				r.URL.Path == "/health") {
 				next.ServeHTTP(w, r)
 				return
 			}

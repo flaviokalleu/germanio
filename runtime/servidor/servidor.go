@@ -689,7 +689,7 @@ func (s *Servidor) handleAPI(w http.ResponseWriter, r *http.Request) {
 			case float64:
 				idInt = int64(v)
 			}
-			s.WS.Broadcast(WSMessage{Type: "criar", Model: modelo, ID: idInt, Data: item})
+			s.WS.Broadcast(WSMessage{Type: "criar", Model: modelo, ID: idInt})
 		}
 		// Trigger WhatsApp notifications
 		s.triggerNotifiers("criar", modelo, item)
@@ -723,7 +723,7 @@ func (s *Servidor) handleAPIComID(w http.ResponseWriter, r *http.Request, modelo
 			s.jsonError(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		s.WS.Broadcast(WSMessage{Type: "atualizar", Model: modelo, ID: id, Data: item})
+		s.WS.Broadcast(WSMessage{Type: "atualizar", Model: modelo, ID: id})
 		s.triggerNotifiers("atualizar", modelo, item)
 		s.jsonOK(w, item)
 
@@ -1383,7 +1383,7 @@ func (s *Servidor) handleRestaurar(w http.ResponseWriter, r *http.Request, model
 		return
 	}
 
-	s.WS.Broadcast(WSMessage{Type: "restaurar", Model: modelo, ID: id, Data: item})
+	s.WS.Broadcast(WSMessage{Type: "restaurar", Model: modelo, ID: id})
 	s.jsonOK(w, item)
 }
 

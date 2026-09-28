@@ -1346,7 +1346,7 @@ function renderCharts(){
 var ws;
 function connectWS(){
   var proto=location.protocol==='https:'?'wss:':'ws:';
-  ws=new WebSocket(proto+'//'+location.host+'/ws');
+  ws=new WebSocket(proto+'//'+location.host+'/ws'+(authToken?'?token='+encodeURIComponent(authToken):''));
   ws.onmessage=function(e){
     try{
       var msg=JSON.parse(e.data);

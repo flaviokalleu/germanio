@@ -5,6 +5,8 @@ Toda solução deve ser **genérica** (útil para qualquer app `.ge`) e exposta 
 
 Classificação: SUPPORTED · PARTIAL · MISSING · BUG — Prioridade: P0 (bloqueia o núcleo) … P3.
 Status: OPEN · IN_PROGRESS · DONE (com testes) · WONTFIX (com motivo).
+Um ID nunca é reutilizado. G61–G64 foram registrados por engano como G57–G60, repetindo IDs
+existentes, e foram renumerados em 2026-09-28.
 
 Dialeto alvo: **dialeto full-stack** (`compiler/parser/parser.go` + `runtime/interpreter` + `runtime/servidor`).
 Motivo em AGENT_STATE.md › IMPORTANT_DECISIONS D1.
@@ -70,7 +72,9 @@ Motivo em AGENT_STATE.md › IMPORTANT_DECISIONS D1.
 | G57 | Nomes de campo sem acento na tela (Descricao) | UI | nomes normalizados para casar vocabulário | UI | BUG | P3 | rótulo guarda a grafia original | DONE |
 | G58 | Eventos e assinantes (webhooks) | webhooks | sem capability | Integração | MISSING | P1 | `X recebe eventos do Y` + entregas assinadas pela fila | DONE — `TestWebhooks` |
 | G59 | Requisições de saída sem proteção SSRF | webhooks | httpclient aceitava qualquer destino | Segurança | BUG | P0 | dialer verifica o IP resolvido; rede local só com `GERMANIO_PERMITIR_REDE_LOCAL=1` | DONE — `TestSafeHTTPClientBlocksLocalNetwork` |
-| G57 | "Há estoque suficiente" escrito como lógica (`produto.buscar(...).estoque < dados.quantidade` + `recuse`) no template da loja | init/loja | não há invariante declarativa de quantidade disponível | Linguagem | MISSING | P2 | investigar regra declarativa (ex.: pedido não pode pedir mais que o estoque do produto) | OPEN |
-| G58 | Sintaxe hierárquica: seções de página além de `mostre`/`permita`/`N por página` (topo, vazio, gráfico, lista, indicadores) | frontend | só existem as seções atuais | UI | MISSING | P2 | ver docs/INTENCAO.md › Pendências da sintaxe hierárquica | OPEN |
-| G59 | Verbos que ligam/desligam uma condição sem máquina de estados (`pode` › `arquivar`/`restaurar`) | projetos | hoje `pode` › `ser arquivado` | Linguagem | MISSING | P3 | decidir junto com a tabela de transições explícitas | OPEN |
-| G60 | `ge fmt` não formata adaptadores só com `logica`/`rotas` (sem frase de intenção) | integracoes/ | o formatter do nível técnico antigo não existe | Tooling | PARTIAL | P3 | estender o formatter de aplicação a programas sem intenção, com a mesma conferência de significado | OPEN |
+| G61 | "Há estoque suficiente" escrito como lógica (`produto.buscar(...).estoque < dados.quantidade` + `recuse`) no template da loja | init/loja | não há invariante declarativa de quantidade disponível | Linguagem | MISSING | P2 | investigar regra declarativa (ex.: pedido não pode pedir mais que o estoque do produto) | OPEN |
+| G62 | Sintaxe hierárquica: seções de página além de `mostre`/`permita`/`N por página` (topo, vazio, gráfico, lista, indicadores) | frontend | só existem as seções atuais | UI | MISSING | P2 | ver docs/INTENCAO.md › Pendências da sintaxe hierárquica | OPEN |
+| G63 | Verbos que ligam/desligam uma condição sem máquina de estados (`pode` › `arquivar`/`restaurar`) | projetos | hoje `pode` › `ser arquivado` | Linguagem | MISSING | P3 | decidir junto com a tabela de transições explícitas | OPEN |
+| G64 | `ge fmt` não formata adaptadores só com `logica`/`rotas` (sem frase de intenção) | integracoes/ | o formatter do nível técnico antigo não existe | Tooling | PARTIAL | P3 | estender o formatter de aplicação a programas sem intenção, com a mesma conferência de significado (e562a8c; exceção: blocos antigos `autenticacao` com 2 espaços, que o `fmt` já recusava) | DONE |
+| G65 | Tempo real como porta lateral: `/ws` aceitava conexão sem sessão e de qualquer site, e os avisos de criar/atualizar/restaurar levavam o registro inteiro a todos os sockets, sem permissões | pesquisa de frontend | `/ws` isento no middleware; `Broadcast` sem filtro | Segurança | BUG | P0 | `/ws` exige token quando há autenticação e a mesma origem; avisos só com tipo, modelo e id (a página recarrega pela API, que aplica as permissões de quem vê); teste `TestTempoRealNaoVazaDados` | DONE |
+| G66 | O hub de tempo real não tem salas nem destinatários: eventos do WhatsApp e presença vão a toda sessão autenticada; o buffer cheio descarta em silêncio; não há hub entre processos | pesquisa de frontend | hub em memória, `Broadcast` global | Segurança/Tempo real | PARTIAL | P1 | canal por destinatário derivado das permissões antes de levar tempo real às páginas de intenção (`docs/research/frontend/REACTIVITY.md`) | OPEN |

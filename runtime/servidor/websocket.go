@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 	"sync"
 )
 
@@ -42,6 +44,17 @@ func NewWSHub() *WSHub {
 	}
 }
 
+// sameOrigin: no Origin (not a browser) or an Origin whose host is the one
+// the request was sent to.
+func sameOrigin(r *http.Request) bool {
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		return true
+	}
+	u, err := url.Parse(origin)
+	return err == nil && strings.EqualFold(u.Host, r.Host)
+}
+
 // Broadcast sends a message to all connected clients.
 func (h *WSHub) Broadcast(msg WSMessage) {
 	data, err := json.Marshal(msg)
@@ -69,6 +82,13 @@ func (h *WSHub) HandleWS(w http.ResponseWriter, r *http.Request) {
 	key := r.Header.Get("Sec-WebSocket-Key")
 	if key == "" {
 		http.Error(w, "Not a WebSocket request", http.StatusBadRequest)
+		return
+	}
+
+	// A browser always sends Origin: a socket opened by another site would
+	// ride on this person's session (cross-site WebSocket hijacking).
+	if !sameOrigin(r) {
+		http.Error(w, "origem não permitida", http.StatusForbidden)
 		return
 	}
 
