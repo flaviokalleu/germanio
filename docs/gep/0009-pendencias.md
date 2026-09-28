@@ -48,7 +48,9 @@ or a list of people).
   can be `concluida`; each person sees, completes and deletes only their own. An application
   may declare its own `pendencias` with the same fields; its definition wins.
 - A person newly placed in a pending field (on create or edit) receives one item; whoever makes
-  the change does not get one for themselves.
+  the change does not get one for themselves. The item names the record's title only if that
+  person may see the record (a confidential record assigned to someone outside its readers says
+  only "Responsaveis: Chamado").
 - A person removed from the field loses their open items for that record; completed ones stay.
 - Deleting the record deletes its items.
 - Everything happens in the transaction of the change.

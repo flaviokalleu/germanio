@@ -621,7 +621,8 @@ há login). `permita filtrar clientes por cidade` e `permita pesquisar clientes`
 
 `pendência para` ([GEP 0009](gep/0009-pendencias.md), aceita), no bloco do dado, ou
 `issue gera pendência para responsaveis`: quem passa a estar num campo de pessoas (uma pessoa ou
-uma lista) recebe uma pendência do registro; quem faz a mudança não recebe para si; quem sai do
+uma lista) recebe uma pendência do registro (com o título só se ela puder ver o registro); quem
+faz a mudança não recebe para si; quem sai do
 campo perde as pendências abertas; excluir o registro exclui as pendências. Tudo acontece na
 transação da mudança. As pendências são um dado comum, `pendencias` (motivo, recurso, dono;
 começa aberta; pode concluir; cada pessoa vê, conclui e exclui só as suas), que o Germanio

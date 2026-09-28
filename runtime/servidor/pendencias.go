@@ -61,7 +61,12 @@ func (a *intentAPI) pending(ctx *interp.Context, atual map[string]any, e *ast.En
 			if old[id] || id == self {
 				continue
 			}
-			motivo := fmt.Sprintf("%s: %s %s", label(f), e.Label, titleOf(e, after))
+			// the title only for someone who may see the record: a pending
+			// item never tells its owner what they could not read
+			motivo := fmt.Sprintf("%s: %s", label(f), e.Label)
+			if a.personSees(ctx, id, e, after) {
+				motivo += " " + titleOf(e, after)
+			}
 			if _, err := a.in.Op(ctx, pe, "criar", map[string]any{"dono_id": id, "recurso": e.Singular, "recurso_id": after["id"], "motivo": motivo}); err != nil {
 				return err
 			}
@@ -103,4 +108,14 @@ func (a *intentAPI) dropPending(ctx *interp.Context, e *ast.Entity, id any, extr
 			}
 		}
 	}
+}
+
+// personSees: the person with this id may see record of e.
+func (a *intentAPI) personSees(ctx *interp.Context, id int64, e *ast.Entity, record map[string]any) bool {
+	res, err := a.in.Op(ctx, a.app.LoginEntity, "buscar", id)
+	person, _ := res.(map[string]any)
+	if err != nil || person == nil {
+		return false
+	}
+	return a.in.Can(ctx, person, e, "ver", record)
 }
