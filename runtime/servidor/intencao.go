@@ -785,7 +785,9 @@ func (a *intentAPI) create(w http.ResponseWriter, r *http.Request, ctx *interp.C
 		return
 	}
 	row := res.(map[string]any)
-	if e.CreatorRole != "" && atual != nil {
+	// quem cria X vira Y — unless X inherits members from a parent it was
+	// created in (a project inside a group): the members already come from it.
+	if e.CreatorRole != "" && atual != nil && (e.InheritVia == "" || row[e.InheritVia] == nil) {
 		if _, err := a.in.Op(ctx, a.app.MemberModel, "criar", map[string]any{"recurso": e.Singular, "recurso_id": row["id"], "pessoa_id": atual["id"], "papel": e.CreatorRole}); err != nil {
 			a.failErr(w, r, err) // the transaction undoes the creation
 			return

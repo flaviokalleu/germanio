@@ -23,6 +23,13 @@ func TestEnderecosHierarquicos(t *testing.T) {
 		t.Fatalf("endereços de projetos: %v %v", app["full_path"], mine["full_path"])
 	}
 
+	// Quem cria vira owner só do projeto pessoal; no grupo, os membros vêm do grupo.
+	if ms := ada.list("/api/v4/projects/" + id(mine) + "/members"); len(ms) != 1 || ms[0].(map[string]any)["access_level"] != float64(50) {
+		t.Fatalf("membros do projeto pessoal: %v", ms)
+	}
+	if ms := ada.list("/api/v4/projects/" + id(app) + "/members"); len(ms) != 0 {
+		t.Fatalf("projeto de grupo não deveria ter membro direto: %v", ms)
+	}
 	// Um só espaço de nomes: grupo não usa nome de pessoa, nem repete endereço.
 	ada.must("POST", "/api/v4/groups", map[string]any{"name": "Bob", "path": "bob"}, 400)
 	ada.must("POST", "/api/v4/groups", map[string]any{"name": "Org2", "path": "org"}, 400)
