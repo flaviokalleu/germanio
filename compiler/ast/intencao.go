@@ -37,7 +37,7 @@ type Intent struct {
 	RemoteExecutors   []*RemoteExecutorDecl
 	Translators       map[string]string // traduza <ponto> com <função> (integracoes/)
 	InitialFiles      []*InitialFileDecl
-	MinRoles          []*CreatorRole    // todo grupo precisa ter pelo menos um owner
+	MinRoles          []*CreatorRole // todo grupo precisa ter pelo menos um owner
 }
 
 // EntityDecl: `tenha clientes` plus the fields from `cada cliente tem`.
