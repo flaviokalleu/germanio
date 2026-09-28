@@ -1084,6 +1084,8 @@ func ResolveIntent(prog *ast.Program) error {
 		}
 	}
 
+	app.ReservedAddresses = in.ReservedAddresses
+
 	// 9b. Translation points filled by adapters (`traduza X com f`).
 	for point, fn := range in.Translators {
 		switch point {

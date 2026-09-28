@@ -37,6 +37,7 @@ type Intent struct {
 	RemoteExecutors   []*RemoteExecutorDecl
 	Translators       map[string]string // traduza <ponto> com <função> (integracoes/)
 	InitialFiles      []*InitialFileDecl
+	ReservedAddresses []string // endereços reservados
 	MinRoles          []*CreatorRole // todo grupo precisa ter pelo menos um owner
 }
 
@@ -180,6 +181,7 @@ func MergeIntent(a, b *Intent) *Intent {
 	}
 	a.MinRoles = append(a.MinRoles, b.MinRoles...)
 	a.InitialFiles = append(a.InitialFiles, b.InitialFiles...)
+	a.ReservedAddresses = append(a.ReservedAddresses, b.ReservedAddresses...)
 	a.Visibility = append(a.Visibility, b.Visibility...)
 	if a.Vocabulary == nil {
 		a.Vocabulary = b.Vocabulary

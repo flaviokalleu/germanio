@@ -75,6 +75,8 @@ func (p *Parser) isIntentLine() bool {
 		return true
 	case "traduza":
 		return len(w) >= 4 && w[len(w)-2] == "com"
+	case "enderecos":
+		return len(w) >= 2 && w[1] == "reservados"
 	case "escopo":
 		return len(w) >= 4
 	case "quem":
@@ -144,6 +146,22 @@ func (p *Parser) parseIntentLine() error {
 			return p.errorf(head.toks[0], `use: integração em "/api/v1"`)
 		}
 		in.IntegrationPrefix = strings.TrimRight(head.toks[2].Value, "/")
+		return nil
+	case "enderecos":
+		// endereços reservados + one name per line (or comma-separated)
+		lines := append([][]lexer.Token{head.toks[2:]}, tokenLines(body)...)
+		for _, l := range lines {
+			for _, t := range l {
+				if t.Type == lexer.TokenComma {
+					continue
+				}
+				v := t.Value
+				if t.Type != lexer.TokenString {
+					v = t.Name()
+				}
+				in.ReservedAddresses = append(in.ReservedAddresses, strings.ToLower(v))
+			}
+		}
 		return nil
 	case "traduza":
 		// traduza arquivos de execução com ler_formato (adapters, integracoes/)

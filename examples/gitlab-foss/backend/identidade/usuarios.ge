@@ -4,7 +4,7 @@ tenha usuarios
 tenha tokens de acesso
 
 usuario tem
-    username obrigatório e único valida caminho_valido
+    username obrigatório e único
     email obrigatório, único e privado
     nome obrigatório
     senha min 8 max 128

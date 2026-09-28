@@ -32,6 +32,7 @@ var ptMessages = []struct{ en, pt string }{
 	{"can't be blank", "é obrigatório"},
 	{"has already been taken", "já está em uso"},
 	{"is invalid", "é inválido"},
+	{"is reserved", "é um nome reservado"},
 	{"cannot be changed", "não pode ser alterado"},
 	{"must be an integer", "deve ser um número inteiro"},
 	{"is not a number", "deve ser um número"},

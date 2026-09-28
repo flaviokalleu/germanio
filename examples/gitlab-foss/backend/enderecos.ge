@@ -1,0 +1,13 @@
+# Nomes de primeiro nível que o GitLab usa para as próprias páginas:
+# nenhuma pessoa ou grupo pode ficar com eles.
+
+endereços reservados
+    admin
+    dashboard
+    explore
+    groups
+    help
+    projects
+    public
+    search
+    users

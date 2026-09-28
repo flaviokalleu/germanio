@@ -146,6 +146,7 @@ func (s *Servidor) Handler() (http.Handler, error) {
 	}
 	s.mux = mux
 	s.registerPages(generated)
+	s.reserveAddresses()
 
 	// Prompt Events routes (quando receber / quando chamar)
 	for _, evt := range s.Program.Events {
@@ -1384,4 +1385,34 @@ func (s *Servidor) handleRestaurar(w http.ResponseWriter, r *http.Request, model
 
 	s.WS.Broadcast(WSMessage{Type: "restaurar", Model: modelo, ID: id, Data: item})
 	s.jsonOK(w, item)
+}
+
+// reserveAddresses keeps the app's own first path segments (and the
+// product's `endereços reservados`) out of top-level addresses, so no group
+// or person can take a name like "api" or a page's.
+func (s *Servidor) reserveAddresses() {
+	if s.Interpreter == nil || s.Program.App == nil {
+		return
+	}
+	names := map[string]bool{"_ge": true, "api": true, "entrar": true, "sair": true, "cadastro": true, "oauth": true, "uploads": true}
+	app := s.Program.App
+	first := func(path string) string {
+		parts := strings.Split(strings.Trim(path, "/"), "/")
+		return strings.ToLower(parts[0])
+	}
+	if app.Integration != "" {
+		names[first(app.Integration)] = true
+	}
+	for _, pg := range app.Pages {
+		names[slug(pg.Name)] = true
+	}
+	for _, r := range s.Program.Routes {
+		if seg := first(r.Path); seg != "" && !strings.HasPrefix(seg, ":") {
+			names[seg] = true
+		}
+	}
+	for _, n := range app.ReservedAddresses {
+		names[strings.ToLower(n)] = true
+	}
+	s.Interpreter.ReservedNames = names
 }

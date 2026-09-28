@@ -88,12 +88,14 @@ func (s *Scope) SetLocal(name string, value interface{}) {
 
 // Interpreter executes Germanio AST scripts.
 type Interpreter struct {
-	Global     *Scope
-	Functions  map[string]*ast.FuncDecl
-	DB         *banco.Banco
-	LogBuffer  []string
-	logMu      sync.Mutex
-	HTTPClient interface {
+	// ReservedNames: top-level addresses kept by the app (see endereco.go).
+	ReservedNames map[string]bool
+	Global        *Scope
+	Functions     map[string]*ast.FuncDecl
+	DB            *banco.Banco
+	LogBuffer     []string
+	logMu         sync.Mutex
+	HTTPClient    interface {
 		Chamar(method, url string, body []byte) ([]byte, error)
 	}
 	WAClient interface {

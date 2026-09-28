@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"net/url"
+	"strings"
 	"testing"
 )
 
@@ -69,4 +70,25 @@ func TestEnderecosHierarquicos(t *testing.T) {
 	if p := ada.must("GET", "/api/v4/projects/"+id(mine), nil, 200); p["full_path"] != "ada2/mine" {
 		t.Fatalf("projeto pessoal depois de renomear a pessoa: %v", p["full_path"])
 	}
+}
+
+// Segmentos de endereço válidos e nomes reservados (do produto e do próprio app).
+func TestEnderecosValidosEReservados(t *testing.T) {
+	base := gitlab(t)
+	anon := &api{t: t, base: base}
+	for _, name := range []string{"admin", "explore", "api", "oauth", "a..b", "-x", "x.git", "com espaço"} {
+		code, out, _ := anon.call("POST", "/cadastro", map[string]any{"username": name, "nome": "X", "email": strings.ReplaceAll(name, " ", "") + "@example.com", "senha": "password123"})
+		if code != 400 {
+			t.Fatalf("username %q deveria ser recusado: %d %v", name, code, out)
+		}
+	}
+	ada := signup(t, base, "ada")
+	for _, path := range []string{"help", "projects", "_ge", "entrar", "a..b", ".x", "x.", "x.git"} {
+		ada.must("POST", "/api/v4/groups", map[string]any{"name": "G", "path": path}, 400)
+	}
+	org := ada.must("POST", "/api/v4/groups", map[string]any{"name": "Org", "path": "org.io"}, 201)
+	// Reservado só no primeiro nível: dentro de um grupo, "admin" é um nome comum.
+	ada.must("POST", "/api/v4/groups", map[string]any{"name": "Admin", "path": "admin", "parent_id": org["id"]}, 201)
+	ada.must("POST", "/api/v4/projects", map[string]any{"name": "R", "path": "repo.git"}, 400)
+	ada.must("POST", "/api/v4/projects", map[string]any{"name": "R", "path": "repo-1_a.b"}, 201)
 }

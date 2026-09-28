@@ -12,7 +12,7 @@ tenha papeis
 
 grupo tem
     nome obrigatório
-    caminho obrigatório valida caminho_valido
+    caminho obrigatório
     endereço dentro do grupo pai
     descrição
     visibilidade

@@ -1,6 +1,7 @@
 package interpreter
 
 import (
+	"regexp"
 	"strings"
 
 	"github.com/flaviokalleu/germanio/compiler/ast"
@@ -12,6 +13,21 @@ import (
 // every write (never accepted from input), unique across every addressed
 // entity and — when people contain records — the people's names. When a
 // container's address changes, the records inside follow.
+
+// A segment of an address: letters, digits, _ . - ; it starts with a letter,
+// digit or _, does not end with "." , has no "..", and never looks like a
+// repository file (.git). Top-level segments must not be reserved.
+var segmentRe = regexp.MustCompile(`^[A-Za-z0-9_](?:[A-Za-z0-9_.-]{0,253}[A-Za-z0-9_-])?$`)
+
+func validSegment(s string) bool {
+	return segmentRe.MatchString(s) && !strings.Contains(s, "..") && !strings.HasSuffix(strings.ToLower(s), ".git")
+}
+
+// ReservedNames are top-level addresses nobody may take: the app's own
+// routes (set by the server) and `endereços reservados`.
+func (interp *Interpreter) reserved(seg string) bool {
+	return interp.ReservedNames[strings.ToLower(seg)]
+}
 
 func (interp *Interpreter) entityOf(m *ast.Model) *ast.Entity {
 	if interp.App == nil || m == nil {
@@ -89,9 +105,17 @@ func (interp *Interpreter) address(db *banco.Banco, m *ast.Model, out map[string
 		return
 	}
 	if e.Singular == interp.App.LoginEntity && interp.peopleInNamespace() {
+		// people's names are top-level addresses too
 		pn := interp.personName()
-		if v, ok := out[pn]; ok && v != nil && interp.addressTaken(db, toString(v), e.Singular, id) {
-			errs.add(pn, "has already been taken")
+		if v, ok := out[pn]; ok && v != nil && len(errs[pn]) == 0 {
+			switch name := toString(v); {
+			case !validSegment(name):
+				errs.add(pn, "is invalid")
+			case interp.reserved(name):
+				errs.add(pn, "is reserved")
+			case interp.addressTaken(db, name, e.Singular, id):
+				errs.add(pn, "has already been taken")
+			}
 		}
 	}
 	a := e.Address
@@ -140,9 +164,16 @@ func (interp *Interpreter) address(db *banco.Banco, m *ast.Model, out map[string
 		prefix = interp.addressOf(r.Entity, row)
 		break
 	}
+	if !validSegment(seg) {
+		errs.add(a.Segment, "is invalid")
+		return
+	}
 	full := seg
 	if prefix != "" {
 		full = prefix + "/" + seg
+	} else if interp.reserved(seg) {
+		errs.add(a.Segment, "is reserved")
+		return
 	}
 	if interp.addressTaken(db, full, e.Singular, id) {
 		errs.add(a.Segment, "has already been taken")

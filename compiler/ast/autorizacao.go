@@ -16,6 +16,9 @@ type App struct {
 	MemberModel string // model holding memberships (polymorphic)
 	Messages    string // "pt" (default) or "en"
 	Vocabulary  map[string]string
+	// ReservedAddresses: top-level addresses the product keeps for itself
+	// (`endereços reservados`); the runtime adds the app's own routes.
+	ReservedAddresses []string
 	// Translators: adapter functions for translation points
 	// (arquivos_de_execucao, variaveis_das_etapas) — `traduza X com f`.
 	Translators map[string]string
