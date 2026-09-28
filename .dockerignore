@@ -1,0 +1,9 @@
+.git
+dist
+bench/resultados
+germanio
+ge
+*.db
+*.db-wal
+*.db-shm
+vscode-germanio

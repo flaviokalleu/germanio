@@ -1,0 +1,6 @@
+integracoes
+  whatsapp
+    provedor: whatsmeow
+    multi_sessao: verdadeiro
+    presenca: verdadeiro
+    qr_code: verdadeiro

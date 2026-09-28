@@ -1,0 +1,14 @@
+dados
+
+    mensagem
+        ticket: texto pertence_a ticket
+        contato: texto pertence_a contato
+        remetente: enum(cliente, atendente, sistema, bot)
+        tipo: enum(texto, imagem, audio, video, documento, localizacao, contato, sticker, botoes, lista)
+        corpo: texto_longo
+        midia_url: texto
+        midia_tipo: texto
+        lida: booleano
+        editada: booleano
+        nota_interna: booleano
+        status: enum(enviando, enviada, entregue, lida, erro)

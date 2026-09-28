@@ -1,0 +1,12 @@
+telas
+
+    tela fluxos
+        titulo "Fluxos de Automacao"
+        lista fluxo
+            mostrar nome
+            mostrar descricao
+            mostrar execucoes
+            mostrar publicado
+            mostrar status
+        botao azul
+            texto "Novo Fluxo"

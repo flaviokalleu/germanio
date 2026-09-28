@@ -1,0 +1,11 @@
+dados
+
+  contato
+    nome: texto obrigatorio
+    numero: texto unico obrigatorio
+    email: email
+    empresa: texto
+    foto: imagem
+    bloqueado: booleano
+    whatsapp: texto pertence_a conexao_whatsapp
+    status: status

@@ -1,0 +1,21 @@
+dados
+
+  resposta_rapida
+    titulo: texto obrigatorio
+    mensagem: texto_longo obrigatorio
+    criado_por: texto pertence_a usuario
+    status: status
+
+  etiqueta
+    nome: texto obrigatorio
+    cor: texto
+    status: status
+
+  ticket_etiqueta
+    ticket: texto pertence_a ticket obrigatorio
+    etiqueta: texto pertence_a etiqueta obrigatorio
+
+  configuracao
+    chave: texto unico obrigatorio
+    valor: texto_longo
+    descricao: texto

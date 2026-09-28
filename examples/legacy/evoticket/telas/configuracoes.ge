@@ -1,0 +1,11 @@
+telas
+
+    tela configuracoes
+        titulo "Configuracoes"
+        requer admin
+        lista empresa
+            mostrar nome
+            mostrar cnpj
+            mostrar plano
+            mostrar limite_usuarios
+            mostrar status

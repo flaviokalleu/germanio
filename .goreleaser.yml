@@ -1,312 +1,106 @@
-# =============================================================================
-# GoReleaser Configuration for Germanio
-# Configuracao do GoReleaser para o Germanio
+# GoReleaser configuration (https://goreleaser.com). Releases run from
+# .github/workflows/release.yml when a v* tag is pushed; see docs/RELEASING.md.
 #
-# Documentacao / Documentation: https://goreleaser.com
-#
-# Instalacao do GoReleaser / GoReleaser installation:
-#   go install github.com/goreleaser/goreleaser/v2@latest
-#
-# Uso local / Local usage:
-#   goreleaser release --snapshot --clean        # teste sem publicar / test without publishing
-#   goreleaser release --clean                    # publica no GitHub / publish to GitHub
-#
-# CI/CD (GitHub Actions): veja /.github/workflows/release.yml
-# =============================================================================
-
-# Versao do schema GoReleaser / GoReleaser schema version
+#   goreleaser check                      # validate this file
+#   goreleaser release --snapshot --clean # build everything locally, publish nothing
 version: 2
 
-# ---------------------------------------------------------------------------
-# Informacoes do projeto / Project information
-# ---------------------------------------------------------------------------
 project_name: germanio
 
-# ---------------------------------------------------------------------------
-# Configuracoes de ambiente / Environment settings
-# ---------------------------------------------------------------------------
-env:
-  - GO111MODULE=on
-  - CGO_ENABLED=0
-
-# ---------------------------------------------------------------------------
-# Hooks antes do build / Pre-build hooks
-# ---------------------------------------------------------------------------
 before:
   hooks:
-    # Garante que dependencias estao atualizadas / Ensure dependencies are up-to-date
-    - go mod tidy
     - go mod verify
-    # Roda testes antes de publicar / Run tests before publishing
-    - go test ./... -count=1 -timeout 60s
+    - go test ./... -count=1
 
-# ---------------------------------------------------------------------------
-# Configuracao de build / Build configuration
-# ---------------------------------------------------------------------------
 builds:
-  - id: germanio
-    main: ./main.go
-    binary: germanio
-
-    # Flags de compilacao / Build flags
-    flags:
-      - -trimpath
-
-    # Flags do linker (reduz tamanho, embute versao)
-    # Linker flags (reduce size, embed version)
+  - id: ge
+    main: ./cmd/ge
+    binary: ge
+    env: [CGO_ENABLED=0]
+    flags: [-trimpath]
     ldflags:
       - -s -w
-      - -X main.Version={{.Version}}
-      - -X main.BuildDate={{.Date}}
-      - -X main.Commit={{.ShortCommit}}
+      - -X github.com/flaviokalleu/germanio/versao.Versao={{.Version}}
+      - -X github.com/flaviokalleu/germanio/versao.Commit={{.ShortCommit}}
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+  - id: germanio
+    main: .
+    binary: germanio
+    env: [CGO_ENABLED=0]
+    flags: [-trimpath]
+    ldflags:
+      - -s -w
+      - -X github.com/flaviokalleu/germanio/versao.Versao={{.Version}}
+      - -X github.com/flaviokalleu/germanio/versao.Commit={{.ShortCommit}}
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
 
-    # Plataformas alvo / Target platforms
-    goos:
-      - linux
-      - windows
-      - darwin
-
-    goarch:
-      - amd64
-      - arm64
-      - arm
-
-    # Restricoes por plataforma / Platform restrictions
-    ignore:
-      # arm32 apenas no Linux (Raspberry Pi)
-      - goos: windows
-        goarch: arm
-      - goos: darwin
-        goarch: arm
-
-    # Variaveis de ambiente por plataforma / Per-platform environment variables
-    overrides:
-      # Windows nao precisa de flags especiais / Windows doesn't need special flags
-      - goos: windows
-        goarch: amd64
-        goenv:
-          - CGO_ENABLED=0
-
-      # macOS arm64 (Apple Silicon)
-      - goos: darwin
-        goarch: arm64
-        goenv:
-          - CGO_ENABLED=0
-
-    # Modificacao do nome do binario por plataforma
-    # Binary name modification per platform
-    # (GoReleaser adiciona .exe automaticamente no Windows)
-    # (GoReleaser automatically adds .exe on Windows)
-
-# ---------------------------------------------------------------------------
-# Arquivos Universal Binary macOS / macOS Universal Binary
-# Combina amd64 + arm64 em um unico binario / Combines amd64 + arm64 in one binary
-# ---------------------------------------------------------------------------
-universal_binaries:
-  - id: germanio-darwin-universal
-    ids:
-      - germanio
-    replace: false
-    name_template: "germanio-universal"
-
-# ---------------------------------------------------------------------------
-# Configuracao de archives / Archive configuration
-# ---------------------------------------------------------------------------
 archives:
-  - id: germanio-archive
-    ids:
-      - germanio
-
-    # Formato por plataforma / Format per platform
-    format: tar.gz
+  - id: germanio
+    ids: [ge, germanio]
+    formats: [tar.gz]
     format_overrides:
       - goos: windows
-        format: zip
-
-    # Template do nome do arquivo / Filename template
-    name_template: >-
-      germanio-
-      {{- .Version }}-
-      {{- .Os }}-
-      {{- .Arch }}
-      {{- if .Arm }}v{{ .Arm }}{{ end }}
-
-    # Arquivos incluidos no archive / Files included in archive
+        formats: [zip]
+    name_template: "germanio_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     files:
       - README.md
+      - README.pt-BR.md
       - LICENSE
-      - docs/*
-      - exemplos/**/*
-      - installer/linux/install.sh
-      - installer/linux/uninstall.sh
+      - CHANGELOG.md
 
-    # Mapeamento de caminhos no archive / Path mapping in archive
-    # (renomeia exemplos/ para examples/ no archive)
-    # (renames exemplos/ to examples/ in archive)
-
-# ---------------------------------------------------------------------------
-# Checksums
-# ---------------------------------------------------------------------------
 checksum:
-  name_template: "checksums.sha256"
+  name_template: checksums.txt
   algorithm: sha256
 
-# ---------------------------------------------------------------------------
-# Assinatura (opcional, requer GPG) / Signing (optional, requires GPG)
-# ---------------------------------------------------------------------------
-# signs:
-#   - artifacts: checksum
-#     args:
-#       - "--batch"
-#       - "-u"
-#       - "{{ .Env.GPG_FINGERPRINT }}"
-#       - "--output"
-#       - "${signature}"
-#       - "--detach-sign"
-#       - "${artifact}"
-
-# ---------------------------------------------------------------------------
-# Snapshot (build local sem publicar) / Snapshot (local build without publishing)
-# ---------------------------------------------------------------------------
 snapshot:
-  # Template do nome para snapshots / Name template for snapshots
-  version_template: "{{ incpatch .Version }}-SNAPSHOT-{{.ShortCommit}}"
+  version_template: "{{ incpatch .Version }}-next"
 
-# ---------------------------------------------------------------------------
-# Changelog automatico / Automatic changelog
-# ---------------------------------------------------------------------------
 changelog:
-  # Ordena por tipo de commit / Sort by commit type
+  use: git
   sort: asc
-
-  # Usa commitizen/conventional commits
-  use: github
-
   filters:
-    # Exclui commits de merge e estilo / Exclude merge and style commits
     exclude:
       - "^Merge "
-      - "^merge "
-      - "typo"
-      - "wip:"
-      - "WIP:"
-
-  # Agrupamento por tipo / Grouping by type
+      - "^docs\\(state\\)"
   groups:
-    - title: "Novas funcionalidades / New Features"
-      regexp: '^feat(\(.+\))?\!?:.+'
+    - title: Language
+      regexp: '^(feat|fix)\((parser|lexer|compiler|resolver|syntax|intent)\)'
       order: 0
-    - title: "Correcoes de bugs / Bug Fixes"
-      regexp: '^fix(\(.+\))?\!?:.+'
+    - title: Security
+      regexp: '^fix\(security\)'
       order: 1
-    - title: "Performance"
-      regexp: '^perf(\(.+\))?\!?:.+'
+    - title: Features
+      regexp: '^feat'
       order: 2
-    - title: "Documentacao / Documentation"
-      regexp: '^docs(\(.+\))?\!?:.+'
+    - title: Fixes
+      regexp: '^fix'
       order: 3
-    - title: "Refatoracao / Refactoring"
-      regexp: '^refactor(\(.+\))?\!?:.+'
+    - title: Documentation
+      regexp: '^docs'
       order: 4
-    - title: "Outros / Other Changes"
+    - title: Other changes
       order: 999
 
-# ---------------------------------------------------------------------------
-# Configuracao do GitHub Release / GitHub Release configuration
-# ---------------------------------------------------------------------------
 release:
-  # Repositorio GitHub / GitHub repository
   github:
-    owner: flavio
+    owner: flaviokalleu
     name: germanio
-
-  # Nome do release / Release name
-  name_template: "Germanio v{{.Version}}"
-
-  # Corpo do release / Release body (abaixo do changelog automatico)
-  # Body of the release (below the automatic changelog)
-  header: |
-    ## Germanio v{{.Version}}
-
-    Bem-vindo a mais uma versao do Germanio! / Welcome to another Germanio release!
-
-    ### Instalacao rapida / Quick Install
-
-    **Linux/macOS:**
-    ```bash
-    curl -fsSL https://raw.githubusercontent.com/flavio/germanio/main/installer/linux/install.sh | bash
-    ```
-
-    **Windows (PowerShell):**
-    ```powershell
-    irm https://raw.githubusercontent.com/flavio/germanio/main/installer/windows/install.ps1 | iex
-    ```
-
-  footer: |
-    ---
-    **Checksums:** Verifique `checksums.sha256` / Verify `checksums.sha256`
-
-    **Documentacao:** https://github.com/flavio/germanio/blob/main/README.md
-
-    Obrigado a todos os contribuidores! / Thank you to all contributors!
-
-  # Marca como pre-release se for snapshot / Mark as pre-release if snapshot
+  name_template: "Germanio {{ .Version }}"
   prerelease: auto
+  header: |
+    Germanio {{ .Version }}. Germanio is pre-1.0: the language may still change, and changes of
+    meaning go through GEPs (docs/gep). See CHANGELOG.md for what changed.
 
-  # Modo de draft: false para publicar diretamente
-  # Draft mode: false to publish directly
-  draft: false
+    ## Install
 
-  # Desabilita automaticamente se nao houver GITHUB_TOKEN
-  # Auto-disabled if no GITHUB_TOKEN
-  disable: '{{ if not .Env.GITHUB_TOKEN }}true{{ else }}false{{ end }}'
+    Download the archive for your system below, check it against `checksums.txt`
+    (`sha256sum -c checksums.txt --ignore-missing`), extract it and put `ge` on your PATH.
+    Or build from source with Go: `go install github.com/flaviokalleu/germanio/cmd/ge@v{{ .Version }}`.
 
-# ---------------------------------------------------------------------------
-# Publicacao em gerenciadores de pacotes / Package manager publishing
-# ---------------------------------------------------------------------------
-
-# Homebrew (macOS/Linux) - descomente quando tiver um tap proprio
-# Homebrew (macOS/Linux) - uncomment when you have your own tap
-# brews:
-#   - name: germanio
-#     repository:
-#       owner: flavio
-#       name: homebrew-tap
-#     directory: Formula
-#     homepage: https://github.com/flavio/germanio
-#     description: "Linguagem de programacao declarativa full-stack"
-#     license: MIT
-#     install: |
-#       bin.install "germanio"
-#     test: |
-#       system "#{bin}/germanio", "version"
-
-# Scoop (Windows) - descomente quando tiver um bucket proprio
-# Scoop (Windows) - uncomment when you have your own bucket
-# scoops:
-#   - name: germanio
-#     repository:
-#       owner: flavio
-#       name: scoop-bucket
-#     homepage: https://github.com/flavio/germanio
-#     description: "Linguagem de programacao declarativa full-stack"
-#     license: MIT
-
-# ---------------------------------------------------------------------------
-# Docker (opcional) / Docker (optional)
-# ---------------------------------------------------------------------------
-# dockers:
-#   - image_templates:
-#       - "ghcr.io/flavio/germanio:{{ .Version }}-amd64"
-#       - "ghcr.io/flavio/germanio:latest-amd64"
-#     dockerfile: Dockerfile
-#     use: buildx
-#     build_flag_templates:
-#       - "--platform=linux/amd64"
-#       - "--label=org.opencontainers.image.version={{.Version}}"
-
-# ---------------------------------------------------------------------------
-# Metadata / Metadata
-# ---------------------------------------------------------------------------
-metadata:
-  mod_timestamp: "{{ .CommitTimestamp }}"
+    ```bash
+    ge --version
+    ge new my_app
+    ge run my_app/app.ge
+    ```

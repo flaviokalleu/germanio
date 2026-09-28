@@ -1,0 +1,21 @@
+dados
+
+    financeiro
+        descricao: texto obrigatorio
+        valor: dinheiro obrigatorio
+        tipo: enum(receita, despesa)
+        categoria: texto
+        vencimento: data
+        empresa: texto pertence_a empresa
+        contato: texto pertence_a contato
+        forma_pagamento: enum(pix, cartao, boleto, dinheiro, transferencia)
+        status: enum(pendente, pago, atrasado, cancelado)
+
+    proposta
+        titulo: texto obrigatorio
+        valor: dinheiro
+        negocio: texto pertence_a negocio
+        empresa: texto pertence_a empresa
+        validade: data
+        conteudo: texto_longo
+        status: enum(rascunho, enviada, aceita, recusada, expirada)

@@ -1,0 +1,66 @@
+sistema evoticket
+
+tema moderno escuro
+
+autenticacao
+    modelo: usuario
+    campo_login: email
+    campo_senha: senha
+    roles: superadmin, admin, gerente, atendente
+
+importar "dados/empresa.ge"
+importar "dados/usuario.ge"
+importar "dados/contato.ge"
+importar "dados/fila.ge"
+importar "dados/tag.ge"
+importar "dados/ticket.ge"
+importar "dados/mensagem.ge"
+importar "dados/resposta_rapida.ge"
+importar "dados/conexao.ge"
+importar "dados/campanha.ge"
+importar "dados/fluxo.ge"
+importar "dados/ia.ge"
+importar "dados/crm.ge"
+importar "dados/financeiro.ge"
+importar "dados/webhook.ge"
+importar "dados/kanban.ge"
+
+importar "telas/dashboard.ge"
+importar "telas/tickets.ge"
+importar "telas/contatos.ge"
+importar "telas/atendentes.ge"
+importar "telas/filas.ge"
+importar "telas/tags.ge"
+importar "telas/conexoes.ge"
+importar "telas/campanhas.ge"
+importar "telas/respostas_rapidas.ge"
+importar "telas/fluxos.ge"
+importar "telas/agentes_ia.ge"
+importar "telas/crm.ge"
+importar "telas/financeiro.ge"
+importar "telas/webhooks.ge"
+importar "telas/kanban.ge"
+importar "telas/configuracoes.ge"
+
+importar "eventos/acoes.ge"
+importar "logica.ge"
+importar "integracoes.ge"
+importar "rotas.ge"
+
+sidebar
+    item "Dashboard" icone "layout" link dashboard
+    item "Tickets" icone "clip" link screen-tickets
+    item "Contatos" icone "users" link screen-contatos
+    item "Campanhas" icone "activity" link screen-campanhas
+    item "Fluxos" icone "zap" link screen-fluxos
+    item "Agentes IA" icone "settings" link screen-agentes_ia
+    item "CRM" icone "dollar" link screen-crm
+    item "Kanban" icone "grid" link screen-kanban
+    item "Financeiro" icone "dollar" link screen-financeiro
+    item "Respostas" icone "list" link screen-respostas_rapidas
+    item "Conexoes" icone "zap" link screen-conexoes
+    item "Filas" icone "list" link screen-filas
+    item "Tags" icone "tag" link screen-tags
+    item "Atendentes" icone "users" link screen-atendentes
+    item "Webhooks" icone "activity" link screen-webhooks
+    item "Config" icone "settings" link screen-configuracoes

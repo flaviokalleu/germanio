@@ -1,5 +1,0 @@
-logica
-
-    definir nome = "Germanio"
-
-    mostrar "Olá " + nome

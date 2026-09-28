@@ -1,0 +1,13 @@
+telas
+
+  tela equipe
+    titulo "Equipe"
+    requer admin
+    lista usuario
+      mostrar nome
+      mostrar email
+      mostrar role
+      mostrar online
+      mostrar status
+    botao verde
+      texto "Novo Atendente"

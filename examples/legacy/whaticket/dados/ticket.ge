@@ -1,0 +1,26 @@
+dados
+
+  ticket
+    numero: numero unico
+    contato: texto pertence_a contato obrigatorio
+    usuario: texto pertence_a usuario
+    fila: texto pertence_a fila
+    whatsapp: texto pertence_a conexao_whatsapp
+    status: enum(aberto, pendente, fechado)
+    ultima_mensagem: texto
+    nao_lidas: numero
+    aguardando_bot: booleano
+    criado_em: data
+    atualizado_em: data
+
+  mensagem
+    ticket: texto pertence_a ticket obrigatorio
+    contato: texto pertence_a contato
+    corpo: texto_longo
+    tipo: enum(chat, imagem, audio, video, documento, sticker, localizacao)
+    de_mim: booleano
+    lida: booleano
+    media_url: texto
+    media_tipo: texto
+    citacao_id: texto
+    criado_em: data

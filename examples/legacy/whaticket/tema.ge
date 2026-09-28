@@ -1,0 +1,23 @@
+tema
+  escuro
+  cor primaria "#075e54"
+  cor secundaria "#0ea5a4"
+  cor destaque "#facc15"
+  fonte "Manrope"
+  borda "22px"
+  fundo "#071419"
+  card "rgba(6, 24, 30, 0.78)"
+  texto_cor "#ecfdf5"
+  sidebar "#05292d"
+  estilo "glassmorphism"
+
+sidebar
+  item "Painel" icone "layout" link "dashboard"
+  item "Atendimentos" icone "zap" link "screen-tickets"
+  item "Contatos" icone "users" link "screen-contatos"
+  item "Conexoes" icone "activity" link "screen-conexoes"
+  item "Filas" icone "grid" link "screen-filas"
+  item "Respostas" icone "file" link "screen-respostas_rapidas"
+  item "Etiquetas" icone "tag" link "screen-etiquetas"
+  item "Equipe" icone "users" link "screen-equipe"
+  item "Configuracoes" icone "settings" link "screen-configuracoes"

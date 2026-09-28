@@ -1,0 +1,11 @@
+telas
+
+  tela conexoes
+    titulo "Conexoes WhatsApp"
+    lista conexao_whatsapp
+      mostrar nome
+      mostrar numero
+      mostrar status
+      mostrar padrao
+    botao verde
+      texto "Nova Conexao"

@@ -1,0 +1,5 @@
+autenticacao
+  modelo: usuario
+  campo_login: email
+  campo_senha: senha
+  roles: admin, supervisor, atendente

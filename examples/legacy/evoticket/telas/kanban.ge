@@ -1,0 +1,12 @@
+telas
+
+    tela kanban
+        titulo "Kanban"
+        lista tarefa
+            mostrar titulo
+            mostrar responsavel
+            mostrar prioridade
+            mostrar prazo
+            mostrar status
+        botao azul
+            texto "Nova Tarefa"

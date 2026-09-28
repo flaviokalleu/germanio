@@ -1,0 +1,23 @@
+telas
+
+  tela tickets
+    titulo "Atendimentos"
+    chat ticket
+      mensagens mensagem
+      relacao ticket
+      texto corpo
+      media media_url
+      autor de_mim
+      data criado_em
+      tipo tipo
+    lista ticket
+      mostrar numero
+      mostrar contato
+      mostrar ultima_mensagem
+      mostrar fila
+      mostrar usuario
+      mostrar status
+      mostrar nao_lidas
+      mostrar criado_em
+    botao verde
+      texto "Novo Ticket"

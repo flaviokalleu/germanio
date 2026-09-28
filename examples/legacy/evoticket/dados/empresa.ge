@@ -1,0 +1,10 @@
+dados
+
+    empresa
+        nome: texto obrigatorio
+        cnpj: texto unico
+        plano: enum(basico, profissional, enterprise)
+        limite_usuarios: numero
+        limite_conexoes: numero
+        limite_campanhas: numero
+        status: enum(ativo, inativo, trial, bloqueado)

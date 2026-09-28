@@ -1,0 +1,11 @@
+telas
+
+  tela respostas_rapidas
+    titulo "Respostas Rapidas"
+    lista resposta_rapida
+      mostrar titulo
+      mostrar mensagem
+      mostrar criado_por
+      mostrar status
+    botao verde
+      texto "Nova Resposta"

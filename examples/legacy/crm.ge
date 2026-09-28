@@ -1,0 +1,180 @@
+sistema crm
+
+tema
+    cor primaria "#1e293b"
+    cor secundaria "#8b5cf6"
+    cor destaque "#10b981"
+
+autenticacao
+    modelo: usuario
+    campo_login: email
+    campo_senha: senha
+    roles: admin, gerente, vendedor
+
+dados
+
+    usuario
+        nome: texto obrigatorio
+        email: email obrigatorio unico
+        senha: senha obrigatorio
+        cargo: texto
+        departamento: texto
+        telefone: telefone
+        meta_mensal: dinheiro
+        status: status
+
+    empresa
+        nome: texto obrigatorio
+        cnpj: texto unico
+        segmento: texto
+        porte: enum(micro, pequena, media, grande)
+        site: texto
+        cidade: texto
+        estado: texto
+        status: status
+
+    contato
+        nome: texto obrigatorio
+        email: email
+        telefone: telefone
+        cargo: texto
+        empresa: texto pertence_a empresa
+        responsavel: texto pertence_a usuario
+        status: enum(lead, prospect, cliente, inativo)
+
+    oportunidade
+        titulo: texto obrigatorio
+        contato: texto pertence_a contato obrigatorio
+        empresa: texto pertence_a empresa
+        responsavel: texto pertence_a usuario obrigatorio
+        valor: dinheiro
+        probabilidade: numero
+        etapa: enum(prospeccao, qualificacao, proposta, negociacao, fechamento)
+        data_fechamento: data
+        observacoes: texto_longo
+        status: enum(aberta, ganha, perdida, suspensa)
+
+    atividade
+        tipo: enum(ligacao, reuniao, email, visita, tarefa)
+        titulo: texto obrigatorio
+        descricao: texto_longo
+        contato: texto pertence_a contato
+        oportunidade: texto pertence_a oportunidade
+        responsavel: texto pertence_a usuario obrigatorio
+        data_hora: data
+        duracao: numero
+        realizada: booleano
+
+    proposta
+        oportunidade: texto pertence_a oportunidade obrigatorio
+        numero: texto unico
+        valor_total: dinheiro obrigatorio
+        validade: data
+        conteudo: texto_longo
+        status: enum(rascunho, enviada, aceita, recusada, expirada)
+
+telas
+
+    tela dashboard
+        titulo "Dashboard CRM"
+        lista oportunidade
+            mostrar titulo
+            mostrar empresa
+            mostrar valor
+            mostrar etapa
+            mostrar probabilidade
+            mostrar status
+        botao azul
+            texto "Nova Oportunidade"
+
+    tela contatos
+        titulo "Contatos"
+        lista contato
+            mostrar nome
+            mostrar email
+            mostrar telefone
+            mostrar empresa
+            mostrar responsavel
+            mostrar status
+        botao verde
+            texto "Novo Contato"
+
+    tela empresas
+        titulo "Empresas"
+        lista empresa
+            mostrar nome
+            mostrar cnpj
+            mostrar segmento
+            mostrar porte
+            mostrar cidade
+            mostrar status
+        botao azul
+            texto "Nova Empresa"
+
+    tela atividades
+        titulo "Atividades"
+        lista atividade
+            mostrar tipo
+            mostrar titulo
+            mostrar contato
+            mostrar responsavel
+            mostrar data_hora
+            mostrar realizada
+        botao verde
+            texto "Nova Atividade"
+
+    tela propostas
+        titulo "Propostas"
+        lista proposta
+            mostrar numero
+            mostrar oportunidade
+            mostrar valor_total
+            mostrar validade
+            mostrar status
+        botao azul
+            texto "Nova Proposta"
+
+    tela equipe
+        titulo "Equipe de Vendas"
+        requer admin
+        lista usuario
+            mostrar nome
+            mostrar email
+            mostrar cargo
+            mostrar departamento
+            mostrar meta_mensal
+            mostrar status
+        botao azul
+            texto "Novo Vendedor"
+
+eventos
+
+    quando clicar "Nova Oportunidade"
+        criar oportunidade
+
+    quando clicar "Novo Contato"
+        criar contato
+
+    quando clicar "Nova Empresa"
+        criar empresa
+
+    quando clicar "Nova Atividade"
+        criar atividade
+
+    quando clicar "Nova Proposta"
+        criar proposta
+
+    quando clicar "Novo Vendedor"
+        criar usuario
+
+logica
+
+    definir versao = "1.0.0"
+
+    funcao calcular_valor_ponderado(valor, probabilidade)
+        retornar valor * probabilidade / 100
+
+    funcao dias_para_fechar(data_fechamento, hoje)
+        retornar data_fechamento - hoje
+
+    mostrar "CRM Germanio v" + versao + " pronto!"

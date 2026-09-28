@@ -1,8 +1,0 @@
-dados
-
-    resposta_rapida
-        titulo: texto obrigatorio
-        mensagem: texto_longo obrigatorio
-        atalho: texto
-        midia_url: texto
-        empresa: texto pertence_a empresa

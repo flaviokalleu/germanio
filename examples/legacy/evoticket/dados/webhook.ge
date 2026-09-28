@@ -1,0 +1,10 @@
+dados
+
+    webhook
+        nome: texto obrigatorio
+        url: texto obrigatorio
+        eventos: texto_longo
+        empresa: texto pertence_a empresa
+        secret: texto
+        ultimo_disparo: data
+        status: enum(ativo, inativo)

@@ -1,0 +1,22 @@
+eventos
+
+  quando clicar "Novo Ticket"
+    criar ticket
+
+  quando clicar "Novo Contato"
+    criar contato
+
+  quando clicar "Nova Conexao"
+    criar conexao_whatsapp
+
+  quando clicar "Nova Fila"
+    criar fila
+
+  quando clicar "Nova Resposta"
+    criar resposta_rapida
+
+  quando clicar "Nova Etiqueta"
+    criar etiqueta
+
+  quando clicar "Novo Atendente"
+    criar usuario

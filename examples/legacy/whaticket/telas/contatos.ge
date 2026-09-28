@@ -1,0 +1,13 @@
+telas
+
+  tela contatos
+    titulo "Contatos"
+    lista contato
+      mostrar nome
+      mostrar numero
+      mostrar email
+      mostrar empresa
+      mostrar whatsapp
+      mostrar status
+    botao verde
+      texto "Novo Contato"

@@ -1,0 +1,13 @@
+telas
+
+  tela relatorios
+    titulo "Relatorios"
+    requer supervisor
+    lista ticket
+      mostrar numero
+      mostrar contato
+      mostrar usuario
+      mostrar fila
+      mostrar status
+      mostrar criado_em
+      mostrar atualizado_em

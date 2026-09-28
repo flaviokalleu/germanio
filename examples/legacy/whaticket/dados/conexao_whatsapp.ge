@@ -1,0 +1,10 @@
+dados
+
+  conexao_whatsapp
+    nome: texto obrigatorio
+    status: enum(desconectado, aguardando_qr, conectado, erro)
+    numero: texto
+    padrao: booleano
+    saudacao: texto_longo
+    despedida: texto_longo
+    status_sistema: status

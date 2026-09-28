@@ -1,0 +1,46 @@
+eventos
+
+    quando clicar "Novo Ticket"
+        criar ticket
+
+    quando clicar "Novo Contato"
+        criar contato
+
+    quando clicar "Novo Atendente"
+        criar usuario
+
+    quando clicar "Nova Fila"
+        criar fila
+
+    quando clicar "Nova Tag"
+        criar tag
+
+    quando clicar "Nova Conexao"
+        criar conexao
+
+    quando clicar "Nova Campanha"
+        criar campanha
+
+    quando clicar "Nova Resposta"
+        criar resposta_rapida
+
+    quando clicar "Novo Fluxo"
+        criar fluxo
+
+    quando clicar "Novo Agente"
+        criar agente_ia
+
+    quando clicar "Novo Negocio"
+        criar negocio
+
+    quando clicar "Nova Receita"
+        criar financeiro
+
+    quando clicar "Nova Despesa"
+        criar financeiro
+
+    quando clicar "Novo Webhook"
+        criar webhook
+
+    quando clicar "Nova Tarefa"
+        criar tarefa

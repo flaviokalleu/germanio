@@ -1,0 +1,11 @@
+telas
+
+    tela respostas_rapidas
+        titulo "Respostas Rapidas"
+        busca resposta_rapida
+        lista resposta_rapida
+            mostrar titulo
+            mostrar atalho
+            mostrar mensagem
+        botao azul
+            texto "Nova Resposta"

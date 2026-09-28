@@ -1,0 +1,267 @@
+sistema whaticket
+
+tema
+  escuro
+  cor primaria "#075e54"
+  cor secundaria "#0ea5a4"
+  cor destaque "#facc15"
+  fonte "Manrope"
+  borda "22px"
+  fundo "#071419"
+  card "rgba(6, 24, 30, 0.78)"
+  texto_cor "#ecfdf5"
+  sidebar "#05292d"
+  estilo "glassmorphism"
+
+sidebar
+  item "Painel" icone "layout" link "dashboard"
+  item "Atendimentos" icone "zap" link "screen-tickets"
+  item "Contatos" icone "users" link "screen-contatos"
+  item "Conexoes" icone "activity" link "screen-conexoes"
+  item "Filas" icone "grid" link "screen-filas"
+  item "Respostas" icone "file" link "screen-respostas_rapidas"
+  item "Etiquetas" icone "tag" link "screen-etiquetas"
+  item "Equipe" icone "users" link "screen-equipe"
+  item "Configuracoes" icone "settings" link "screen-configuracoes"
+
+autenticacao
+  modelo: usuario
+  campo_login: email
+  campo_senha: senha
+  roles: admin, supervisor, atendente
+
+dados
+
+  usuario
+    nome: texto obrigatorio
+    email: email obrigatorio unico
+    senha: senha obrigatorio
+    role: enum(admin, supervisor, atendente)
+    online: booleano
+    status: status
+
+  fila
+    nome: texto obrigatorio
+    cor: texto
+    saudacao: texto_longo
+    status: status
+
+  usuario_fila
+    usuario: texto pertence_a usuario obrigatorio
+    fila: texto pertence_a fila obrigatorio
+
+  conexao_whatsapp
+    nome: texto obrigatorio
+    status: enum(desconectado, aguardando_qr, conectado, erro)
+    numero: texto
+    padrao: booleano
+    saudacao: texto_longo
+    despedida: texto_longo
+    status_sistema: status
+
+  contato
+    nome: texto obrigatorio
+    numero: texto unico obrigatorio
+    email: email
+    empresa: texto
+    foto: imagem
+    bloqueado: booleano
+    whatsapp: texto pertence_a conexao_whatsapp
+    status: status
+
+  ticket
+    numero: numero unico
+    contato: texto pertence_a contato obrigatorio
+    usuario: texto pertence_a usuario
+    fila: texto pertence_a fila
+    whatsapp: texto pertence_a conexao_whatsapp
+    status: enum(aberto, pendente, fechado)
+    ultima_mensagem: texto
+    nao_lidas: numero
+    aguardando_bot: booleano
+    criado_em: data
+    atualizado_em: data
+
+  mensagem
+    ticket: texto pertence_a ticket obrigatorio
+    contato: texto pertence_a contato
+    corpo: texto_longo
+    tipo: enum(chat, imagem, audio, video, documento, sticker, localizacao)
+    de_mim: booleano
+    lida: booleano
+    media_url: texto
+    media_tipo: texto
+    citacao_id: texto
+    criado_em: data
+
+  resposta_rapida
+    titulo: texto obrigatorio
+    mensagem: texto_longo obrigatorio
+    criado_por: texto pertence_a usuario
+    status: status
+
+  etiqueta
+    nome: texto obrigatorio
+    cor: texto
+    status: status
+
+  ticket_etiqueta
+    ticket: texto pertence_a ticket obrigatorio
+    etiqueta: texto pertence_a etiqueta obrigatorio
+
+  configuracao
+    chave: texto unico obrigatorio
+    valor: texto_longo
+    descricao: texto
+
+telas
+
+  tela tickets
+    titulo "Atendimentos"
+    chat ticket
+      mensagens mensagem
+      relacao ticket
+      texto corpo
+      media media_url
+      autor de_mim
+      data criado_em
+      tipo tipo
+    lista ticket
+      mostrar numero
+      mostrar contato
+      mostrar ultima_mensagem
+      mostrar fila
+      mostrar usuario
+      mostrar status
+      mostrar nao_lidas
+      mostrar criado_em
+    botao verde
+      texto "Novo Ticket"
+
+  tela contatos
+    titulo "Contatos"
+    lista contato
+      mostrar nome
+      mostrar numero
+      mostrar email
+      mostrar empresa
+      mostrar whatsapp
+      mostrar status
+    botao verde
+      texto "Novo Contato"
+
+  tela conexoes
+    titulo "Conexoes WhatsApp"
+    lista conexao_whatsapp
+      mostrar nome
+      mostrar numero
+      mostrar status
+      mostrar padrao
+    botao verde
+      texto "Nova Conexao"
+
+  tela filas
+    titulo "Filas de Atendimento"
+    lista fila
+      mostrar nome
+      mostrar cor
+      mostrar status
+    botao verde
+      texto "Nova Fila"
+
+  tela respostas_rapidas
+    titulo "Respostas Rapidas"
+    lista resposta_rapida
+      mostrar titulo
+      mostrar mensagem
+      mostrar criado_por
+      mostrar status
+    botao verde
+      texto "Nova Resposta"
+
+  tela etiquetas
+    titulo "Etiquetas"
+    lista etiqueta
+      mostrar nome
+      mostrar cor
+      mostrar status
+    botao verde
+      texto "Nova Etiqueta"
+
+  tela relatorios
+    titulo "Relatorios"
+    requer supervisor
+    lista ticket
+      mostrar numero
+      mostrar contato
+      mostrar usuario
+      mostrar fila
+      mostrar status
+      mostrar criado_em
+      mostrar atualizado_em
+
+  tela equipe
+    titulo "Equipe"
+    requer admin
+    lista usuario
+      mostrar nome
+      mostrar email
+      mostrar role
+      mostrar online
+      mostrar status
+    botao verde
+      texto "Novo Atendente"
+
+  tela configuracoes
+    titulo "Configuracoes"
+    requer admin
+    lista configuracao
+      mostrar chave
+      mostrar valor
+      mostrar descricao
+
+eventos
+
+  quando clicar "Novo Ticket"
+    criar ticket
+
+  quando clicar "Novo Contato"
+    criar contato
+
+  quando clicar "Nova Conexao"
+    criar conexao_whatsapp
+
+  quando clicar "Nova Fila"
+    criar fila
+
+  quando clicar "Nova Resposta"
+    criar resposta_rapida
+
+  quando clicar "Nova Etiqueta"
+    criar etiqueta
+
+  quando clicar "Novo Atendente"
+    criar usuario
+
+integracoes
+  whatsapp
+    provedor: whatsmeow
+    multi_sessao: verdadeiro
+    presenca: verdadeiro
+    qr_code: verdadeiro
+
+logica
+
+  definir versao = "1.0.0"
+  definir max_tickets_atendente = 10
+
+  funcao ticket_aberto(status)
+    retornar status == "aberto"
+
+  funcao ticket_pendente(status)
+    retornar status == "pendente"
+
+  funcao pode_aceitar_ticket(nao_lidas, limite)
+    retornar nao_lidas < limite
+
+  mostrar "WhaTicket Germanio v" + versao + " iniciado!"

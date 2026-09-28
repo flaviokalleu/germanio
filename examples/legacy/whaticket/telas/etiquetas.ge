@@ -1,0 +1,10 @@
+telas
+
+  tela etiquetas
+    titulo "Etiquetas"
+    lista etiqueta
+      mostrar nome
+      mostrar cor
+      mostrar status
+    botao verde
+      texto "Nova Etiqueta"

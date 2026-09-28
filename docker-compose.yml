@@ -1,36 +1,14 @@
-version: "3.9"
-
+# Runs the application in ./my_app (created with `ge new my_app`) on port 8080.
+# Data is kept in the germanio-data volume. Copy my_app/.env.exemplo to my_app/.env first.
 services:
   app:
     build: .
     ports:
       - "8080:8080"
-    environment:
-      - GERMANIO_DB_HOST=postgres
-      - GERMANIO_DB_PORT=5432
-      - GERMANIO_DB_USER=germanio
-      - GERMANIO_DB_PASS=germanio
-      - GERMANIO_DB_NAME=germanio
-    depends_on:
-      postgres:
-        condition: service_healthy
+    volumes:
+      - ./my_app:/app
+      - germanio-data:/data
     restart: unless-stopped
 
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: germanio
-      POSTGRES_PASSWORD: germanio
-      POSTGRES_DB: germanio
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U germanio"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-
 volumes:
-  pgdata:
+  germanio-data:

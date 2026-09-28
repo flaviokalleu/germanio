@@ -1,0 +1,13 @@
+dados
+
+    usuario
+        nome: texto obrigatorio
+        email: email obrigatorio unico
+        senha: senha obrigatorio
+        telefone: telefone
+        avatar: imagem
+        role: enum(superadmin, admin, gerente, atendente)
+        empresa: texto pertence_a empresa
+        online: booleano
+        ultimo_acesso: data
+        status: enum(ativo, inativo, ferias)

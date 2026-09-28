@@ -1,0 +1,12 @@
+telas
+
+    tela webhooks
+        titulo "Webhooks"
+        requer admin
+        lista webhook
+            mostrar nome
+            mostrar url
+            mostrar ultimo_disparo
+            mostrar status
+        botao azul
+            texto "Novo Webhook"

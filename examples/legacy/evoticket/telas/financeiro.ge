@@ -1,0 +1,16 @@
+telas
+
+    tela financeiro
+        titulo "Financeiro"
+        lista financeiro
+            mostrar descricao
+            mostrar valor
+            mostrar tipo
+            mostrar categoria
+            mostrar vencimento
+            mostrar forma_pagamento
+            mostrar status
+        botao verde
+            texto "Nova Receita"
+        botao vermelho
+            texto "Nova Despesa"

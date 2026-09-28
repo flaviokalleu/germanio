@@ -1,0 +1,9 @@
+telas
+
+  tela configuracoes
+    titulo "Configuracoes"
+    requer admin
+    lista configuracao
+      mostrar chave
+      mostrar valor
+      mostrar descricao

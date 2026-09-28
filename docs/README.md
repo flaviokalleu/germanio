@@ -22,7 +22,7 @@ que neste repositório permanece em `docs/INTENCAO.md`. Não criar uma cópia co
 | [SECURITY](SECURITY.md), [DEPLOY](DEPLOY.md) | implementação de segurança e operação |
 | [MCP](MCP.md) | ferramentas de autoria para agentes |
 | [GAPS](../GERMANIO_GAPS.md), [EVOLUTION](../GERMANIO_EVOLUTION.md), [AGENT_STATE](../AGENT_STATE.md) | acompanhamento; conferir evidência antes de afirmar conclusão |
-| [CHANGELOG](CHANGELOG.md), [PHASE1](PHASE1.md) | registros históricos |
+| [CHANGELOG](../CHANGELOG.md), [RELEASING](RELEASING.md), [PHASE1](PHASE1.md) | histórico de versões, processo de release, registro da fundação |
 | [FEATURES-200](FEATURES-200.md), `research/` | ideias e pesquisa, sem força normativa |
 
 ## Regra de conflito

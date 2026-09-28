@@ -1,0 +1,6 @@
+dados
+
+    tag
+        nome: texto obrigatorio
+        cor: texto
+        empresa: texto pertence_a empresa
