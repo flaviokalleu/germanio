@@ -623,6 +623,12 @@ func (p *Parser) parseTenha(head dline, body []dline) error {
 				in.Login = &ast.LoginDecl{Pos: pos}
 			}
 			in.Login.Signup = true
+		case name == "recuperacao_de_senha":
+			// tenha recuperação de senha (GEP 0008, em teste)
+			if in.Login == nil {
+				in.Login = &ast.LoginDecl{Pos: pos}
+			}
+			in.Login.Recovery = true
 		case it[0] == "papeis" || it[0] == "papel":
 			level := 10 * len(in.Roles)
 			for _, r := range it[1:] {

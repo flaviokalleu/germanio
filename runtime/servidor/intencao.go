@@ -30,6 +30,8 @@ type intentAPI struct {
 	extern bool
 	// exec runs steps of executions (nil when no local executor is enabled).
 	exec *executor
+	// recoveryAvailable: password recovery is declared and configured.
+	recoveryAvailable bool
 }
 
 func (s *Servidor) registerIntent(mux *routeMux) error {

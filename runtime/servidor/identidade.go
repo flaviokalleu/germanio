@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -132,9 +133,13 @@ func toStr(v any) string {
 
 // authenticate checks login + password with lockout. It returns the
 // person or nil; failures never reveal whether the login exists.
-func (s *Servidor) authenticate(ctx *interp.Context, login, password string) map[string]any {
+// findLogin finds the person whose login field (any of login usa …) is
+// login, or nil.
+func (s *Servidor) findLogin(ctx *interp.Context, login string) map[string]any {
 	app := s.Program.App
-	var user map[string]any
+	if login == "" {
+		return nil
+	}
 	for _, f := range app.Login.Fields {
 		v := login
 		if f == "email" {
@@ -142,10 +147,23 @@ func (s *Servidor) authenticate(ctx *interp.Context, login, password string) map
 		}
 		res, err := s.Interpreter.Op(ctx, app.LoginEntity, "encontrar", map[string]any{f: v})
 		if m, ok := res.(map[string]any); ok && err == nil {
-			user = m
-			break
+			return m
 		}
 	}
+	return nil
+}
+
+// ph is the SQL placeholder n for the database driver.
+func (s *Servidor) ph(n int) string {
+	if s.DB.Driver == "postgres" || s.DB.Driver == "postgresql" {
+		return fmt.Sprintf("$%d", n)
+	}
+	return "?"
+}
+
+func (s *Servidor) authenticate(ctx *interp.Context, login, password string) map[string]any {
+	app := s.Program.App
+	user := s.findLogin(ctx, login)
 	if user == nil {
 		s.Interpreter.Op(ctx, app.LoginEntity, "verificar_senha", nil, password)
 		return nil
@@ -231,6 +249,9 @@ func (a *intentAPI) mountIdentity(mux *routeMux) {
 		}
 		a.json(w, 200, serialize(le, user), nil)
 	})
+	if app.Login.Recovery {
+		a.mountRecovery(mux)
+	}
 	mux.HandleFunc("POST /sair", func(w http.ResponseWriter, r *http.Request) {
 		http.SetCookie(w, &http.Cookie{Name: interp.SessionCookie, Value: "", Path: "/", MaxAge: -1, HttpOnly: true})
 		if isForm(r) {

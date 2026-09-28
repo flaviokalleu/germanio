@@ -1217,9 +1217,33 @@ func (ps *pageSite) identityPages(mux *routeMux) {
 		if r.URL.Query().Get("erro") == "1" {
 			v.Error = "Login ou senha incorretos."
 		}
-		v.Body = htmlOf(loginTpl, map[string]any{"Signup": v.Signup, "Label": strings.Join(app.Login.Fields, " ou ")})
+		if r.URL.Query().Get("redefinida") == "1" {
+			v.Flash = "Senha nova criada. Entre com ela."
+		}
+		v.Body = htmlOf(loginTpl, map[string]any{"Signup": v.Signup, "Label": strings.Join(app.Login.Fields, " ou "), "Recovery": app.Login.Recovery})
 		ps.render(w, v, http.StatusOK)
 	})
+	if app.Login.Recovery {
+		mux.HandleFunc("GET /esqueci", func(w http.ResponseWriter, r *http.Request) {
+			v := ps.base(r, "Esqueci minha senha")
+			if r.URL.Query().Get("enviado") == "1" {
+				v.Flash = "Se houver uma conta com esse login, enviamos um link para criar uma senha nova."
+			}
+			if !ps.a.recoveryAvailable {
+				v.Error = "A recuperação de senha ainda não está disponível neste sistema."
+			}
+			v.Body = htmlOf(forgotTpl, map[string]any{"Label": strings.Join(app.Login.Fields, " ou ")})
+			ps.render(w, v, http.StatusOK)
+		})
+		mux.HandleFunc("GET /redefinir", func(w http.ResponseWriter, r *http.Request) {
+			v := ps.base(r, "Criar senha nova")
+			if msg := r.URL.Query().Get("erro"); msg != "" {
+				v.Error = msg
+			}
+			v.Body = htmlOf(resetTpl, map[string]any{"Token": r.URL.Query().Get("token")})
+			ps.render(w, v, http.StatusOK)
+		})
+	}
 	if app.Login.Signup {
 		mux.HandleFunc("GET /cadastro", func(w http.ResponseWriter, r *http.Request) {
 			v := ps.base(r, "Criar conta")
@@ -1323,7 +1347,9 @@ var codeTpl = tpl(`{{if .Binary}}<div class="vazio">Arquivo binário.</div>{{els
 var diffTpl = tpl(`{{range .}}<h3>{{.Path}}</h3><pre class="diff">{{range .Lines}}<div class="{{.Class}}">{{.Text}}</div>{{end}}</pre>{{else}}<div class="vazio">Sem mudanças.</div>{{end}}`)
 var logTpl = tpl(`{{if .}}<pre>{{.}}</pre>{{else}}<div class="vazio">Sem saída ainda.</div>{{end}}`)
 var loginTpl = tpl(`<form class="caixa" method="post" action="/entrar"><h3>Entrar</h3><label>{{.Label}}<input name="login" required autofocus></label>
-<label>Senha<input type="password" name="senha" required></label><button>Entrar</button>{{if .Signup}}<a href="/cadastro">Criar conta</a>{{end}}</form>`)
+<label>Senha<input type="password" name="senha" required></label><button>Entrar</button>{{if .Signup}}<a href="/cadastro">Criar conta</a>{{end}}{{if .Recovery}}<a href="/esqueci">Esqueci minha senha</a>{{end}}</form>`)
+var forgotTpl = tpl(`<form class="caixa" method="post" action="/esqueci"><h3>Esqueci minha senha</h3><label>{{.Label}}<input name="login" required autofocus></label><button>Enviar link</button><a href="/entrar">Voltar</a></form>`)
+var resetTpl = tpl(`<form class="caixa" method="post" action="/redefinir"><h3>Criar senha nova</h3><input type="hidden" name="token" value="{{.Token}}"><label>Senha nova<input type="password" name="senha" required autofocus autocomplete="new-password"></label><button>Salvar senha</button></form>`)
 
 // nameOf shows a referenced record by its title (people by name).
 func (ps *pageSite) nameOf(ctx *interp.Context, entity string, id any) string {

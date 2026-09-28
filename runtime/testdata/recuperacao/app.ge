@@ -1,0 +1,15 @@
+crie sistema Contas
+
+usuarios
+    tem
+        nome obrigatório
+        email obrigatório e único
+        senha min 8
+    acesso
+        usuario
+            editar seu perfil
+
+tenha login
+tenha cadastro
+tenha recuperação de senha
+login usa email

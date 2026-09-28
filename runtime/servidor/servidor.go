@@ -263,7 +263,7 @@ func (s *Servidor) middleware(next http.Handler) http.Handler {
 
 		// Rate limiting inteligente por IP real
 		loginPath := r.URL.Path == "/api/login" || r.URL.Path == "/api/auth/login"
-		if (r.URL.Path == "/entrar" || r.URL.Path == "/oauth/token") && r.Method == http.MethodPost {
+		if (r.URL.Path == "/entrar" || r.URL.Path == "/oauth/token" || r.URL.Path == "/esqueci" || r.URL.Path == "/redefinir") && r.Method == http.MethodPost {
 			// Password spraying across many accounts: count the failed logins
 			// of an address; the per-account lock handles a single account.
 			ip := getRealIP(r)
@@ -274,7 +274,9 @@ func (s *Servidor) middleware(next http.Handler) http.Handler {
 			}
 			sw := &statusWriter{ResponseWriter: w, status: http.StatusOK}
 			next.ServeHTTP(sw, r)
-			if sw.status == http.StatusUnauthorized || sw.status == http.StatusBadRequest && r.URL.Path == "/oauth/token" {
+			// every recovery request counts (its answer never says whether the
+			// account exists); elsewhere only failures count
+			if r.URL.Path == "/esqueci" || sw.status == http.StatusUnauthorized || sw.status == http.StatusBadRequest && (r.URL.Path == "/oauth/token" || r.URL.Path == "/redefinir") {
 				s.loginFailures(ip, true)
 			}
 			return

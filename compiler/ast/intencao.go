@@ -137,6 +137,7 @@ type Integration struct {
 type LoginDecl struct {
 	Fields       []string // login usa username e email
 	Signup       bool     // tenha cadastro
+	Recovery     bool     // tenha recuperação de senha (GEP 0008, em teste)
 	TokenEntity  string   // login aceita tokens de acesso
 	TokenHeader  string   // no cabeçalho "PRIVATE-TOKEN"
 	OAuthSeconds int      // login aceita oauth por 2 horas
