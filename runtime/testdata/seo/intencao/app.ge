@@ -1,0 +1,42 @@
+crie sistema Loja
+
+usuarios
+    tem
+        nome obrigatório
+        email obrigatório e único
+        senha min 8
+
+    acesso
+        usuario
+            editar seu perfil
+
+tenha login
+login usa email
+
+produtos
+    tem
+        nome obrigatório
+
+    acesso
+        todos
+            ver
+        somente administrador
+            criar
+
+pedidos
+    tem
+        quantidade começa com 1
+
+    pertence a
+        usuario
+
+    acesso
+        usuario
+            criar seus
+            ver seus
+
+página Produtos
+    mostre produtos
+
+página Pedidos
+    mostre pedidos

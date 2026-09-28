@@ -47,6 +47,15 @@ jobs:
           printf 'Flavio\n' | ./ge rodar examples/germanio/entrada.ge
           ./ge fmt examples/germanio --check
 
+      - name: Intent examples
+        run: |
+          ./ge rodar examples/hello-world/app.ge
+          for ex in hello-world todo crud authentication rest-api blog crm ecommerce; do
+            ./ge check "examples/$ex/app.ge"
+            ./ge fmt "examples/$ex" --check
+          done
+          ./ge check examples/gitlab-foss/app.ge
+
       - name: Check example files
         run: |
           for fg in $(find demo -name inicio.ge -type f); do

@@ -1,5 +1,5 @@
 pagina "/playground"
-    titulo "Playground — Germanio"
+    titulo "Experimentar — Germanio"
 
     navbar
         logo "/assets/germanio.png" "Germanio"
@@ -9,33 +9,33 @@ pagina "/playground"
         botao "Instalar" "/instalar"
 
     hero
-        badge "PLAYGROUND EXPERIMENTAL"
-        titulo "Escreva Germanio. Veja o Resultado."
-        descricao "Experimente trechos de código Germanio e entenda como o compilador processa declarações, tabelas e páginas."
-        botao primario "Baixar CLI para Testar Local" "/instalar"
+        badge "GUIA · SEM PLAYGROUND ONLINE"
+        titulo "Experimente Germanio na sua máquina."
+        descricao "Ainda não há um playground interativo no navegador. Este guia mostra como escrever, verificar e rodar um programa localmente."
+        botao primario "Instalar a CLI" "/instalar"
         botao secundario "Documentação" "/docs"
-        codigo "playground.ge" "app TestePlayground\nbanco sqlite\n\ntabela Item\n  nome: texto obrigatorio\n  quantidade: inteiro\n\nquando receber adicionar com nome, quantidade\n  novo = criar Item com nome = nome, quantidade = quantidade\n  responder sucesso"
+        codigo "clientes.ge" "crie sistema Clientes\n\nclientes\n    tem\n        nome obrigatório\n        email obrigatório e único\n        telefone\n\n    permita\n        pesquisar\n\npágina Clientes\n    mostre clientes\n    permita\n        cadastrar\n        editar\n        excluir"
 
     secao "Como Experimentar"
-        subtitulo "Execute projetos Germanio na sua máquina com um único comando."
+        subtitulo "Salve o programa ao lado como clientes.ge e siga os passos."
         grade 3 colunas
             card
                 icone "💻"
-                titulo "1. Instale o binário ge"
-                texto "Instale a CLI em seu Linux/macOS ou compile via Go."
+                titulo "1. Instale a CLI ge"
+                texto "Pelo script (Linux e macOS) ou com go install, em qualquer sistema com Go."
                 link "/instalar"
             card
                 icone "⚡"
-                titulo "2. Valide com ge check"
-                texto "O compilador valida tipos, campos e sintaxe em milissegundos."
-                link "/docs"
+                titulo "2. Verifique com ge check"
+                texto "Confere o programa sem executá-lo e mostra os erros com a linha em que estão."
+                code "ge check clientes.ge"
             card
                 icone "🚀"
                 titulo "3. Execute com ge rodar"
-                texto "Seu servidor sobe automaticamente na porta 8085 com SQLite e APIs REST."
-                link "/docs"
+                texto "O servidor sobe na porta 8080, com o banco SQLite embutido. Abra http://localhost:8080."
+                code "ge rodar clientes.ge"
 
     rodape
-        copyright "Germanio © 2026 — Playground."
+        copyright "Germanio © 2026 — Guia para experimentar."
         link "GitHub" "https://github.com/flaviokalleu/germanio"
         link "Início" "/"

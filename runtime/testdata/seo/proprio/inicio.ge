@@ -1,0 +1,7 @@
+app Proprio
+
+pagina "/"
+    titulo "Próprio"
+
+    hero
+        titulo "Olá"

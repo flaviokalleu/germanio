@@ -4,17 +4,24 @@ import (
 	"fmt"
 	"html"
 	"strings"
+	"unicode"
 
 	"github.com/flaviokalleu/germanio/compiler/ast"
 )
 
 // RenderDeclarativePage compiles a pure Germanio AST page into modern, self-contained HTML/CSS
 func RenderDeclarativePage(page *ast.CustomPage) string {
+	return renderDeclarativePage(page, pageMeta{Title: page.Title})
+}
+
+// renderDeclarativePage renders the page with its meta tags (seo.go). The
+// server renders each page once per program load.
+func renderDeclarativePage(page *ast.CustomPage, meta pageMeta) string {
 	var b strings.Builder
 
 	title := page.Title
 	if title == "" {
-		title = "Germanio — Diga o que quer construir"
+		title = meta.Title
 	}
 
 	b.WriteString(`<!DOCTYPE html>
@@ -23,7 +30,7 @@ func RenderDeclarativePage(page *ast.CustomPage) string {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>` + html.EscapeString(title) + `</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
+` + metaHTML(meta) + `  <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
@@ -449,23 +456,6 @@ func RenderDeclarativePage(page *ast.CustomPage) string {
   </style>
 </head>
 <body>
-  <div class="header">
-    <div class="container nav-wrapper">
-      <a href="/" class="brand">
-        <img src="/assets/germanio.png" alt="Germanio" class="brand-logo" onerror="this.style.display='none'">
-        <span>Germanio</span>
-      </a>
-      <div class="nav-links">
-        <a href="/">Início</a>
-        <a href="/docs">Documentação</a>
-        <a href="/exemplos">Exemplos</a>
-        <a href="/aprender">Aprender</a>
-        <a href="/playground">Playground</a>
-        <a href="/comunidade">Comunidade</a>
-        <a href="/instalar" class="btn-install">Instalar</a>
-      </div>
-    </div>
-  </div>
 `)
 
 	for _, block := range page.Blocks {
@@ -488,15 +478,38 @@ func RenderDeclarativePage(page *ast.CustomPage) string {
 	return b.String()
 }
 
+// codeKeywords are highlighted in code previews, as whole words only.
+var codeKeywords = map[string]bool{
+	"crie": true, "sistema": true, "tenha": true, "tem": true, "acesso": true, "pode": true,
+	"permita": true, "página": true, "mostre": true, "pertence": true, "começa": true,
+	"importar": true, "login": true, "usa": true, "todos": true, "somente": true, "regras": true,
+	"integração": true, "antes": true, "quando": true, "se": true, "recuse": true,
+	"app": true, "banco": true, "tabela": true, "pagina": true, "navbar": true, "hero": true,
+	"secao": true, "card": true, "rodape": true,
+}
+
 func highlightGermanioCode(code string) string {
-	escaped := html.EscapeString(code)
-	// Apply clean color highlighting for keywords
-	keywords := []string{"app", "banco", "tabela", "quando", "receber", "responder", "sucesso", "criar", "com", "se", "mostre", "pagina", "navbar", "hero", "secao", "card", "rodape"}
-	for _, kw := range keywords {
-		escaped = strings.ReplaceAll(escaped, kw+" ", fmt.Sprintf(`<span class="kw">%s</span> `, kw))
-		escaped = strings.ReplaceAll(escaped, kw+"\n", fmt.Sprintf(`<span class="kw">%s</span>`+"\n", kw))
+	var b strings.Builder
+	runes := []rune(code)
+	for i := 0; i < len(runes); {
+		if !unicode.IsLetter(runes[i]) {
+			b.WriteString(html.EscapeString(string(runes[i])))
+			i++
+			continue
+		}
+		j := i
+		for j < len(runes) && (unicode.IsLetter(runes[j]) || runes[j] == '_') {
+			j++
+		}
+		word := string(runes[i:j])
+		if codeKeywords[word] {
+			b.WriteString(`<span class="kw">` + html.EscapeString(word) + `</span>`)
+		} else {
+			b.WriteString(html.EscapeString(word))
+		}
+		i = j
 	}
-	return escaped
+	return b.String()
 }
 
 func renderNavbar(b *strings.Builder, nav *ast.PageNavbar) {
@@ -512,7 +525,7 @@ func renderNavbar(b *strings.Builder, nav *ast.PageNavbar) {
   <div class="header">
     <div class="container nav-wrapper">
       <a href="/" class="brand">`)
-	b.WriteString(fmt.Sprintf(`<img src="%s" alt="%s" class="brand-logo" onerror="this.style.display='none'><span>%s</span>`, html.EscapeString(logo), html.EscapeString(brand), html.EscapeString(brand)))
+	b.WriteString(fmt.Sprintf(`<img src="%s" alt="%s" class="brand-logo" onerror="this.style.display='none'"><span>%s</span></a>`, html.EscapeString(logo), html.EscapeString(brand), html.EscapeString(brand)))
 	b.WriteString(`<div class="nav-links">`)
 	for _, link := range nav.Links {
 		b.WriteString(fmt.Sprintf(`<a href="%s">%s</a>`, html.EscapeString(link.URL), html.EscapeString(link.Label)))

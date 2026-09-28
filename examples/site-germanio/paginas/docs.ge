@@ -10,59 +10,59 @@ pagina "/docs"
         botao "Instalar" "/instalar"
 
     hero
-        badge "DOCUMENTAÇÃO OFICIAL"
-        titulo "Aprenda a Sintaxe e o Runtime."
-        descricao "Referência completa de modelos, eventos, rotas, páginas declarativas e comandos da CLI."
+        badge "DOCUMENTAÇÃO"
+        titulo "Aprenda a Linguagem e a CLI."
+        descricao "Visão geral da camada de intenção e dos comandos da CLI ge. A especificação normativa é o arquivo docs/INTENCAO.md, no repositório."
         botao primario "Guia Passo a Passo" "/aprender"
-        botao secundario "Ver no GitHub" "https://github.com/flaviokalleu/germanio"
-        codigo "exemplo.ge" "app MeuApp\nbanco sqlite\n\ntabela Usuario\n  nome: texto obrigatorio\n  email: email unico\n\nquando receber criar_usuario com nome, email\n  novo = criar Usuario\n  responder sucesso"
+        botao secundario "Ler a especificação" "https://github.com/flaviokalleu/germanio/blob/master/docs/INTENCAO.md"
+        codigo "backend/produtos.ge" "produtos\n    tem\n        nome obrigatório\n        descrição formatada\n        preco obrigatório\n        estoque começa com 0\n\n    acesso\n        todos\n            ver\n        somente administrador\n            criar\n            editar\n            excluir\n\n    permita\n        pesquisar por nome"
 
     secao "Comandos da CLI ge"
-        subtitulo "Ferramentas essenciais para desenvolvimento e deploy."
+        subtitulo "Ferramentas para escrever, verificar e rodar um programa."
         grade 4 colunas
             card
                 icone "⚡"
                 titulo "ge check"
-                texto "Valida sintaxe e semântica sem rodar o servidor."
+                texto "Verifica o programa sem executá-lo e mostra os erros com a linha em que estão."
             card
                 icone "▶️"
                 titulo "ge rodar"
-                texto "Inicia a aplicação com banco de dados e servidor HTTP."
+                texto "Verifica e executa a aplicação, com banco e servidor web (porta padrão 8080)."
             card
                 icone "📁"
                 titulo "ge init"
-                texto "Cria um novo projeto estruturado em Germanio."
+                texto "Cria um projeto novo, guiado passo a passo."
             card
                 icone "✨"
-                titulo "ge novo"
-                texto "Gera um arquivo único .ge inicial para testes rápidos."
+                titulo "ge fmt"
+                texto "Formata os arquivos .ge na forma canônica; com --check, só confere."
 
     secao "Conceitos Fundamentais"
-        subtitulo "Os 4 blocos de construção de qualquer sistema Germanio."
+        subtitulo "As quatro perguntas que todo programa Germanio responde."
         grade 2 colunas
             card
                 icone "🗃️"
-                titulo "1. Modelos e Tabelas"
-                texto "Use 'tabela' para declarar suas entidades. O runtime em Go gera as tabelas SQLite e schemas automaticamente."
-                code "tabela Tarefa\n  titulo: texto obrigatorio\n  concluida: booleano"
+                titulo "1. O que existe"
+                texto "Cada dado diz o que tem. O banco e as migrações são derivados do que você declara."
+                code "clientes\n    tem\n        nome obrigatório\n        email obrigatório e único\n        telefone"
+            card
+                icone "🔐"
+                titulo "2. Quem pode fazer o quê"
+                texto "Sob acesso ficam as pessoas e o que cada uma pode fazer. O servidor confere em toda operação."
+                code "produtos\n    acesso\n        todos\n            ver\n        somente administrador\n            criar\n            editar\n            excluir"
             card
                 icone "⚡"
-                titulo "2. Eventos (quando receber)"
-                texto "Define endpoints de API que recebem parâmetros, executam ações e respondem JSON."
-                code "quando receber concluir_tarefa com id\n  responder sucesso"
+                titulo "3. O que acontece"
+                texto "Estados e ações com significado: a tarefa começa aberta e pode ser concluída ou reaberta."
+                code "tarefas\n    começa aberta\n\n    pode\n        concluir\n        reabrir\n\n    acesso\n        usuario\n            criar seus\n            ver seus\n            concluir seus"
             card
                 icone "📄"
-                titulo "3. Páginas Declarativas"
-                texto "Crie páginas web completas usando blocos semânticos (navbar, hero, secao, grade, card, rodape)."
-                code "pagina \"/sobre\"\n  hero\n    titulo \"Sobre o Projeto\""
-            card
-                icone "📦"
-                titulo "4. Modularidade (importar)"
-                texto "Divida seu código em arquivos menores e importe livremente no arquivo de entrada."
-                code "importar \"dados/usuarios.ge\"\nimportar \"rotas/auth.ge\""
+                titulo "4. O que aparece"
+                texto "A página diz o que mostra e o que permite; quem pode cada ação é decidido pelo backend."
+                code "página Tarefas\n    mostre tarefas\n    permita\n        criar\n        editar"
 
     rodape
-        copyright "Germanio © 2026 — Documentação Oficial."
+        copyright "Germanio © 2026 — Documentação."
         link "GitHub" "https://github.com/flaviokalleu/germanio"
         link "Início" "/"
         link "Exemplos" "/exemplos"

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/flaviokalleu/germanio/runtime/git"
+	"html"
 	"io"
 	"mime"
 	"net"
@@ -58,6 +59,11 @@ type Servidor struct {
 	onClose []func()
 	mux     *http.ServeMux
 	queue   *taskQueue
+	// AssetsDir is the folder served at /assets/ (default "assets"); the
+	// engine points it to the project's own assets folder when it exists.
+	AssetsDir string
+	seoOnce   sync.Once
+	seoData   *siteSEO
 }
 
 // Fechar stops background work (executors).
@@ -104,7 +110,7 @@ func (s *Servidor) Handler() (http.Handler, error) {
 	mux.HandleFunc("/", s.handlePagina)
 	mux.HandleFunc("/api/", s.handleAPI)
 	mux.HandleFunc("/upload", s.handleUpload)
-	mux.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("assets"))))
+	mux.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(s.assetsDir()))))
 	mux.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("uploads"))))
 	mux.HandleFunc("/media/stream", s.handleMediaStream)
 	mux.HandleFunc("/ws", s.WS.HandleWS)
@@ -380,6 +386,7 @@ func (s *Servidor) getCachedHTML() string {
 
 func (s *Servidor) handlePagina(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	seo := s.seo()
 
 	// Custom pages take priority over the generated CRUD interface, including
 	// the root path. This lets a Germanio project use `pagina "/"` as its
@@ -389,7 +396,10 @@ func (s *Servidor) handlePagina(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		if len(page.Blocks) > 0 {
-			rendered := RenderDeclarativePage(page)
+			rendered, ok := seo.pages[page.Path]
+			if !ok {
+				rendered = RenderDeclarativePage(page)
+			}
 			_, _ = w.Write([]byte(rendered))
 			return
 		}
@@ -402,10 +412,21 @@ func (s *Servidor) handlePagina(w http.ResponseWriter, r *http.Request) {
 		if title == "" && s.Program.System != nil {
 			title = s.Program.System.Name
 		}
-		_, _ = fmt.Fprintf(w, `<!DOCTYPE html><html><head><meta charset="utf-8"><title>%s</title><style>body{font-family:system-ui;margin:0;padding:20px}</style></head><body>%s</body></html>`, title, page.Content)
+		meta := metaHTML(pageMeta{Title: title, Canonical: seo.abs(page.Path)})
+		_, _ = fmt.Fprintf(w, `<!DOCTYPE html><html><head><meta charset="utf-8"><title>%s</title>%s<style>body{font-family:system-ui;margin:0;padding:20px}</style></head><body>%s</body></html>`, html.EscapeString(title), meta, page.Content)
 		return
 	}
 
+	if s.serveSEO(w, r) {
+		return
+	}
+	// The generated interface lives at "/" only (it navigates without
+	// changing the address). Any other address the program does not declare
+	// is a real 404, not the shell answered with 200.
+	if r.URL.Path != "/" {
+		notFound(w)
+		return
+	}
 	_, _ = w.Write([]byte(s.getCachedHTML()))
 }
 

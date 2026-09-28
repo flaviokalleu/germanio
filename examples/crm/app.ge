@@ -1,0 +1,104 @@
+# Um CRM pequeno: empresas, seus contatos e as oportunidades de venda.
+
+crie sistema CRM
+
+usuarios
+    tem
+        nome obrigatório
+        email obrigatório e único
+        senha min 8
+        admin começa com falso
+
+    acesso
+        usuario
+            ver
+            editar seu perfil
+
+tenha login
+tenha cadastro
+tenha administrador inicial "admin@crm.local"
+login usa email
+
+empresas
+    tem
+        nome obrigatório e único
+        site
+        cidade
+        contatos
+        oportunidades
+
+    acesso
+        usuario
+            ver
+            criar
+            editar
+        somente administrador
+            excluir
+
+    permita
+        pesquisar
+        filtrar por cidade
+
+contatos
+    tem
+        nome obrigatório
+        email
+        telefone
+        cargo
+
+    acesso
+        usuario
+            ver
+            criar
+            editar
+            excluir
+
+    permita
+        pesquisar
+
+oportunidades
+    tem
+        titulo obrigatório
+        valor dinheiro
+        dono
+        observações
+
+    começa aberta
+
+    pode
+        ganhar
+        perder
+
+    regras
+        ganha é final
+        perdida é final
+
+    acesso
+        usuario
+            ver
+            criar
+        dono
+            editar
+            ganhar
+            perder
+        somente administrador
+            excluir
+
+    permita
+        pesquisar
+        filtrar por estado e dono
+
+página Empresas
+    mostre empresas
+    permita
+        pesquisar
+        criar
+        editar
+        excluir
+
+página Oportunidades
+    mostre oportunidades
+    permita
+        pesquisar
+        criar
+        editar

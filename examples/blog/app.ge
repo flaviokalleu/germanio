@@ -1,0 +1,68 @@
+# Um blog: autores escrevem posts, leitores comentam.
+# Rascunhos só aparecem para quem os escreveu.
+
+crie sistema Blog
+
+usuarios
+    tem
+        nome obrigatório
+        email obrigatório e único
+        senha min 8
+        admin começa com falso
+
+    acesso
+        todos
+            ver
+        usuario
+            editar seu perfil
+
+tenha login
+tenha cadastro
+login usa email
+
+posts
+    tem
+        titulo obrigatório até 200
+        texto obrigatório e formatado
+        autor
+        rascunho começa com verdadeiro
+        comentarios
+
+    regras
+        rascunho pode ser visto por
+            autor
+
+    acesso
+        todos
+            ver
+        usuario
+            criar
+            comentar
+        autor
+            editar
+            excluir
+
+    permita
+        pesquisar
+        filtrar por autor
+
+comentarios
+    tem
+        autor
+        texto obrigatório até 2000
+
+    acesso
+        todos
+            ver
+        autor
+            editar
+            excluir
+
+página Posts
+    mostre posts
+        10 por página
+    permita
+        pesquisar
+        criar
+        editar
+        excluir

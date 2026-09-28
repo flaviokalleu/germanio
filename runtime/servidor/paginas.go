@@ -228,6 +228,7 @@ type view struct {
 	Flash    string
 	Error    string
 	Body     template.HTML
+	Meta     template.HTML // description, canonical, Open Graph (seo.go)
 }
 
 func (ps *pageSite) base(r *http.Request, title string) *view {
@@ -246,6 +247,12 @@ func (ps *pageSite) base(r *http.Request, title string) *view {
 	}
 	v.Flash = r.URL.Query().Get("ok")
 	v.Error = r.URL.Query().Get("erro")
+	seo := ps.a.s.seo()
+	icon := ""
+	if t := ps.a.s.Program.Theme; t != nil && isImageRef(t.Icon) {
+		icon = t.Icon
+	}
+	v.Meta = template.HTML(metaHTML(pageMeta{Title: title + " · " + v.System, Canonical: seo.abs(r.URL.EscapedPath()), Icon: icon, Image: seo.abs(icon)}))
 	return v
 }
 
@@ -1248,7 +1255,8 @@ func tpl(src string) *template.Template {
 }
 
 var layoutTpl = tpl(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{{.Title}} · {{.System}}</title><style>
+<title>{{.Title}} · {{.System}}</title>
+{{.Meta}}<style>
 :root{--fg:#1f2328;--muted:#656d76;--line:#d0d7de;--bg:#fff;--soft:#f6f8fa;--accent:#6e40c9;--ok:#1a7f37;--bad:#cf222e}
 @media (prefers-color-scheme:dark){:root{--fg:#e6edf3;--muted:#8d96a0;--line:#30363d;--bg:#0d1117;--soft:#161b22;--accent:#a371f7}}
 *{box-sizing:border-box}body{margin:0;font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--fg);background:var(--bg)}

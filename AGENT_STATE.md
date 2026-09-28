@@ -7,7 +7,7 @@ arquitetura, sintaxe, parser, runtime, formatter ou tooling até a pesquisa ser 
 a norma (`docs/INTENCAO.md`, a skill, AGENTS.md, EVOLUTION, GAPS).
 Antes da pausa: sintaxe hierárquica implementada; G64 (`ge fmt` para todo arquivo de
 aplicação) commitado em e562a8c. Os arquivos `auth.ge` com o bloco `autenticacao` indentado
-em 2 espaços (examples/whaticket, demo/organizado) não são formatáveis (o `fmt` também recusava
+em 2 espaços (examples/legacy/whaticket, demo/organizado) não são formatáveis (o `fmt` também recusava
 antes); anotado para depois.
 Depois da pesquisa: G62 (seções de página), G61, G63; retomar o GitLab pelo inventário.
 

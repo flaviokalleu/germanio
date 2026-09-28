@@ -251,6 +251,31 @@ banco
 
 **Recomendação:** Use variáveis de ambiente em produção — nunca commite credenciais no código.
 
+### 3.4 Endereço público e SEO técnico (`GERMANIO_URL_PUBLICA`)
+
+```env
+# Endereço público da aplicação, completo (http ou https), sem caminho de página
+GERMANIO_URL_PUBLICA=https://exemplo.com
+```
+
+O runtime calcula uma vez, ao carregar o programa, o SEO técnico de toda aplicação que
+declara páginas (as páginas técnicas `pagina "/caminho"` e as páginas de intenção):
+
+| O quê | Sem `GERMANIO_URL_PUBLICA` | Com `GERMANIO_URL_PUBLICA` |
+| --- | --- | --- |
+| `/robots.txt` | permite tudo, exceto `/api/` e `/_ge/` | o mesmo, mais `Sitemap: <url>/sitemap.xml` |
+| `/sitemap.xml` | 404 (o protocolo exige endereços absolutos) | as páginas públicas declaradas; as de intenção que exigem login ficam de fora |
+| `<link rel="canonical">`, `og:url` | omitidos | `<url>` + caminho da página |
+| `og:image`, `twitter:card` | omitidos | o logo declarado (`logo` da `navbar` ou `tema` › `icone`), como URL absoluta |
+| `<meta name="description">`, `og:description` | a `descricao` do `hero` da página; sem ela, a tag é omitida | idem |
+| `og:title`, `og:type`, `<link rel="icon">` | o título da página, `website` e o logo declarado | idem |
+
+O endereço não é deduzido do cabeçalho `Host` da requisição, que o cliente controla. Um valor
+inválido (sem `http://`/`https://`, ou com `?`/`#`) é ignorado com um aviso no início.
+Arquivos `robots.txt`, `sitemap.xml` ou `favicon.ico` colocados na pasta `assets/` do projeto
+vencem os gerados. Um endereço que não é página, rota, arquivo de `assets/` nem API responde
+**404** (a interface gerada continua em `/`).
+
 ---
 
 ## 4. SQLite — Configuração Padrão

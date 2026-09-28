@@ -1,0 +1,28 @@
+# Cadastro de clientes: validação, pesquisa, filtro e uma página.
+
+crie sistema Clientes
+
+clientes
+    tem
+        nome obrigatório até 120
+        email obrigatório e único
+        telefone
+        cidade
+        observações
+
+    permita
+        pesquisar
+        filtrar por cidade
+        criar
+        ver
+        editar
+        excluir
+
+página Clientes
+    mostre clientes
+        10 por página
+    permita
+        pesquisar
+        cadastrar
+        editar
+        excluir

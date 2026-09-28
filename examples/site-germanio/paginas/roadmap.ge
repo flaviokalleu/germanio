@@ -1,5 +1,5 @@
 pagina "/roadmap"
-    titulo "Roadmap Oficial — Germanio"
+    titulo "Roadmap — Germanio"
 
     navbar
         logo "/assets/germanio.png" "Germanio"
@@ -12,30 +12,30 @@ pagina "/roadmap"
     hero
         badge "PLANEJAMENTO TÉCNICO"
         titulo "Metas e Próximos Passos."
-        descricao "Acompanhe as prioridades técnicas transparentes do projeto: estabilidade, performance e ergonomia."
+        descricao "Prioridades do projeto: correção, segurança, desempenho medido e ergonomia. As lacunas conhecidas estão em GERMANIO_GAPS.md, no repositório."
         botao primario "Contribuir no GitHub" "https://github.com/flaviokalleu/germanio"
-        botao secundario "Documentação" "/docs"
+        botao secundario "Ver as lacunas" "https://github.com/flaviokalleu/germanio/blob/master/GERMANIO_GAPS.md"
 
     secao "Próximos Marcos de Desenvolvimento"
-        subtitulo "Recursos planejados para o ecossistema Germanio."
+        subtitulo "Recursos planejados; nenhum deles existe ainda."
         grade 3 colunas
             card
                 icone "📦"
-                tag "EM ANDAMENTO"
+                tag "PLANEJADO"
                 titulo "Gerenciador de Pacotes"
-                texto "Comando 'ge adicionar' para inclusão de bibliotecas de terceiros com checagem de hash e resolução de dependências."
+                texto "Comando ge adicionar para incluir bibliotecas de terceiros, com verificação de hash e resolução de dependências."
             card
                 icone "🔍"
                 tag "PLANEJADO"
-                titulo "LSP & Formatter Canônico"
-                texto "Servidor LSP para autocompletion completo no VS Code/Neovim e comando nativo 'ge fmt'."
+                titulo "Servidor de Linguagem (LSP)"
+                texto "Autocompletar e diagnósticos no VS Code e no Neovim. O formatador já existe: ge fmt."
             card
                 icone "⚡"
                 tag "PLANEJADO"
-                titulo "Playground WASM"
-                texto "Compilação do core Germanio para WebAssembly para execução client-side sem necessidade de backend."
+                titulo "Playground no Navegador"
+                texto "Compilar o core para WebAssembly e rodar exemplos no navegador, sem backend."
 
     rodape
-        copyright "Germanio © 2026 — Roadmap Oficial."
+        copyright "Germanio © 2026 — Roadmap."
         link "GitHub" "https://github.com/flaviokalleu/germanio"
         link "Início" "/"

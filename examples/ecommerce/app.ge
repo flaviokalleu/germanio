@@ -1,0 +1,79 @@
+# Uma loja: o catálogo é público, cada cliente vê os próprios pedidos.
+
+crie sistema Loja
+
+usuarios
+    tem
+        nome obrigatório
+        email obrigatório e único
+        senha min 8
+        admin começa com falso
+
+    acesso
+        usuario
+            editar seu perfil
+
+tenha login
+tenha cadastro
+tenha administrador inicial "admin@loja.local"
+login usa email
+
+produtos
+    tem
+        nome obrigatório
+        descrição formatada
+        preco obrigatório
+        estoque começa com 0
+        foto
+
+    acesso
+        todos
+            ver
+        somente administrador
+            criar
+            editar
+            excluir
+
+    permita
+        pesquisar por nome
+
+pedidos
+    tem
+        quantidade começa com 1 min 1
+        endereço obrigatório
+
+    pertence a
+        produto
+        usuario
+
+    começa aberto
+
+    pode
+        pagar
+        cancelar
+
+    regras
+        cancelado é final
+
+    acesso
+        usuario
+            criar seus
+            ver seus
+            pagar seus
+            cancelar seus
+
+    permita
+        filtrar por estado
+
+página Produtos
+    mostre produtos
+    permita
+        pesquisar
+        criar
+        editar
+        excluir
+
+página Pedidos
+    mostre pedidos
+    permita
+        criar

@@ -1,0 +1,63 @@
+# Um catálogo de livros aberto para outros sistemas.
+#
+# As páginas e os outros sistemas usam as mesmas regras:
+# quem pode ver, criar, editar e excluir é decidido aqui, uma vez.
+
+crie sistema Biblioteca
+
+usuarios
+    tem
+        nome obrigatório
+        email obrigatório e único
+        senha min 8
+        admin começa com falso
+
+    acesso
+        usuario
+            editar seu perfil
+
+    integração
+
+tenha login
+tenha cadastro
+login usa email
+login aceita chaves de acesso
+
+chaves de acesso
+    tem
+        nome obrigatório
+        chave segredo prefixo "bib-"
+        expira em 90 dias
+        revogavel
+
+    pertence a
+        usuario
+
+    acesso
+        usuario
+            criar
+            ver seus
+            revogar seus
+
+livros
+    tem
+        titulo obrigatório
+        escritor obrigatório
+        ano inteiro
+        resumo
+
+    acesso
+        todos
+            ver
+        usuario
+            criar
+            editar
+        somente administrador
+            excluir
+
+    permita
+        pesquisar
+        filtrar por ano
+
+    integração
+        nome "books"

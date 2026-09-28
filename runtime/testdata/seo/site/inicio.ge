@@ -1,0 +1,18 @@
+app Vitrine
+
+pagina "/"
+    titulo "Vitrine & Cia"
+
+    navbar
+        logo "/assets/logo.png" "Vitrine"
+        link "Sobre" "/sobre"
+
+    hero
+        titulo "Bem-vindo"
+        descricao "Doces \"caseiros\" & <salgados> desde 1990"
+
+pagina "/sobre"
+    titulo "Sobre a Vitrine"
+
+    hero
+        titulo "Nossa história"

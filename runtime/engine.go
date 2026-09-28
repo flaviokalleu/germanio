@@ -396,6 +396,9 @@ func Carregar(arquivo string, porta string) (*App, error) {
 	httpClient := httpclient.Novo()
 
 	srv := servidor.Novo(program, db, porta)
+	if dir := filepath.Join(filepath.Dir(arquivo), "assets"); dirExists(dir) {
+		srv.AssetsDir = dir // the project's assets, wherever it is run from
+	}
 	srv.Auth = authHandler
 	srv.WA = waClient
 	srv.Email = emailClient
@@ -616,4 +619,9 @@ func toFloat(v any) float64 {
 		return f
 	}
 	return 0
+}
+
+func dirExists(p string) bool {
+	st, err := os.Stat(p)
+	return err == nil && st.IsDir()
 }

@@ -1,0 +1,51 @@
+# Lista de tarefas: cada pessoa cuida das suas.
+
+crie sistema Tarefas
+
+usuarios
+    tem
+        nome obrigatório
+        email obrigatório e único
+        senha min 8
+
+    acesso
+        usuario
+            editar seu perfil
+
+tenha login
+tenha cadastro
+login usa email
+
+tarefas
+    tem
+        titulo obrigatório até 200
+        descrição
+        prazo data
+        autor
+
+    começa aberta
+
+    pode
+        concluir
+        reabrir
+
+    acesso
+        usuario
+            criar seus
+            ver seus
+            editar seus
+            concluir seus
+            reabrir seus
+            excluir seus
+
+    permita
+        pesquisar
+        filtrar por estado
+
+página Tarefas
+    mostre tarefas
+    permita
+        pesquisar
+        criar
+        editar
+        excluir

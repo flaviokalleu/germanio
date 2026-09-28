@@ -1,0 +1,78 @@
+# Entrar, criar conta e permissões por papel.
+#
+# Cada equipe tem membros com um papel. O papel diz o que a pessoa
+# pode fazer com os documentos daquela equipe.
+
+crie sistema Equipes
+
+usuarios
+    tem
+        nome obrigatório
+        email obrigatório e único
+        senha min 8
+        admin começa com falso
+
+    acesso
+        usuario
+            ver
+            editar seu perfil
+        somente administrador
+            excluir
+
+tenha login
+tenha cadastro
+tenha administrador inicial "admin@equipes.local"
+login usa email
+login bloqueia após 5 tentativas por 15 minutos
+
+tenha papeis
+    leitor 10
+    editor 30
+    dono 50
+
+equipes
+    tem
+        nome obrigatório
+        membros com papel
+        documentos
+
+    regras
+        quem cria vira dono
+        precisa de pelo menos um dono
+
+    acesso
+        usuario
+            criar
+        leitor
+            ver
+        dono
+            administrar
+
+documentos
+    tem
+        titulo obrigatório
+        texto formatado
+        autor
+
+    acesso
+        leitor
+            ver
+        editor
+            criar
+            editar
+        somente dono
+            excluir
+
+página Equipes
+    mostre equipes
+    permita
+        criar
+        editar
+        excluir
+
+página Documentos
+    mostre documentos
+    permita
+        criar
+        editar
+        excluir

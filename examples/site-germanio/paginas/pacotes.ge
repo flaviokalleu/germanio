@@ -9,28 +9,29 @@ pagina "/pacotes"
         botao "Instalar" "/instalar"
 
     hero
-        badge "ECOSSISTEMA & MÓDULOS"
-        titulo "Gerenciamento e Pacotes no Germanio."
-        descricao "Reutilize código declarativo via importações modulares nativas. O gerenciador de dependências oficial está em desenvolvimento."
+        badge "MÓDULOS E IMPORTAÇÃO"
+        titulo "Organize o Projeto em Arquivos."
+        descricao "Divida o projeto em arquivos e pastas com importar. Um gerenciador de pacotes ainda não existe: está planejado."
         botao primario "Ver Roadmap" "/roadmap"
         botao secundario "Documentação" "/docs"
-        codigo "import.ge" "importar \"dados/usuarios.ge\"\nimportar \"rotas/auth.ge\"\nimportar \"paginas/dashboard.ge\""
+        codigo "app.ge" "crie sistema Loja\n\nimportar \"backend\"\nimportar \"frontend\""
 
     secao "Reutilização de Código"
-        subtitulo "Como estruturar projetos modulares hoje."
+        subtitulo "Como estruturar projetos hoje."
         grade 3 colunas
             card
                 icone "📦"
-                titulo "Importação Direta"
-                texto "Use 'importar' para dividir seu projeto em pastas 'dados', 'rotas' e 'paginas'."
+                titulo "Importação de Pastas"
+                texto "importar \"backend\" traz todos os .ge da pasta, em ordem alfabética: um arquivo novo entra no sistema sem registro manual."
             card
-                icone "🔒"
-                titulo "Isolamento e Segurança"
-                texto "Módulos importados são compilados em uma única AST verificada pelo compilador Go."
+                icone "🔗"
+                titulo "Importação por Nome"
+                texto "Cada arquivo do frontend diz o que usa do backend; o ge check confere que isso existe."
+                code "importar produtos e pedidos do backend"
             card
-                icone "🚀"
-                titulo "Próximo: ge adicionar"
-                texto "Gerenciador central com lockfiles e resolução semântica versionada."
+                icone "🗓️"
+                titulo "Planejado: ge adicionar"
+                texto "Um gerenciador de pacotes com versões e lockfile está planejado. Ainda não há código."
 
     rodape
         copyright "Germanio © 2026 — Pacotes e Módulos."
