@@ -214,7 +214,7 @@ func TestFieldTypeSQLType(t *testing.T) {
 		{FieldNumero, "REAL"},
 		{FieldDinheiro, "REAL"},
 		{FieldBooleano, "INTEGER"},
-		{FieldData, "DATETIME"},
+		{FieldData, "DATE"},
 		{FieldTexto, "TEXT"},
 		{FieldEmail, "TEXT"},
 		{FieldSenha, "TEXT"},

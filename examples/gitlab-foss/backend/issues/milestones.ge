@@ -1,0 +1,24 @@
+# Milestones: metas com prazo que reúnem issues de um projeto.
+
+tenha milestones
+
+projeto tem milestones
+
+milestone tem
+    titulo obrigatório
+    descrição formatada
+    inicio data
+    prazo data
+
+milestone começa ativo
+
+milestone pode
+    fechar
+    reabrir
+
+issue pertence a milestone opcional
+
+guest pode ver milestones
+reporter pode administrar milestones
+
+disponibilize milestones para integração

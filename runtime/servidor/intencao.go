@@ -771,6 +771,7 @@ func (a *intentAPI) memberedParentLevel(ctx *interp.Context, atual map[string]an
 		m, _ := row.(map[string]any)
 		return a.in.Level(ctx, atual, target, m), true
 	}
+	level, membered := 0, false
 	for field, target := range e.Parents {
 		v := data[field]
 		if v == nil {
@@ -783,10 +784,10 @@ func (a *intentAPI) memberedParentLevel(ctx *interp.Context, atual map[string]an
 			continue
 		}
 		if pe.HasMembers || pe.InheritVia != "" || pe.HierarchyField != "" {
-			return a.in.Level(ctx, atual, pe, m), true
+			level, membered = max(level, a.in.Level(ctx, atual, pe, m)), true
 		}
 	}
-	return 0, false
+	return level, membered
 }
 
 func (a *intentAPI) create(w http.ResponseWriter, r *http.Request, ctx *interp.Context, atual map[string]any, e *ast.Entity, data, body map[string]any) {
@@ -1205,17 +1206,20 @@ func (a *intentAPI) hiddenParent(ctx *interp.Context, atual map[string]any, e *a
 // visibleParent: the membered parent referenced by data is visible through
 // its visibility (public/internal), not through membership.
 func (a *intentAPI) visibleParent(ctx *interp.Context, atual map[string]any, e *ast.Entity, data map[string]any) bool {
+	seen := false
 	for field, target := range e.Parents {
 		if data[field] == nil || target == a.app.LoginEntity {
 			continue
 		}
 		pe := a.app.Entities[target]
 		res, _ := a.in.Op(ctx, pe.Singular, "buscar", data[field])
-		if row, ok := res.(map[string]any); ok && a.in.VisibleByVisibility(ctx, atual, pe, row) {
-			return true
+		row, ok := res.(map[string]any)
+		if !ok || !a.in.VisibleByVisibility(ctx, atual, pe, row) {
+			return false // every filled parent must be open
 		}
+		seen = true
 	}
-	return false
+	return seen
 }
 
 func fieldOf(e *ast.Entity, name string) *ast.Field {

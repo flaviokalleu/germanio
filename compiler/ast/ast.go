@@ -353,7 +353,9 @@ func (ft FieldType) SQLType() string {
 		return "REAL"
 	case FieldBooleano, FieldInteiro:
 		return "INTEGER"
-	case FieldData, FieldDataHora:
+	case FieldData:
+		return "DATE" // a calendar day: no time of day
+	case FieldDataHora:
 		return "DATETIME"
 	default:
 		return "TEXT"

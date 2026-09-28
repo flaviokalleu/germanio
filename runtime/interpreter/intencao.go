@@ -144,20 +144,24 @@ func (interp *Interpreter) level(ctx *Context, memo map[levelKey]int, atual map[
 		if e.HierarchyField != "" && record[e.HierarchyField] != nil {
 			lv = max(lv, interp.level(ctx, memo, atual, e, interp.load(ctx, e, record[e.HierarchyField]), depth+1))
 		}
-		via := e.InheritVia
-		if via == "" && !e.HasMembers {
-			// Records without members take the level of their first parent
-			// that (transitively) has members.
+		vias := []string{}
+		if e.InheritVia != "" {
+			vias = append(vias, e.InheritVia)
+		} else if !e.HasMembers {
+			// Records without members take the highest level among the
+			// parents they have that (transitively) have members — every
+			// filled one, never "the first" of a map.
 			for field, target := range e.Parents {
-				if interp.hasMembersChain(app.Entities[target], 0) {
-					via = field
-					break
+				if target != app.LoginEntity && interp.hasMembersChain(app.Entities[target], 0) {
+					vias = append(vias, field)
 				}
 			}
 		}
-		if via != "" && record[via] != nil {
-			parent := app.Entities[e.Parents[via]]
-			lv = max(lv, interp.level(ctx, memo, atual, parent, interp.load(ctx, parent, record[via]), depth+1))
+		for _, via := range vias {
+			if record[via] != nil {
+				parent := app.Entities[e.Parents[via]]
+				lv = max(lv, interp.level(ctx, memo, atual, parent, interp.load(ctx, parent, record[via]), depth+1))
+			}
 		}
 	}
 	if id > 0 && memo != nil {
@@ -230,16 +234,20 @@ func (interp *Interpreter) visibleDepth(ctx *Context, atual map[string]any, e *a
 		if e.Singular == interp.App.MemberModel {
 			return false
 		}
+		// every filled parent must be visible (a record of two parents is
+		// never more visible than the stricter one)
+		seen := false
 		for field, target := range e.Parents {
 			pe := interp.App.Entities[target]
 			if target == interp.App.LoginEntity || record[field] == nil || (pe.Visibility == "" && len(pe.Parents) == 0) {
 				continue
 			}
-			if interp.visibleDepth(ctx, atual, pe, interp.load(ctx, pe, record[field]), depth+1) {
-				return true
+			if !interp.visibleDepth(ctx, atual, pe, interp.load(ctx, pe, record[field]), depth+1) {
+				return false
 			}
+			seen = true
 		}
-		return false
+		return seen
 	}
 	switch toString(record[e.Visibility]) {
 	case "public":
@@ -275,12 +283,20 @@ func (interp *Interpreter) Can(ctx *Context, atual map[string]any, e *ast.Entity
 	}
 	if verb == "ver" && InheritsView(interp.App, e) && record != nil {
 		// No viewing rule of its own: whoever sees the parent sees it.
+		// whoever sees every filled parent sees it
+		seen := false
 		for field, target := range e.Parents {
 			if target == interp.App.LoginEntity || record[field] == nil {
 				continue
 			}
 			pe := interp.App.Entities[target]
-			return interp.Can(ctx, atual, pe, "ver", interp.load(ctx, pe, record[field]))
+			if !interp.Can(ctx, atual, pe, "ver", interp.load(ctx, pe, record[field])) {
+				return false
+			}
+			seen = true
+		}
+		if seen {
+			return true
 		}
 	}
 	if (verb == "ver" || verb == "baixar_codigo") && interp.visible(ctx, atual, e, record) {
@@ -533,8 +549,8 @@ func (interp *Interpreter) hiddenMemberedAncestor(ctx *Context, atual map[string
 			continue
 		}
 		pe := app.Entities[target]
-		if interp.hasMembersChain(pe, 0) {
-			return interp.hiddenMemberedAncestor(ctx, atual, pe, interp.load(ctx, pe, record[field]), depth+1)
+		if interp.hasMembersChain(pe, 0) && interp.hiddenMemberedAncestor(ctx, atual, pe, interp.load(ctx, pe, record[field]), depth+1) {
+			return true // any hidden ancestor hides it
 		}
 	}
 	return false

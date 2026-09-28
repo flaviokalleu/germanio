@@ -566,12 +566,18 @@ func normalizeArg(v any) any {
 }
 
 // scanRowsRaw converts rows into maps with portable value types: integers as
-// int64, text as string, times as RFC 3339 strings. Unlike scanRows it keeps
+// int64, text as string, times as RFC 3339 strings (DATE columns as YYYY-MM-DD). Unlike scanRows it keeps
 // every column: code in .ge decides what to expose.
 func scanRowsRaw(rows *sql.Rows) ([]map[string]any, error) {
 	columns, err := rows.Columns()
 	if err != nil {
 		return nil, err
+	}
+	dateOnly := make([]bool, len(columns))
+	if types, err := rows.ColumnTypes(); err == nil {
+		for i, ct := range types {
+			dateOnly[i] = strings.EqualFold(ct.DatabaseTypeName(), "DATE")
+		}
 	}
 	results := []map[string]any{}
 	for rows.Next() {
@@ -589,7 +595,11 @@ func scanRowsRaw(rows *sql.Rows) ([]map[string]any, error) {
 			case []byte:
 				row[col] = string(v)
 			case time.Time:
-				row[col] = v.UTC().Format(time.RFC3339)
+				if dateOnly[i] {
+					row[col] = v.UTC().Format("2006-01-02")
+				} else {
+					row[col] = v.UTC().Format(time.RFC3339)
+				}
 			default:
 				row[col] = v
 			}

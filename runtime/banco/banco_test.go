@@ -43,3 +43,21 @@ func TestFiltrosDeLista(t *testing.T) {
 		t.Fatalf("__contem_algum vazio: %d", n)
 	}
 }
+
+func TestDataSemHora(t *testing.T) {
+	t.Setenv("GERMANIO_SQLITE", filepath.Join(t.TempDir(), "d.db"))
+	m := &ast.Model{Name: "meta", Fields: []*ast.Field{{Name: "prazo", Type: ast.FieldData}, {Name: "quando", Type: ast.FieldDataHora}}}
+	b, err := Abrir(&ast.DatabaseConfig{Driver: "sqlite"}, "d", []*ast.Model{m})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer b.Fechar()
+	row, err := b.CriarMapa("meta", map[string]any{"prazo": "2026-12-31", "quando": "2026-12-31T10:30:00Z"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, _ := b.BuscarRegistro("meta", row["id"].(int64))
+	if got["prazo"] != "2026-12-31" || got["quando"] != "2026-12-31T10:30:00Z" {
+		t.Fatalf("datas: %v", got)
+	}
+}

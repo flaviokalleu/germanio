@@ -254,6 +254,9 @@ todos podem ver produtos
 - Dentro de algo que tem membros, regras genéricas (todos, qualquer pessoa conectada) só valem se esse algo
   for público ou interno; caso contrário só papéis decidem — para ver, criar, editar ou excluir.
 - Pesquisa e filtros mudam como se encontra, nunca quem vê.
+- Uma referência (lista ou única) a algo que pertence a um pai que o registro também tem
+  — a label ou o milestone do projeto de uma issue — só aceita itens do mesmo pai; o resto
+  é tratado como inexistente. Pessoas e referências de sistema não contam como pai.
 - Ninguém concede papel acima do próprio.
 - Nada que pertence a uma pessoa é criado em nome de outra, exceto por administradores.
 - Registros invisíveis respondem "não encontrado", nunca "proibido".

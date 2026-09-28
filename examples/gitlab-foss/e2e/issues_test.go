@@ -145,3 +145,31 @@ func TestLabelsDeOutroProjetoNaoEntram(t *testing.T) {
 		}
 	}
 }
+
+// Milestones: criados por reporter+, reúnem issues do mesmo projeto, fecham e reabrem.
+func TestMilestones(t *testing.T) {
+	base := gitlab(t)
+	ada := signup(t, base, "ada")
+	eve := signup(t, base, "eve")
+	p := ada.must("POST", "/api/v4/projects", map[string]any{"name": "Road", "path": "road", "visibility": "public"}, 201)
+	pid := id(p)
+	eve.must("POST", "/api/v4/projects/"+pid+"/milestones", map[string]any{"title": "v1"}, 403)
+	m := ada.must("POST", "/api/v4/projects/"+pid+"/milestones", map[string]any{"title": "v1", "due_date": "2026-12-31"}, 201)
+	if m["state"] != "active" || m["due_date"] != "2026-12-31" {
+		t.Fatalf("milestone: %v", m)
+	}
+	i := ada.must("POST", "/api/v4/projects/"+pid+"/issues", map[string]any{"title": "entrega", "milestone_id": m["id"]}, 201)
+	ada.must("POST", "/api/v4/projects/"+pid+"/issues", map[string]any{"title": "outra"}, 201)
+	if l := ada.list("/api/v4/projects/" + pid + "/issues?milestone_id=" + id(m)); len(l) != 1 || l[0].(map[string]any)["iid"] != i["iid"] {
+		t.Fatalf("filtro por milestone: %v", l)
+	}
+	// O milestone de outro projeto não entra (nem vaza).
+	q := eve.must("POST", "/api/v4/projects", map[string]any{"name": "Other", "path": "other"}, 201)
+	eve.must("POST", "/api/v4/projects/"+id(q)+"/issues", map[string]any{"title": "x", "milestone_id": m["id"]}, 400)
+	if c := ada.must("POST", "/api/v4/projects/"+pid+"/milestones/"+id(m)+"/close", nil, 200); c["state"] != "closed" {
+		t.Fatalf("fechar milestone: %v", c)
+	}
+	if r := ada.must("POST", "/api/v4/projects/"+pid+"/milestones/"+id(m)+"/reopen", nil, 200); r["state"] != "active" {
+		t.Fatalf("reabrir milestone: %v", r)
+	}
+}
