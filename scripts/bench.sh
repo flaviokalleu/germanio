@@ -24,7 +24,7 @@ trap 'kill $gepid $gopid 2>/dev/null || true; rm -rf "$tmp"' EXIT
   echo "# Germanio — benchmarks"
   echo "data:      $(date -Iseconds)"
   echo "commit:    ${commit}${sujo}"
-  echo "germanio:  $(go run . version 2>/dev/null | grep -oE "v[0-9]+\.[0-9]+\.[0-9]+" | head -1)"
+  echo "germanio:  $(go run ./cmd/ge --version 2>/dev/null | awk '{print $2}')"
   echo "go:        $(go version)"
   echo "so:        $(uname -srmo)"
   echo "cpu:       $(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2 | xargs) ($(nproc) núcleos)"

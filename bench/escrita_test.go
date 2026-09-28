@@ -7,8 +7,6 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
-
-	"github.com/flaviokalleu/germanio/runtime"
 )
 
 // BenchmarkEscritaConcorrente: many people creating records at the same time
@@ -16,10 +14,7 @@ import (
 // acceptable, an error is not.
 func BenchmarkEscritaConcorrente(b *testing.B) {
 	b.Setenv("GERMANIO_SQLITE", filepath.Join(b.TempDir(), "w.db"))
-	app, err := runtime.Carregar("testdata/clientes.ge", "0")
-	if err != nil {
-		b.Fatal(err)
-	}
+	app := carregar(b, "testdata/clientes.ge")
 	defer app.Fechar()
 	var failed atomic.Int64
 	b.SetParallelism(2) // 2 × GOMAXPROCS writers

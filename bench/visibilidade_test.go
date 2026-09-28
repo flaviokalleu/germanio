@@ -8,8 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/flaviokalleu/germanio/runtime"
 )
 
 // BenchmarkVisibilidade reproduces the case the performance audit measured
@@ -21,10 +19,7 @@ func BenchmarkVisibilidade(b *testing.B) {
 	dir := b.TempDir()
 	b.Setenv("GERMANIO_SQLITE", filepath.Join(dir, "v.db"))
 	b.Setenv("GERMANIO_BCRYPT_RAPIDO", "1")
-	app, err := runtime.Carregar("testdata/visibilidade.ge", "0")
-	if err != nil {
-		b.Fatal(err)
-	}
+	app := carregar(b, "testdata/visibilidade.ge")
 	defer app.Fechar()
 	h := app.Handler
 

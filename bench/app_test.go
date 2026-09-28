@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/flaviokalleu/germanio/bench/baseline"
-	"github.com/flaviokalleu/germanio/runtime"
 )
 
 // target is one implementation of the clientes application behind the same
@@ -28,10 +27,7 @@ func germanio(b *testing.B) target {
 	dir := b.TempDir()
 	b.Setenv("GERMANIO_SQLITE", filepath.Join(dir, "app.db"))
 	b.Setenv("GERMANIO_BCRYPT_RAPIDO", "1")
-	app, err := runtime.Carregar("testdata/clientes.ge", "0")
-	if err != nil {
-		b.Fatal(err)
-	}
+	app := carregar(b, "testdata/clientes.ge")
 	b.Cleanup(func() { app.Fechar() })
 	return target{"germanio", app.Handler, "/_ge/api/clientes", "/_ge/api/clientes/", "/_ge/api/clientes", "/clientes"}
 }
