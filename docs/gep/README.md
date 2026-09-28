@@ -71,6 +71,11 @@ Rules:
 | [0015](0015-variaveis-das-execucoes.md) | Variables of executions (`pipelines usam as variaveis do projeto`) | Em teste |
 | [0016](0016-branches-protegidas.md) | Protected branches named by data (`enviar código para as branches protegidas`) | Em teste |
 | [0017](0017-mencoes.md) | Mentions create pending items (`pendência para` › `mencionados`) | Em teste |
+| [0018](0018-identidade-do-esquema.md) | Schema identity: human, canonical and physical names (G112) | Rascunho |
+| [0019](0019-fronteira-dos-adaptadores.md) | The boundary between domain and adapters (G114) | Rascunho |
+
+Revisão final das GEPs em teste 0010–0017, com recomendação por GEP e sem mudança de status:
+[REVISAO_0010_0017.md](REVISAO_0010_0017.md).
 
 Pending decisions that will become GEPs are listed in
 [`docs/INTENCAO.md` › Pendências da sintaxe hierárquica](../INTENCAO.md#pendências-da-sintaxe-hierárquica)

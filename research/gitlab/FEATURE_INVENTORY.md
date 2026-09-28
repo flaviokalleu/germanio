@@ -14,7 +14,7 @@ Escopo núcleo v1 = features marcadas **[N]** (fluxos 1–5 da missão + testes 
 | ID-03 [N] | Personal Access Token | token com escopos, digest armazenado, expiração, revogação | perfil | `POST /api/v4/user/personal_access_tokens`, header `PRIVATE-TOKEN` | personal_access_tokens | dono | cripto | G10 | PASS | TestFluxo2, TestEscoposDeToken |
 | ID-04 | Usuário atual | `GET /api/v4/user` | — | API | users | autenticado | | | PASS | TestFluxo1 |
 | ID-05 | Admin: bloquear usuário | `state=blocked` impede login e API | admin | `POST /users/:id/block` | users | admin | | | PASS | TestBloquearUsuario |
-| ID-06 | Recuperação de senha / confirmação de e-mail | tokens por e-mail | forms | Devise | users | anônimo | email | SUPPORTED (GEP 0008) | PARTIAL (recuperação de senha; confirmação de e-mail ainda não) | TestRecuperacaoDeSenha |
+| ID-06 | Recuperação de senha / confirmação de e-mail | tokens por e-mail | forms | Devise | users | anônimo | email | SUPPORTED (GEP 0008) | ADIADO → FASE 5 (amplitude; recuperação de senha já PASS) | TestRecuperacaoDeSenha |
 | ID-07 | 2FA, OAuth, LDAP, SAML, WebAuthn | | | | | | | MISSING | BLOCKED (fora do núcleo) | |
 | ID-08 | Chaves SSH | cadastro de chave pública | perfil | `/user/keys` | keys | dono | SSH | MISSING | BLOCKED (sem transporte SSH) | |
 
@@ -35,8 +35,8 @@ Escopo núcleo v1 = features marcadas **[N]** (fluxos 1–5 da missão + testes 
 | PR-02 [N] | Ver projeto | resolve `ns/path`; README, branches, visibilidade | `/:ns/:proj` | `GET /api/v4/projects/:id` (id ou path url-encoded) | projects | por visibilidade/membro | | | PASS | TestFluxo1 |
 | PR-03 [N] | Membros do projeto | adicionar/remover/alterar nível | members | `/projects/:id/members` | members | Maintainer+ | | | PASS | TestFluxo4 (adiciona membro) |
 | PR-04 | Editar/arquivar/remover projeto | | settings | `PUT/DELETE /projects/:id`, archive | projects | Maintainer / Owner | git | | PASS | TestProjetoArquivado (arquivar por `archived`; endpoints POST archive/unarchive ainda não) |
-| PR-05 | Fork | | | `POST /projects/:id/fork` | | | git | | NOT_STARTED | |
-| PR-06 | Estrelas, tópicos, avatar | | | | | | uploads | | NOT_STARTED | |
+| PR-05 | Fork | | | `POST /projects/:id/fork` | | | git | | ADIADO → FASE 5 (amplitude) | |
+| PR-06 | Estrelas, tópicos, avatar | | | | | | uploads | | ADIADO → FASE 5 (amplitude; avatar depende da GEP 0014) | |
 
 ## Repositórios
 
@@ -49,7 +49,7 @@ Escopo núcleo v1 = features marcadas **[N]** (fluxos 1–5 da missão + testes 
 | RP-05 [N] | Branches | listar/criar/remover | branches | `/repository/branches` | repo | Developer+ para criar | git | G13 | PASS | TestGrupos |
 | RP-06 | Branches protegidas | push/merge por nível | settings | `/protected_branches` | protected_branches | Maintainer+ | | | PASS (branch padrão e branches protegidas por nome ou padrão com *, como dados do projeto; quem pode fazer merge numa branch protegida ainda segue mesclar) | TestGruposMembrosPapeis |
 | RP-07 | Tags | criar, listar, remover | `/-/tags` | `/repository/tags` | refs | Developer+ para criar | git | SUPPORTED | PASS (tags leves por git push e pela API, com as regras de enviar código; tags anotadas e protegidas ainda não) | TestTags |
-| RP-08 | Editar arquivo pela web | commit direto | editor | `POST /repository/commits` | repo | Developer+ | git | G13 | NOT_STARTED | |
+| RP-08 | Editar arquivo pela web | commit direto | editor | `POST /repository/commits` | repo | Developer+ | git | G13 | ADIADO → FASE 3 (UI altamente interativa: editor) | |
 | RP-09 | Compare | diff entre refs | compare | `/repository/compare` | repo | leitura | git | | PASS (API) | — |
 | RP-10 | SSH, LFS, mirrors, archive download | | | | | | | MISSING | BLOCKED (fora do núcleo) | |
 
@@ -65,7 +65,7 @@ Escopo núcleo v1 = features marcadas **[N]** (fluxos 1–5 da missão + testes 
 | IS-06 | Milestones | | milestones | `/milestones` | milestones | Reporter+ | | | PASS | TestMilestones |
 | IS-07 [N] | Filtros e busca | state, labels, assignee, author, search | lista | `GET /issues?state&labels&search` | issues | leitura | | | PASS | TestFluxo3 |
 | IS-08 [N] | Confidencial | visível só a Reporter+, autor, assignees | | `confidential` | issues | | | | PASS | TestFluxo3, TestIssuesPrivadasNaoVazam |
-| IS-09 | Boards, weights, time tracking, links, moves | | | | | | | | NOT_STARTED | |
+| IS-09 | Boards, weights, time tracking, links, moves | | | | | | | | ADIADO → FASE 3 (boards: arrastar, estado local; a sincronização entre pessoas usa a FASE 2) | |
 
 ## Merge Requests
 
@@ -77,7 +77,7 @@ Escopo núcleo v1 = features marcadas **[N]** (fluxos 1–5 da missão + testes 
 | MR-04 [N] | Merge | merge commit; conflito → `cannot_be_merged` | merge btn | `PUT /merge` | merge_requests | Developer+ (Maintainer se protegida) | git merge | G13 | PASS | TestFluxo4 |
 | MR-05 [N] | Conflito detectado | `merge_status=cannot_be_merged`, 406/405 no merge | | | | | git merge-tree | G13 | PASS | TestFluxo4 |
 | MR-06 | Fechar/reabrir, draft | | | `state_event` | | | | | PASS | TestFluxo4 |
-| MR-07 | Squash, rebase, merge when pipeline succeeds, approvals rules | | | | | | | | NOT_STARTED | |
+| MR-07 | Squash, rebase, merge when pipeline succeeds, approvals rules | | | | | | | | ADIADO → BACKLOG (regras de aprovação e merge automático: capability futura, GEP própria) | |
 
 ## CI/CD
 
@@ -91,8 +91,8 @@ Escopo núcleo v1 = features marcadas **[N]** (fluxos 1–5 da missão + testes 
 | CI-06 [N] | Retry / cancel | novo build / estado canceled | job | `/jobs/:id/retry|cancel` | | Developer+ | | | PASS | TestFluxo5 |
 | CI-07 | Variáveis de CI | projeto; mascaradas | settings | `/variables` | ci_variables | Maintainer+ | cripto | SUPPORTED (GEP 0015, em teste) | PASS (variáveis do projeto chegam às etapas do executor local e do runner oficial; valor oculto nunca volta pela API e aparece como [MASKED] no log; os nomes CI_* vencem; variáveis de grupo, protegidas e por ambiente ainda não) | TestVariaveisDeCI, TestRunnerOficial |
 | CI-08 | Artefatos | upload/download | job | `/jobs/:id/artifacts` | ci_job_artifacts | | uploads | SUPPORTED (GEP 0014, em teste) | PARTIAL (o `gitlab-runner` oficial envia `artifacts: paths` e o zip volta para quem vê o job; o executor local ainda não junta artefatos; expiração e navegação dentro do zip não) | TestRunnerOficial, TestArquivos |
-| CI-09 | needs/DAG, rules/only/except, when:manual, allow_failure | | | | | | | | NOT_STARTED | |
-| CI-10 | Isolamento de execução (containers) | runner docker executor | | | | | docker | MISSING | NOT_STARTED | |
+| CI-09 | needs/DAG, rules/only/except, when:manual, allow_failure | | | | | | | | ADIADO → BACKLOG (DAG, rules, manual avançado: capability de fluxo de execução) | |
+| CI-10 | Isolamento de execução (containers) | runner docker executor | | | | | docker | MISSING | ADIADO → FASE 4 (escala/infraestrutura: isolamento de execução) | |
 
 ## Integrações, notificações, admin
 
@@ -104,7 +104,7 @@ Escopo núcleo v1 = features marcadas **[N]** (fluxos 1–5 da missão + testes 
 | NT-03 | E-mail de notificação | e-mail ao ser atribuído | — | mailer | | dono | email | SUPPORTED (GEP 0013, em teste) | PARTIAL (e-mail de cada nova pendência, depois do commit, sem título do que a pessoa não pode ver; menções, preferências por pessoa e resumos ainda não) | TestAvisosPorEmail |
 | AD-01 | Admin dashboard | contagens, usuários, projetos | `/admin` | `/admin` | | admin | | SUPPORTED (GEP 0012, em teste) | PARTIAL (página `/painel` com as contagens, cada uma sob a visibilidade de quem vê — o administrador vê o total; a lista de usuários e projetos do admin são as páginas comuns; `/api/v4/application/statistics` ainda não) | TestPainel, TestIndicadores |
 | SR-01 | Busca global | projetos/issues/MRs | search | `/search` | | leitura | | | PASS | TestBuscaGeral (API; página de busca ainda não) |
-| UP-01 | Uploads em markdown | `/uploads` | | | uploads | | | PARTIAL (upload genérico existe) | NOT_STARTED | |
+| UP-01 | Uploads em markdown | `/uploads` | | | uploads | | | PARTIAL (upload genérico existe) | ADIADO → FASE 3 (editor de texto com imagens; usa a GEP 0014) | |
 
 ## Fora do núcleo (classificado, não omitido)
 
