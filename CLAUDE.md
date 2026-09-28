@@ -45,7 +45,7 @@ Pipeline: `.ge` file → Lexer → Parser/AST → Runtime Engine.
 
 ### Compiler (`compiler/`)
 
-- **`lexer/lexer.go`** — Tokenizer with 150+ keywords. Normalizes all 20 languages to canonical Portuguese tokens via `idiomas/idiomas.go` translation map.
+- **`lexer/lexer.go`** — Tokenizer with 150+ keywords. For the older technical syntax, maps keywords of 20 languages to canonical Portuguese tokens via `idiomas/idiomas.go` (global map; collisions recorded as G92). The intent layer is Portuguese only.
 - **`idiomas/idiomas.go`** — Translation map: foreign word → canonical PT keyword. Supports ES, FR, DE, IT, ZH, JA, KO, AR, HI, BN, RU, ID, TR, VI, PL, NL, TH, SW.
 - **`parser/parser.go`** — Recursive descent parser. Handles: `sistema`, `dados`, `telas`, `eventos`, `acoes`, `tema`, `logica`, `banco`, `autenticacao`, `integracoes`, `rotas`, `paginas`, `sidebar`.
 - **`ast/ast.go`** — Node definitions including `CustomRoute`, `CustomPage`, `SidebarItem`, theme presets (`ThemePreset()`), color names (`ColorName` map, `ResolveColor()`).
@@ -68,7 +68,7 @@ Commands: `run`, `check`, `new`, `init`, `build`, `docker`, `version`, `help`.
 
 ## Key Design Decisions
 
-- **Multilingual**: 20 languages normalized to canonical PT tokens via translation map in `idiomas.go`.
+- **Multilingual (older syntax only)**: 20 languages normalized to canonical PT tokens via `idiomas.go`; the intent layer is Portuguese only (G74, G92).
 - **Theme presets**: `tema moderno/simples/elegante/corporativo/claro` — one word for a complete design.
 - **Color names**: `cor primaria azul` — the AST resolves names to hex via `ColorName` map.
 - **Smart sidebar**: If user defines screens, sidebar shows those; models without custom screens get auto-generated entries.

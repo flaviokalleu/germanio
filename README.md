@@ -114,7 +114,8 @@ De onde vem cada fato (frase plana equivalente — origem):
 Building an ordinary web application still requires knowing HTTP, SQL, an ORM, migrations,
 sessions, password hashing, CSRF, authorization checks, templates and a frontend framework,
 before writing a single rule of the actual product. Germanio moves all of that into the
-language implementation, where it is written once, tested and secure by default, and keeps
+language implementation, where it is written once and tested, with safety as the default
+rather than an add-on ([what is covered and what is still open](SECURITY.md)), and keeps
 the program at the level of the product: data, people, permissions, states and pages.
 
 The guiding rule: **Go builds mechanisms; Germanio builds products.** When something cannot be

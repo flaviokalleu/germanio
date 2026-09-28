@@ -461,12 +461,13 @@ func Executar(arquivo string, porta string) error {
 	WatchFiles(filepath.Dir(arquivo), arquivo, porta)
 
 	server := &http.Server{
-		Addr:           ":" + porta,
-		Handler:        app.Handler,
-		ReadTimeout:    60 * time.Second,
-		WriteTimeout:   10 * time.Minute, // git clone/push and job logs stream for a while
-		IdleTimeout:    60 * time.Second,
-		MaxHeaderBytes: 1 << 20,
+		Addr:              ":" + porta,
+		Handler:           app.Handler,
+		ReadHeaderTimeout: 10 * time.Second, // a slow client cannot hold a connection just sending headers
+		ReadTimeout:       60 * time.Second,
+		WriteTimeout:      10 * time.Minute, // git clone/push and job logs stream for a while
+		IdleTimeout:       60 * time.Second,
+		MaxHeaderBytes:    1 << 20,
 	}
 	return server.ListenAndServe()
 }

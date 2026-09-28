@@ -112,7 +112,8 @@ De onde vem cada fato (frase plana equivalente — origem):
 Uma aplicação web comum ainda exige conhecer HTTP, SQL, ORM, migrations, sessões, hash de
 senha, CSRF, verificação de permissões, templates e um framework de frontend antes de
 escrever a primeira regra do produto. O Germanio leva tudo isso para a implementação da
-linguagem, onde é escrito uma vez, testado e seguro por padrão, e mantém o programa no nível
+linguagem, onde é escrito uma vez e testado, com a segurança como padrão e não como
+acréscimo ([o que está coberto e o que ainda está aberto](SECURITY.md)), e mantém o programa no nível
 do produto: dados, pessoas, permissões, estados e páginas.
 
 A regra que orienta o projeto: **Go constrói mecanismos; Germanio constrói produtos.** Quando

@@ -25,3 +25,12 @@ is a vulnerability.
 
 What the runtime protects against by default, and how, is documented in
 [`docs/SECURITY.md`](docs/SECURITY.md).
+
+## Known open issues
+
+Germanio records its known weaknesses publicly in [`GERMANIO_GAPS.md`](GERMANIO_GAPS.md)
+(category *Segurança*), with their status. At the time of writing, among others: login has an
+account lock by default but no rate limit per address yet (G83); the real-time hub has no
+recipients derived from permissions, so it is not offered to intent pages (G66); who may
+change each field is not declarable yet (G97). Fixed issues keep their entry with the test that
+proves the fix (for example G59, G65, G83, G91).

@@ -92,12 +92,13 @@ func (s *Servidor) Iniciar() error {
 	}
 	defer s.Jobs.Close()
 	server := &http.Server{
-		Addr:           ":" + s.Porta,
-		Handler:        handler,
-		ReadTimeout:    15 * time.Second,
-		WriteTimeout:   30 * time.Second,
-		IdleTimeout:    60 * time.Second,
-		MaxHeaderBytes: 1 << 20, // 1MB
+		Addr:              ":" + s.Porta,
+		Handler:           handler,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
+		MaxHeaderBytes:    1 << 20, // 1MB
 	}
 	return server.ListenAndServe()
 }
