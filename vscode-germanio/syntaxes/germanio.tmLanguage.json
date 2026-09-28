@@ -7,6 +7,9 @@
       "include": "#comment"
     },
     {
+      "include": "#data_block"
+    },
+    {
       "include": "#intent"
     },
     {
@@ -320,6 +323,471 @@
               ]
             }
           }
+        }
+      ]
+    },
+    "data_block": {
+      "patterns": [
+        {
+          "begin": "^(p[aáàâã]g[ií]n[aáàâã]|page)\\s+([\\p{L}_][\\p{L}\\p{N}_]*(?:\\s+[\\p{L}_][\\p{L}\\p{N}_]*)*?)\\s*$",
+          "end": "^(?=\\S)",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.other.intent.germanio"
+            },
+            "2": {
+              "name": "entity.name.section.germanio"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#comment"
+            },
+            {
+              "match": "^\\s+(m[oóôõ]str[eéê])\\s+([\\p{L}_][\\p{L}\\p{N}_]*(?:\\s+[\\p{L}_][\\p{L}\\p{N}_]*)*?)\\s*$",
+              "captures": {
+                "1": {
+                  "name": "keyword.other.intent.germanio"
+                },
+                "2": {
+                  "name": "entity.name.type.germanio"
+                }
+              }
+            },
+            {
+              "match": "^\\s+(p[eéê]rm[ií]t[aáàâã])\\s*$",
+              "captures": {
+                "1": {
+                  "name": "keyword.other.permission.germanio"
+                }
+              }
+            },
+            {
+              "match": "^\\s+([0-9]+)\\s+(p[oóôõ]r\\s+p[aáàâã]g[ií]n[aáàâã])",
+              "captures": {
+                "1": {
+                  "name": "constant.numeric.germanio"
+                },
+                "2": {
+                  "name": "keyword.other.intent.germanio"
+                }
+              }
+            },
+            {
+              "match": "^\\s+([\\p{L}_][\\p{L}\\p{N}_]*)\\s*$",
+              "captures": {
+                "1": {
+                  "name": "entity.name.function.action.germanio"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "begin": "^(?!(?:d[ií]sp[oóôõ]n[ií]b[ií]l[ií]z[eéê]|v[oóôõ][cç][aáàâã]b[uú]l[aáàâã]r[ií][oóôõ]|[ií]nt[eéê]gr[aáàâã][cç][aáàâã][oóôõ]|[eéê]nd[eéê]r[eéê][cç][oóôõ]s|m[eéê]ns[aáàâã]g[eéê]ns|[ií]mp[oóôõ]rt[aáàâã]r|p[eéê]rm[ií]t[aáàâã]|tr[aáàâã]d[uú]z[aáàâã]|s[ií]st[eéê]m[aáàâã]|s[oóôõ]m[eéê]nt[eéê]|[eéê]s[cç][oóôõ]p[oóôõ]|q[uú][aáàâã]nd[oóôõ]|l[oóôõ]g[ií][cç][aáàâã]|t[eéê]nh[aáàâã]|l[oóôõ]g[ií]n|[aáàâã]nt[eéê]s|r[oóôõ]t[aáàâã]s|d[aáàâã]d[oóôõ]s|t[eéê]l[aáàâã]s|[cç]r[ií][eéê]|t[eéê]m[aáàâã]|[cç][aáàâã]d[aáàâã]|q[uú][eéê]m|t[oóôõ]d[oóôõ]|[aáàâã][oóôõ])(?![\\p{L}\\p{N}_]))(?!.*(?<![\\p{L}\\p{N}_])(?:p[eéê]rt[eéê]n[cç][eéê]|[eéê]x[eéê][cç][uú]t[aáàâã]m|[eéê]x[eéê][cç][uú]t[aáàâã]|pr[eéê][cç][ií]s[aáàâã]|[cç][oóôõ]m[eéê][cç][aáàâã]|r[eéê][cç][eéê]b[eéê]|p[oóôõ]d[eéê]m|h[eéê]rd[aáàâã]|p[oóôõ]d[eéê]|v[ií]r[aáàâã]|t[eéê]m|[eéê])(?![\\p{L}\\p{N}_]))([\\p{L}_][\\p{L}\\p{N}_]*(?:\\s+[\\p{L}_][\\p{L}\\p{N}_]*)*?)\\s*$",
+          "end": "^(?=\\S)",
+          "beginCaptures": {
+            "1": {
+              "name": "entity.name.type.data.germanio"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#comment"
+            },
+            {
+              "include": "#section"
+            }
+          ]
+        }
+      ]
+    },
+    "section": {
+      "patterns": [
+        {
+          "begin": "^(\\s+)(t[eéê]m)\\s*$",
+          "end": "^(?!\\1\\s+\\S|\\s*$)",
+          "beginCaptures": {
+            "2": {
+              "name": "keyword.other.intent.germanio"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#comment"
+            },
+            {
+              "match": "^\\s+(membros)\\s+(com\\s+papel)",
+              "captures": {
+                "1": {
+                  "name": "entity.name.type.germanio"
+                },
+                "2": {
+                  "name": "storage.modifier.germanio"
+                }
+              }
+            },
+            {
+              "match": "^\\s+([\\p{L}_][\\p{L}\\p{N}_]*)",
+              "captures": {
+                "1": {
+                  "name": "variable.other.property.field.germanio"
+                }
+              }
+            },
+            {
+              "include": "#expression"
+            }
+          ]
+        },
+        {
+          "match": "^\\s+(t[eéê]m)\\s+([\\p{L}_][\\p{L}\\p{N}_]*(?:\\s+[\\p{L}_][\\p{L}\\p{N}_]*)*?)\\s*$",
+          "captures": {
+            "1": {
+              "name": "keyword.other.intent.germanio"
+            },
+            "2": {
+              "name": "entity.name.type.germanio"
+            }
+          }
+        },
+        {
+          "begin": "^(\\s+)(p[oóôõ]d[eéê])\\s*$",
+          "end": "^(?!\\1\\s+\\S|\\s*$)",
+          "beginCaptures": {
+            "2": {
+              "name": "keyword.other.permission.germanio"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#comment"
+            },
+            {
+              "match": "^\\s+(ser)\\s+([\\p{L}_][\\p{L}\\p{N}_]*)",
+              "captures": {
+                "1": {
+                  "name": "keyword.other.intent.germanio"
+                },
+                "2": {
+                  "name": "storage.modifier.flag.germanio"
+                }
+              }
+            },
+            {
+              "match": "^\\s+([\\p{L}_][\\p{L}\\p{N}_]*)\\s*$",
+              "captures": {
+                "1": {
+                  "name": "entity.name.function.action.germanio"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "match": "^\\s+(p[oóôõ]d[eéê])\\s+([\\p{L}_][\\p{L}\\p{N}_]*)\\s*$",
+          "captures": {
+            "1": {
+              "name": "keyword.other.permission.germanio"
+            },
+            "2": {
+              "name": "entity.name.function.action.germanio"
+            }
+          }
+        },
+        {
+          "begin": "^(\\s+)(p[eéê]rt[eéê]n[cç][eéê]\\s+[aáàâã])\\s*$",
+          "end": "^(?!\\1\\s+\\S|\\s*$)",
+          "beginCaptures": {
+            "2": {
+              "name": "keyword.other.intent.germanio"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#comment"
+            },
+            {
+              "name": "storage.modifier.germanio",
+              "match": "(?<![\\p{L}\\p{N}_])(?:[oóôõ]p[cç][ií][oóôõ]n[aáàâã]l|[cç][oóôõ]m[oóôõ])(?![\\p{L}\\p{N}_])"
+            },
+            {
+              "name": "entity.name.type.germanio",
+              "match": "[\\p{L}_][\\p{L}\\p{N}_]*"
+            }
+          ]
+        },
+        {
+          "match": "^\\s+(p[eéê]rt[eéê]n[cç][eéê]\\s+[aáàâã])\\s+([\\p{L}_][\\p{L}\\p{N}_]*)(?:\\s+([oóôõ]p[cç][ií][oóôõ]n[aáàâã]l))?",
+          "captures": {
+            "1": {
+              "name": "keyword.other.intent.germanio"
+            },
+            "2": {
+              "name": "entity.name.type.germanio"
+            },
+            "3": {
+              "name": "storage.modifier.germanio"
+            }
+          }
+        },
+        {
+          "match": "^\\s+([cç][oóôõ]m[eéê][cç][aáàâã])\\s+([\\p{L}_][\\p{L}\\p{N}_]*)\\s*$",
+          "captures": {
+            "1": {
+              "name": "keyword.other.intent.germanio"
+            },
+            "2": {
+              "name": "constant.other.state.germanio"
+            }
+          }
+        },
+        {
+          "match": "^\\s+(singular)\\s+([\\p{L}_][\\p{L}\\p{N}_]*(?:\\s+[\\p{L}_][\\p{L}\\p{N}_]*)*?)\\s*$",
+          "captures": {
+            "1": {
+              "name": "keyword.other.intent.germanio"
+            },
+            "2": {
+              "name": "entity.name.type.germanio"
+            }
+          }
+        },
+        {
+          "begin": "^(\\s+)(regras)\\s*$",
+          "end": "^(?!\\1\\s+\\S|\\s*$)",
+          "beginCaptures": {
+            "2": {
+              "name": "keyword.other.intent.germanio"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#comment"
+            },
+            {
+              "match": "(q[uú][eéê]m\\s+[cç]r[ií][aáàâã]\\s+v[ií]r[aáàâã])\\s+([\\p{L}_][\\p{L}\\p{N}_]*)",
+              "captures": {
+                "1": {
+                  "name": "keyword.other.intent.germanio"
+                },
+                "2": {
+                  "name": "entity.name.class.role.germanio"
+                }
+              }
+            },
+            {
+              "match": "(pr[eéê][cç][ií]s[aáàâã]\\s+d[eéê]\\s+p[eéê]l[oóôõ]\\s+m[eéê]n[oóôõ]s\\s+[uú]m|pr[eéê][cç][ií]s[aáàâã]\\s+t[eéê]r\\s+p[eéê]l[oóôõ]\\s+m[eéê]n[oóôõ]s\\s+[uú]m)\\s+([\\p{L}_][\\p{L}\\p{N}_]*)",
+              "captures": {
+                "1": {
+                  "name": "keyword.other.intent.germanio"
+                },
+                "2": {
+                  "name": "entity.name.class.role.germanio"
+                }
+              }
+            },
+            {
+              "match": "(h[eéê]rd[aáàâã]\\s+m[eéê]mbr[oóôõ]s\\s+d[oóôõ]|n[aáàâã][oóôõ]\\s+p[oóôõ]d[eéê]\\s+s[eéê]r\\s+m[aáàâã][ií]s\\s+v[ií]s[ií]v[eéê]l\\s+q[uú][eéê]\\s+[oóôõ])\\s+([\\p{L}_][\\p{L}\\p{N}_]*(?:\\s+[\\p{L}_][\\p{L}\\p{N}_]*)*?)\\s*$",
+              "captures": {
+                "1": {
+                  "name": "keyword.other.intent.germanio"
+                },
+                "2": {
+                  "name": "entity.name.type.germanio"
+                }
+              }
+            },
+            {
+              "match": "^\\s+([\\p{L}_][\\p{L}\\p{N}_]*)\\s+((?:p[oóôõ]d[eéê]\\s+s[eéê]r\\s+v[ií]st[aáàâã]\\s+p[oóôõ]r|p[oóôõ]d[eéê]\\s+s[eéê]r\\s+v[ií]st[oóôõ]\\s+p[oóôõ]r|[eéê]\\s+s[oóôõ]m[eéê]nt[eéê]\\s+l[eéê][ií]t[uú]r[aáàâã]|[eéê]\\s+f[ií]n[aáàâã]l))\\s*$",
+              "captures": {
+                "1": {
+                  "name": "constant.other.state.germanio"
+                },
+                "2": {
+                  "name": "keyword.other.intent.germanio"
+                }
+              }
+            },
+            {
+              "name": "keyword.other.permission.germanio",
+              "match": "(?<![\\p{L}\\p{N}_])(?:[oóôõ][uú]\\s+s[uú]p[eéê]r[ií][oóôõ]r|[oóôõ][uú])(?![\\p{L}\\p{N}_])"
+            },
+            {
+              "match": "^\\s+([\\p{L}_][\\p{L}\\p{N}_]*)\\s*$",
+              "captures": {
+                "1": {
+                  "name": "entity.name.class.role.germanio"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "begin": "^(\\s+)(acesso)\\s*$",
+          "end": "^(?!\\1\\s+\\S|\\s*$)",
+          "beginCaptures": {
+            "2": {
+              "name": "keyword.other.permission.germanio"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#comment"
+            },
+            {
+              "begin": "^(\\s+)(?:(s[oóôõ]m[eéê]nt[eéê])\\s+)?((?:[\\p{L}_][\\p{L}\\p{N}_]*)(?:\\s+ou\\s+[\\p{L}_][\\p{L}\\p{N}_]*)*)\\s*$",
+              "end": "^(?!\\1\\s+\\S|\\s*$)",
+              "beginCaptures": {
+                "2": {
+                  "name": "keyword.other.permission.germanio"
+                },
+                "3": {
+                  "patterns": [
+                    {
+                      "name": "keyword.operator.logical.germanio",
+                      "match": "(?<![\\p{L}\\p{N}_])(?:[oóôõ][uú])(?![\\p{L}\\p{N}_])"
+                    },
+                    {
+                      "name": "entity.name.class.role.germanio",
+                      "match": "[\\p{L}_][\\p{L}\\p{N}_]*"
+                    }
+                  ]
+                }
+              },
+              "patterns": [
+                {
+                  "include": "#comment"
+                },
+                {
+                  "include": "#action_line"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "begin": "^(\\s+)(p[eéê]rm[ií]t[aáàâã])\\s*$",
+          "end": "^(?!\\1\\s+\\S|\\s*$)",
+          "beginCaptures": {
+            "2": {
+              "name": "keyword.other.permission.germanio"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#comment"
+            },
+            {
+              "match": "^\\s+([\\p{L}_][\\p{L}\\p{N}_]*)(?:\\s+(por)\\s+(.+))?$",
+              "captures": {
+                "1": {
+                  "name": "entity.name.function.action.germanio"
+                },
+                "2": {
+                  "name": "keyword.other.intent.germanio"
+                },
+                "3": {
+                  "patterns": [
+                    {
+                      "name": "keyword.operator.logical.germanio",
+                      "match": "(?<![\\p{L}\\p{N}_])(?:[eéê])(?![\\p{L}\\p{N}_])"
+                    },
+                    {
+                      "name": "variable.other.property.field.germanio",
+                      "match": "[\\p{L}_][\\p{L}\\p{N}_]*"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "begin": "^(\\s+)([ií]nt[eéê]gr[aáàâã][cç][aáàâã][oóôõ])\\s*$",
+          "end": "^(?!\\1\\s+\\S|\\s*$)",
+          "beginCaptures": {
+            "2": {
+              "name": "keyword.other.intent.germanio"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#comment"
+            },
+            {
+              "include": "#string"
+            },
+            {
+              "name": "keyword.other.intent.germanio",
+              "match": "(?<![\\p{L}\\p{N}_])(?:n[oóôõ]m[eéê])(?![\\p{L}\\p{N}_])"
+            }
+          ]
+        },
+        {
+          "begin": "^(\\s+)((?:[aáàâã]nt[eéê]s\\s+d[eéê]|q[uú][aáàâã]nd[oóôõ]))\\s+([\\p{L}_][\\p{L}\\p{N}_]*)\\s*$",
+          "end": "^(?!\\1\\s+\\S|\\s*$)",
+          "beginCaptures": {
+            "2": {
+              "name": "keyword.other.event.germanio"
+            },
+            "3": {
+              "name": "entity.name.function.action.germanio"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#comment"
+            },
+            {
+              "include": "#expression"
+            }
+          ]
+        },
+        {
+          "match": "^\\s+((?:r[eéê][cç][eéê]b[eéê]\\s+[aáàâã]pr[oóôõ]v[aáàâã][cç][oóôõ][eéê]s|r[eéê][cç][eéê]b[eéê]\\s+[eéê]v[eéê]nt[oóôõ]s\\s+d[oóôõ]|r[eéê][cç][eéê]b[eéê]\\s+[eéê]v[eéê]nt[oóôõ]s\\s+d[aáàâã]|[eéê]x[eéê][cç][uú]t[aáàâã]m|[eéê]x[eéê][cç][uú]t[aáàâã]))(?![\\p{L}\\p{N}_])(.*)$",
+          "captures": {
+            "1": {
+              "name": "keyword.other.intent.germanio"
+            },
+            "2": {
+              "patterns": [
+                {
+                  "include": "#string"
+                },
+                {
+                  "name": "keyword.other.intent.germanio",
+                  "match": "(?<![\\p{L}\\p{N}_])(?:[aáàâã]\\s+[cç][aáàâã]d[aáàâã]\\s+[eéê]nv[ií][oóôõ]\\s+d[eéê]\\s+[cç][oóôõ]d[ií]g[oóôõ]\\s+[cç][oóôõ]nf[oóôõ]rm[eéê])(?![\\p{L}\\p{N}_])"
+                },
+                {
+                  "name": "entity.name.type.germanio",
+                  "match": "[\\p{L}_][\\p{L}\\p{N}_]*"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "match": "^\\s+((?:r[eéê]p[oóôõ]s[ií]t[oóôõ]r[ií][oóôõ]\\s+p[oóôõ]d[eéê]\\s+[cç][oóôõ]m[eéê][cç][aáàâã]r\\s+[cç][oóôõ]m))\\s+(.*)$",
+          "captures": {
+            "1": {
+              "name": "keyword.other.intent.germanio"
+            },
+            "2": {
+              "patterns": [
+                {
+                  "include": "#string"
+                },
+                {
+                  "name": "keyword.other.intent.germanio",
+                  "match": "(?<![\\p{L}\\p{N}_])(?:[cç][oóôõ]nt[eéê]nd[oóôõ])(?![\\p{L}\\p{N}_])"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "include": "#expression"
         }
       ]
     },

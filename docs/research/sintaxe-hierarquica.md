@@ -151,3 +151,30 @@ erro[G0107]: recuo não corresponde a nenhum bloco aberto
 | 9 | Mensagens: o que aconteceu, onde, por que, como corrigir, e a frase plana equivalente quando o erro está num bloco | Elm, rustc | — |
 | 10 | Formatter canônico: 4 espaços por nível, sem espaço no fim, no máximo uma linha vazia seguida, comentários preservados, idempotente, e confere que os fatos não mudaram | gofmt, Black | reordenar declarações não faz parte (ordem é notação secundária) |
 | 11 | `ge explain` mostra a origem (arquivo, linha, caminho hierárquico) e a frase plana equivalente de cada fato | Green & Petre (hidden dependencies) | — |
+
+## Parte 4 — Validação qualitativa em exemplos pequenos, médios e grandes
+
+Critérios na ordem de `docs/INTENCAO.md` › Como avaliar uma sintaxe. Os números do
+experimento (GitLab: +23% linhas, −23% palavras, −58% menções a nomes de dados) são
+resultado, não meta, e não decidem nada sozinhos.
+
+| Critério | Pequeno (`clientes`: 1 dado, 1 página) | Médio (template `loja`: 3 dados, 2 páginas, 1 regra) | Grande (GitLab: 11 arquivos, 14 dados, adaptadores) |
+|---|---|---|---|
+| Conceitos técnicos exigidos | iguais nas duas formas (nenhum) | iguais; a regra de estoque continua técnica nas duas (G57) | iguais; o que era técnico já tinha saído para capabilities e adaptadores |
+| Carga cognitiva | praticamente igual: o bloco acrescenta dois títulos (`tem`, `permita`) | menor: cada arquivo conta um dado de cima a baixo; `pertence a` lista as relações juntas | menor para ler um dado (tudo sob o nome dele); maior para perguntas transversais ("quem pode excluir issues?"), que passam a ser respondidas pelo `ge explain` com origem |
+| Repetição | quase nenhuma nas duas | cai: o nome do dado não se repete em cada permissão | cai muito: `issue` deixa de aparecer em cada frase |
+| Previsibilidade visual | boa nas duas | boa: todo arquivo tem a mesma forma (dado › seções) | boa: as seções têm sempre os mesmos nomes; a matriz de acesso vira uma lista por papel |
+| Clareza semântica | igual | igual | igual, com um ponto de atenção: `administrar` num bloco vale para a coleção (inclui criar), o que a frase `administrar projeto` não fazia |
+| Determinismo | igual (mesmos fatos) | igual | igual; a ambiguidade de estrangeirismos (`tokens`) agora exige `singular` em vez de ser adivinhada |
+| Leitura rápida | a frase plana é mais rápida para um fato isolado | o bloco é mais rápido para entender um dado inteiro | o bloco é mais rápido por dado; a busca textual por uma frase inteira (`grep "pode excluir issues"`) deixa de funcionar, porque o fato fica distribuído em linhas |
+| Profundidade | 2 a 3 níveis | 2 a 4 | até 4 (`dado › regras › confidencial pode ser vista por › pessoa`) |
+
+Conclusões:
+
+- Para um fato isolado, a frase plana continua a melhor forma; por isso ela não foi depreciada.
+- Para descrever um dado com vários aspectos, o bloco reduz repetição sem perder contexto,
+  porque a informação omitida é exatamente a que o caminho determina.
+- O custo real é a busca de fatos transversais e a dependência escondida entre arquivos que
+  descrevem o mesmo dado (`projetos` aparece em seis arquivos do GitLab). O `ge explain` com a
+  origem de cada fato é parte obrigatória da solução, não um acessório.
+- Mais níveis que quatro seriam sinal de que o bloco deveria ser dividido.

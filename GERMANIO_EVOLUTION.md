@@ -62,14 +62,20 @@ gitlab-runner oficial) passam sem alteração, e o aplicativo resolvido é idên
 exceto `administrar` num bloco, que vale para a coleção (inclui criar) — sem efeito prático no
 GitLab, porque os papéis que ganharam criar já podiam criar por serem developer ou superior.
 
+Resultado **deste experimento** (não são metas da linguagem; ver `docs/INTENCAO.md` ›
+Como avaliar uma sintaxe):
+
 | Medida (domínio GitLab sem a compatibilidade) | Plano | Hierárquico |
 |---|---:|---:|
 | Linhas de código | 265 | 325 (+23%) |
 | Palavras | 772 | 598 (−23%) |
 | Menções a nomes de dados | 141 | 59 (−58%) |
 
-As linhas aumentam (cada item na sua linha, cada aspecto com título); a repetição do sujeito
-cai para menos da metade. A meta é o menor número de conceitos, não de caracteres.
+Leitura: mais linhas aqui criam estrutura visual (cada aspecto com título, um item por
+linha); a queda de repetição vem de informação que a hierarquia já determina. Nenhum desses
+números, sozinho, prova que a forma é melhor; a avaliação qualitativa (conceitos técnicos,
+carga cognitiva, previsibilidade da hierarquia, clareza, determinismo, leitura rápida) está
+em `docs/research/sintaxe-hierarquica.md` › Parte 4.
 
 Problemas gerais revelados no caminho: linhas desconhecidas eram ignoradas em silêncio;
 tab contava como 2 espaços; recuo sem pai não era diagnosticado; `administrar` governava dados

@@ -55,6 +55,7 @@ grammar = {
     "scopeName": "source.germanio",
     "patterns": [
         {"include": "#comment"},
+        {"include": "#data_block"},
         {"include": "#intent"},
         {"include": "#expression"},
     ],
@@ -121,6 +122,84 @@ grammar = {
                           "3": {"patterns": [kw("keyword.other.intent.germanio", "por", "para a", "para", "dos", "das", "do", "da", "de", "e"),
                                              {"name": "punctuation.separator.germanio", "match": ","},
                                              {"name": "entity.name.type.germanio", "match": NAME}]}}},
+        ]},
+        # Hierarchical data blocks (docs/INTENCAO.md › Sintaxe hierárquica): a name at
+        # column 1, sections below it; a section ends at the first line that is not
+        # more indented than the section itself (\\1 is the section's indentation).
+        "data_block": {"patterns": [
+            {"begin": r"^(" + w("pagina") + r"|page)\s+(" + NAMES + r")\s*$", "end": r"^(?=\S)",
+             "beginCaptures": {"1": {"name": "keyword.other.intent.germanio"}, "2": {"name": "entity.name.section.germanio"}},
+             "patterns": [{"include": "#comment"},
+                          {"match": r"^\s+(" + w("mostre") + r")\s+(" + NAMES + r")\s*$", "captures": {"1": {"name": "keyword.other.intent.germanio"}, "2": {"name": "entity.name.type.germanio"}}},
+                          {"match": r"^\s+(" + w("permita") + r")\s*$", "captures": {"1": {"name": "keyword.other.permission.germanio"}}},
+                          {"match": r"^\s+([0-9]+)\s+(" + w("por pagina") + r")", "captures": {"1": {"name": "constant.numeric.germanio"}, "2": {"name": "keyword.other.intent.germanio"}}},
+                          {"match": r"^\s+(" + NAME + r")\s*$", "captures": {"1": {"name": "entity.name.function.action.germanio"}}}]},
+            {"begin": r"^(?!" + words("tenha", "crie", "permita", "disponibilize", "importar", "vocabulario", "login", "escopo", "quando", "antes", "ao", "traduza", "enderecos", "integracao", "mensagens", "logica", "rotas", "sistema", "dados", "telas", "tema", "cada", "quem", "todo", "somente") + E + r")(?!.*" + B + words("tem", "pode", "podem", "pertence", "comeca", "herda", "recebe", "executa", "executam", "precisa", "e", "vira") + E + r")(" + NAMES + r")\s*$", "end": r"^(?=\S)",
+             "beginCaptures": {"1": {"name": "entity.name.type.data.germanio"}},
+             "patterns": [{"include": "#comment"}, {"include": "#section"}]},
+        ]},
+        "section": {"patterns": [
+            # tem + fields
+            {"begin": r"^(\s+)(" + w("tem") + r")\s*$", "end": r"^(?!\1\s+\S|\s*$)",
+             "beginCaptures": {"2": {"name": "keyword.other.intent.germanio"}},
+             "patterns": [{"include": "#comment"},
+                          {"match": r"^\s+(membros)\s+(com\s+papel)", "captures": {"1": {"name": "entity.name.type.germanio"}, "2": {"name": "storage.modifier.germanio"}}},
+                          {"match": r"^\s+(" + NAME + r")", "captures": {"1": {"name": "variable.other.property.field.germanio"}}},
+                          {"include": "#expression"}]},
+            {"match": r"^\s+(" + w("tem") + r")\s+(" + NAMES + r")\s*$", "captures": {"1": {"name": "keyword.other.intent.germanio"}, "2": {"name": "entity.name.type.germanio"}}},
+            # pode + capabilities
+            {"begin": r"^(\s+)(" + w("pode") + r")\s*$", "end": r"^(?!\1\s+\S|\s*$)",
+             "beginCaptures": {"2": {"name": "keyword.other.permission.germanio"}},
+             "patterns": [{"include": "#comment"},
+                          {"match": r"^\s+(ser)\s+(" + NAME + r")", "captures": {"1": {"name": "keyword.other.intent.germanio"}, "2": {"name": "storage.modifier.flag.germanio"}}},
+                          {"match": r"^\s+(" + NAME + r")\s*$", "captures": {"1": {"name": "entity.name.function.action.germanio"}}}]},
+            {"match": r"^\s+(" + w("pode") + r")\s+(" + NAME + r")\s*$", "captures": {"1": {"name": "keyword.other.permission.germanio"}, "2": {"name": "entity.name.function.action.germanio"}}},
+            # pertence a
+            {"begin": r"^(\s+)(" + w("pertence a") + r")\s*$", "end": r"^(?!\1\s+\S|\s*$)",
+             "beginCaptures": {"2": {"name": "keyword.other.intent.germanio"}},
+             "patterns": [{"include": "#comment"}, kw("storage.modifier.germanio", "opcional", "como"), {"name": "entity.name.type.germanio", "match": NAME}]},
+            {"match": r"^\s+(" + w("pertence a") + r")\s+(" + NAME + r")(?:\s+(" + w("opcional") + r"))?", "captures": {"1": {"name": "keyword.other.intent.germanio"}, "2": {"name": "entity.name.type.germanio"}, "3": {"name": "storage.modifier.germanio"}}},
+            # começa <estado>, singular <forma>
+            {"match": r"^\s+(" + w("comeca") + r")\s+(" + NAME + r")\s*$", "captures": {"1": {"name": "keyword.other.intent.germanio"}, "2": {"name": "constant.other.state.germanio"}}},
+            {"match": r"^\s+(singular)\s+(" + NAMES + r")\s*$", "captures": {"1": {"name": "keyword.other.intent.germanio"}, "2": {"name": "entity.name.type.germanio"}}},
+            # regras
+            {"begin": r"^(\s+)(regras)\s*$", "end": r"^(?!\1\s+\S|\s*$)",
+             "beginCaptures": {"2": {"name": "keyword.other.intent.germanio"}},
+             "patterns": [{"include": "#comment"},
+                          {"match": r"(" + w("quem cria vira") + r")\s+(" + NAME + r")", "captures": {"1": {"name": "keyword.other.intent.germanio"}, "2": {"name": "entity.name.class.role.germanio"}}},
+                          {"match": r"(" + w("precisa de pelo menos um") + r"|" + w("precisa ter pelo menos um") + r")\s+(" + NAME + r")", "captures": {"1": {"name": "keyword.other.intent.germanio"}, "2": {"name": "entity.name.class.role.germanio"}}},
+                          {"match": r"(" + w("herda membros do") + r"|" + w("nao pode ser mais visivel que o") + r")\s+(" + NAMES + r")\s*$", "captures": {"1": {"name": "keyword.other.intent.germanio"}, "2": {"name": "entity.name.type.germanio"}}},
+                          {"match": r"^\s+(" + NAME + r")\s+(" + words("e somente leitura", "e final", "pode ser vista por", "pode ser visto por") + r")\s*$", "captures": {"1": {"name": "constant.other.state.germanio"}, "2": {"name": "keyword.other.intent.germanio"}}},
+                          kw("keyword.other.permission.germanio", "ou superior", "ou"),
+                          {"match": r"^\s+(" + NAME + r")\s*$", "captures": {"1": {"name": "entity.name.class.role.germanio"}}}]},
+            # acesso › papel › ações
+            {"begin": r"^(\s+)(acesso)\s*$", "end": r"^(?!\1\s+\S|\s*$)",
+             "beginCaptures": {"2": {"name": "keyword.other.permission.germanio"}},
+             "patterns": [{"include": "#comment"},
+                          {"begin": r"^(\s+)(?:(" + w("somente") + r")\s+)?(" + role_subject + r")\s*$", "end": r"^(?!\1\s+\S|\s*$)",
+                           "beginCaptures": {"2": {"name": "keyword.other.permission.germanio"},
+                                             "3": {"patterns": [kw("keyword.operator.logical.germanio", "ou"), {"name": "entity.name.class.role.germanio", "match": NAME}]}},
+                           "patterns": [{"include": "#comment"}, {"include": "#action_line"}]}]},
+            # permita
+            {"begin": r"^(\s+)(" + w("permita") + r")\s*$", "end": r"^(?!\1\s+\S|\s*$)",
+             "beginCaptures": {"2": {"name": "keyword.other.permission.germanio"}},
+             "patterns": [{"include": "#comment"}, {"match": r"^\s+(" + NAME + r")(?:\s+(por)\s+(.+))?$",
+                           "captures": {"1": {"name": "entity.name.function.action.germanio"}, "2": {"name": "keyword.other.intent.germanio"},
+                                        "3": {"patterns": [kw("keyword.operator.logical.germanio", "e"), {"name": "variable.other.property.field.germanio", "match": NAME}]}}}]},
+            # integração [+ nome "x"]
+            {"begin": r"^(\s+)(" + w("integracao") + r")\s*$", "end": r"^(?!\1\s+\S|\s*$)",
+             "beginCaptures": {"2": {"name": "keyword.other.intent.germanio"}},
+             "patterns": [{"include": "#comment"}, {"include": "#string"}, kw("keyword.other.intent.germanio", "nome")]},
+            # quando / antes de <verbo> + lógica
+            {"begin": r"^(\s+)(" + words("quando", "antes de") + r")\s+(" + NAME + r")\s*$", "end": r"^(?!\1\s+\S|\s*$)",
+             "beginCaptures": {"2": {"name": "keyword.other.event.germanio"}, "3": {"name": "entity.name.function.action.germanio"}},
+             "patterns": [{"include": "#comment"}, {"include": "#expression"}]},
+            # frases com sujeito implícito
+            {"match": r"^\s+(" + words("recebe aprovacoes", "recebe eventos do", "recebe eventos da", "executam", "executa") + r")" + E + r"(.*)$",
+             "captures": {"1": {"name": "keyword.other.intent.germanio"}, "2": {"patterns": [{"include": "#string"}, kw("keyword.other.intent.germanio", "a cada envio de codigo conforme"), {"name": "entity.name.type.germanio", "match": NAME}]}}},
+            {"match": r"^\s+(" + words("repositorio pode comecar com") + r")\s+(.*)$",
+             "captures": {"1": {"name": "keyword.other.intent.germanio"}, "2": {"patterns": [{"include": "#string"}, kw("keyword.other.intent.germanio", "contendo")]}}},
+            {"include": "#expression"},
         ]},
         "intent": {"patterns": [
             # importar produtos e pedidos do backend

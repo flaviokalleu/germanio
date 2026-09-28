@@ -186,6 +186,32 @@ Germanio não busca o menor número de caracteres; busca o menor número de conc
 o aspecto nunca é omitido: `projetos` › `developer` › `enviar` é inválido; `acesso` diz que o
 que vem abaixo são pessoas e o que elas podem fazer.
 
+### Como avaliar uma sintaxe
+
+Uma construção nova é julgada nesta ordem de prioridade:
+
+1. conceitos técnicos que ela exige (menos é melhor);
+2. carga cognitiva de quem lê e escreve;
+3. repetição, reduzida só quando a hierarquia já determina a informação;
+4. previsibilidade visual da hierarquia;
+5. clareza semântica;
+6. determinismo;
+7. leitura rápida por pessoas;
+8. só depois, linhas, palavras e caracteres.
+
+Mais linhas podem ser melhores quando criam estrutura visual; menos palavras podem ser
+piores quando removem contexto necessário. Nenhuma métrica quantitativa, sozinha, prova que
+uma forma é melhor. As noções abaixo são diferentes e não devem ser confundidas:
+
+| Noção | O que mede | Exemplo |
+| --- | --- | --- |
+| densidade textual | quanto texto por fato | `issue pode fechar` é mais denso que o bloco `issues` › `pode` › `fechar` |
+| repetição | quantas vezes a mesma informação é escrita | `issue` repetido em dez frases; no bloco, uma vez |
+| complexidade sintática | quantas regras de forma é preciso saber | seções fixas e um item por linha têm poucas regras |
+| complexidade conceitual | quantas ideias é preciso entender | `acesso` › papel › ação são três ideias do domínio; chave estrangeira e status HTTP seriam técnicas |
+| profundidade hierárquica | quantos níveis até um fato | `dado › acesso › papel › ação` são quatro; mais que isso pede outro bloco ou a frase plana |
+| legibilidade | o quanto alguém encontra e entende o que procura | avaliada lendo exemplos pequenos, médios e grandes, não por contagem |
+
 ### Layout (normativo)
 
 - Indentação só com **espaços**. Tab no início de linha é erro; `ge fmt` o substitui.
