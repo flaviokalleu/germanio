@@ -806,8 +806,10 @@ A tabela é um contrato de aceitação, não uma declaração de que todos os te
 
 - Verbos que ligam e desligam uma condição sem máquina de estados (`pode` › `arquivar`,
   `restaurar`) ainda não existem; hoje a forma é `pode` › `ser arquivado`.
-- Seções de página além de `mostre`, `permita` e `N por página` (`topo`, `vazio`, `gráfico`,
-  `lista`, indicadores como `total de clientes`) são direção, não contrato implementado.
+- Seções de página além de `mostre`, `permita` e `N por página`: `topo`, `filtros`, `colunas`
+  e `vazio` estão em teste pela [GEP 0002](gep/0002-secoes-de-pagina.md) (implementadas, não
+  normativas até a decisão); `gráfico`, `lista` e indicadores como `total de clientes` seguem
+  como direção, dependentes de uma GEP de agregados.
 - `ge check --nivel N` (avisar construções acima de um nível) ainda não existe.
 
 ## Checklist de design de novas construções

@@ -1,6 +1,6 @@
 # GEP 0002: Page sections
 
-- **Status:** Rascunho
+- **Status:** Em teste (topo, ações `criar`, filtros, colunas e vazio implementados nas páginas de nível 1; `TestSecoesDePagina`; não normativo até a decisão)
 - **Author:** agent (research consolidation); decision by the maintainer
 - **Gaps:** G62 (and G80: `N por página` only under `mostre`)
 - **Level:** 1 (default)

@@ -1,0 +1,46 @@
+crie sistema Cadastro
+
+usuarios
+    tem
+        nome obrigatório
+        email obrigatório e único
+        senha min 8
+    acesso
+        usuario
+            editar seu perfil
+
+tenha login
+tenha cadastro
+login usa email
+
+clientes
+    tem
+        nome obrigatório
+        email obrigatório e único
+        telefone
+        cidade
+        status
+    acesso
+        usuario
+            ver
+            criar
+
+página Clientes
+    mostre clientes
+    topo
+        título "Nossos clientes"
+        texto "Todas as pessoas atendidas."
+        ações
+            criar "Novo cliente"
+    filtros
+        pesquisar
+        cidade
+    colunas
+        email
+        cidade
+    vazio
+        título "Nenhum cliente"
+        texto "Cadastre seu primeiro cliente."
+        ação criar "Cadastrar cliente"
+    permita
+        criar

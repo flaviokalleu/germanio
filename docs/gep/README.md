@@ -55,7 +55,7 @@ Rules:
 | GEP | Title | Status |
 | --- | --- | --- |
 | [0001](0001-processo-gep.md) | The GEP process | Aceita |
-| [0002](0002-secoes-de-pagina.md) | Page sections (top, actions, filters, columns, empty) | Rascunho |
+| [0002](0002-secoes-de-pagina.md) | Page sections (top, actions, filters, columns, empty) | Em teste |
 | [0003](0003-contrato-de-formulario.md) | The form contract (422, errors per field, no notices in the URL) | Rascunho |
 | [0004](0004-tema-como-tokens.md) | Theme as deterministic tokens with guaranteed contrast | Rascunho |
 | [0005](0005-concorrencia-por-intencao.md) | Concurrency by intent (bounded, cancellable, never dropped) | Rascunho |

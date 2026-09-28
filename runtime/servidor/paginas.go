@@ -407,7 +407,24 @@ type tableData struct {
 }
 
 func (ps *pageSite) table(e *ast.Entity, rows []any, base string) template.HTML {
+	return ps.tableWith(e, rows, base, nil)
+}
+
+// tableWith renders rows with the given columns (field names, in order), or
+// the entity's visible fields when names is empty.
+func (ps *pageSite) tableWith(e *ast.Entity, rows []any, base string, names []string) template.HTML {
 	cols := columns(e)
+	if len(names) > 0 {
+		cols = nil
+		for _, n := range names {
+			for _, f := range e.Model.Fields {
+				if strings.EqualFold(f.Name, n) {
+					cols = append(cols, f)
+					break
+				}
+			}
+		}
+	}
 	td := tableData{Empty: fmt.Sprintf("Nenhum registro de %s ainda.", strings.ToLower(e.Label)), Caption: e.Label + "s"}
 	td.Heads = append(td.Heads, e.Label)
 	for _, c := range cols {
@@ -676,16 +693,66 @@ func (ps *pageSite) serve(w http.ResponseWriter, r *http.Request) {
 			ps.notFound(w, v, message(out))
 			return
 		}
+		// The page's own sections (GEP 0002, em teste) replace only their
+		// default, and only on the page itself (not on nested lists).
+		own := len(chain) == 1
 		v.Title = last.e.Label + "s"
+		if own && pg.Title != "" {
+			v.Title = pg.Title
+		}
+		canCreate := atual != nil && ps.a.canCreateFor(ctx, atual, last.e, chain)
+		createLabel := "Novo " + strings.ToLower(last.e.Label)
 		body.WriteString(string(htmlOf(headingTpl, v.Title)))
-		if len(last.e.Search) > 0 || len(last.e.Filters) > 0 {
-			body.WriteString(string(htmlOf(searchTpl, map[string]any{"Q": q.Get("q"), "Search": len(last.e.Search) > 0, "Filters": last.e.Filters, "Values": q})))
+		if own && pg.Text != "" {
+			body.WriteString(string(htmlOf(introTpl, pg.Text)))
+		}
+		if own && canCreate {
+			for _, act := range pg.Actions {
+				label := act.Label
+				if label == "" {
+					label = createLabel
+				}
+				createLabel = label
+				body.WriteString(string(htmlOf(actionLinkTpl, map[string]any{"Href": "#novo", "Label": label})))
+			}
+		}
+		search, filters := len(last.e.Search) > 0, last.e.Filters
+		if own && len(pg.Filters) > 0 {
+			search, filters = false, nil
+			for _, f := range pg.Filters {
+				if f == "pesquisar" {
+					search = true
+				} else {
+					filters = append(filters, f)
+				}
+			}
+		}
+		if search || len(filters) > 0 {
+			body.WriteString(string(htmlOf(searchTpl, map[string]any{"Q": q.Get("q"), "Search": search, "Filters": filters, "Values": q})))
 		}
 		base := strings.TrimSuffix(r.URL.Path, "/")
-		body.WriteString(string(ps.table(last.e, asList(out), base)))
-		body.WriteString(string(htmlOf(pagerTpl, pager(q, len(asList(out)), per))))
-		if atual != nil && ps.a.canCreateFor(ctx, atual, last.e, chain) {
-			body.WriteString(string(ps.form(base+"/novo", "Criar", v.CSRF, "Novo "+strings.ToLower(last.e.Label), ps.inputs(r, chain, last.e, nil, ps.fixedFor(chain)))))
+		rows := asList(out)
+		if own && len(rows) == 0 && pg.Empty != nil && q.Get("q") == "" {
+			empty := map[string]any{"Title": pg.Empty.Title, "Text": pg.Empty.Text}
+			if pg.Empty.Action != nil && canCreate {
+				label := pg.Empty.Action.Label
+				if label == "" {
+					label = createLabel
+				}
+				empty["Action"] = map[string]any{"Href": "#novo", "Label": label}
+			}
+			body.WriteString(string(htmlOf(emptyStateTpl, empty)))
+		} else {
+			var cols []string
+			if own {
+				cols = pg.Columns
+			}
+			body.WriteString(string(ps.tableWith(last.e, rows, base, cols)))
+		}
+		body.WriteString(string(htmlOf(pagerTpl, pager(q, len(rows), per))))
+		if canCreate {
+			body.WriteString(`<div id="novo"></div>`)
+			body.WriteString(string(ps.form(base+"/novo", "Criar", v.CSRF, createLabel, ps.inputs(r, chain, last.e, nil, ps.fixedFor(chain)))))
 		}
 		v.Body = template.HTML(body.String())
 		ps.render(w, v, status)
@@ -1314,7 +1381,8 @@ pre{background:var(--soft);border:1px solid var(--line);border-radius:6px;paddin
 .codigo td{padding:0 10px;border:0;font:13px/1.5 ui-monospace,monospace;white-space:pre}.codigo td.n{color:var(--muted);text-align:right;user-select:none}
 .diff .add{background:#dafbe1}.diff .del{background:#ffebe9}.diff .hunk{color:var(--muted)}
 @media (prefers-color-scheme:dark){.diff .add{background:#12261e}.diff .del{background:#2d1117}}
-.paginas{display:flex;gap:12px;margin-top:10px}
+.paginas{display:flex;gap:12px;margin-top:10px}.intro{color:var(--muted);margin:-8px 0 16px}
+a.botao{display:inline-block;padding:7px 14px;border-radius:6px;background:var(--accent);color:var(--on-accent);text-decoration:none}
 @media (max-width:640px){main{padding:12px}th,td{padding:6px 8px}}
 </style></head><body>
 <header><a class="marca" href="/">{{.System}}</a><nav>{{range .Nav}}<a href="{{.Href}}">{{.Text}}</a>{{end}}</nav>
@@ -1326,6 +1394,9 @@ pre{background:var(--soft);border:1px solid var(--line);border-radius:6px;paddin
 var headingTpl = tpl(`<h1>{{.}}</h1>`)
 var sectionTpl = tpl(`<h2>{{.Title}}{{if .Href}}<a href="{{.Href}}">ver tudo</a>{{end}}</h2>`)
 var emptyTpl = tpl(`<div class="vazio">{{.}}</div>`)
+var introTpl = tpl(`<p class="intro">{{.}}</p>`)
+var actionLinkTpl = tpl(`<p class="acoes"><a class="botao" href="{{.Href}}">{{.Label}}</a></p>`)
+var emptyStateTpl = tpl(`<div class="vazio" role="status">{{if .Title}}<h2>{{.Title}}</h2>{{end}}{{if .Text}}<p>{{.Text}}</p>{{end}}{{with .Action}}<p><a class="botao" href="{{.Href}}">{{.Label}}</a></p>{{end}}</div>`)
 var tableTpl = tpl(`{{if .Rows}}<div class="tabela"><table>{{if .Caption}}<caption class="sr">{{.Caption}}</caption>{{end}}<thead><tr>{{range .Heads}}<th scope="col">{{.}}</th>{{end}}</tr></thead><tbody>
 {{range .Rows}}<tr><td><a href="{{.Href}}">{{.Title}}</a>{{if .Body}}<div class="texto">{{.Body}}</div>{{end}}</td>{{range .Cells}}<td>{{if .Badge}}<span class="selo">{{.Text}}</span>{{else}}{{.Text}}{{end}}</td>{{end}}</tr>{{end}}
 </tbody></table></div>{{else}}<div class="vazio">{{.Empty}}</div>{{end}}`)

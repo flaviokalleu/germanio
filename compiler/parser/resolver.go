@@ -1152,6 +1152,9 @@ func ResolveIntent(prog *ast.Program) error {
 				addRule(e, &ast.AccessRule{Verb: cv, SignedIn: app.LoginEntity != "", Anyone: app.LoginEntity == ""})
 			}
 		}
+		if err := r.pageSections(e, pg); err != nil {
+			return err
+		}
 	}
 
 	app.ReservedAddresses = in.ReservedAddresses
@@ -1409,6 +1412,70 @@ func (r *resolver) addressRef(app *ast.App, e *ast.Entity, name string, pos diag
 }
 
 // where shows a declaration's origin: file:line and, inside a block, its path.
+// pageSections checks the sections of a page against the data it shows
+// (GEP 0002, em teste): an action must already be allowed by the page (the
+// page asks, the domain decides who sees it), filters imply the filter (it
+// only narrows what is already visible), columns must exist and not be
+// secret.
+func (r *resolver) pageSections(e *ast.Entity, pg *ast.PageDecl) error {
+	allowed := map[string]bool{}
+	for _, v := range pg.Permits {
+		allowed[CanonVerb(v)] = true
+	}
+	checkAction := func(a *ast.PageAction) error {
+		if a == nil {
+			return nil
+		}
+		if !allowed[CanonVerb(a.Verb)] {
+			return r.errAt(a.Pos, "a página %s oferece a ação %s, mas não a permite. Acrescente %s em permita da página (quem pode fazer continua decidido pelo acesso de %s)", pg.Name, a.Verb, a.Verb, e.Plural)
+		}
+		return nil
+	}
+	for _, a := range pg.Actions {
+		if err := checkAction(a); err != nil {
+			return err
+		}
+		if CanonVerb(a.Verb) != "criar" {
+			return r.errAt(a.Pos, "no topo da página só cabe a ação criar por enquanto; %s é uma ação de cada registro e aparece nele", a.Verb)
+		}
+	}
+	if pg.Empty != nil {
+		if err := checkAction(pg.Empty.Action); err != nil {
+			return err
+		}
+	}
+	for _, f := range pg.Filters {
+		if f == "pesquisar" {
+			if len(e.Search) == 0 {
+				e.Search = searchable(e)
+			}
+			continue
+		}
+		fd := fieldByNameAST(e.Model, f)
+		if fd == nil {
+			return r.errAt(pg.Pos, "a página %s filtra por %s, mas %s não tem esse campo", pg.Name, f, e.Plural)
+		}
+		name := strings.ToLower(fd.Name)
+		known := false
+		for _, have := range e.Filters {
+			known = known || have == name
+		}
+		if !known {
+			e.Filters = append(e.Filters, name)
+		}
+	}
+	for _, c := range pg.Columns {
+		fd := fieldByNameAST(e.Model, c)
+		if fd == nil {
+			return r.errAt(pg.Pos, "a página %s mostra a coluna %s, mas %s não tem esse campo", pg.Name, c, e.Plural)
+		}
+		if fd.Hidden || fd.IsSecret() || fd.Private {
+			return r.errAt(pg.Pos, "a coluna %s de %s é privada ou secreta e não aparece em tabelas", c, e.Plural)
+		}
+	}
+	return nil
+}
+
 // sameField: two declarations of a field that mean the same (position aside).
 func sameField(a, b *ast.Field) bool {
 	x, y := *a, *b

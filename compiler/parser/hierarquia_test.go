@@ -202,6 +202,12 @@ func TestHierarquiaErros(t *testing.T) {
 		{"login com complemento", "tenha login com email e senha\n", []string{"mistura a declaração do login", "login usa email"}},
 		{"por página no nível da página", "tenha clientes\n\ncada cliente tem\n    nome\n\npágina Clientes\n    mostre clientes\n    20 por página\n", []string{"está no nível da página", "abaixo de mostre"}},
 		{"linha desconhecida sob mostre", "tenha clientes\n\ncada cliente tem\n    nome\n\npágina Clientes\n    mostre clientes\n        em ordem\n", []string{"não é algo que mostre aceite"}},
+		{"rótulo sem verbo no topo", "tenha clientes\n\ncada cliente tem\n    nome\n    cidade\n    anotacao oculto\n\npágina Clientes\n    mostre clientes\n    topo\n        ações\n            \"Novo cliente\"\n    permita\n        criar\n", []string{"é só um rótulo", "criar \"Novo cliente\""}},
+		{"ação não permitida pela página", "tenha clientes\n\ncada cliente tem\n    nome\n    cidade\n    anotacao oculto\n\npágina Clientes\n    mostre clientes\n    topo\n        ações\n            criar \"Novo\"\n", []string{"oferece a ação criar, mas não a permite"}},
+		{"ação de registro no topo", "tenha clientes\n\ncada cliente tem\n    nome\n    cidade\n    anotacao oculto\n\npágina Clientes\n    mostre clientes\n    topo\n        ações\n            excluir\n    permita\n        excluir\n", []string{"só cabe a ação criar"}},
+		{"coluna inexistente", "tenha clientes\n\ncada cliente tem\n    nome\n    cidade\n    anotacao oculto\n\npágina Clientes\n    mostre clientes\n    colunas\n        telefone\n", []string{"não tem esse campo"}},
+		{"coluna secreta", "tenha clientes\n\ncada cliente tem\n    nome\n    cidade\n    anotacao oculto\n\npágina Clientes\n    mostre clientes\n    colunas\n        anotacao\n", []string{"privada ou secreta"}},
+		{"seção de página vazia", "tenha clientes\n\ncada cliente tem\n    nome\n    cidade\n    anotacao oculto\n\npágina Clientes\n    mostre clientes\n    filtros\n", []string{"a seção filtros está vazia"}},
 		{"integração em conflito", "projetos\n    tem\n        nome\n    integração\n        nome \"projects\"\n\ndisponibilize projetos para integração como \"repos\"\n", []string{"já é \"projects\""}},
 	}
 	for _, c := range cases {

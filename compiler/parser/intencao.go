@@ -509,6 +509,12 @@ func (p *Parser) parseCrie(head dline, body []dline) error {
 					}
 				}
 				i += len(children(body, i))
+			case pageSections[bw[0]] && len(bw) == 1:
+				last, err := p.pageSection(pg, body, i)
+				if err != nil {
+					return err
+				}
+				i = last
 			case len(bw) == 3 && bw[1] == "por" && bw[2] == "pagina":
 				return p.teach(body[i].toks[0], "\""+lineText(body[i])+"\" está no nível da página",
 					"quantos registros aparecem por página é uma propriedade do que a página mostra",

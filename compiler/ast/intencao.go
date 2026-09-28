@@ -157,6 +157,31 @@ type PageDecl struct {
 	Permits []string
 	PerPage int
 	Pos     diagnostics.Position
+	// Page sections (GEP 0002, em teste): each one only replaces its own
+	// default; none is required.
+	Title   string        // topo › título "X"
+	Text    string        // topo › texto "X"
+	Actions []*PageAction // topo › ações › verbo ["rótulo"]
+	Filters []string      // filtros › pesquisar | campo
+	Columns []string      // colunas › campo
+	Empty   *PageEmpty    // vazio › título, texto, ação
+}
+
+// PageAction is a verb the page offers, with an optional label. The verb
+// must already be allowed by the page (permita): the page asks, the domain
+// decides who sees it.
+type PageAction struct {
+	Verb  string
+	Label string
+	Pos   diagnostics.Position
+}
+
+// PageEmpty is what the page says when there is nothing to show.
+type PageEmpty struct {
+	Title  string
+	Text   string
+	Action *PageAction
+	Pos    diagnostics.Position
 }
 
 // MergeIntent combines the intent of imported files.
