@@ -1042,7 +1042,14 @@ func ResolveIntent(prog *ast.Program) error {
 			}
 			rule.MinRole = app.Roles[0].Name
 		default:
-			return r.errAt(g.Pos, "papel %q não declarado. Use tenha papeis ou um papel existente (administrador, todos, %s)", role, app.LoginEntity)
+			existing := []string{"administrador", "todos"}
+			if app.LoginEntity != "" {
+				existing = append(existing, app.LoginEntity)
+			}
+			for _, rl := range app.Roles {
+				existing = append(existing, rl.Name)
+			}
+			return r.errAt(g.Pos, "papel %q não declarado. Use tenha papeis ou um papel existente (%s)", role, strings.Join(existing, ", "))
 		}
 		target := g.Target
 		verb := CanonVerb(g.Verb)

@@ -669,7 +669,7 @@ func (l *Lexer) scanString() error {
 			l.col++
 		}
 		if l.pos >= len(l.source) {
-			return fmt.Errorf("unterminated multiline string at line %d, column %d", startLine, startCol)
+			return fmt.Errorf("o texto entre três aspas aberto na linha %d, coluna %d, não foi fechado: feche com \"\"\"", startLine, startCol)
 		}
 		l.pos += 3
 		l.col += 3
@@ -681,12 +681,12 @@ func (l *Lexer) scanString() error {
 	var buf strings.Builder
 	for l.pos < len(l.source) && l.peek() != '"' {
 		if l.peek() == '\n' {
-			return fmt.Errorf("unterminated string at line %d, column %d", startLine, startCol)
+			return fmt.Errorf("o texto aberto na linha %d, coluna %d, não foi fechado: feche com \" na mesma linha", startLine, startCol)
 		}
 		if l.peek() == '\\' {
 			l.advance()
 			if l.pos >= len(l.source) {
-				return fmt.Errorf("unterminated escape at line %d", l.line)
+				return fmt.Errorf("a barra invertida no fim do texto da linha %d não escapa nada: use \\\\ para uma barra", l.line)
 			}
 			switch l.peek() {
 			case 'n':
@@ -709,7 +709,7 @@ func (l *Lexer) scanString() error {
 		buf.WriteRune(l.advance())
 	}
 	if l.pos >= len(l.source) {
-		return fmt.Errorf("unterminated string at line %d, column %d", startLine, startCol)
+		return fmt.Errorf("o texto aberto na linha %d, coluna %d, não foi fechado: feche com \" na mesma linha", startLine, startCol)
 	}
 	l.advance() // skip closing quote
 	l.tokens = append(l.tokens, Token{Type: TokenString, Value: buf.String(), Line: startLine, Column: startCol})
