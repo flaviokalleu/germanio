@@ -2,7 +2,9 @@ package servidor
 
 import (
 	"io/fs"
+	"math"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -46,4 +48,45 @@ func uploadsServer(dir string) http.Handler {
 		}
 		files.ServeHTTP(w, r)
 	})
+}
+
+// onColor picks the text color for a background color: white or near-black,
+// whichever has the higher contrast (WCAG 2.2 formula). White text on a
+// theme color used to fall below 4.5:1 (blue 3.68, yellow 1.92).
+func onColor(bg string) string {
+	const dark = "#000000"
+	if contrastRatio("#ffffff", bg) >= contrastRatio(dark, bg) {
+		return "#ffffff"
+	}
+	return dark
+}
+
+func contrastRatio(a, b string) float64 {
+	la, lb := relLuminance(a), relLuminance(b)
+	if la < lb {
+		la, lb = lb, la
+	}
+	return (la + 0.05) / (lb + 0.05)
+}
+
+func relLuminance(hex string) float64 {
+	hex = strings.TrimPrefix(strings.TrimSpace(hex), "#")
+	if len(hex) == 3 {
+		hex = string([]byte{hex[0], hex[0], hex[1], hex[1], hex[2], hex[2]})
+	}
+	if len(hex) != 6 {
+		return 0
+	}
+	ch := func(i int) float64 {
+		v, err := strconv.ParseUint(hex[i:i+2], 16, 8)
+		if err != nil {
+			return 0
+		}
+		c := float64(v) / 255
+		if c <= 0.04045 {
+			return c / 12.92
+		}
+		return math.Pow((c+0.055)/1.055, 2.4)
+	}
+	return 0.2126*ch(0) + 0.7152*ch(2) + 0.0722*ch(4)
 }

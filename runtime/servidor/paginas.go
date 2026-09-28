@@ -400,14 +400,15 @@ type tableRow struct {
 	Cells []cell
 }
 type tableData struct {
-	Heads []string
-	Rows  []tableRow
-	Empty string
+	Heads   []string
+	Rows    []tableRow
+	Empty   string
+	Caption string
 }
 
 func (ps *pageSite) table(e *ast.Entity, rows []any, base string) template.HTML {
 	cols := columns(e)
-	td := tableData{Empty: fmt.Sprintf("Nenhum registro de %s ainda.", strings.ToLower(e.Label))}
+	td := tableData{Empty: fmt.Sprintf("Nenhum registro de %s ainda.", strings.ToLower(e.Label)), Caption: e.Label + "s"}
 	td.Heads = append(td.Heads, e.Label)
 	for _, c := range cols {
 		td.Heads = append(td.Heads, fieldLabel(c))
@@ -718,8 +719,14 @@ func (ps *pageSite) serve(w http.ResponseWriter, r *http.Request) {
 	// Children: what belongs to this record
 	for _, c := range ps.a.childrenOf(last.e) {
 		ccode, cout, _ := ps.call(r, "GET", api+"/"+c.Plural+"?por_pagina=10", nil)
-		if ccode != 200 {
+		if ccode >= 500 {
+			// an internal failure is shown, never hidden like a permission
+			body.WriteString(string(htmlOf(sectionTpl, map[string]any{"Title": c.Label + "s"})))
+			body.WriteString(string(htmlOf(emptyTpl, "Não foi possível carregar esta parte agora. Tente de novo mais tarde.")))
 			continue
+		}
+		if ccode != 200 {
+			continue // not allowed to see: nothing is shown
 		}
 		body.WriteString(string(htmlOf(sectionTpl, map[string]any{"Title": c.Label + "s", "Href": base + "/" + c.Plural})))
 		body.WriteString(string(ps.table(c, asList(cout), base+"/"+c.Plural)))
@@ -1257,8 +1264,9 @@ func tpl(src string) *template.Template {
 var layoutTpl = tpl(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{{.Title}} · {{.System}}</title>
 {{.Meta}}<style>
-:root{--fg:#1f2328;--muted:#656d76;--line:#d0d7de;--bg:#fff;--soft:#f6f8fa;--accent:#6e40c9;--ok:#1a7f37;--bad:#cf222e}
-@media (prefers-color-scheme:dark){:root{--fg:#e6edf3;--muted:#8d96a0;--line:#30363d;--bg:#0d1117;--soft:#161b22;--accent:#a371f7}}
+:root{--fg:#1f2328;--muted:#656d76;--line:#d0d7de;--field:#8c959f;--bg:#fff;--soft:#f6f8fa;--accent:#6e40c9;--on-accent:#fff;--ok:#1a7f37;--bad:#cf222e;--on-bad:#fff}
+@media (prefers-color-scheme:dark){:root{--fg:#e6edf3;--muted:#8d96a0;--line:#30363d;--field:#6e7681;--bg:#0d1117;--soft:#161b22;--accent:#a371f7;--on-accent:#0d1117;--bad:#f85149;--on-bad:#0d1117}}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 *{box-sizing:border-box}body{margin:0;font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--fg);background:var(--bg)}
 a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
 header{display:flex;align-items:center;gap:16px;padding:10px 20px;border-bottom:1px solid var(--line);background:var(--soft);flex-wrap:wrap}
@@ -1273,9 +1281,9 @@ th{background:var(--soft);font-weight:600;font-size:13px;color:var(--muted)}tr:l
 .vazio{padding:24px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:6px}
 form.caixa{border:1px solid var(--line);border-radius:6px;padding:16px;margin-top:16px;display:grid;gap:10px;max-width:640px}
 form.caixa h3{margin:0 0 4px;font-size:16px}label{display:grid;gap:4px;font-size:13px;color:var(--muted)}
-input,select,textarea{font:inherit;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg);width:100%}
-input[type=checkbox]{width:auto}textarea{min-height:90px}button{font:inherit;padding:7px 14px;border-radius:6px;border:1px solid var(--line);background:var(--accent);color:#fff;cursor:pointer;width:max-content}
-button.perigo{background:var(--bad)}.acoes{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.acoes form{display:inline}
+input,select,textarea{font:inherit;padding:7px 9px;border:1px solid var(--field);border-radius:6px;background:var(--bg);color:var(--fg);width:100%}
+input[type=checkbox]{width:auto}textarea{min-height:90px}button{font:inherit;padding:7px 14px;border-radius:6px;border:1px solid var(--line);background:var(--accent);color:var(--on-accent);cursor:pointer;width:max-content}
+button.perigo{background:var(--bad);color:var(--on-bad)}.acoes{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.acoes form{display:inline}
 dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 16px;margin:0}dt{color:var(--muted)}dd{margin:0;overflow-wrap:anywhere}
 .busca{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}.busca input,.busca select{width:auto;flex:1;min-width:140px}
 pre{background:var(--soft);border:1px solid var(--line);border-radius:6px;padding:12px;overflow-x:auto;font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace}
@@ -1294,7 +1302,7 @@ pre{background:var(--soft);border:1px solid var(--line);border-radius:6px;paddin
 var headingTpl = tpl(`<h1>{{.}}</h1>`)
 var sectionTpl = tpl(`<h2>{{.Title}}{{if .Href}}<a href="{{.Href}}">ver tudo</a>{{end}}</h2>`)
 var emptyTpl = tpl(`<div class="vazio">{{.}}</div>`)
-var tableTpl = tpl(`{{if .Rows}}<div class="tabela"><table><thead><tr>{{range .Heads}}<th>{{.}}</th>{{end}}</tr></thead><tbody>
+var tableTpl = tpl(`{{if .Rows}}<div class="tabela"><table>{{if .Caption}}<caption class="sr">{{.Caption}}</caption>{{end}}<thead><tr>{{range .Heads}}<th scope="col">{{.}}</th>{{end}}</tr></thead><tbody>
 {{range .Rows}}<tr><td><a href="{{.Href}}">{{.Title}}</a>{{if .Body}}<div class="texto">{{.Body}}</div>{{end}}</td>{{range .Cells}}<td>{{if .Badge}}<span class="selo">{{.Text}}</span>{{else}}{{.Text}}{{end}}</td>{{end}}</tr>{{end}}
 </tbody></table></div>{{else}}<div class="vazio">{{.Empty}}</div>{{end}}`)
 var formTpl = tpl(`<form class="{{if .Title}}caixa{{end}}" method="post" action="{{.Action}}">{{if .Title}}<h3>{{.Title}}</h3>{{end}}
@@ -1305,8 +1313,8 @@ var formTpl = tpl(`<form class="{{if .Title}}caixa{{end}}" method="post" action=
 {{else}}<label>{{.Label}}<input type="{{.Type}}" name="{{.Name}}" value="{{.Value}}" {{if .Required}}required{{end}}></label>{{end}}{{end}}
 <button {{if .Danger}}class="perigo"{{end}}>{{.Submit}}</button></form>`)
 var detailTpl = tpl(`<dl>{{range .}}<dt>{{.Label}}</dt><dd>{{if .HTML}}<div class="texto">{{.HTML}}</div>{{else}}{{.Value}}{{end}}</dd>{{end}}</dl>`)
-var searchTpl = tpl(`<form class="busca" method="get">{{if .Search}}<input type="search" name="q" value="{{.Q}}" placeholder="Pesquisar">{{end}}
-{{range .Filters}}<input name="{{.}}" value="{{getv $.Values .}}" placeholder="{{label .}}">{{end}}<button>Filtrar</button></form>`)
+var searchTpl = tpl(`<form class="busca" method="get" role="search">{{if .Search}}<label><span class="sr">Pesquisar</span><input type="search" name="q" value="{{.Q}}" placeholder="Pesquisar"></label>{{end}}
+{{range .Filters}}<label><span class="sr">{{label .}}</span><input name="{{.}}" value="{{getv $.Values .}}" placeholder="{{label .}}"></label>{{end}}<button>Filtrar</button></form>`)
 var pagerTpl = tpl(`<div class="paginas">{{if .Prev}}<a href="{{.Prev}}">← anterior</a>{{end}}{{if .Next}}<a href="{{.Next}}">próxima →</a>{{end}}</div>`)
 var treeTpl = tpl(`{{if .Entries}}<div class="tabela"><table><tbody>{{range .Entries}}<tr><td>{{if eq (get . "type") "tree"}}📁{{else}}📄{{end}}
 <a href="{{$.Base}}/codigo?caminho={{get . "path"}}">{{get . "name"}}</a></td></tr>{{end}}</tbody></table></div>{{else}}<div class="vazio">Pasta vazia.</div>{{end}}`)

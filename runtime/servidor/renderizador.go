@@ -39,6 +39,7 @@ tailwind.config = {
     extend: {
       colors: {
         primary: '` + theme.Primary + `',
+        onprimary: '` + onColor(theme.Primary) + `',
         secondary: '` + theme.Secondary + `',
         accent: '` + theme.Accent + `',
       },
@@ -103,7 +104,7 @@ tailwind.config = {
 		b.WriteString(fmt.Sprintf(`<div class="mb-4"><label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1.5">%s</label><input type="text" id="auth-login" required class="w-full bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="%s"></div>`, cap(loginField), loginField))
 		b.WriteString(fmt.Sprintf(`<div class="mb-4"><label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1.5">%s</label><input type="password" id="auth-pass" required class="w-full bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="%s" minlength="6"></div>`, cap(passField), passField))
 		b.WriteString(`<div id="auth-error" class="text-red-500 text-sm my-2 hidden"></div>`)
-		b.WriteString(`<button type="submit" class="w-full bg-primary hover:bg-primary/80 text-white py-2.5 rounded-xl font-medium transition-all mt-3">Entrar</button>`)
+		b.WriteString(`<button type="submit" class="w-full bg-primary hover:bg-primary/80 text-onprimary py-2.5 rounded-xl font-medium transition-all mt-3">Entrar</button>`)
 		b.WriteString(`<p class="text-center mt-4 text-sm text-gray-500">`)
 		b.WriteString(`<span id="auth-toggle-text">Nao tem conta?</span> <a href="#" onclick="toggleAuthMode()" id="auth-toggle-link" class="text-primary hover:underline">Criar conta</a></p>`)
 		b.WriteString(`<button type="button" onclick="fecharAuth()" class="w-full mt-2 px-6 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all text-sm">Cancelar</button>`)
@@ -289,7 +290,7 @@ func (s *Servidor) renderTopbar() string {
 	// Auth button
 	if s.Auth != nil {
 		b.WriteString(`<div id="auth-area" class="flex items-center gap-2">`)
-		b.WriteString(`<button class="bg-primary hover:bg-primary/80 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2" id="btn-login" onclick="mostrarLogin()"><span class="w-4 h-4 inline-flex">` + svgIcon("user") + `</span><span>Entrar</span></button>`)
+		b.WriteString(`<button class="bg-primary hover:bg-primary/80 text-onprimary px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2" id="btn-login" onclick="mostrarLogin()"><span class="w-4 h-4 inline-flex">` + svgIcon("user") + `</span><span>Entrar</span></button>`)
 		b.WriteString(`<span id="user-info" class="hidden text-sm text-gray-500 dark:text-gray-400"></span>`)
 		b.WriteString(`<button class="hidden text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 px-3 py-2 rounded-lg text-sm transition-all" id="btn-logout" onclick="sair()">Sair</button>`)
 		b.WriteString(`</div>`)
@@ -511,7 +512,7 @@ func (s *Servidor) renderScreenComponent(b *strings.Builder, comp *ast.Component
 				action = fmt.Sprintf("abrirForm('%s')", lo(model.Name))
 			}
 		}
-		b.WriteString(fmt.Sprintf(`<button class="bg-primary hover:bg-primary/80 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 mb-4" onclick="%s">%s</button>`, action, html.EscapeString(label)))
+		b.WriteString(fmt.Sprintf(`<button class="bg-primary hover:bg-primary/80 text-onprimary px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 mb-4" onclick="%s">%s</button>`, action, html.EscapeString(label)))
 	case ast.CompChat:
 		s.renderChatComponent(b, comp)
 	case ast.CompForm:
@@ -527,7 +528,7 @@ func (s *Servidor) renderScreenComponent(b *strings.Builder, comp *ast.Component
 				break
 			}
 		}
-		b.WriteString(`<button type="submit" class="bg-primary hover:bg-primary/80 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2"><span class="w-4 h-4 inline-flex">` + svgIcon("check") + `</span><span>Salvar</span></button>`)
+		b.WriteString(`<button type="submit" class="bg-primary hover:bg-primary/80 text-onprimary px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2"><span class="w-4 h-4 inline-flex">` + svgIcon("check") + `</span><span>Salvar</span></button>`)
 		b.WriteString(`</form></div>`)
 	default:
 		for _, child := range comp.Children {
@@ -576,7 +577,7 @@ func (s *Servidor) renderChatComponent(b *strings.Builder, comp *ast.Component) 
 	b.WriteString(`<form class="flex gap-2 p-4 border-t border-gray-200 dark:border-gray-800 items-center" onsubmit="chatSend('` + target + `',event)">`)
 	b.WriteString(`<input type="file" id="chat-file-` + target + `" accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.txt" onchange="chatUpload('` + target + `',this)" class="max-w-[160px] text-xs">`)
 	b.WriteString(`<input type="text" id="chat-input-` + target + `" placeholder="Digite uma mensagem" oninput="chatTyping('` + target + `',true)" onblur="chatTyping('` + target + `',false)" class="flex-1 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50">`)
-	b.WriteString(`<button class="bg-primary hover:bg-primary/80 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all" type="submit">Enviar</button>`)
+	b.WriteString(`<button class="bg-primary hover:bg-primary/80 text-onprimary px-4 py-2 rounded-xl text-sm font-medium transition-all" type="submit">Enviar</button>`)
 	b.WriteString(`</form></div>`)
 
 	b.WriteString(`</div>`) // chat shell
@@ -602,7 +603,7 @@ func (s *Servidor) renderModelSection(b *strings.Builder, model *ast.Model, them
 	b.WriteString(`<div class="flex items-center gap-2">`)
 	b.WriteString(fmt.Sprintf(`<button class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 px-3 py-2 rounded-lg text-sm transition-all" onclick="exportar('%s','csv')"><span class="w-4 h-4 inline-block align-middle mr-1">%s</span>CSV</button>`, name, svgIcon("file")))
 	b.WriteString(fmt.Sprintf(`<button class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 px-3 py-2 rounded-lg text-sm transition-all" onclick="exportar('%s','json')"><span class="w-4 h-4 inline-block align-middle mr-1">%s</span>JSON</button>`, name, svgIcon("file")))
-	b.WriteString(fmt.Sprintf(`<button class="bg-primary hover:bg-primary/80 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2" onclick="abrirForm('%s')"><span class="w-4 h-4 inline-flex">%s</span><span>Novo %s</span></button>`, name, svgIcon("plus"), html.EscapeString(capName)))
+	b.WriteString(fmt.Sprintf(`<button class="bg-primary hover:bg-primary/80 text-onprimary px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2" onclick="abrirForm('%s')"><span class="w-4 h-4 inline-flex">%s</span><span>Novo %s</span></button>`, name, svgIcon("plus"), html.EscapeString(capName)))
 	b.WriteString(`</div></div>`)
 
 	// Status/Enum tabs for filtering
@@ -677,7 +678,7 @@ func (s *Servidor) renderModelModal(b *strings.Builder, model *ast.Model) {
 	}
 
 	b.WriteString(`<div class="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-800">`)
-	b.WriteString(`<button type="submit" class="flex-1 bg-primary hover:bg-primary/80 text-white py-2.5 rounded-xl font-medium transition-all flex items-center justify-center gap-2"><span class="w-4 h-4 inline-flex">` + svgIcon("check") + `</span>Salvar</button>`)
+	b.WriteString(`<button type="submit" class="flex-1 bg-primary hover:bg-primary/80 text-onprimary py-2.5 rounded-xl font-medium transition-all flex items-center justify-center gap-2"><span class="w-4 h-4 inline-flex">` + svgIcon("check") + `</span>Salvar</button>`)
 	b.WriteString(fmt.Sprintf(`<button type="button" onclick="fecharForm('%s')" class="px-6 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all text-sm">Cancelar</button>`, name))
 	b.WriteString(`</div></form></div></div>`)
 }
