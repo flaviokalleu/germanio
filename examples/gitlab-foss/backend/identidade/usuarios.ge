@@ -31,8 +31,6 @@ tenha administrador inicial "root"
 login usa username e email
 login exige estado "ativo"
 login bloqueia após 10 tentativas por 10 minutos
-login aceita tokens de acesso no cabeçalho "PRIVATE-TOKEN"
-login aceita oauth por 2 horas
 
 escopo "api" permite tudo
 escopo "read_api" permite ler

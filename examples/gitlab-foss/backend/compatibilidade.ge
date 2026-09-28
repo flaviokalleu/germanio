@@ -4,6 +4,10 @@
 integração em "/api/v4"
 mensagens em inglês
 
+# Como clientes do GitLab se autenticam (protocolo, não produto).
+login aceita tokens de acesso no cabeçalho "PRIVATE-TOKEN"
+login aceita oauth por 2 horas
+
 vocabulário da integração
     nome é "name"
     caminho é "path"
