@@ -130,7 +130,7 @@ grammar = {
             {"begin": r"^(" + w("pagina") + r"|page)\s+(" + NAMES + r")\s*$", "end": r"^(?=\S)",
              "beginCaptures": {"1": {"name": "keyword.other.intent.germanio"}, "2": {"name": "entity.name.section.germanio"}},
              "patterns": [{"include": "#comment"}, {"include": "#string"},
-                          # page sections (docs/gep/0002-secoes-de-pagina.md, em teste)
+                          # page sections (docs/gep/0002-secoes-de-pagina.md)
                           {"match": r"^\s+(" + words("topo", "filtros", "colunas", "vazio", "acoes") + r")\s*$", "captures": {"1": {"name": "keyword.other.intent.germanio"}}},
                           {"match": r"^\s+(" + words("titulo", "texto", "acao") + r")\b", "captures": {"1": {"name": "keyword.other.intent.germanio"}}},
                           {"match": r"^\s+(" + w("mostre") + r")\s+(" + NAMES + r")\s*$", "captures": {"1": {"name": "keyword.other.intent.germanio"}, "2": {"name": "entity.name.type.germanio"}}},
@@ -162,6 +162,9 @@ grammar = {
              "beginCaptures": {"2": {"name": "keyword.other.intent.germanio"}},
              "patterns": [{"include": "#comment"}, kw("storage.modifier.germanio", "opcional", "como"), {"name": "entity.name.type.germanio", "match": NAME}]},
             {"match": r"^\s+(" + w("pertence a") + r")\s+(" + NAME + r")(?:\s+(" + w("opcional") + r"))?", "captures": {"1": {"name": "keyword.other.intent.germanio"}, "2": {"name": "entity.name.type.germanio"}, "3": {"name": "storage.modifier.germanio"}}},
+            # renomeie <antigo> para <novo>, descarte <campo> (migração explícita, G93)
+            {"match": r"^\s+(renomeie)\s+(" + NAME + r")\s+(para)\s+(" + NAME + r")\s*$", "captures": {"1": {"name": "keyword.other.intent.germanio"}, "2": {"name": "variable.other.property.field.germanio"}, "3": {"name": "keyword.other.intent.germanio"}, "4": {"name": "variable.other.property.field.germanio"}}},
+            {"match": r"^\s+(descarte)\s+(" + NAME + r")\s*$", "captures": {"1": {"name": "keyword.other.intent.germanio"}, "2": {"name": "variable.other.property.field.germanio"}}},
             # começa <estado>, singular <forma>
             {"match": r"^\s+(" + w("comeca") + r")\s+(" + NAME + r")\s*$", "captures": {"1": {"name": "keyword.other.intent.germanio"}, "2": {"name": "constant.other.state.germanio"}}},
             {"match": r"^\s+(singular)\s+(" + NAMES + r")\s*$", "captures": {"1": {"name": "keyword.other.intent.germanio"}, "2": {"name": "entity.name.type.germanio"}}},

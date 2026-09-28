@@ -248,6 +248,12 @@ func (e *EmailConfig) NodeType() string { return "EmailConfig" }
 
 // ==================== Model ====================
 
+// FieldRename: the field From is now called To (the data moves with it).
+type FieldRename struct {
+	From, To string
+	Pos      diagnostics.Position
+}
+
 type Model struct {
 	Name       string
 	Icon       string
@@ -259,6 +265,11 @@ type Model struct {
 	// UniqueTogether / IndexTogether are composite constraints: unico(a, b).
 	UniqueTogether [][]string
 	IndexTogether  [][]string
+	// Renames are explicit field renames (renomeie nome para nome_completo):
+	// the migration keeps the data. Discarded names fields that were removed
+	// on purpose (descarte telefone): their old data is left alone.
+	Renames   []FieldRename
+	Discarded []string
 	// ExpiresDays > 0 adds expires_at (data) defaulting to today + N days;
 	// secret lookups ignore expired records.
 	ExpiresDays int

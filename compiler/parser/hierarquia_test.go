@@ -145,6 +145,8 @@ func TestHierarquiaDemaisSecoes(t *testing.T) {
 			"projetos\n    tem\n        caminho único\n    tem repositório\n    começa aberto\n    pode fechar\n"},
 		{"pendência para", "tenha chamados\n\ncada chamado tem\n    titulo\n    responsaveis\n\nchamado gera pendência para responsaveis\n",
 			"chamados\n    tem\n        titulo\n        responsaveis\n    pendência para\n        responsaveis\n"},
+		{"renomeie e descarte", "tenha clientes\n\ncada cliente tem\n    nome_completo\n\nrenomeie nome de clientes para nome_completo\ndescarte fax de clientes\n",
+			"clientes\n    tem\n        nome_completo\n    renomeie nome para nome_completo\n    descarte fax\n"},
 		{"singular", "tenha tokens de acesso\n\ncada token de acesso tem\n    nome\n",
 			"tokens de acesso\n    singular token de acesso\n    tem\n        nome\n"},
 		{"executam", "tenha trabalhadores, conversoes\n\ncada trabalhador tem\n    token secreto\n\ncada conversao tem\n    arquivo\n\ntrabalhadores executam conversoes\n",
@@ -210,6 +212,12 @@ func TestHierarquiaErros(t *testing.T) {
 		{"coluna inexistente", "tenha clientes\n\ncada cliente tem\n    nome\n    cidade\n    anotacao oculto\n\npágina Clientes\n    mostre clientes\n    colunas\n        telefone\n", []string{"não tem esse campo"}},
 		{"coluna secreta", "tenha clientes\n\ncada cliente tem\n    nome\n    cidade\n    anotacao oculto\n\npágina Clientes\n    mostre clientes\n    colunas\n        anotacao\n", []string{"privada ou secreta"}},
 		{"seção de página vazia", "tenha clientes\n\ncada cliente tem\n    nome\n    cidade\n    anotacao oculto\n\npágina Clientes\n    mostre clientes\n    filtros\n", []string{"a seção filtros está vazia"}},
+		{"rename para campo não declarado", "tenha clientes\n\ncada cliente tem\n    nome\n\nclientes\n    renomeie apelido para alcunha\n", []string{"alcunha não está declarado"}},
+		{"rename com o antigo ainda declarado", "tenha clientes\n\ncada cliente tem\n    nome\n    nome_completo\n\nclientes\n    renomeie nome para nome_completo\n", []string{"nome continua declarado"}},
+		{"dois renames para o mesmo campo", "tenha clientes\n\ncada cliente tem\n    nome_completo\n\nclientes\n    renomeie nome para nome_completo\n    renomeie apelido para nome_completo\n", []string{"não podem virar o mesmo campo"}},
+		{"rename em cadeia", "tenha clientes\n\ncada cliente tem\n    terceiro\n\nrenomeie primeiro de clientes para segundo\nrenomeie segundo de clientes para terceiro\n", []string{"segundo não está declarado"}},
+		{"rename sem para", "tenha clientes\n\ncada cliente tem\n    nome\n\nclientes\n    renomeie nome\n", []string{"não diz o que renomear"}},
+		{"descarte de campo declarado", "tenha clientes\n\ncada cliente tem\n    nome\n\nclientes\n    descarte nome\n", []string{"nome continua declarado"}},
 		{"integração em conflito", "projetos\n    tem\n        nome\n    integração\n        nome \"projects\"\n\ndisponibilize projetos para integração como \"repos\"\n", []string{"já é \"projects\""}},
 	}
 	for _, c := range cases {

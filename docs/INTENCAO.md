@@ -349,6 +349,8 @@ válidas. `construcao_do_sistema` são as construções sem sujeito único (`ten
 | `repositório pode começar com "README.md" contendo "# {nome}"` | `repositório do d pode começar com …` |
 | `singular token de acesso` | `cada token de acesso tem` (a forma que nomeia um registro, quando o plural admite duas leituras: tokens → token ou tokem) |
 | `pendência para` + campos de pessoas (um por linha) | `d gera pendência para responsaveis` (veja Pendências) |
+| `renomeie nome para nome_completo` | `renomeie nome de D para nome_completo` (veja Migração) |
+| `descarte fax` | `descarte fax de D` (veja Migração) |
 
 Uma **ação sem alvo** vale para o próprio dado (a coleção: `administrar` sem alvo inclui
 criar, como `administrar projetos`). Uma ação com alvo explícito (`adicionar membros`,
@@ -601,6 +603,40 @@ transação da mudança. As pendências são um dado comum, `pendencias` (motivo
 começa aberta; pode concluir; cada pessoa vê, conclui e exclui só as suas), que o Germanio
 escreve quando o programa não o declara (`ge explain pendencias` mostra a origem). Para
 mostrá-las, a aplicação declara `página Pendências` + `mostre pendências`.
+
+## Migração
+
+O banco acompanha o programa sozinho quando isso não pode perder nada: um campo novo vira uma
+coluna nova, um campo que passa a ser `único` ganha o índice único (e valores repetidos impedem
+a partida, com erro educativo). **Germanio nunca infere um rename.** Quando uma decisão pode
+alterar o significado ou destruir dados, o programa a declara:
+
+```ge
+crie sistema Clientes
+
+tenha clientes
+
+clientes
+    tem
+        nome_completo
+        email
+    renomeie nome para nome_completo
+    descarte fax
+```
+
+- `renomeie nome para nome_completo` troca o nome da coluna, com os dados, numa transação: todos
+  os renames de um dado acontecem, ou nenhum. `nome_completo` precisa estar em `tem` e `nome`
+  não. Num banco novo, ou já migrado, a frase não faz nada; ela pode ficar no programa.
+- `descarte fax` diz que o campo saiu de propósito: a aplicação deixa de usá-lo, e os valores
+  antigos continuam guardados no banco (nada é apagado).
+- Se um campo **com dados** some do programa enquanto outro aparece, a partida para e explica:
+  pode ser um rename, pode ser remover um e criar outro, e os nomes sozinhos não provam nada.
+  O erro sugere as duas frases. `ge check` faz a mesma verificação no banco existente, sem mudar
+  nada, e anuncia os renames que a próxima partida aplicará.
+- Um rename não sobrescreve dados (o campo novo já com valores é recusado) e não muda o tipo ao
+  mesmo tempo (faça em duas etapas). Renames em cadeia e dois campos virando o mesmo são
+  recusados na compilação.
+- `ge explain <dado>` mostra os renames e descartes declarados, com a origem.
 
 ## O que deve acontecer
 

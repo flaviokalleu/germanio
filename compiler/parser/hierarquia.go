@@ -139,14 +139,15 @@ var legacyBlockWords = map[string]bool{
 
 // sections are the aspects a data block may contain (folded words).
 var sections = []string{"tem", "pertence a", "comeca", "pode", "regras", "acesso", "permita",
-	"integracao", "quando", "antes de", "recebe", "executa", "executam", "repositorio", "singular", "pendencia para"}
+	"integracao", "quando", "antes de", "recebe", "executa", "executam", "repositorio", "singular", "pendencia para",
+	"renomeie", "descarte"}
 
 func sectionOf(w []string) string {
 	if len(w) == 0 {
 		return ""
 	}
 	switch w[0] {
-	case "tem", "comeca", "pode", "regras", "acesso", "permita", "integracao", "quando", "recebe", "executa", "executam", "repositorio", "singular":
+	case "tem", "comeca", "pode", "regras", "acesso", "permita", "integracao", "quando", "recebe", "executa", "executam", "repositorio", "singular", "renomeie", "descarte":
 		return w[0]
 	case "pertence":
 		return "pertence a"
@@ -342,6 +343,23 @@ func (p *Parser) dataSection(name string, header []lexer.Token, sec *node) error
 			}
 		}
 		return nil
+	case "renomeie":
+		// renomeie nome para nome_completo → renomeie nome de <dado> para nome_completo
+		k := -1
+		for i, x := range w {
+			if x == "para" {
+				k = i
+			}
+		}
+		if k < 2 || k+1 >= len(w) || len(sec.children) > 0 {
+			return p.teach(at, "\""+lineText(sec.line)+"\" não diz o que renomear", "renomeie diz o nome antigo e o novo do campo", "escreva: renomeie nome para nome_completo", name)
+		}
+		return flat(join(toks[:k], synth(at, "de"), subject, toks[k:]), nil)
+	case "descarte":
+		if len(toks) < 2 || len(sec.children) > 0 {
+			return p.teach(at, "\""+lineText(sec.line)+"\" não diz qual campo", "descarte diz qual campo foi removido de propósito", "escreva: descarte telefone", name)
+		}
+		return flat(join(toks, synth(at, "de"), subject), nil)
 	case "pendencia para":
 		// pendência para › responsaveis → issue gera pendência para responsaveis
 		for _, c := range sec.children {

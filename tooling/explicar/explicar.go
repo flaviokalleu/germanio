@@ -135,6 +135,15 @@ func Entidade(prog *ast.Program, nome string) (string, error) {
 	for _, f := range e.Model.Fields {
 		w("  %-22s %s\n", f.Name, describeField(f))
 	}
+	if len(e.Model.Renames) > 0 || len(e.Model.Discarded) > 0 {
+		w("\nMigração (só o que o programa declara; nada é inferido):\n")
+		for _, rn := range e.Model.Renames {
+			w("  renomeie %s para %s — a coluna %s passa a se chamar %s, com os dados; num banco novo ou já migrado, não faz nada (%s)\n", rn.From, rn.To, rn.From, rn.To, where(rn.Pos))
+		}
+		for _, d := range e.Model.Discarded {
+			w("  descarte %s — removido de propósito: a aplicação não usa mais; os valores antigos ficam guardados no banco\n", d)
+		}
+	}
 	w("\nRelações:\n")
 	var parents []string
 	for field, t := range e.Parents {

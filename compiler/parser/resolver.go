@@ -1160,6 +1160,12 @@ func ResolveIntent(prog *ast.Program) error {
 		}
 	}
 
+	// 10a. Renames and discards (G93): explicit, checked here without the
+	// database (ge check); the migration applies them preserving the data.
+	if err := r.renames(in); err != nil {
+		return err
+	}
+
 	// 10. Pending items (GEP 0009, em teste): each field must hold people.
 	for _, pr := range in.PendingItems {
 		e, err := r.entity(pr.Entity, pr.Pos)
@@ -1438,7 +1444,51 @@ func (r *resolver) addressRef(app *ast.App, e *ast.Entity, name string, pos diag
 	return ast.AddressRef{Field: found[0], Entity: target.Singular}, nil
 }
 
-// where shows a declaration's origin: file:line and, inside a block, its path.
+// renames checks `renomeie a para b` and `descarte a`: the new name must be
+// declared and the old one not (a rename replaces one name by the other);
+// a field is renamed at most once, no two fields get the same new name, and
+// renames cannot chain: the middle name would have to be declared and not
+// declared at once, so the checks above already refuse it.
+func (r *resolver) renames(in *ast.Intent) error {
+	type key struct{ entity, name string }
+	from := map[key]*ast.RenameDecl{}
+	to := map[key]*ast.RenameDecl{}
+	for _, rn := range in.Renames {
+		e, err := r.entity(rn.Entity, rn.Pos)
+		if err != nil {
+			return err
+		}
+		switch {
+		case rn.From == rn.To:
+			return r.errAt(rn.Pos, "renomeie %s para %s: o nome novo é o mesmo", rn.From, rn.To)
+		case fieldByNameAST(e.Model, rn.To) == nil:
+			return r.errAt(rn.Pos, "renomeie %s para %s: %s não está declarado em %s; declare o campo novo em tem (com o nome novo)", rn.From, rn.To, rn.To, e.Plural)
+		case fieldByNameAST(e.Model, rn.From) != nil:
+			return r.errAt(rn.Pos, "renomeie %s para %s: %s continua declarado em %s. Um rename troca um nome pelo outro: tire %s de tem", rn.From, rn.To, rn.From, e.Plural, rn.From)
+		}
+		kf, kt := key{e.Singular, rn.From}, key{e.Singular, rn.To}
+		if prev := from[kf]; prev != nil {
+			return r.errAt(rn.Pos, "%s de %s já é renomeado para %s em %s", rn.From, e.Plural, prev.To, where(prev.Pos))
+		}
+		if prev := to[kt]; prev != nil {
+			return r.errAt(rn.Pos, "%s e %s não podem virar o mesmo campo %s (o outro rename está em %s)", prev.From, rn.From, rn.To, where(prev.Pos))
+		}
+		from[kf], to[kt] = rn, rn
+		e.Model.Renames = append(e.Model.Renames, ast.FieldRename{From: rn.From, To: rn.To, Pos: rn.Pos})
+	}
+	for _, d := range in.Discards {
+		e, err := r.entity(d.Entity, d.Pos)
+		if err != nil {
+			return err
+		}
+		if fieldByNameAST(e.Model, d.From) != nil {
+			return r.errAt(d.Pos, "descarte %s: %s continua declarado em %s", d.From, d.From, e.Plural)
+		}
+		e.Model.Discarded = appendUnique(e.Model.Discarded, d.From)
+	}
+	return nil
+}
+
 // pageSections checks the sections of a page against the data it shows
 // (GEP 0002, em teste): an action must already be allowed by the page (the
 // page asks, the domain decides who sees it), filters imply the filter (it
@@ -1510,6 +1560,7 @@ func sameField(a, b *ast.Field) bool {
 	return reflect.DeepEqual(x, y)
 }
 
+// where shows a declaration's origin: file:line and, inside a block, its path.
 func where(p diagnostics.Position) string {
 	out := fmt.Sprintf("%s:%d", p.File, p.Line)
 	if p.File == "" {

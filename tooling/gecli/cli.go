@@ -12,6 +12,7 @@ import (
 	"github.com/flaviokalleu/germanio/compiler/diagnostics"
 	"github.com/flaviokalleu/germanio/compiler/semantic"
 	germanioRuntime "github.com/flaviokalleu/germanio/runtime"
+	"github.com/flaviokalleu/germanio/runtime/banco"
 	"github.com/flaviokalleu/germanio/runtime/germanio"
 	"github.com/flaviokalleu/germanio/tooling/explicar"
 	"github.com/flaviokalleu/germanio/tooling/formatter"
@@ -254,6 +255,19 @@ func Run(args []string, in io.Reader, out, stderr io.Writer) int {
 				name := "programa"
 				if prog.System != nil {
 					name = prog.System.Name
+				}
+				// the existing database: what the next start would migrate,
+				// or refuse to guess (G93); nothing is changed here
+				germanioRuntime.LoadEnv(filepath.Join(filepath.Dir(path), ".env"))
+				notes, merr := banco.Verificar(prog.Database, name, prog.Models, func(f string) bool {
+					_, err := os.Stat(f)
+					return err == nil
+				})
+				for _, n := range notes {
+					fmt.Fprintln(out, "migração:", n)
+				}
+				if merr != nil {
+					return fail(merr)
 				}
 				fmt.Fprintf(out, "Germanio: %s verificado — %d dados, %d papéis.\n", name, len(prog.App.Entities), len(prog.App.Roles))
 				return 0

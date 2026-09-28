@@ -31,6 +31,11 @@ hierarchical syntax. Nothing below is in a tagged release yet.
 
 - Page sections (`topo`, `ações`, `filtros`, `colunas`, `vazio`; GEP 0002), password recovery
   (`tenha recuperação de senha`; GEP 0008) and pending items (`pendência para`; GEP 0009).
+- Explicit migrations (G93): `renomeie nome para nome_completo` renames a column keeping its
+  data, `descarte fax` records a field removed on purpose. Germanio never infers a rename: a
+  field with data that disappears while another appears stops the start with an educational
+  error, and `ge check` performs the same verification on the existing database without
+  changing it.
 
 ### Tooling
 

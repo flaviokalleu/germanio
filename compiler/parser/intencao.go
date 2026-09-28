@@ -89,6 +89,8 @@ func (p *Parser) isIntentLine() bool {
 		return len(w) == 2 && w[1] == "iniciar"
 	case "antes":
 		return len(w) >= 4 && w[1] == "de"
+	case "renomeie", "descarte":
+		return len(w) >= 4
 	case "quando":
 		return len(w) >= 3 && !legacyTrigger[w[1]]
 	}
@@ -124,6 +126,46 @@ func (p *Parser) intentFrom(head dline, body []dline) error {
 	in := p.intent()
 	pos := p.at(head.toks[0])
 	switch w[0] {
+	case "renomeie":
+		// renomeie nome de clientes para nome_completo
+		k, d := -1, -1
+		for i, x := range w {
+			if x == "de" && d < 0 {
+				d = i
+			}
+			if x == "para" {
+				k = i
+			}
+		}
+		if d < 2 || k < d+2 || k+1 >= len(w) {
+			return p.teach(head.toks[0], "\""+lineText(head)+"\" não diz o que renomear", "um rename diz o campo antigo, o dado e o nome novo", "escreva: renomeie nome de clientes para nome_completo (ou, no bloco do dado: renomeie nome para nome_completo)", "")
+		}
+		from, _ := phrase(w[1:d])
+		entity, _ := phrase(w[d+1 : k])
+		to, _ := phrase(w[k+1:])
+		if from == "" || entity == "" || to == "" {
+			return p.teach(head.toks[0], "\""+lineText(head)+"\" não diz o que renomear", "um rename diz o campo antigo, o dado e o nome novo", "escreva: renomeie nome de clientes para nome_completo", "")
+		}
+		in.Renames = append(in.Renames, &ast.RenameDecl{Entity: entity, From: from, To: to, Pos: pos})
+		return nil
+	case "descarte":
+		// descarte telefone de clientes
+		d := -1
+		for i, x := range w {
+			if x == "de" {
+				d = i
+			}
+		}
+		if d < 2 || d+1 >= len(w) {
+			return p.teach(head.toks[0], "\""+lineText(head)+"\" não diz o que descartar", "descarte diz qual campo foi removido de propósito e de qual dado", "escreva: descarte telefone de clientes (ou, no bloco do dado: descarte telefone)", "")
+		}
+		from, _ := phrase(w[1:d])
+		entity, _ := phrase(w[d+1:])
+		if from == "" || entity == "" {
+			return p.teach(head.toks[0], "\""+lineText(head)+"\" não diz o que descartar", "descarte diz qual campo foi removido de propósito e de qual dado", "escreva: descarte telefone de clientes", "")
+		}
+		in.Discards = append(in.Discards, &ast.RenameDecl{Entity: entity, From: from, Pos: pos})
+		return nil
 	case "crie":
 		return p.parseCrie(head, body)
 	case "tenha":

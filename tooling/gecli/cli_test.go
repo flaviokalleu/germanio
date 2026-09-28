@@ -6,6 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	germanioRuntime "github.com/flaviokalleu/germanio/runtime"
+	"github.com/flaviokalleu/germanio/runtime/banco"
 )
 
 func invoke(args ...string) (int, string, string) {
@@ -193,5 +196,66 @@ func TestCLINewApplication(t *testing.T) {
 	}
 	if code, out, err := invoke("test", filepath.Join("..", "..", "examples", "germanio")); code != 0 {
 		t.Fatalf("ge test: %s %s", out, err)
+	}
+}
+
+// ge check reads the existing database without changing it: a probable
+// rename stops with the educational message; the declared rename is announced
+// (G93).
+func TestCheckMigracaoDoBancoExistente(t *testing.T) {
+	dir := t.TempDir()
+	db := filepath.Join(dir, "clientes.db")
+	t.Setenv("GERMANIO_SQLITE", db)
+	app := filepath.Join(dir, "app.ge")
+	write := func(src string) {
+		if err := os.WriteFile(app, []byte(src), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	head := "crie sistema Clientes\n\ntenha clientes\n\n"
+	write(head + "cada cliente tem\n    nome\n")
+	prog, err := germanioRuntime.Compilar(app)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := banco.Abrir(prog.Database, prog.System.Name, prog.Models)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b.CriarMapa("cliente", map[string]any{"nome": "Ana"})
+	b.Fechar()
+
+	write(head + "cada cliente tem\n    nome_completo\n")
+	code, out, errs := invoke("check", app)
+	if code == 0 || !strings.Contains(errs, "renomeie nome para nome_completo") || !strings.Contains(errs, "não pode provar") {
+		t.Fatalf("o check deveria recusar o rename provável: %d %s %s", code, out, errs)
+	}
+	write(head + "cada cliente tem\n    nome_completo\n\nrenomeie nome de clientes para nome_completo\n")
+	code, out, errs = invoke("check", app)
+	if code != 0 || !strings.Contains(out, "renomeia nome para nome_completo") {
+		t.Fatalf("o check deveria anunciar o rename: %d %s %s", code, out, errs)
+	}
+	// nothing changed: the old column still holds the data
+	b, err = banco.Abrir(prog.Database, prog.System.Name, prog.Models)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer b.Fechar()
+	var nome string
+	if err := b.DB.QueryRow(`SELECT nome FROM cliente`).Scan(&nome); err != nil || nome != "Ana" {
+		t.Fatalf("o check mudou o banco: %q %v", nome, err)
+	}
+	b.Fechar()
+	// the start with the new program applies the rename, keeping the data
+	prog, err = germanioRuntime.Compilar(app)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err = banco.Abrir(prog.Database, prog.System.Name, prog.Models)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := b.DB.QueryRow(`SELECT nome_completo FROM cliente`).Scan(&nome); err != nil || nome != "Ana" {
+		t.Fatalf("o rename declarado não preservou os dados: %q %v", nome, err)
 	}
 }

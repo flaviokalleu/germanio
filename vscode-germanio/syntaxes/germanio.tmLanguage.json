@@ -551,6 +551,34 @@
           }
         },
         {
+          "match": "^\\s+(renomeie)\\s+([\\p{L}_][\\p{L}\\p{N}_]*)\\s+(para)\\s+([\\p{L}_][\\p{L}\\p{N}_]*)\\s*$",
+          "captures": {
+            "1": {
+              "name": "keyword.other.intent.germanio"
+            },
+            "2": {
+              "name": "variable.other.property.field.germanio"
+            },
+            "3": {
+              "name": "keyword.other.intent.germanio"
+            },
+            "4": {
+              "name": "variable.other.property.field.germanio"
+            }
+          }
+        },
+        {
+          "match": "^\\s+(descarte)\\s+([\\p{L}_][\\p{L}\\p{N}_]*)\\s*$",
+          "captures": {
+            "1": {
+              "name": "keyword.other.intent.germanio"
+            },
+            "2": {
+              "name": "variable.other.property.field.germanio"
+            }
+          }
+        },
+        {
           "match": "^\\s+([cç][oóôõ]m[eéê][cç][aáàâã])\\s+([\\p{L}_][\\p{L}\\p{N}_]*)\\s*$",
           "captures": {
             "1": {

@@ -289,40 +289,38 @@ func (b *Banco) criarTabela(model *ast.Model) error {
 		return err
 	}
 
-	// Add the declared fields the table does not have yet. A failure is an
-	// error, never ignored.
+	// Explicit renames first (preserving the data), then the fields the
+	// table does not have yet. A migration Germanio cannot prove safe (a
+	// field with data vanished while another appeared) stops here (G93).
+	if cols, ok, err := b.inspect(name); err != nil {
+		return err
+	} else if ok {
+		plan, err := planMigration(model, cols, b.sqlTypeFor)
+		if err != nil {
+			return err
+		}
+		if err := b.applyRenames(name, plan.Renames); err != nil {
+			return err
+		}
+		for _, col := range plan.Orphans {
+			b.Avisos = append(b.Avisos, fmt.Sprintf("%s: a coluna %q tem dados, mas não está mais declarada; os dados continuam nela, fora da aplicação. Se foi um rename, declare renomeie %s para <nome novo>; se foi de propósito, declare descarte %s", name, col, col, col))
+		}
+	}
 	existing, err := b.tableColumns(name)
 	if err != nil {
 		return err
 	}
-	declared := map[string]bool{"id": true, "criado_em": true, "atualizado_em": true, "deletado_em": true, "role": true}
 	for _, f := range model.Fields {
 		fname := strings.ToLower(f.Name)
-		declared[fname] = true
 		if existing[fname] {
 			continue
 		}
-		sqlType := f.Type.SQLType()
-		if b.Driver == "mysql" && sqlType == "TEXT" {
-			sqlType = "VARCHAR(500)"
-		}
-		alterSQL := fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", q(name), q(fname), sqlType)
+		alterSQL := fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", q(name), q(fname), b.sqlTypeFor(f))
 		if f.Default != "" {
 			alterSQL += " DEFAULT " + sqlString(f.Default)
 		}
 		if _, err := b.DB.Exec(alterSQL); err != nil {
 			return fmt.Errorf("não consegui acrescentar o campo %s em %s: %w", fname, name, err)
-		}
-	}
-	// Data never disappears in silence: a column that still holds values but
-	// is no longer declared (a renamed field, typically) is reported.
-	for col := range existing {
-		if declared[col] {
-			continue
-		}
-		var n int
-		if err := b.DB.QueryRow(fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE %s IS NOT NULL", q(name), q(col))).Scan(&n); err == nil && n > 0 {
-			b.Avisos = append(b.Avisos, fmt.Sprintf("%s: a coluna %q tem %d valor(es), mas não está mais declarada. Se o campo foi renomeado, os dados antigos continuam em %q e não aparecem na aplicação.", name, col, n, col))
 		}
 	}
 	// A field declared unique is enforced by the database, also when it

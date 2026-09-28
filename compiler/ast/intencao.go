@@ -45,8 +45,18 @@ type Intent struct {
 	GlobalSearch []string          // tenha busca geral em projetos, issues
 	ReadOnly     []*VisibilityRule // projeto arquivado é somente leitura (Flag; Who unused)
 	MinRoles     []*CreatorRole    // todo grupo precisa ter pelo menos um owner
-	// Pending items (GEP 0009, em teste): issue gera pendência para responsaveis.
+	// Pending items (GEP 0009): issue gera pendência para responsaveis.
 	PendingItems []*PendingRule
+	// Renames: renomeie nome de clientes para nome_completo (G93).
+	Renames []*RenameDecl
+	// Discards: descarte telefone de clientes (removed on purpose, data kept).
+	Discards []*RenameDecl
+}
+
+// RenameDecl: a field of Entity renamed (From → To), or discarded (To "").
+type RenameDecl struct {
+	Entity, From, To string
+	Pos              diagnostics.Position
 }
 
 // PendingRule: a person placed in one of Fields of Entity receives a pending
@@ -230,6 +240,8 @@ func MergeIntent(a, b *Intent) *Intent {
 	a.MinRoles = append(a.MinRoles, b.MinRoles...)
 	a.Capabilities = append(a.Capabilities, b.Capabilities...)
 	a.PendingItems = append(a.PendingItems, b.PendingItems...)
+	a.Renames = append(a.Renames, b.Renames...)
+	a.Discards = append(a.Discards, b.Discards...)
 	a.InitialFiles = append(a.InitialFiles, b.InitialFiles...)
 	a.ReservedAddresses = append(a.ReservedAddresses, b.ReservedAddresses...)
 	a.ReadOnly = append(a.ReadOnly, b.ReadOnly...)
