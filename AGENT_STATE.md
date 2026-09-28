@@ -1,11 +1,15 @@
 # AGENT_STATE
 
 ## CURRENT_PHASE
-Sintaxe hierárquica/contextual implementada e validada (norma: `docs/INTENCAO.md` › Sintaxe
-hierárquica). Parser com layout formal e redução a frases planas (`compiler/parser/hierarquia.go`),
-erros educativos, `ge fmt` e `ge explain` com origem, GitLab e template migrados.
-Próximo: G58 (seções de página), G57, G59, G60; retomar o GitLab pelo inventário
-(pendências/todos, admin) usando a forma hierárquica.
+Estudo dirigido (pedido do usuário, 2026-09-28): implementações open source de linguagens
+(`docs/research/languages/`) e de frontend (`docs/research/frontend/`). Nenhuma mudança de
+arquitetura, sintaxe, parser, runtime, formatter ou tooling até a pesquisa ser confrontada com
+a norma (`docs/INTENCAO.md`, a skill, AGENTS.md, EVOLUTION, GAPS).
+Antes da pausa: sintaxe hierárquica implementada; G60 (`ge fmt` para todo arquivo de
+aplicação) commitado em e562a8c. Os arquivos `auth.ge` com o bloco `autenticacao` indentado
+em 2 espaços (examples/whaticket, demo/organizado) não são formatáveis (o `fmt` também recusava
+antes); anotado para depois.
+Depois da pesquisa: G58 (seções de página), G57, G59; retomar o GitLab pelo inventário.
 
 ## CURRENT_GOAL
 Continuar o GitLab por intenção: issues → merge requests → CI/CD → páginas (UI),
