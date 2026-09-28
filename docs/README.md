@@ -45,6 +45,7 @@ documentação pública é corrigida (o `tooling/doctest` recusa código `.ge` q
 | [API](API.md), [INTEGRATIONS](INTEGRATIONS.md) | API da sintaxe anterior e integrações |
 | [SECURITY técnica](SECURITY.md), [DEPLOY](DEPLOY.md) | implementação de segurança e operação |
 | [PHASE1](PHASE1.md) | registro da entrega da fundação |
+| [FASE1_GITLAB](FASE1_GITLAB.md) | auditoria de encerramento da FASE 1 (GitLab): critérios, capabilities, decisões pendentes |
 | [FEATURES-200](FEATURES-200.md), [research](research/) | ideias e pesquisa, sem força normativa |
 
 ## Regra de conflito
