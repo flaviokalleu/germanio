@@ -23,6 +23,9 @@ type Banco struct {
 	Models map[string]*ast.Model
 	Driver string      // "sqlite", "mysql", "postgres"
 	Rules  []*ast.Rule // user-defined validation rules
+	// Avisos are what the migration noticed and a person must know (data
+	// left in a column that is no longer declared, for example).
+	Avisos []string
 }
 
 // Abrir creates the database and tables from model definitions.
@@ -165,6 +168,29 @@ func q(name string) string {
 	return `"` + strings.ReplaceAll(name, `"`, `""`) + `"`
 }
 
+// sqlString writes a text literal for DDL (defaults), with quotes escaped.
+func sqlString(v string) string {
+	return "'" + strings.ReplaceAll(v, "'", "''") + "'"
+}
+
+// tableColumns lists the columns the table really has.
+func (b *Banco) tableColumns(table string) (map[string]bool, error) {
+	rows, err := b.DB.Query(fmt.Sprintf("SELECT * FROM %s LIMIT 0", q(table)))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	names, err := rows.Columns()
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[string]bool, len(names))
+	for _, n := range names {
+		out[strings.ToLower(n)] = true
+	}
+	return out, nil
+}
+
 // placeholder returns the correct placeholder for the driver.
 func (b *Banco) ph(n int) string {
 	if b.Driver == "postgres" || b.Driver == "postgresql" {
@@ -217,7 +243,7 @@ func (b *Banco) criarTabela(model *ast.Model) error {
 			col += " UNIQUE"
 		}
 		if f.Default != "" {
-			col += fmt.Sprintf(" DEFAULT '%s'", f.Default)
+			col += " DEFAULT " + sqlString(f.Default)
 		}
 		if f.Reference != "" {
 			col += fmt.Sprintf(" REFERENCES %s(%s)", q(strings.ToLower(f.Reference)), q("id"))
@@ -263,18 +289,53 @@ func (b *Banco) criarTabela(model *ast.Model) error {
 		return err
 	}
 
-	// After CREATE TABLE IF NOT EXISTS, add missing columns
+	// Add the declared fields the table does not have yet. A failure is an
+	// error, never ignored.
+	existing, err := b.tableColumns(name)
+	if err != nil {
+		return err
+	}
+	declared := map[string]bool{"id": true, "criado_em": true, "atualizado_em": true, "deletado_em": true, "role": true}
 	for _, f := range model.Fields {
 		fname := strings.ToLower(f.Name)
+		declared[fname] = true
+		if existing[fname] {
+			continue
+		}
 		sqlType := f.Type.SQLType()
 		if b.Driver == "mysql" && sqlType == "TEXT" {
 			sqlType = "VARCHAR(500)"
 		}
 		alterSQL := fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", q(name), q(fname), sqlType)
 		if f.Default != "" {
-			alterSQL += fmt.Sprintf(" DEFAULT '%s'", f.Default)
+			alterSQL += " DEFAULT " + sqlString(f.Default)
 		}
-		b.DB.Exec(alterSQL) // ignore error if column already exists
+		if _, err := b.DB.Exec(alterSQL); err != nil {
+			return fmt.Errorf("não consegui acrescentar o campo %s em %s: %w", fname, name, err)
+		}
+	}
+	// Data never disappears in silence: a column that still holds values but
+	// is no longer declared (a renamed field, typically) is reported.
+	for col := range existing {
+		if declared[col] {
+			continue
+		}
+		var n int
+		if err := b.DB.QueryRow(fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE %s IS NOT NULL", q(name), q(col))).Scan(&n); err == nil && n > 0 {
+			b.Avisos = append(b.Avisos, fmt.Sprintf("%s: a coluna %q tem %d valor(es), mas não está mais declarada. Se o campo foi renomeado, os dados antigos continuam em %q e não aparecem na aplicação.", name, col, n, col))
+		}
+	}
+	// A field declared unique is enforced by the database, also when it
+	// became unique after the table existed.
+	for _, f := range model.Fields {
+		if !f.Unique {
+			continue
+		}
+		fname := strings.ToLower(f.Name)
+		idx := fmt.Sprintf("CREATE UNIQUE INDEX IF NOT EXISTS %s ON %s(%s)", q("uq_"+name+"_"+fname), q(name), q(fname))
+		if _, err := b.DB.Exec(idx); err != nil {
+			return fmt.Errorf("o campo %s de %s é único, mas a tabela já tem valores repetidos; corrija-os antes: %w", fname, name, err)
+		}
 	}
 
 	// Composite constraints: unico(a, b) and indice(a, b)

@@ -345,6 +345,9 @@ func Carregar(arquivo string, porta string) (*App, error) {
 		return nil, fmt.Errorf("erro no banco: %w", err)
 	}
 	db.Rules = program.Rules
+	for _, aviso := range db.Avisos {
+		fmt.Printf("[germanio] aviso: %s\n", aviso)
+	}
 	app := &App{Program: program, DB: db}
 
 	var authHandler *authpkg.Auth
