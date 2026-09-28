@@ -817,7 +817,41 @@ func (a *intentAPI) create(w http.ResponseWriter, r *http.Request, ctx *interp.C
 
 // remove runs `quando excluir` first (it may refuse), then deletes the
 // record and everything that belongs to it.
+// keepsMinRole refuses removing or demoting the last member holding the
+// role a record must always have (todo grupo precisa ter pelo menos um owner).
+// newRole "" means the membership is being removed.
+func (a *intentAPI) keepsMinRole(ctx *interp.Context, member map[string]any, newRole string) error {
+	target := a.app.Entities[toStr(member["recurso"])]
+	if target == nil || target.MinRole == "" {
+		return nil
+	}
+	min := a.app.Level(target.MinRole)
+	if a.app.Level(toStr(member["papel"])) < min || (newRole != "" && a.app.Level(newRole) >= min) {
+		return nil
+	}
+	var enough []any
+	for _, role := range a.app.Roles {
+		if role.Level >= min {
+			enough = append(enough, role.Name)
+		}
+	}
+	n, err := a.in.Op(ctx, a.app.MemberModel, "contar", map[string]any{"recurso": member["recurso"], "recurso_id": member["recurso_id"], "papel__em": enough, "id__diferente": member["id"]})
+	if err != nil || asNumber(n) > 0 {
+		return err
+	}
+	msg := map[string]string{
+		"pt": fmt.Sprintf("%s precisa ter pelo menos um %s", target.Label, target.MinRole),
+		"en": fmt.Sprintf("The last %s cannot leave or be removed", target.MinRole),
+	}[a.app.Messages]
+	return &interp.RuntimeError{Status: 400, Message: msg}
+}
+
 func (a *intentAPI) remove(ctx *interp.Context, atual map[string]any, e *ast.Entity, row map[string]any) error {
+	if e.Singular == a.app.MemberModel {
+		if err := a.keepsMinRole(ctx, row, ""); err != nil {
+			return err
+		}
+	}
 	if h := e.Hooks["antes_excluir"]; h != nil {
 		if _, _, err := a.in.RunHook(ctx, h, a.hookVars(atual, e, row, nil)); err != nil {
 			return err
@@ -1257,6 +1291,11 @@ func (a *intentAPI) guards(ctx *interp.Context, atual map[string]any, e *ast.Ent
 				msg = fmt.Sprintf("Visibility level %s is not allowed since the %s has a more restrictive visibility", mine, strings.ToLower(pe.Label))
 			}
 			return &interp.RuntimeError{Status: 400, Message: msg, Payload: map[string]any{e.Visibility: []any{msg}}}
+		}
+	}
+	if e.Singular == a.app.MemberModel && before != nil && data["papel"] != nil {
+		if err := a.keepsMinRole(ctx, before, toStr(data["papel"])); err != nil {
+			return err
 		}
 	}
 	if e.Singular == a.app.MemberModel && !a.in.IsAdmin(atual) {

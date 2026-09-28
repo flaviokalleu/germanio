@@ -94,7 +94,7 @@ func (p *Parser) isIntentLine() bool {
 		return true
 	}
 	for _, x := range w[1:] {
-		if x == "tem" || x == "pode" || x == "podem" || x == "pertence" || x == "herda" || x == "comeca" || x == "recebe" || x == "executa" || x == "executam" {
+		if x == "tem" || x == "pode" || x == "podem" || x == "pertence" || x == "herda" || x == "comeca" || x == "recebe" || x == "executa" || x == "executam" || x == "precisa" {
 			return true
 		}
 	}
@@ -278,6 +278,16 @@ func (p *Parser) parseIntentLine() error {
 	}
 	for i, x := range w {
 		switch x {
+		case "precisa":
+			// todo grupo precisa ter pelo menos um owner
+			k := len(w) - 1
+			subject, _ := phrase(w[:i])
+			subject = strings.TrimPrefix(strings.TrimPrefix(strings.TrimPrefix(subject, "todo_"), "toda_"), "cada_")
+			if subject == "" || k <= i+4 || strings.Join(w[i+1:k], " ") != "ter pelo menos um" && strings.Join(w[i+1:k], " ") != "ter pelo menos uma" {
+				return p.errorf(head.toks[0], "use: todo <dado> precisa ter pelo menos um <papel>")
+			}
+			in.MinRoles = append(in.MinRoles, &ast.CreatorRole{Entity: subject, Role: w[k], Pos: pos})
+			return nil
 		case "executam":
 			// runners executam jobs: records with a credential run steps elsewhere
 			who, _ := phrase(w[:i])

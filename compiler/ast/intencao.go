@@ -36,6 +36,7 @@ type Intent struct {
 	Subscriptions     []*SubscriptionDecl
 	RemoteExecutors   []*RemoteExecutorDecl
 	Translators       map[string]string // traduza <ponto> com <função> (integracoes/)
+	MinRoles          []*CreatorRole    // todo grupo precisa ter pelo menos um owner
 }
 
 // EntityDecl: `tenha clientes` plus the fields from `cada cliente tem`.
@@ -176,6 +177,7 @@ func MergeIntent(a, b *Intent) *Intent {
 		}
 		a.Translators[k] = v
 	}
+	a.MinRoles = append(a.MinRoles, b.MinRoles...)
 	a.Visibility = append(a.Visibility, b.Visibility...)
 	if a.Vocabulary == nil {
 		a.Vocabulary = b.Vocabulary

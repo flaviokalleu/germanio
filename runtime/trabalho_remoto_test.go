@@ -188,7 +188,7 @@ func TestTrabalhoRemotoConcorrencia(t *testing.T) {
 
 // Reserva que expira: o trabalho volta para a fila; após 3 tentativas, falha.
 func TestTrabalhoRemotoReservaExpira(t *testing.T) {
-	t.Setenv("GERMANIO_RESERVA", "400ms")
+	t.Setenv("GERMANIO_RESERVA", "1s")
 	_, c, ws := imagens(t)
 	conv := c.expect("POST", "/_ge/api/conversoes", map[string]any{"arquivo": "lenta.png"}, 201)
 	path := "/_ge/api/conversoes/" + itoa(int(conv["id"].(float64)))
@@ -197,11 +197,17 @@ func TestTrabalhoRemotoReservaExpira(t *testing.T) {
 		if code != 200 {
 			t.Fatalf("tentativa %d: %d", attempt, code)
 		}
-		time.Sleep(900 * time.Millisecond) // silêncio: a reserva expira
+		// silêncio: espera a reserva expirar e a varredura agir
+		var got map[string]any
+		for deadline := time.Now().Add(10 * time.Second); ; time.Sleep(100 * time.Millisecond) {
+			got = c.expect("GET", path, nil, 200)
+			if got["estado"] != "executando" || time.Now().After(deadline) {
+				break
+			}
+		}
 		if code, _ := ws[attempt%2].post("/worker/renovar", map[string]any{"token": job["token"]}); code != 403 {
 			t.Fatalf("token de reserva expirada: %d", code)
 		}
-		got := c.expect("GET", path, nil, 200)
 		want := "pendente"
 		if attempt == 3 {
 			want = "falhou"
@@ -213,7 +219,7 @@ func TestTrabalhoRemotoReservaExpira(t *testing.T) {
 	// Renovar mantém a reserva viva.
 	c.expect("POST", "/_ge/api/conversoes", map[string]any{"arquivo": "viva.png"}, 201)
 	_, job := ws[0].take("")
-	for i := 0; i < 4; i++ {
+	for i := 0; i < 8; i++ { // 1,6 s renovando a cada 200 ms: mais que a reserva de 1 s
 		time.Sleep(200 * time.Millisecond)
 		if _, s := ws[0].post("/worker/renovar", map[string]any{"token": job["token"]}); s["estado"] != "executando" {
 			t.Fatalf("renovação %d: %v", i, s)

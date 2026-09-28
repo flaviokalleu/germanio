@@ -37,6 +37,7 @@ maintainer pode
 membro pode sair do grupo
 
 quem cria grupo vira owner
+todo grupo precisa ter pelo menos um owner
 
 disponibilize para integração
     grupos como "groups"

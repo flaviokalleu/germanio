@@ -60,3 +60,23 @@ func TestEnderecoErros(t *testing.T) {
 		}
 	}
 }
+
+func TestPrecisaTerPeloMenosUm(t *testing.T) {
+	base := "crie sistema x\n\ntenha usuarios, grupos, membros\n\nusuario tem\n    email obrigatório e único\n    senha\n\ntenha login\n\ntenha papeis\n    guest 10\n    owner 50\n\n"
+	prog := parse(t, base+"grupo tem\n    nome\n    membros com papel\n\ntodo grupo precisa ter pelo menos um owner\n")
+	if err := ResolveIntent(prog); err != nil {
+		t.Fatal(err)
+	}
+	if prog.App.Entities["grupo"].MinRole != "owner" {
+		t.Fatalf("MinRole: %q", prog.App.Entities["grupo"].MinRole)
+	}
+	for body, want := range map[string]string{
+		"grupo tem\n    nome\n\ntodo grupo precisa ter pelo menos um owner\n":                      "não tem membros",
+		"grupo tem\n    nome\n    membros com papel\n\ntodo grupo precisa ter pelo menos um rei\n": "papel desconhecido",
+	} {
+		prog := parse(t, base+body)
+		if err := ResolveIntent(prog); err == nil || !strings.Contains(err.Error(), want) {
+			t.Fatalf("%q: esperado %q, veio %v", body, want, err)
+		}
+	}
+}

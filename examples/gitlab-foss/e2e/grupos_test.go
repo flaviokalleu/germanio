@@ -73,6 +73,20 @@ func TestGruposMembrosPapeis(t *testing.T) {
 	// Ninguém concede papel maior que o próprio; o último owner não sai
 	bob.must("POST", "/api/v4/groups/"+id(g)+"/members", map[string]any{"user_id": eveID, "access_level": 50}, 403)
 	ada.must("POST", "/api/v4/groups/"+id(g)+"/sair", nil, 400)
+	var adaMember map[string]any
+	for _, m := range ada.list("/api/v4/groups/" + id(g) + "/members") {
+		if mm := m.(map[string]any); mm["access_level"] == float64(50) {
+			adaMember = mm
+		}
+	}
+	if adaMember == nil {
+		t.Fatal("membro owner não encontrado")
+	}
+	ada.must("PUT", "/api/v4/groups/"+id(g)+"/members/"+id(adaMember), map[string]any{"access_level": 30}, 400) // rebaixar o último owner
+	// Com outro owner, rebaixar passa a valer
+	eveOwner := ada.must("POST", "/api/v4/groups/"+id(g)+"/members", map[string]any{"user_id": eveID, "access_level": 50}, 201)
+	ada.must("PUT", "/api/v4/groups/"+id(g)+"/members/"+id(adaMember), map[string]any{"access_level": 40}, 200)
+	ada.must("DELETE", "/api/v4/groups/"+id(g)+"/members/"+id(eveOwner), nil, 400) // Eve agora é a última owner
 	// Membro pode sair
 	bob.must("POST", "/api/v4/groups/"+id(g)+"/sair", nil, 204)
 	bob.must("GET", "/api/v4/groups/"+id(g), nil, 404)

@@ -17,6 +17,7 @@ projeto tem
 projeto pertence a grupo opcional
 projeto herda membros do grupo
 projeto não pode ser mais visível que o grupo
+todo projeto precisa ter pelo menos um owner
 
 usuario pode criar seus projetos
 developer pode criar projetos

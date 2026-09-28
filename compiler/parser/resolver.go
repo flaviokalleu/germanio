@@ -793,6 +793,21 @@ func ResolveIntent(prog *ast.Program) error {
 			sys("repetido", ast.FieldBooleano), sys("imagem", ast.FieldTexto))
 	}
 
+	// 7g1. Minimum role: `todo grupo precisa ter pelo menos um owner`.
+	for _, m := range in.MinRoles {
+		e, err := r.entity(m.Entity, m.Pos)
+		if err != nil {
+			return err
+		}
+		if !e.HasMembers {
+			return r.errAt(m.Pos, "%s precisa ter pelo menos um %s: %s não tem membros (use \"%s tem membros com papel\")", e.Singular, m.Role, e.Singular, e.Singular)
+		}
+		if app.Level(m.Role) == 0 {
+			return r.errAt(m.Pos, "papel desconhecido %q", m.Role)
+		}
+		e.MinRole = m.Role
+	}
+
 	// 7g2. Remote work: `runners executam jobs`, `trabalhadores executam conversoes`.
 	for _, x := range in.RemoteExecutors {
 		ex, err := r.entity(x.Executor, x.Pos)

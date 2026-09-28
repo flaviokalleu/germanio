@@ -53,6 +53,7 @@ type Entity struct {
 	// ProtectedBranchRole: minimum role to change the main branch directly.
 	ProtectedBranchRole string
 	CreatorRole         string // quem cria X vira <papel>
+	MinRole             string // todo X precisa ter pelo menos um <papel>
 	// Review: two branch fields make the record a proposal of changes
 	// (changes, commits, mergeability, mesclar performs the merge).
 	Review *Review

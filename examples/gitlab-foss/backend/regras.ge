@@ -17,8 +17,3 @@ quando criar projeto
         membro.criar({recurso: "projeto", recurso_id: projeto.id, pessoa_id: atual.id, papel: "owner"})
     se obter(entrada, "initialize_with_readme", falso) == verdadeiro
         git.commitar(projeto.repositorio, {branch: projeto.branch_padrao, mensagem: "Initial commit", autor: {nome: atual.nome, email: atual.email}, acoes: [{acao: "criar", caminho: "README.md", conteudo: "# " + projeto.nome + "\n"}]})
-
-# O grupo precisa manter pelo menos um owner.
-antes de excluir membro
-    se membro.papel == "owner" e membro.contar({recurso: membro.recurso, recurso_id: membro.recurso_id, papel: "owner"}) == 1
-        recuse "The last owner cannot leave or be removed"
