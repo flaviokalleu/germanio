@@ -32,7 +32,7 @@ type intentAPI struct {
 	exec *executor
 }
 
-func (s *Servidor) registerIntent(mux *http.ServeMux) error {
+func (s *Servidor) registerIntent(mux *routeMux) error {
 	app := s.Program.App
 	if app == nil {
 		return nil
@@ -47,6 +47,7 @@ func (s *Servidor) registerIntent(mux *http.ServeMux) error {
 	s.intent = a
 	s.registerTaskModule()
 	s.tasks().handle("entrega", a.deliver)
+	a.mountRemote(mux)
 	for _, name := range app.Order {
 		e := app.Entities[name]
 		if len(e.Rules) == 0 && e.Integrate == "" {
@@ -63,13 +64,13 @@ func (s *Servidor) registerIntent(mux *http.ServeMux) error {
 	return nil
 }
 
-func (a *intentAPI) mount(mux *http.ServeMux, base string, e *ast.Entity, integration bool) {
+func (a *intentAPI) mount(mux *routeMux, base string, e *ast.Entity, integration bool) {
 	a.mountLevel(mux, base, []*ast.Entity{e}, integration)
 }
 
 // mountLevel mounts the collection at base for the last entity of chain
 // (earlier entities are its ancestors, each addressed by {rN}).
-func (a *intentAPI) mountLevel(mux *http.ServeMux, base string, chain []*ast.Entity, integration bool) {
+func (a *intentAPI) mountLevel(mux *routeMux, base string, chain []*ast.Entity, integration bool) {
 	e := chain[len(chain)-1]
 	item := base + "/{r" + strconv.Itoa(len(chain)-1) + "}"
 	h := func(op, verb string) http.HandlerFunc {

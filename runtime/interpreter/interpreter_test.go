@@ -761,3 +761,18 @@ func TestTypeConversionHelpers(t *testing.T) {
 		t.Error("toBool('falso')")
 	}
 }
+
+// e/ou param no primeiro lado que já decide: o outro lado não é avaliado.
+func TestEOuCurtoCircuito(t *testing.T) {
+	interp := newInterp()
+	interp.Global.Set("r", nil)
+	boom := &ast.Expression{Type: "member", Target: &ast.Expression{Type: "variable", Name: "r"}, Field: "ativo"} // erro se avaliado com r nulo
+	isNil := &ast.Expression{Type: "binary", Operator: "==", Left: &ast.Expression{Type: "variable", Name: "r"}, Right: &ast.Expression{Type: "literal", Value: nil}}
+	notNil := &ast.Expression{Type: "binary", Operator: "!=", Left: &ast.Expression{Type: "variable", Name: "r"}, Right: &ast.Expression{Type: "literal", Value: nil}}
+	if v := interp.EvalExpr(&ast.Expression{Type: "binary", Operator: "ou", Left: isNil, Right: boom}, interp.Global); v != true {
+		t.Fatalf("ou: %v", v)
+	}
+	if v := interp.EvalExpr(&ast.Expression{Type: "binary", Operator: "e", Left: notNil, Right: boom}, interp.Global); v != false {
+		t.Fatalf("e: %v", v)
+	}
+}

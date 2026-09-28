@@ -45,3 +45,10 @@ permita excluir lojas
 quando excluir loja
     se loja.nome == "protegida"
         recuse "Loja protegida"
+
+rotas
+  rota POST "/eco"
+    retornar {corpo: requisicao.corpo, host: requisicao.cabecalhos.host}
+
+  rota GET "/_ge/api/avisos/:id"
+    retornar {substituida: verdadeiro}

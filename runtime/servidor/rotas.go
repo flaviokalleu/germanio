@@ -9,6 +9,7 @@ import (
 	"mime"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/flaviokalleu/germanio/compiler/ast"
@@ -66,6 +67,41 @@ func paramNames(path string) []string {
 	return names
 }
 
+// routeMux registers generated routes (intent, pages) unless the program
+// declared a `rota` of the same shape: an explicit route replaces the
+// generated one (for example a protocol endpoint the application speaks).
+type routeMux struct {
+	*http.ServeMux
+	explicit map[string]string
+}
+
+func (m *routeMux) HandleFunc(pattern string, h func(http.ResponseWriter, *http.Request)) {
+	if at, taken := m.explicit[shapeOf(pattern)]; taken {
+		if at == runtimeProtocol {
+			return
+		}
+		fmt.Printf("[germanio] %s: a rota declarada em %s substitui a gerada\n", pattern, at)
+		return
+	}
+	m.ServeMux.HandleFunc(pattern, h)
+}
+
+const runtimeProtocol = "protocolo do runtime"
+
+// claim registers a runtime protocol route and reserves its shape, so the
+// generated route of the same shape (for example "edit a job") yields to it.
+func (m *routeMux) claim(pattern string, h func(http.ResponseWriter, *http.Request)) {
+	m.ServeMux.HandleFunc(pattern, h)
+	m.explicit[shapeOf(pattern)] = runtimeProtocol
+}
+
+// shapeOf ignores parameter names: "PUT /a/{id}" and "PUT /a/{r0}" collide.
+func shapeOf(pattern string) string {
+	return paramRe.ReplaceAllString(pattern, "{}")
+}
+
+var paramRe = regexp.MustCompile(`\{[^}]*\}`)
+
 // registerRoutes wires every `rota` of the program into mux.
 func (s *Servidor) registerRoutes(mux *http.ServeMux) error {
 	seen := map[string]*ast.CustomRoute{}
@@ -79,6 +115,7 @@ func (s *Servidor) registerRoutes(mux *http.ServeMux) error {
 			return fmt.Errorf("rota duplicada %s %s (%s:%d e %s:%d)", r.Method, r.Path, prev.Pos.File, prev.Pos.Line, r.Pos.File, r.Pos.Line)
 		}
 		seen[pattern] = r
+		s.explicit[shapeOf(pattern)] = fmt.Sprintf("%s:%d", r.Pos.File, r.Pos.Line)
 		var regErr error
 		func() {
 			defer func() {
@@ -113,6 +150,9 @@ func buildRequest(req *http.Request, route *ast.CustomRoute) (map[string]any, er
 			headers[strings.ToLower(k)] = v[0]
 		}
 	}
+	if req.Host != "" {
+		headers["host"] = req.Host // Go keeps Host out of Header
+	}
 	var body any
 	if req.Body != nil && req.Method != http.MethodGet && req.Method != http.MethodHead {
 		ct, _, _ := mime.ParseMediaType(req.Header.Get("Content-Type"))
@@ -129,6 +169,18 @@ func buildRequest(req *http.Request, route *ast.CustomRoute) (map[string]any, er
 				if err := json.Unmarshal(data, &body); err != nil {
 					return nil, &interp.RuntimeError{Status: http.StatusBadRequest, Message: "JSON inválido: " + err.Error()}
 				}
+			}
+		case "", "text/plain", "application/octet-stream":
+			// raw text (logs, plain payloads) arrives as a string
+			data, err := io.ReadAll(io.LimitReader(req.Body, maxRouteBody+1))
+			if err != nil {
+				return nil, err
+			}
+			if len(data) > maxRouteBody {
+				return nil, &interp.RuntimeError{Status: http.StatusRequestEntityTooLarge, Message: "corpo grande demais"}
+			}
+			if len(data) > 0 {
+				body = string(data)
 			}
 		case "application/x-www-form-urlencoded", "multipart/form-data":
 			req.Body = http.MaxBytesReader(nil, req.Body, maxRouteBody)

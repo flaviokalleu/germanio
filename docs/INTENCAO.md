@@ -75,6 +75,7 @@ O nível 4 nunca é necessário para CRUD, login, permissões ou relações.
 | `grupo tem subgrupos` | hierarquia (`pai_id`) |
 | `endereço dentro do grupo pai ou do criador` (linha de `X tem`) | `endereco` = endereço do primeiro contêiner definido + `/` + `caminho` (`empresa/web/app`); calculado, nunca aceito da entrada; único entre todos os endereçados e os nomes das pessoas; renomear um contêiner (ou a pessoa) atualiza o que está dentro; repositórios passam a ser servidos pelo endereço |
 | `labels por nome` (linha de `issue tem`) | lista escrita e lida pelo nome (`"bug,ux"` → `["bug","ux"]`), procurado entre os itens do mesmo pai (labels do projeto); nome novo cria o item quando a pessoa pode criá-lo ali; `?labels=bug` filtra pelo nome. Itens de outro pai nunca entram |
+| `runners executam jobs` | cada runner (com um campo `segredo`, e opcionalmente `pertence a projeto`) pega etapas pendentes, envia o log e o resultado pelo protocolo de executor remoto; os nomes externos vêm do vocabulário (`pedir é "request"`, `variavel_versao é "CI_COMMIT_SHA"`…). O token de cada etapa só lê o repositório dela e deixa de valer quando ela termina |
 | `projeto tem repositório` | cada registro tem um repositório Git criado e removido com ele e servido em `/<campo único>.git` |
 
 **Tipo pelo nome** (quando não há tipo): `email`→email · `senha`/`password`→senha protegida ·

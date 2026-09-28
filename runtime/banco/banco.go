@@ -221,6 +221,10 @@ func (b *Banco) criarTabela(model *ast.Model) error {
 		}
 		if f.Reference != "" {
 			col += fmt.Sprintf(" REFERENCES %s(%s)", q(strings.ToLower(f.Reference)), q("id"))
+			if f.System && !f.Required {
+				// bookkeeping (who ran or closed it) never blocks deleting the target
+				col += " ON DELETE SET NULL"
+			}
 		}
 		cols = append(cols, col)
 	}

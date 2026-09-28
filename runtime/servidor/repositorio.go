@@ -93,11 +93,6 @@ func (a *intentAPI) serveGit(w http.ResponseWriter, r *http.Request, entities []
 		w.Header().Set("WWW-Authenticate", `Basic realm="Germanio"`)
 		http.Error(w, "HTTP Basic: Access denied", http.StatusUnauthorized)
 	}
-	atual, err := a.s.identify(ctx, r)
-	if err != nil {
-		challenge()
-		return
-	}
 	var e *ast.Entity
 	var row map[string]any
 	for _, cand := range entities {
@@ -106,6 +101,18 @@ func (a *intentAPI) serveGit(w http.ResponseWriter, r *http.Request, entities []
 			e, row = cand, m
 			break
 		}
+	}
+	// A running step's token reads the repository of that step (remote executors clone with it).
+	if _, pass, ok := r.BasicAuth(); ok && row != nil && service == "upload-pack" {
+		if step, job := a.stepByToken(ctx, pass); job != nil && a.stepOwnerIs(ctx, step, job, e, row) {
+			a.gitProtocol(w, r, ctx, row, service, advertise)
+			return
+		}
+	}
+	atual, err := a.s.identify(ctx, r)
+	if err != nil {
+		challenge()
+		return
 	}
 	if row == nil || !a.in.Can(ctx, atual, e, "ver", row) {
 		if atual == nil {
@@ -193,7 +200,7 @@ func (a *intentAPI) serveGit(w http.ResponseWriter, r *http.Request, entities []
 }
 
 // mountRepository adds browsing operations to an entity with a repository.
-func (a *intentAPI) mountRepository(mux *http.ServeMux, base string, e *ast.Entity) {
+func (a *intentAPI) mountRepository(mux *routeMux, base string, e *ast.Entity) {
 	seg := "repositorio"
 	names := map[string]string{"branches": "branches", "commits": "commits", "tree": "arvore", "files": "arquivos", "compare": "comparar", "diff": "diff"}
 	if a.extern && a.app.Messages == "en" {

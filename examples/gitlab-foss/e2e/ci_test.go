@@ -13,7 +13,12 @@ import (
 
 func waitState(t *testing.T, a *api, path string, want ...string) map[string]any {
 	t.Helper()
-	deadline := time.Now().Add(30 * time.Second)
+	return waitStateFor(t, a, path, 30*time.Second, want...)
+}
+
+func waitStateFor(t *testing.T, a *api, path string, limit time.Duration, want ...string) map[string]any {
+	t.Helper()
+	deadline := time.Now().Add(limit)
 	for {
 		m := a.must("GET", path, nil, 200)
 		for _, w := range want {

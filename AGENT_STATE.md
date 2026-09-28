@@ -36,6 +36,15 @@ evoluindo o Germanio a cada parede encontrada.
 5. `ge explain`/`ge check`/`ge graph` sobre a camada de intenção.
 6. Escopos de token (G33), transação (G39), paginação SQL (G40).
 
+## FUTURE_PHASE (pedido do usuário, 2026-09-28)
+Depois do GitLab, provar os formatos que ele não cobre, cada um com um app de referência
+em `.ge` e as capabilities genéricas que faltarem:
+1. Tempo real pesado — chat, colaboração ao vivo, jogos.
+2. Interface muito interativa — editores, painéis arrastáveis, apps estilo Figma.
+3. Escala muito alta — milhões de registros por lista (inclui terminar G40: visibilidade
+   por registro em SQL para pessoas conectadas).
+4. Outros tipos de programa — processamento de dados, mobile/offline, programas de sistema.
+
 ## BLOCKERS
 Nenhum.
 

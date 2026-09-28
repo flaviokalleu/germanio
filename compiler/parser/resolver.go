@@ -771,6 +771,35 @@ func ResolveIntent(prog *ast.Program) error {
 			sys("repetido", ast.FieldBooleano), sys("imagem", ast.FieldTexto))
 	}
 
+	// 7g2. Remote executors: `runners executam jobs`.
+	for _, x := range in.RemoteExecutors {
+		ex, err := r.entity(x.Executor, x.Pos)
+		if err != nil {
+			return err
+		}
+		step, err := r.entity(x.Steps, x.Pos)
+		if err != nil {
+			return err
+		}
+		if step.Execution == nil || step.Execution.Role != "step" {
+			return r.errAt(x.Pos, "%s executam %s: %s precisam ser etapas de uma execução (ex.: projeto executa pipelines …; pipeline tem jobs)", ex.Plural, step.Plural, step.Plural)
+		}
+		key := ""
+		for _, f := range ex.Model.Fields {
+			if f.Type == ast.FieldSegredo {
+				key = strings.ToLower(f.Name)
+			}
+		}
+		if key == "" {
+			return r.errAt(x.Pos, "%s executam %s: cada %s precisa de uma credencial (ex.: token segredo)", ex.Plural, step.Plural, ex.Singular)
+		}
+		field := ex.Singular + "_id"
+		step.Model.Fields = append(step.Model.Fields,
+			&ast.Field{Name: field, Type: ast.FieldInteiro, Reference: ex.Singular, System: true, Index: true, Pos: x.Pos},
+			&ast.Field{Name: "token_execucao", Type: ast.FieldTexto, System: true, Hidden: true, Index: true, Pos: x.Pos})
+		step.Execution.Executor, step.Execution.ExecutorField, step.Execution.ExecutorKey = ex.Singular, field, key
+	}
+
 	// 7h. Subscriptions: webhooks receive events of their owner.
 	for _, sd := range in.Subscriptions {
 		sub, err := r.entity(sd.Subscriber, sd.Pos)

@@ -1,0 +1,21 @@
+# Runners: máquinas que executam os jobs fora do servidor.
+
+tenha runners
+
+runner tem
+    descrição
+    token segredo prefixo "glrt-"
+    ativo começa com verdadeiro
+
+runner pertence a projeto opcional
+
+runners executam jobs
+
+somente administrador pode
+    criar runners
+    ver runners
+    editar runners
+    excluir runners
+
+disponibilize para integração
+    runners

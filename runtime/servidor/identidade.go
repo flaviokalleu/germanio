@@ -190,7 +190,7 @@ func asNumber(v any) float64 {
 	return 0
 }
 
-func (a *intentAPI) mountIdentity(mux *http.ServeMux) {
+func (a *intentAPI) mountIdentity(mux *routeMux) {
 	app := a.app
 	if app.Login == nil {
 		return

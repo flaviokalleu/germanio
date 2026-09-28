@@ -31,6 +31,8 @@ import (
 
 // Servidor is the embedded Germanio web server.
 type Servidor struct {
+	// explicit: shapes of the routes the program declared (they replace generated ones)
+	explicit    map[string]string
 	Program     *ast.Program
 	DB          *banco.Banco
 	Porta       string
@@ -71,7 +73,7 @@ func Novo(program *ast.Program, db *banco.Banco, porta string) *Servidor {
 	return &Servidor{
 		Program: program, DB: db, Porta: porta, WS: NewWSHub(),
 		Jobs: jobs.Nova(4, 256), rateLimiter: make(map[string][]time.Time),
-		presence: make(map[string]map[string]any),
+		presence: make(map[string]map[string]any), explicit: map[string]string{},
 	}
 }
 
@@ -138,11 +140,12 @@ func (s *Servidor) Handler() (http.Handler, error) {
 	if err := s.registerRoutes(mux); err != nil {
 		return nil, err
 	}
-	if err := s.registerIntent(mux); err != nil {
+	generated := &routeMux{ServeMux: mux, explicit: s.explicit}
+	if err := s.registerIntent(generated); err != nil {
 		return nil, err
 	}
 	s.mux = mux
-	s.registerPages(mux)
+	s.registerPages(generated)
 
 	// Prompt Events routes (quando receber / quando chamar)
 	for _, evt := range s.Program.Events {

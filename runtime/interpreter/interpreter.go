@@ -710,6 +710,19 @@ func (s *Scope) names() []string {
 
 func (interp *Interpreter) evalBinary(expr *ast.Expression, scope *Scope) interface{} {
 	left := interp.EvalExpr(expr.Left, scope)
+	// e/ou stop as soon as the answer is known: `r == nulo ou r.ativo` is safe.
+	switch expr.Operator {
+	case "e":
+		if !toBool(left) {
+			return false
+		}
+		return toBool(interp.EvalExpr(expr.Right, scope))
+	case "ou":
+		if toBool(left) {
+			return true
+		}
+		return toBool(interp.EvalExpr(expr.Right, scope))
+	}
 	right := interp.EvalExpr(expr.Right, scope)
 
 	switch expr.Operator {
@@ -747,10 +760,6 @@ func (interp *Interpreter) evalBinary(expr *ast.Expression, scope *Scope) interf
 		return toNumber(left) >= toNumber(right)
 	case "<=":
 		return toNumber(left) <= toNumber(right)
-	case "e":
-		return toBool(left) && toBool(right)
-	case "ou":
-		return toBool(left) || toBool(right)
 	}
 
 	return nil

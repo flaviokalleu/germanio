@@ -84,8 +84,8 @@ Escopo núcleo v1 = features marcadas **[N]** (fluxos 1–5 da missão + testes 
 | ID | Nome | Comportamento | Frontend | Backend | Dados | Permissões | Deps | Support | Status | Tests |
 |----|------|--------------|----------|---------|-------|-----------|------|---------|--------|-------|
 | CI-01 [N] | Pipeline no push | lê `.gitlab-ci.yml` do commit; stages + jobs | pipelines | post-receive | ci_pipelines, ci_stages, ci_builds | Developer+ | yaml, tarefas | G15 G17 | PASS | TestFluxo5 |
-| CI-02 [N] | Runner registro e token | `POST /api/v4/runners` | admin | runners | ci_runners | admin/Maintainer | cripto | | NOT_STARTED (runner interno) | — |
-| CI-03 [N] | Runner request job | `POST /api/v4/jobs/request` entrega próximo job pendente | | API | ci_builds | token runner | | | PARTIAL (executor interno) | TestFluxo5 |
+| CI-02 [N] | Runner registro e token | `POST /api/v4/runners` | admin | runners | ci_runners | admin/Maintainer | cripto | | PASS | TestRunnerOficial, TestProtocoloRunner |
+| CI-03 [N] | Runner request job | `POST /api/v4/jobs/request` entrega próximo job pendente | | API | ci_builds | token runner | | | PASS | TestRunnerOficial |
 | CI-04 [N] | Log do job | `PATCH /jobs/:id/trace` incremental; visualização | job log | API | trace | leitura | | | PASS | TestFluxo5 |
 | CI-05 [N] | Resultado do job | `PUT /jobs/:id state=success|failed`; avança stages; status agregado | pipeline graph | API | | | | | PASS | TestFluxo5 |
 | CI-06 [N] | Retry / cancel | novo build / estado canceled | job | `/jobs/:id/retry|cancel` | | Developer+ | | | PASS | TestFluxo5 |

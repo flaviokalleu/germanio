@@ -47,7 +47,7 @@ func slug(s string) string {
 	return strings.Trim(b.String(), "-")
 }
 
-func (s *Servidor) registerPages(mux *http.ServeMux) {
+func (s *Servidor) registerPages(mux *routeMux) {
 	app := s.Program.App
 	if app == nil || len(app.Pages) == 0 || s.intent == nil {
 		if app != nil && app.Login != nil && s.intent != nil {
@@ -1195,7 +1195,7 @@ func (ps *pageSite) repositoryView(w http.ResponseWriter, r *http.Request, v *vi
 
 // ---------- identity pages ----------
 
-func (ps *pageSite) identityPages(mux *http.ServeMux) {
+func (ps *pageSite) identityPages(mux *routeMux) {
 	app := ps.a.app
 	le := app.Entities[app.LoginEntity]
 	mux.HandleFunc("GET /entrar", func(w http.ResponseWriter, r *http.Request) {

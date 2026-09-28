@@ -34,6 +34,7 @@ type Intent struct {
 	Finals            []*StateDecl // X <estado> é final
 	Executions        []*ExecutionDecl
 	Subscriptions     []*SubscriptionDecl
+	RemoteExecutors   []*RemoteExecutorDecl
 }
 
 // EntityDecl: `tenha clientes` plus the fields from `cada cliente tem`.
@@ -167,6 +168,7 @@ func MergeIntent(a, b *Intent) *Intent {
 	a.Finals = append(a.Finals, b.Finals...)
 	a.Executions = append(a.Executions, b.Executions...)
 	a.Subscriptions = append(a.Subscriptions, b.Subscriptions...)
+	a.RemoteExecutors = append(a.RemoteExecutors, b.RemoteExecutors...)
 	a.Visibility = append(a.Visibility, b.Visibility...)
 	if a.Vocabulary == nil {
 		a.Vocabulary = b.Vocabulary
@@ -266,4 +268,11 @@ type SubscriptionDecl struct {
 	Subscriber, Owner string
 	Kinds             []string
 	Pos               diagnostics.Position
+}
+
+// RemoteExecutorDecl: `runners executam jobs` — records of Executor, each
+// with a secret credential, take pending steps and run them elsewhere.
+type RemoteExecutorDecl struct {
+	Executor, Steps string
+	Pos             diagnostics.Position
 }

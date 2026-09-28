@@ -133,6 +133,10 @@ type Execution struct {
 	Run        string // step → run entity
 	Step       string // run → step entity
 	RunField   string // step → run reference field
+	// Executor: entity whose records run steps remotely (runners executam jobs).
+	Executor      string
+	ExecutorField string // step → executor reference field
+	ExecutorKey   string // executor's secret field (its credential)
 }
 
 // Subscription delivers events of Owner records to the URL of each record.

@@ -92,7 +92,7 @@ func (p *Parser) isIntentLine() bool {
 		return true
 	}
 	for _, x := range w[1:] {
-		if x == "tem" || x == "pode" || x == "podem" || x == "pertence" || x == "herda" || x == "comeca" || x == "recebe" || x == "executa" {
+		if x == "tem" || x == "pode" || x == "podem" || x == "pertence" || x == "herda" || x == "comeca" || x == "recebe" || x == "executa" || x == "executam" {
 			return true
 		}
 	}
@@ -264,6 +264,15 @@ func (p *Parser) parseIntentLine() error {
 	}
 	for i, x := range w {
 		switch x {
+		case "executam":
+			// runners executam jobs: records with a credential run steps elsewhere
+			who, _ := phrase(w[:i])
+			steps, _ := phrase(w[i+1:])
+			if who == "" || steps == "" {
+				return p.errorf(head.toks[0], "use: <quem> executam <etapas>, por exemplo runners executam jobs")
+			}
+			in.RemoteExecutors = append(in.RemoteExecutors, &ast.RemoteExecutorDecl{Executor: who, Steps: steps, Pos: pos})
+			return nil
 		case "executa":
 			// projeto executa pipelines a cada envio de código conforme "pipeline.yml"
 			owner, _ := phrase(w[:i])

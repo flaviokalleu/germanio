@@ -1,8 +1,11 @@
 package runtime
 
 import (
+	"encoding/json"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -60,3 +63,25 @@ func TestExclusaoDesfeitaMantemRepositorio(t *testing.T) {
 	c.expect("GET", "/_ge/api/lojas/1/pedidos/1", nil, 200)
 	c.expect("GET", "/_ge/api/lojas/1/repositorio/branches", nil, 200)
 }
+
+// Rotas .ge: corpo de texto cru, cabeçalho Host, e rota declarada vence a gerada.
+func TestRotasTextoHostEPrecedencia(t *testing.T) {
+	_, c := loadApp(t, "testdata/intencao/transacao.ge")
+	req, _ := http.NewRequest("POST", c.base+"/eco", strings.NewReader("linha de log\n"))
+	req.Header.Set("Content-Type", "text/plain")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out map[string]any
+	json.NewDecoder(resp.Body).Decode(&out)
+	resp.Body.Close()
+	if out["corpo"] != "linha de log\n" || !strings.HasPrefix(toStrT(out["host"]), "127.0.0.1:") {
+		t.Fatalf("eco: %v", out)
+	}
+	if got := c.expect("GET", "/_ge/api/avisos/1", nil, 200); got["substituida"] != true {
+		t.Fatalf("rota declarada deveria vencer a gerada: %v", got)
+	}
+}
+
+func toStrT(v any) string { s, _ := v.(string); return s }
