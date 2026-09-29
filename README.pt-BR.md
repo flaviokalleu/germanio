@@ -54,7 +54,7 @@ login usa email
 
 tarefas
     tem
-        titulo obrigatório até 120
+        título obrigatório até 120
         descrição
         prazo data
     pertence a usuario
@@ -103,7 +103,7 @@ Quem pode:
   ver            o dono/autor
   administrador  tudo
 De onde vem cada fato (frase plana equivalente — origem):
-  tarefa tem titulo obrigatório até 120 — app.ge:15 (tarefas › tem)
+  tarefa tem título obrigatório até 120 — app.ge:15 (tarefas › tem)
   tarefa pode concluir — app.ge:21 (tarefas › pode)
 ```
 

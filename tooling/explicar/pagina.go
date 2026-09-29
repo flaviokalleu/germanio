@@ -81,7 +81,7 @@ func Pagina(prog *ast.Program, nome string) (string, error) {
 	for _, a := range pg.Actions {
 		label := a.Label
 		if label == "" {
-			label = "Novo " + strings.ToLower(e.Label)
+			label = e.NovoRotulo()
 		}
 		w("  ação    %s %q — aparece para: %s (%s)\n", a.Verb, label, who(a.Verb), where(a.Pos))
 	}
