@@ -26,6 +26,11 @@
   <a href="README.md">English</a>
 </p>
 
+<p align="center">
+  <img src="assets/demo/tarefas.gif" alt="Demonstração: as 38 linhas do app.ge ao lado de ge run app.ge; depois o cadastro, a criação de tarefas, a conclusão de uma delas e uma segunda pessoa que não vê as tarefas da primeira" width="800">
+  <br><sub>As 38 linhas de <a href="#mostre-me">Mostre-me</a>, rodando: cadastro, tarefas, concluir, e outra pessoa que não vê nada da primeira.</sub>
+</p>
+
 Você descreve **o que existe, quem pode fazer o quê, o que acontece e o que aparece**. O
 Germanio transforma essa descrição numa aplicação web funcionando: banco de dados, validação,
 login, permissões, mudanças de estado, uma API REST e páginas renderizadas no servidor.

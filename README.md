@@ -26,6 +26,11 @@
   <a href="README.pt-BR.md">Português</a>
 </p>
 
+<p align="center">
+  <img src="assets/demo/tarefas.gif" alt="Demo: the 38 lines of app.ge next to ge run app.ge; then sign-up, creating tasks, completing one, and a second person who sees none of the first person's tasks" width="800">
+  <br><sub>The 38 lines from <a href="#show-me">Show me</a>, running: sign-up, tasks, complete, and another person who sees none of them.</sub>
+</p>
+
 You describe **what exists, who may do what, what happens and what appears**. Germanio turns
 that description into a running web application: database, validation, login, permissions,
 state changes, a REST API and server-rendered pages.
