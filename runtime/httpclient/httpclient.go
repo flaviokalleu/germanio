@@ -9,6 +9,8 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -31,6 +33,10 @@ func Transport() *http.Transport {
 			if err != nil {
 				return nil, err
 			}
+			permitirLocal := os.Getenv("GERMANIO_PERMITIR_REDE_LOCAL") == "1"
+			if !permitirLocal && nomeLocal(host) {
+				return nil, ErrRedeLocal
+			}
 			ips, err := net.DefaultResolver.LookupIPAddr(ctx, host)
 			if err != nil {
 				return nil, err
@@ -38,7 +44,7 @@ func Transport() *http.Transport {
 			if len(ips) == 0 {
 				return nil, fmt.Errorf("sem endereço para %s", host)
 			}
-			if os.Getenv("GERMANIO_PERMITIR_REDE_LOCAL") != "1" {
+			if !permitirLocal {
 				for _, ip := range ips {
 					if local(ip.IP) {
 						return nil, ErrRedeLocal
@@ -49,6 +55,60 @@ func Transport() *http.Transport {
 		},
 		TLSHandshakeTimeout: 5 * time.Second,
 	}
+}
+
+// nomeLocal recognizes, before any resolution, the names and the numeric
+// spellings that some resolvers turn into a local address and others
+// reject: localhost (RFC 6761) and the short IPv4 forms (127.1,
+// 2130706433, 0x7f.1, 0177.0.0.1). The answer does not depend on the
+// system resolver.
+func nomeLocal(host string) bool {
+	h := strings.ToLower(strings.TrimSuffix(host, "."))
+	if h == "localhost" || strings.HasSuffix(h, ".localhost") {
+		return true
+	}
+	if ip := ipv4Numerico(h); ip != nil {
+		return local(ip)
+	}
+	return false
+}
+
+// ipv4Numerico reads the inet_aton forms of an IPv4 address: one to four
+// parts in decimal, octal (leading 0) or hexadecimal (0x), the last part
+// filling the remaining bytes. Anything else is not a number.
+func ipv4Numerico(h string) net.IP {
+	partes := strings.Split(h, ".")
+	if len(partes) > 4 {
+		return nil
+	}
+	nums := make([]uint64, len(partes))
+	for i, p := range partes {
+		base := 10
+		switch {
+		case strings.HasPrefix(p, "0x"):
+			p, base = p[2:], 16
+		case len(p) > 1 && p[0] == '0':
+			p, base = p[1:], 8
+		}
+		n, err := strconv.ParseUint(p, base, 32)
+		if err != nil {
+			return nil
+		}
+		nums[i] = n
+	}
+	var v uint64
+	for i, n := range nums[:len(nums)-1] {
+		if n > 0xff {
+			return nil
+		}
+		v |= n << (24 - 8*uint(i))
+	}
+	ultimo := nums[len(nums)-1]
+	if ultimo >= 1<<(8*uint(5-len(nums))) {
+		return nil
+	}
+	v |= ultimo
+	return net.IPv4(byte(v>>24), byte(v>>16), byte(v>>8), byte(v))
 }
 
 func local(ip net.IP) bool {
