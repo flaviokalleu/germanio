@@ -15,12 +15,14 @@
    G91, G98–G102 (segurança); G85 (visibilidade 220× mais rápida), G87, G88, G89 (quase),
    G93 (parcial), G94, G95, G96 (performance/dados); G67, G68, G74, G84, G103 (linguagem);
    G75 (acessibilidade, parcial); G76, G80 (parcial).
-6. GEPs 0002, 0008, 0009: ACEITAS. Em teste, esperando decisão: 0010–0017 (descarte, histórico,
-   indicadores, avisos por e-mail, arquivos, variáveis das execuções, branches protegidas,
-   menções). Rascunhos: 0003–0007.
-7. FASE 1 (GitLab): pronta para encerramento, aguardando decisões do mantenedor —
-   `docs/FASE1_GITLAB.md` (critérios, escopo proposto, G112, G114). A FASE 2 (tempo real) não
-   começa antes do registro do encerramento.
+6. GEPs 0002, 0008, 0009: ACEITAS. Em teste, AGUARDANDO DECISÃO: 0010–0017 (revisão com
+   recomendações em `docs/gep/REVISAO_0010_0017.md`). Rascunhos: 0003–0007, 0018 (identidade de
+   esquema, G112), 0019 (fronteira dos adaptadores, G114).
+7. FASE 1 (GitLab): escopo encerrado e auditado; escopo adiado aprovado e registrado no roadmap;
+   encerramento formal AGUARDANDO DECISÃO das GEPs — `docs/FASE1_GITLAB.md`.
+8. FASE 2 (tempo real): preparada, não iniciada — `docs/FASE2_TEMPO_REAL.md` (aplicação de
+   referência "Conversa", auditoria do tempo real atual, critérios mensuráveis). Não começa antes
+   do encerramento formal da FASE 1.
 
 ## CURRENT_GOAL
 Continuar o GitLab por intenção: issues → merge requests → CI/CD → páginas (UI),

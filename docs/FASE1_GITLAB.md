@@ -1,8 +1,9 @@
 # FASE 1 — GitLab FOSS (profundidade): auditoria de encerramento
 
-> **Estado: pronta para encerramento, aguardando decisões do mantenedor** (lista no fim).
-> A fase só é registrada como encerrada quando essas decisões forem tomadas. A FASE 2
-> (tempo real pesado) não começa antes disso.
+> **Estado (2026-09-28): escopo encerrado e auditado; encerramento formal AGUARDANDO DECISÃO
+> das GEPs** (lista no fim). O escopo adiado foi aprovado pelo mantenedor. A FASE 2 (tempo real
+> pesado) está preparada ([FASE2_TEMPO_REAL.md](FASE2_TEMPO_REAL.md)) e não começa antes do
+> registro final.
 
 Data: 2026-09-28. Referência: `examples/gitlab-foss/`, inventório em
 [`research/gitlab/FEATURE_INVENTORY.md`](../research/gitlab/FEATURE_INVENTORY.md).
@@ -44,22 +45,35 @@ Cada uma nasceu de um obstáculo do GitLab e serve a outros domínios.
 - Listas de dados com `confidencial pode ser vista por` devolviam registros restritos (G106).
 - Pendências revelavam o título de registros que a pessoa não podia ver (G107).
 
-## Fora do escopo desta fase (proposta, para confirmar)
+## Adiado da FASE 1 (aprovado pelo mantenedor; não descartado)
 
-| Item | Por quê fica para depois |
+Registrado no [roadmap](ROADMAP.md) e no inventário com o destino de cada item.
+
+| Item | Destino |
 | --- | --- |
-| ID-06 confirmação de e-mail | pequeno, mas precisa de decisão de produto (bloquear login até confirmar?) |
-| PR-05 fork, PR-06 estrelas/tópicos/avatar | amplitude, não profundidade; avatar depende da GEP 0014 aceita |
-| RP-08 editar arquivo pela web | interface interativa (FASE 3) |
-| IS-09 boards, MR-07 regras avançadas de merge | interface interativa (FASE 3) e regras de aprovação (GEP própria) |
-| CI-09 DAG/rules/manual, CI-10 containers | execução avançada; isolamento é infraestrutura (FASE 4) |
-| UP-01 uploads em markdown | usa a GEP 0014; falta a referência no texto formatado |
-| ID-07, ID-08, RP-10 | já marcados fora do núcleo (2FA/SSO, SSH, LFS) |
+| confirmação de e-mail (ID-06) | FASE 5 |
+| fork (PR-05); estrelas, tópicos, avatar (PR-06) | FASE 5 |
+| edição de arquivo pela web (RP-08) | FASE 3 |
+| boards (IS-09) | FASE 3 (sincronização entre pessoas usa a FASE 2) |
+| uploads dentro de Markdown (UP-01) | FASE 3 |
+| regras avançadas de merge request (MR-07) | BACKLOG |
+| DAG avançado de CI (CI-09) | BACKLOG |
+| isolamento de CI em containers (CI-10) | FASE 4 |
+| 2FA/SSO, SSH, LFS (ID-07, ID-08, RP-10) | fora do núcleo (já marcados) |
 
-## Decisões do mantenedor que encerram a fase
+## Decisões
 
-1. GEPs em teste: 0010 (`descarte`), 0011, 0012, 0013, 0014, 0015, 0016, 0017 — aceitar, mudar ou
-   recusar.
-2. Confirmar (ou mudar) a lista "fora do escopo" acima.
-3. G112: regra do singular de nomes compostos (muda nomes de tabela).
-4. G114: se vocabulário, prefixo e forma de token de integração pertencem ao adaptador.
+| Decisão | Estado |
+| --- | --- |
+| escopo adiado | **decidido** pelo mantenedor (acima) |
+| GEPs 0010–0017 | **AGUARDANDO DECISÃO** — revisão individual com recomendação em [gep/REVISAO_0010_0017.md](gep/REVISAO_0010_0017.md): ACEITAR 0011, 0012, 0014, 0016, 0017; REVISAR 0010, 0013, 0015 |
+| G112 (singular de nomes compostos) | **AGUARDANDO DECISÃO** — tratado como identidade de esquema na [GEP 0018](gep/0018-identidade-do-esquema.md) (rascunho); a regra de singular não foi mudada |
+| G114 (domínio × protocolo) | **AGUARDANDO DECISÃO** — fronteira proposta na [GEP 0019](gep/0019-fronteira-dos-adaptadores.md) (rascunho); nenhuma mudança da regra de camadas |
+| mensagem de protocolo (branch protegida em inglês) | mantida por compatibilidade observável de protocolo; registrada como G115 para ir ao adaptador quando a GEP 0019 for decidida. As mensagens da linguagem continuam em português |
+
+## Evidências preservadas
+
+`go test ./...` e `go vet ./...` verdes; `-race` sem data races no runtime, compilador e
+ferramentas; E2E do GitLab verdes, inclusive com o `gitlab-runner` oficial; auditoria das
+camadas; nenhum conhecimento específico do GitLab no core (só comentários de exemplo e a frase
+de protocolo da G115).

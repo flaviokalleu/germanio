@@ -17,6 +17,33 @@ não todo o full-stack. Não há data de lançamento anunciada.
 | `ge explain` e `ge check` | suporte parcial ao contrato normativo ampliado | `tooling/explicar/explicar.go`, `tooling/gecli/` |
 | HIR/MIR, FFI, WASM, JIT, SIMD e GPU | não anunciados como entregues por este documento | exigir evidência por backend |
 
+## Fases de prova (ordem obrigatória)
+
+| Fase | Pergunta | Estado |
+| --- | --- | --- |
+| 1 — GitLab FOSS | Germanio constrói software empresarial profundo? | pronta para encerramento, aguardando decisões — [FASE1_GITLAB.md](FASE1_GITLAB.md) |
+| 2 — tempo real pesado | lida com sistemas vivos e concorrentes? | preparada, não iniciada — [FASE2_TEMPO_REAL.md](FASE2_TEMPO_REAL.md) |
+| 3 — UI altamente interativa | constrói experiências de interface complexas? | não iniciada |
+| 4 — escala | continua funcionando quando a carga deixa de ser confortável? | não iniciada |
+| 5 — amplitude | é realmente geral? | não iniciada |
+
+Uma fase termina implementada, testada, documentada, generalizada e auditada. Ideias de fases
+futuras são registradas aqui e não desviam a fase atual.
+
+### Adiado da FASE 1 (não descartado)
+
+| Item (inventário) | Destino | Por quê |
+| --- | --- | --- |
+| confirmação de e-mail (ID-06) | FASE 5 | amplitude de identidade; precisa de decisão de produto (bloquear login até confirmar?) |
+| fork (PR-05) | FASE 5 | amplitude |
+| estrelas, tópicos, avatar (PR-06) | FASE 5 | amplitude; avatar usa os arquivos da GEP 0014 |
+| edição de arquivo pela web (RP-08) | **FASE 3** | editor: estado local, pré-visualização, commit |
+| boards (IS-09) | **FASE 3** | arrastar e soltar, estado derivado; a sincronização entre pessoas usa a FASE 2 |
+| uploads dentro de Markdown (UP-01) | FASE 3 | editor de texto com imagens; usa a GEP 0014 |
+| regras avançadas de merge request (MR-07) | BACKLOG | regras de aprovação e merge automático: capability futura com GEP própria |
+| DAG avançado de CI (CI-09) | BACKLOG | capability de fluxo de execução (dependências, regras, manual) |
+| isolamento de CI em containers (CI-10) | FASE 4 | infraestrutura de execução |
+
 ## Prioridade: conformidade da intenção
 
 1. Completar proveniência e motivos das inferências em `ge explain`.
