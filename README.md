@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://github.com/flaviokalleu/germanio/actions/workflows/ci.yml"><img src="https://github.com/flaviokalleu/germanio/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <img src="https://img.shields.io/badge/version-0.7.0--dev%20(pre--release)-2fb4ff" alt="version 0.7.0-dev, pre-release">
+  <img src="https://img.shields.io/badge/version-0.7.0%20(pre--1.0)-2fb4ff" alt="version 0.7.0, pre-1.0">
   <img src="https://img.shields.io/badge/built%20with-Go-2fb4ff" alt="built with Go">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-2fb4ff" alt="MIT license"></a>
 </p>
@@ -154,8 +154,8 @@ go build -o ge ./cmd/ge
 Or install with the script (clones and builds into `~/.local/bin`):
 `curl -fsSL https://raw.githubusercontent.com/flaviokalleu/germanio/master/install.sh | bash`.
 To run an application in Docker, see the [Dockerfile](Dockerfile).
-Prebuilt binaries will be attached to the next [release](https://github.com/flaviokalleu/germanio/releases)
-(the releases v0.2–v0.6 predate the rename and are published as *Flang*).
+Prebuilt binaries for Linux, macOS and Windows are on the [releases page](https://github.com/flaviokalleu/germanio/releases/latest):
+download, unpack and run `ge`, no Go needed (the releases v0.2–v0.6 predate the rename and are published as *Flang*).
 
 | Command | What it does |
 | --- | --- |
