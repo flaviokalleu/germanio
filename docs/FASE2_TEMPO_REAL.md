@@ -80,13 +80,20 @@ suíte, e nunca a números inventados.
 | 8 | intenção pura | varredura do `.ge` da referência | nenhuma palavra de transporte (WebSocket, SSE, fila, canal técnico, JSON…) |
 | 9 | regressão | suíte de benchmarks existente | nenhuma piora ≥ 1,5× sem investigação registrada |
 
-## Preparação dos benchmarks
+## Preparação dos benchmarks (feita)
 
-- `bench/stress` ganha um modo de conexões persistentes: abrir N conexões, manter batimento,
-  medir a latência de entrega e a memória do servidor.
-- Um baseline em Go do mesmo chat (canais, fan-out, cursor), em `bench/baseline`, para comparar
-  como o resto da suíte faz.
-- O resultado vai para `bench/resultados/` com o contexto obrigatório.
+- `bench/tempo_real`: gerador de conexões persistentes. Abre N assinantes, dispara mensagens a
+  uma taxa fixa e mede, em cada assinante, a latência de entrega, as mensagens faltando, fora de
+  ordem ou repetidas, os pedidos de ressincronização e a memória do servidor.
+- `bench/baseline/chat`: o mesmo chat escrito diretamente em Go:
+  - sequência por canal e mensagens no SQLite;
+  - fan-out por WebSocket e retomada por cursor (`?desde=N`);
+  - buffer limitado: o cliente lento é fechado pedindo ressincronização, sem perda silenciosa.
+- Primeiro baseline:
+  [`bench/resultados/2026-10-02-tempo-real-baseline.txt`](../bench/resultados/2026-10-02-tempo-real-baseline.txt).
+  Com 500 conexões, p99 de 20,7 ms e pico de 49 MB; com 2 000, p99 de 115 ms e pico de 146 MB;
+  0 faltando, 0 fora de ordem e 0 repetidas nas duas medições. A aplicação Conversa em Germanio
+  será medida com o mesmo gerador.
 
 ## Ordem de trabalho quando a fase começar
 

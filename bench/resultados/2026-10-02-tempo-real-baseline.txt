@@ -1,0 +1,18 @@
+# Tempo real — baseline em Go (FASE 2, preparação)
+data:      2026-10-02T15:45:59-03:00
+commit:    f651440
+go:        go version go1.27.1 linux/amd64
+so:        Linux 7.1.5-76070105-generic x86_64 GNU/Linux
+cpu:       Intel(R) Core(TM) i7-10750H CPU @ 2.60GHz (12 núcleos)
+comando:   bench/tempo_real -c N -remetentes 4 -mensagens 400 -taxa 200 (servidor bench/baseline/chat, mesmo computador)
+
+alvo=go-chat conexoes=500 falhas_conexao=0 remetentes=4 enviadas=400 falhas_envio=0 duracao_envio=2.01s
+entregas=200000 esperadas=200000 faltando=0 fora_de_ordem=0 repetidas=0 ressincronizacoes=0
+latencia_entrega p50=7.298506ms p90=12.981365ms p99=20.679204ms max=29.83417ms
+memoria_servidor rss_antes=10824KB rss_pico=49492KB
+
+alvo=go-chat conexoes=2000 falhas_conexao=0 remetentes=4 enviadas=400 falhas_envio=0 duracao_envio=3.249s
+entregas=800000 esperadas=800000 faltando=0 fora_de_ordem=0 repetidas=0 ressincronizacoes=0
+latencia_entrega p50=34.982265ms p90=67.170466ms p99=114.821807ms max=261.307265ms
+memoria_servidor rss_antes=10744KB rss_pico=145820KB
+

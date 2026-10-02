@@ -75,3 +75,15 @@ piore uma medida acima de **1,5×** em relação ao último baseline (ou a razã
 de **3×** em listar e página) precisa ser registrada em `GERMANIO_GAPS.md` e decidida antes de
 entrar (norma: Regressão consciente). Metas absolutas ficam para quando houver baselines em
 mais de uma máquina.
+
+## Tempo real (FASE 2)
+
+```bash
+go build -o /tmp/chat ./bench/baseline/chat && go build -o /tmp/tempo_real ./bench/tempo_real
+/tmp/chat -addr 127.0.0.1:18090 -db /tmp/chat.db & PID=$!
+/tmp/tempo_real -c 2000 -remetentes 4 -mensagens 400 -taxa 200 -pid $PID -rotulo go-chat
+```
+
+Cada assinante confere a ordem por canal: o relatório traz entregas, faltando, fora de ordem,
+repetidas, ressincronizações, latência de entrega (p50/p90/p99/máximo) e memória do servidor. O
+alvo e os endereços são flags, para medir a aplicação de referência em Germanio do mesmo jeito.
