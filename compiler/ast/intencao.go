@@ -46,8 +46,10 @@ type Intent struct {
 	Finals           []*StateDecl // X <estado> é final
 	Executions       []*ExecutionDecl
 	// RunVariables: `pipelines usam as variaveis do projeto` (GEP 0015).
-	RunVariables      []*RunVariablesDecl
-	Subscriptions     []*SubscriptionDecl
+	RunVariables  []*RunVariablesDecl
+	Subscriptions []*SubscriptionDecl
+	// Mirrors: `espelhos espelham o repositório do projeto` (GEP 0036).
+	Mirrors           []*MirrorDecl
 	RemoteExecutors   []*RemoteExecutorDecl
 	Translators       map[string]string // traduza <ponto> com <função> (integracoes/)
 	InitialFiles      []*InitialFileDecl
@@ -284,6 +286,7 @@ func MergeIntent(a, b *Intent) *Intent {
 	a.Executions = append(a.Executions, b.Executions...)
 	a.RunVariables = append(a.RunVariables, b.RunVariables...)
 	a.Subscriptions = append(a.Subscriptions, b.Subscriptions...)
+	a.Mirrors = append(a.Mirrors, b.Mirrors...)
 	a.RemoteExecutors = append(a.RemoteExecutors, b.RemoteExecutors...)
 	for k, v := range b.Translators {
 		if a.Translators == nil {
@@ -451,6 +454,13 @@ type SubscriptionDecl struct {
 	Subscriber, Owner string
 	Kinds             []string
 	Pos               diagnostics.Position
+}
+
+// MirrorDecl: `espelhos espelham o repositório do projeto` — records of
+// Data are mirrors of the repository of Owner.
+type MirrorDecl struct {
+	Data, Owner string
+	Pos         diagnostics.Position
 }
 
 // RemoteExecutorDecl: `runners executam jobs` — records of Executor, each

@@ -26,6 +26,10 @@ published under that name.
   em teste); the author's approval does not count.
 - Ways to merge (GEP 0027, em teste, no syntax): squash, semi-linear, linear (fast-forward after
   rebase), and merging when the executions of the source pass.
+- Git LFS over HTTP (GEP 0035, em teste, no syntax): batch API, sha256 and size checked while
+  streaming, `GERMANIO_LFS_MAX_MB`, same rules as clone and push.
+- Repository mirrors (`espelhos espelham o repositório do projeto`, GEP 0036, em teste): push and
+  pull mirrors over http(s) only, through the SSRF-protected client, credentials hidden.
 
 ## [0.7.0] — 2026-09-29
 

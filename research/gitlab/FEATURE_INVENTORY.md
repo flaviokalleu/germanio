@@ -51,7 +51,7 @@ Escopo núcleo v1 = features marcadas **[N]** (fluxos 1–5 da missão + testes 
 | RP-07 | Tags | criar, listar, remover | `/-/tags` | `/repository/tags` | refs | Developer+ para criar | git | SUPPORTED | PASS (tags leves por git push e pela API, com as regras de enviar código; tags anotadas e protegidas ainda não) | TestTags |
 | RP-08 | Editar arquivo pela web | commit direto | editor | `POST /repository/commits` | repo | Developer+ | git | G13 | PASS (FASE 3: editar pela API e pela página do arquivo; commit da pessoa com as regras de enviar código e branches protegidas; as execuções começam como num push) | TestEditarArquivoPelaWeb |
 | RP-09 | Compare | diff entre refs | compare | `/repository/compare` | repo | leitura | git | | PASS (API) | — |
-| RP-10 | SSH, LFS, mirrors, archive download | download do código | repositório | `repository/archive` | — | baixar_codigo | git | PARTIAL | PARTIAL (archive feito; SSH, LFS e mirrors em andamento) | TestArchive, TestBaixarCodigo, TestBaixarCodigoComoArquivo |
+| RP-10 | SSH, LFS, mirrors, archive download | download do código, arquivos grandes, espelhos | repositório | `repository/archive`, `info/lfs`, `remote_mirrors` | remote_mirrors | baixar/enviar código, maintainer | git | PARTIAL (GEP 0035, 0036) | PARTIAL (archive, LFS e espelhos feitos; transporte SSH em andamento) | TestArchive, TestBaixarCodigo, TestGitLFS, TestGitLFSNoProjeto, TestEspelhos, TestEspelhosRemotos |
 
 ## Issues
 

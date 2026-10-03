@@ -140,14 +140,14 @@ var legacyBlockWords = map[string]bool{
 // sections are the aspects a data block may contain (folded words).
 var sections = []string{"tem", "pertence a", "comeca", "pode", "regras", "acesso", "permita",
 	"integracao", "quando", "antes de", "recebe", "executa", "executam", "repositorio", "singular", "pendencia para",
-	"renomeie", "descarte", "guarda historico", "guarda leitura", "usam", "usa"}
+	"renomeie", "descarte", "guarda historico", "guarda leitura", "usam", "usa", "espelham", "espelha"}
 
 func sectionOf(w []string) string {
 	if len(w) == 0 {
 		return ""
 	}
 	switch w[0] {
-	case "tem", "comeca", "pode", "regras", "acesso", "permita", "integracao", "quando", "recebe", "executa", "executam", "repositorio", "singular", "renomeie", "descarte", "usam", "usa":
+	case "tem", "comeca", "pode", "regras", "acesso", "permita", "integracao", "quando", "recebe", "executa", "executam", "repositorio", "singular", "renomeie", "descarte", "usam", "usa", "espelham", "espelha":
 		return w[0]
 	case "pertence":
 		return "pertence a"
@@ -313,7 +313,7 @@ func (p *Parser) dataSection(name string, header []lexer.Token, sec *node) error
 		return p.teach(at, "\""+lineText(sec.line)+"\" não é uma seção de "+name,
 			"dentro de um dado, cada linha do primeiro nível diz de que aspecto se trata",
 			"use uma destas seções: "+strings.Join(displaySections(), ", ")+suggest(w[0]), name)
-	case "tem", "comeca", "recebe", "executa", "executam", "usam", "usa":
+	case "tem", "comeca", "recebe", "executa", "executam", "usam", "usa", "espelham", "espelha":
 		if kind == "tem" && len(toks) == 1 && len(sec.children) == 0 {
 			return p.teach(at, "a seção tem está vazia", "tem lista campos, relações e pessoas do dado", "escreva um item por linha, recuado abaixo de tem", name)
 		}
@@ -521,7 +521,7 @@ func (p *Parser) access(name string, header []lexer.Token, path string, actor *n
 }
 
 func displaySections() []string {
-	return []string{"tem", "pertence a", "começa", "pode", "regras", "acesso", "permita", "integração", "quando", "antes de", "recebe", "executa", "executam", "repositório", "singular"}
+	return []string{"tem", "pertence a", "começa", "pode", "regras", "acesso", "permita", "integração", "quando", "antes de", "recebe", "executa", "executam", "repositório", "singular", "espelham"}
 }
 
 // suggest proposes the closest section for a misspelled word.
