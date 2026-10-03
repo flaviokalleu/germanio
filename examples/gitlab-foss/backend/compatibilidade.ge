@@ -56,6 +56,7 @@ vocabulário da integração
     fechada_por_id é "closed_by_id"
     autor_id é "author_id"
     confidencial é "confidential"
+    peso é "weight"
     responsaveis é "assignee_ids"
     fechar é "close"
     reabrir é "reopen"
