@@ -1,0 +1,49 @@
+crie sistema Vivas
+
+usuarios
+    tem
+        nome obrigatório
+        email obrigatório e único
+        senha min 8
+
+tenha login
+tenha cadastro
+
+projetos
+    tem
+        nome obrigatório
+        issues
+    acesso
+        usuario
+            criar
+            ver
+
+issues
+    tem
+        titulo obrigatório
+        autor
+        responsaveis
+    pertence a projeto
+    pode
+        ser confidencial
+    regras
+        confidencial pode ser vista por
+            autor
+    pendência para
+        responsaveis
+    acesso
+        usuario
+            criar
+            ver
+
+quando criar issue
+    se issue.titulo == "recusada"
+        recuse "Issue recusada"
+
+página Projetos
+    mostre projetos
+    permita
+        criar
+
+página Pendências
+    mostre pendências

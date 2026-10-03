@@ -114,4 +114,4 @@ func (ps *pageSite) dashboard(w http.ResponseWriter, r *http.Request, pg *ast.Pa
 	ps.render(w, v, http.StatusOK)
 }
 
-var indicatorsTpl = tpl(`<section class="indicadores" aria-label="Indicadores">{{range .}}<div class="indicador"><span class="valor">{{.Value}}</span><span class="rotulo">{{.Label}}</span></div>{{end}}</section>`)
+var indicatorsTpl = tpl(`<section class="indicadores" aria-label="Indicadores" data-vivo="indicadores">{{range .}}<div class="indicador"><span class="valor">{{.Value}}</span><span class="rotulo">{{.Label}}</span></div>{{end}}</section>`)

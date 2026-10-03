@@ -73,6 +73,7 @@ Rules:
 | [0017](0017-mencoes.md) | Mentions create pending items (`pendência para` › `mencionados`) | Em teste |
 | [0018](0018-identidade-do-esquema.md) | Schema identity: human, canonical and physical names (G112) | Rascunho |
 | [0019](0019-fronteira-dos-adaptadores.md) | The boundary between domain and adapters (G114) | Rascunho |
+| [0020](0020-paginas-vivas.md) | Pages stay up to date (no syntax; FASE 2) | Em teste |
 
 Revisão final das GEPs em teste 0010–0017, com recomendação por GEP e sem mudança de status:
 [REVISAO_0010_0017.md](REVISAO_0010_0017.md).

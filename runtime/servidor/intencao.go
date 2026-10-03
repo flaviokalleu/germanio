@@ -32,6 +32,8 @@ type intentAPI struct {
 	exec *executor
 	// recoveryAvailable: password recovery is declared and configured.
 	recoveryAvailable bool
+	// live announces changes to open pages (GEP 0020).
+	live *liveHub
 }
 
 func (s *Servidor) registerIntent(mux *routeMux) error {
@@ -47,6 +49,7 @@ func (s *Servidor) registerIntent(mux *routeMux) error {
 		}
 	}
 	s.intent = a
+	a.live = newLiveHub(a)
 	s.registerTaskModule()
 	s.tasks().handle("entrega", a.deliver)
 	a.mountSearch(mux)

@@ -140,6 +140,10 @@ type Interpreter struct {
 	Modules map[string]map[string]ModuleFunc
 	// App is the resolved intent layer (entities, roles, rules).
 	App *ast.App
+	// OnChange, when set, is told of every record written through the
+	// interpreter (before is nil on create, after is nil on delete), so the
+	// server can announce it after the commit (GEP 0020).
+	OnChange func(ctx *Context, model string, before, after map[string]any)
 }
 
 // New creates a new interpreter.

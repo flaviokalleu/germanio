@@ -69,6 +69,8 @@ func (s *Servidor) registerPages(mux *routeMux) {
 		mux.HandleFunc("POST /"+sl, ps.post)
 		mux.HandleFunc("POST /"+sl+"/{rest...}", ps.post)
 	}
+	mux.HandleFunc("GET /_ge/atualizacoes", ps.serveLive)
+	mux.HandleFunc("GET /_ge/atualizar.js", serveLiveScript)
 	if len(ps.order) > 0 {
 		first := "/" + slug(ps.order[0].Name)
 		mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
@@ -746,6 +748,7 @@ func (ps *pageSite) serve(w http.ResponseWriter, r *http.Request) {
 		}
 		base := strings.TrimSuffix(r.URL.Path, "/")
 		rows := asList(out)
+		body.WriteString(`<div data-vivo="lista">`)
 		if own && len(rows) == 0 && pg.Empty != nil && q.Get("q") == "" {
 			empty := map[string]any{"Title": pg.Empty.Title, "Text": pg.Empty.Text}
 			if pg.Empty.Action != nil && canCreate {
@@ -764,6 +767,7 @@ func (ps *pageSite) serve(w http.ResponseWriter, r *http.Request) {
 			body.WriteString(string(ps.tableWith(last.e, rows, base, cols)))
 		}
 		body.WriteString(string(htmlOf(pagerTpl, pager(q, len(rows), per))))
+		body.WriteString(`</div>`)
 		if canCreate {
 			body.WriteString(`<div id="novo"></div>`)
 			body.WriteString(string(ps.form(base+"/novo", "Criar", v.CSRF, createLabel, ps.inputs(r, chain, last.e, nil, ps.fixedFor(chain)))))
@@ -811,7 +815,9 @@ func (ps *pageSite) serve(w http.ResponseWriter, r *http.Request) {
 			continue // not allowed to see: nothing is shown
 		}
 		body.WriteString(string(htmlOf(sectionTpl, map[string]any{"Title": c.Label + "s", "Href": base + "/" + c.Plural})))
+		body.WriteString(`<div data-vivo="filhos-` + template.HTMLEscapeString(c.Plural) + `">`)
 		body.WriteString(string(ps.table(c, asList(cout), base+"/"+c.Plural)))
+		body.WriteString(`</div>`)
 		childChain := append(append([]step{}, chain...), step{e: c})
 		if atual != nil && ps.a.canCreateFor(ctx, atual, c, childChain) {
 			body.WriteString(string(ps.form(base+"/"+c.Plural+"/novo", "Criar", v.CSRF, "Novo "+strings.ToLower(c.Label), ps.inputs(r, childChain, c, nil, ps.fixedFor(childChain)))))
@@ -1409,7 +1415,7 @@ a.botao{display:inline-block;padding:7px 14px;border-radius:6px;background:var(-
 <div class="usuario">{{if .User}}<span>{{.UserName}}</span><form method="post" action="/sair"><button>Sair</button></form>{{else if .Login}}<a href="/entrar">Entrar</a>{{if .Signup}}<a href="/cadastro">Criar conta</a>{{end}}{{end}}</div></header>
 <main>{{if .Crumbs}}<div class="migalhas">{{range $i, $c := .Crumbs}}{{if $i}} / {{end}}<a href="{{$c.Href}}">{{$c.Text}}</a>{{end}}</div>{{end}}
 {{if .Flash}}<div class="aviso ok">{{.Flash}}</div>{{end}}{{if .Error}}<div class="aviso erro">{{.Error}}</div>{{end}}
-{{.Body}}</main></body></html>`)
+{{.Body}}</main><script src="/_ge/atualizar.js" defer></script></body></html>`)
 
 var headingTpl = tpl(`<h1>{{.}}</h1>`)
 var sectionTpl = tpl(`<h2>{{.Title}}{{if .Href}}<a href="{{.Href}}">ver tudo</a>{{end}}</h2>`)
@@ -1427,7 +1433,7 @@ var formTpl = tpl(`<form class="{{if .Title}}caixa{{end}}" method="post" action=
 {{else if eq .Type "select"}}<label>{{.Label}}<select name="{{.Name}}" {{if .Multiple}}multiple{{end}} {{if .Required}}required{{end}}>{{range .Options}}<option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Text}}</option>{{end}}</select></label>
 {{else}}<label>{{.Label}}<input type="{{.Type}}" name="{{.Name}}" value="{{.Value}}" {{if .Required}}required{{end}}></label>{{end}}{{end}}
 <button {{if .Danger}}class="perigo"{{end}}>{{.Submit}}</button></form>`)
-var detailTpl = tpl(`<dl>{{range .}}<dt>{{.Label}}</dt><dd>{{if .HTML}}<div class="texto">{{.HTML}}</div>{{else}}{{.Value}}{{end}}</dd>{{end}}</dl>`)
+var detailTpl = tpl(`<dl data-vivo="detalhes">{{range .}}<dt>{{.Label}}</dt><dd>{{if .HTML}}<div class="texto">{{.HTML}}</div>{{else}}{{.Value}}{{end}}</dd>{{end}}</dl>`)
 var searchTpl = tpl(`<form class="busca" method="get" role="search">{{if .Search}}<label><span class="sr">Pesquisar</span><input type="search" name="q" value="{{.Q}}" placeholder="Pesquisar"></label>{{end}}
 {{range .Filters}}<label><span class="sr">{{label .}}</span><input name="{{.}}" value="{{getv $.Values .}}" placeholder="{{label .}}"></label>{{end}}<button>Filtrar</button></form>`)
 var pagerTpl = tpl(`<div class="paginas">{{if .Prev}}<a href="{{.Prev}}">← anterior</a>{{end}}{{if .Next}}<a href="{{.Next}}">próxima →</a>{{end}}</div>`)

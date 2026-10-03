@@ -545,6 +545,7 @@ func (interp *Interpreter) dbCall(c *Call, model, method string, args []any) any
 			fail(err)
 		}
 		row = clean(row)
+		interp.changed(c, model, nil, row)
 		for k, v := range reveal {
 			row[k] = v // shown once, only in the creation result
 		}
@@ -558,6 +559,7 @@ func (interp *Interpreter) dbCall(c *Call, model, method string, args []any) any
 			fail(err)
 		}
 		interp.followAddress(db, m, int64(id), before, row)
+		interp.changed(c, model, before, row)
 		return clean(row)
 	case "verificar_senha":
 		// modelo.verificar_senha(registro_ou_id, senha[, campo]) — tempo constante
@@ -634,9 +636,16 @@ func (interp *Interpreter) dbCall(c *Call, model, method string, args []any) any
 		return clean(row)
 	case "deletar", "delete":
 		id := c.Num(args, 0, "id")
+		var before map[string]any
+		if interp.OnChange != nil {
+			before, _ = db.BuscarRegistro(model, int64(id))
+		}
 		n, err := db.DeletarFiltro(model, banco.Consulta{Filtros: map[string]any{"id": id}})
 		if err != nil {
 			fail(err)
+		}
+		if n > 0 && before != nil {
+			interp.changed(c, model, before, nil)
 		}
 		return n > 0
 	case "apagar_onde":
@@ -794,4 +803,11 @@ func (interp *Interpreter) RunFunction(name string, args []any, ctx *Context) (r
 		}
 	}()
 	return interp.callFunctionIn(fn, args, scope, diagnostics.Position{}), nil
+}
+
+// changed tells OnChange about a written record (GEP 0020).
+func (interp *Interpreter) changed(c *Call, model string, before, after map[string]any) {
+	if interp.OnChange != nil {
+		interp.OnChange(c.Ctx(), model, before, after)
+	}
 }

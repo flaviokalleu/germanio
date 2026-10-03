@@ -420,6 +420,11 @@ página Clientes
 | `colunas` | um campo por linha, na ordem | o campo precisa existir e não ser privado, oculto nem secreto | os campos visíveis |
 | `vazio` | `título`, `texto`, `ação verbo "rótulo"` | a ação segue a regra de `ações` | "Nenhum registro de … ainda." |
 
+Uma página aberta acompanha as mudanças do que mostra ([GEP 0020](gep/0020-paginas-vivas.md),
+**em teste**, sem sintaxe): cada mudança salva avisa quem pode ver o registro, e só as regiões
+vivas da página (lista, indicadores, detalhes, filhos) são trocadas, sem mexer no que a pessoa
+está digitando. O transporte é do runtime; o programa não o nomeia.
+
 A página pede; o domínio decide: uma ação só aparece para quem pode fazê-la, como qualquer botão
 de `permita`. Um rótulo sozinho (`"Novo cliente"`) é erro: um texto não é uma ação. As seções
 valem na página da coleção (não nas listas aninhadas). `ge explain pagina Clientes` mostra cada

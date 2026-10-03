@@ -120,7 +120,27 @@ Obstáculos encontrados:
 | # | Obstáculo | Tipo | Encaminhamento |
 | --- | --- | --- | --- |
 | 1 | um dado chamado `mensagens` derrubava o compilador (pânico: colisão com a frase `mensagens em inglês`) | bug do core | corrigido, com teste de equivalência |
-| 2 | nenhuma página se atualiza sozinha quando o que ela mostra muda | capability faltante (a central da fase) | GEP 0020 |
+| 2 | nenhuma página se atualiza sozinha quando o que ela mostra muda | capability faltante (a central da fase) | GEP 0020, em teste: feito (`TestPaginasVivas`, com mutação provando visibilidade e commit) |
 | 3 | presença (online/offline) e "digitando" não existem | capability faltante | depois da 0020 |
 | 4 | lido/não lido e contadores por pessoa não existem | capability faltante | depois da 0020 |
 | 5 | o hub de tempo real atual manda tudo a todos e descarta em silêncio (G66) | dívida do core | substituído pelo mecanismo da 0020 |
+
+### Passo 2 — páginas vivas (2026-10-02)
+
+GEP 0020, sem sintaxe:
+- toda escrita do interpretador é anunciada depois do commit (gancho `OnChange`), incluindo as
+  feitas pelo próprio core, como pendências e histórico;
+- quem pode ver o registro recebe um aviso sem dados por Server-Sent Events, e a página busca de
+  novo só as regiões vivas;
+- os avisos se fundem num canal de uma vaga: memória limitada por assinante, e um cliente lento
+  não atrasa ninguém;
+- depois de uma reconexão, a página se atualiza uma vez.
+
+Limites registrados:
+- a checagem de visibilidade é feita por (mudança, assinante interessado): com plateias grandes
+  ela precisa de cache, na FASE 4;
+- `apagar_onde` (exclusão em lote) ainda não anuncia;
+- o hub antigo de `/ws` continua servindo só o renderizador técnico anterior (G66).
+
+O gerador `bench/tempo_real` ainda fala o protocolo do baseline (mensagem completa por
+WebSocket); medir a Conversa pede um modo SSE no gerador (próximo passo).
