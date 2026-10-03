@@ -34,7 +34,9 @@ type watcher struct {
 	queue chan string // ready row events; when full, a refresh is asked
 	// only: records of the page's address (model → id): changes of other
 	// records of those data are not on this page
-	only map[string]string
+	only   map[string]string
+	path   string      // the page (people typing on it are announced to its viewers)
+	typing chan string // who is typing (one slot: ephemeral, never queued)
 }
 
 // rowRegion is a table of a page: its live region, the address its rows
@@ -362,7 +364,7 @@ func (ps *pageSite) serveLive(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx := &interp.Context{Request: r}
 	atual, _ := ps.a.s.identify(ctx, r)
-	wt := &watcher{depends: deps, signal: make(chan struct{}, 1), rows: rows, queue: make(chan string, 32), only: only}
+	wt := &watcher{depends: deps, signal: make(chan struct{}, 1), rows: rows, queue: make(chan string, 32), only: only, path: path, typing: make(chan string, 1)}
 	if atual != nil {
 		wt.person = atual["id"]
 	}
@@ -402,6 +404,10 @@ func (ps *pageSite) serveLive(w http.ResponseWriter, r *http.Request) {
 			}
 		case ev := <-wt.queue:
 			if !write("event: linha\ndata: " + ev + "\n\n") {
+				return
+			}
+		case ev := <-wt.typing:
+			if !write("event: digitando\ndata: " + ev + "\n\n") {
 				return
 			}
 		}
@@ -624,6 +630,34 @@ const liveScript = `(function () {
   var es = new EventSource('/_ge/atualizacoes?p=' + encodeURIComponent(location.pathname));
   es.addEventListener('mudou', refresh);
   es.addEventListener('linha', row);
+  // someone else typing on this page (presence): shown for a few seconds
+  var typingTimer = null;
+  es.addEventListener('digitando', function (e) {
+    var who = JSON.parse(e.data).nome;
+    var box = document.querySelector('[data-digitando]');
+    if (!box) {
+      box = document.createElement('p');
+      box.className = 'digitando';
+      box.setAttribute('data-digitando', '');
+      box.setAttribute('aria-live', 'polite');
+      var main = document.querySelector('main');
+      if (main) main.insertBefore(box, main.firstChild);
+    }
+    box.textContent = who + ' está digitando…';
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(function () { box.textContent = ''; }, 5000);
+  });
+  // tell the others while typing in a form of this page (at most every 3 s)
+  var lastTyped = 0;
+  document.addEventListener('input', function (e) {
+    var form = e.target.form;
+    if (!form || e.target.matches('[data-filtro-quadro]') || Date.now() - lastTyped < 3000) return;
+    var csrf = form.querySelector('input[name=_csrf]');
+    if (!csrf) return;
+    lastTyped = Date.now();
+    fetch('/_ge/digitando', {method: 'POST', credentials: 'same-origin',
+      body: new URLSearchParams({p: location.pathname, _csrf: csrf.value})}).catch(function () {});
+  });
   es.onopen = function () { if (opened) refresh(); opened = true; };
 })();
 `
@@ -632,4 +666,44 @@ func serveLiveScript(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-cache")
 	fmt.Fprint(w, liveScript)
+}
+
+// serveTyping: someone signed in is typing on a page (presence, GEP 0021).
+// The viewers of the same page are told, once, by name; nothing is stored.
+func (ps *pageSite) serveTyping(w http.ResponseWriter, r *http.Request) {
+	if !ps.a.app.Presence {
+		http.NotFound(w, r)
+		return
+	}
+	ctx := &interp.Context{Request: r}
+	atual, _ := ps.a.s.identify(ctx, r)
+	sess := interp.SessaoDaRequisicao(r)
+	if atual == nil || sess == nil {
+		http.Error(w, "entre para escrever", http.StatusUnauthorized)
+		return
+	}
+	if r.FormValue("_csrf") != fmt.Sprint(sess["csrf"]) {
+		http.Error(w, "token CSRF ausente ou inválido", http.StatusForbidden)
+		return
+	}
+	path := r.FormValue("p")
+	if deps, _, _ := ps.dependencies(r, path); deps == nil || !strings.HasPrefix(path, "/") {
+		http.NotFound(w, r)
+		return
+	}
+	name := first(toStr(atual["nome"]), toStr(atual["name"]), toStr(atual["username"]), "alguém")
+	b, _ := json.Marshal(map[string]string{"nome": name})
+	ev := string(b)
+	hub := ps.a.live
+	hub.mu.RLock()
+	for wt := range hub.watchers {
+		if wt.path == path && fmt.Sprint(wt.person) != fmt.Sprint(atual["id"]) {
+			select {
+			case wt.typing <- ev:
+			default: // already told
+			}
+		}
+	}
+	hub.mu.RUnlock()
+	w.WriteHeader(http.StatusNoContent)
 }

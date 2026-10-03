@@ -131,5 +131,12 @@ Provado no navegador: abre, edita o título (o quadro mostra o novo) e Esc fecha
 
 Responsividade: num celular (375 px) a página não rola para o lado, e o quadro rola dentro dele.
 
-Ainda na fase (itens adiados para cá): "digitando…" (da FASE 2), edição de arquivo pela web (RP-08)
-e uploads dentro do Markdown (UP-01).
+Ainda na fase (itens adiados para cá): edição de arquivo pela web (RP-08) e uploads dentro do
+Markdown (UP-01).
+
+### Passo 8 — "digitando…" (2026-10-02)
+
+Parte da presença (GEP 0021): quem digita num formulário da página aparece como "<nome> está
+digitando…" para as outras pessoas que olham a mesma página. O aviso é efêmero e passa por sessão
+e CSRF. Provado no servidor (`TestDigitando`: a mesma página sim, a própria pessoa e outra página
+não, recusa sem sessão ou CSRF) e no navegador (Ana digita no quadro, Bia vê).

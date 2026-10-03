@@ -30,6 +30,11 @@ tenha presença
 - A change of presence is a change for GEP 0020: the pages showing people refresh.
 - Without `tenha presença`, nothing changes: no `online`, no tracking.
 
+- **Typing:** while someone signed in types in a form of a page, the other people looking at the
+  same page see "<nome> está digitando…" for a few seconds. It is ephemeral (never stored), sent at
+  most every 3 s, needs the session and the CSRF token, and the person typing is not told about
+  themselves.
+
 ## Alternatives studied
 
 - A stored `ultimo_acesso` field: a write per page view, and still not presence.
@@ -37,8 +42,8 @@ tenha presença
 
 ## Limits
 
-One process: several servers need shared presence (FASE 4). "Typing…" is not covered (it is
-ephemeral per conversation, a later GEP).
+One process: several servers need shared presence (FASE 4). "Typing" is per page, not per
+conversation inside a page.
 
 ## Tests
 

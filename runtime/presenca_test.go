@@ -1,8 +1,11 @@
 package runtime
 
 import (
+	"bufio"
 	"context"
 	"net/http"
+	"net/url"
+	"strings"
 	"testing"
 	"time"
 )
@@ -70,5 +73,76 @@ func TestSemPresenca(t *testing.T) {
 	ana := signIn(t, c.base, "Ana", "ana@x.com")
 	if me := ana.expect("GET", "/_ge/eu", nil, 200); me["online"] != nil {
 		t.Fatalf("sem presença declarada não há online: %v", me)
+	}
+}
+
+// "Digitando…" (presence): the viewers of the same page are told who is
+// typing; the person typing is not; another page is not; it needs a session
+// and the CSRF token.
+func TestDigitando(t *testing.T) {
+	_, c := loadApp(t, "testdata/presenca/app.ge")
+	ana := signIn(t, c.base, "Ana", "ana@x.com")
+	bia := signIn(t, c.base, "Bia", "bia@x.com")
+	stream := func(who *client, page string) <-chan string {
+		ctx, cancel := context.WithCancel(context.Background())
+		t.Cleanup(cancel)
+		req, _ := http.NewRequestWithContext(ctx, "GET", c.base+"/_ge/atualizacoes?p="+page, nil)
+		resp, err := who.http.Do(req)
+		if err != nil || resp.StatusCode != 200 {
+			t.Fatalf("assinatura: %v %v", err, resp)
+		}
+		out := make(chan string, 10)
+		go func() {
+			defer resp.Body.Close()
+			sc := bufio.NewScanner(resp.Body)
+			typing := false
+			for sc.Scan() {
+				line := sc.Text()
+				if line == "event: digitando" {
+					typing = true
+					continue
+				}
+				if typing && strings.HasPrefix(line, "data: ") {
+					out <- strings.TrimPrefix(line, "data: ")
+					typing = false
+				}
+			}
+		}()
+		time.Sleep(100 * time.Millisecond)
+		return out
+	}
+	biaSees, anaSees, other := stream(bia, "/pessoas"), stream(ana, "/pessoas"), stream(bia, "/inicio")
+	post := func(who *client, csrf string) int {
+		resp, err := who.http.PostForm(c.base+"/_ge/digitando", url.Values{"p": {"/pessoas"}, "_csrf": {csrf}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		return resp.StatusCode
+	}
+	if code := post(ana, ana.csrf); code != 204 {
+		t.Fatalf("avisar que digita: %d", code)
+	}
+	select {
+	case ev := <-biaSees:
+		if !strings.Contains(ev, "Ana") {
+			t.Fatalf("aviso: %s", ev)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("Bia não soube que Ana digita")
+	}
+	select {
+	case ev := <-anaSees:
+		t.Fatalf("Ana recebeu o próprio aviso: %s", ev)
+	case ev := <-other:
+		t.Fatalf("outra página recebeu o aviso: %s", ev)
+	case <-time.After(300 * time.Millisecond):
+	}
+	if code := post(ana, "errado"); code != 403 {
+		t.Fatalf("sem o token CSRF: %d", code)
+	}
+	_, anon := c.fresh(t)
+	if code := post(anon, ""); code != 401 {
+		t.Fatalf("sem sessão: %d", code)
 	}
 }

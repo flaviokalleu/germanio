@@ -100,6 +100,30 @@ function fail(msg) { console.error('FALHA: ' + msg); process.exit(1); }
   if (await pa.locator('.quadro .cartao:visible').count() !== 1) fail('o filtro local não escondeu os outros cartões');
   if (requests.length !== 0) fail('o filtro local pediu algo ao servidor: ' + requests.join(', '));
 
+  // typing in a form of the board is shown to another person looking at it
+  // (presence); the person typing is not told about themselves
+  const c = await browser.newContext();
+  const pc = await c.newPage();
+  await pc.goto(base + '/cadastro');
+  await pc.fill('input[name=nome]', 'Bia');
+  await pc.fill('input[name=email]', 'bia@x.com');
+  await pc.fill('input[name=senha]', 'senha-segura-1');
+  await Promise.all([pc.waitForNavigation(), pc.click('form button')]);
+  const biaID = await pc.evaluate(async () => (await (await fetch('/_ge/eu')).json()).id);
+  await pa.goto(base + '/quadros/1');
+  const added = await pa.evaluate(async (id) => {
+    const csrf = document.querySelector('input[name=_csrf]').value;
+    const r = await fetch('/_ge/api/quadros/1/membros', {method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRF-Token': csrf}, body: JSON.stringify({pessoa_id: id, papel: 'leitor'})});
+    return r.status;
+  }, biaID);
+  if (added !== 201) fail('adicionar Bia ao quadro: ' + added);
+  await pc.goto(base + '/quadros/1');
+  await pa.waitForTimeout(300);
+  await pa.type('form[action="/quadros/1/cartoes/novo"] input[name=titulo]', 'Escrevendo');
+  await pc.waitForSelector('[data-digitando] >> text=Ana está digitando', { timeout: 5000 })
+    .catch(() => fail('Bia não viu que Ana está digitando'));
+  if (await pa.locator('[data-digitando]', { hasText: 'Ana está digitando' }).count() !== 0) fail('Ana viu o próprio aviso');
+
   // accessibility: no serious or critical axe-core violation on the board
   // (the page's CSP rightly forbids injected scripts: the audit context bypasses it)
   const audit = await browser.newContext({ bypassCSP: true });
