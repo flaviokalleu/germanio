@@ -84,7 +84,7 @@ func (p *Parser) isIntentLine() bool {
 	case "quem":
 		return len(w) >= 5 && w[1] == "cria"
 	case "cada":
-		return len(w) >= 3 && w[len(w)-1] == "tem"
+		return len(w) >= 3 && w[len(w)-1] == "tem" || pairAt(w) > 0
 	case "login":
 		return len(w) >= 2
 	case "ao":
@@ -99,11 +99,14 @@ func (p *Parser) isIntentLine() bool {
 	if len(w) >= 4 && w[len(w)-1] == "final" && w[len(w)-2] == "e" {
 		return true
 	}
+	if pairAt(w) > 0 {
+		return true // ligacao é única por par de issues (GEP 0048)
+	}
 	if len(w) >= 5 && w[len(w)-2] == "somente" && w[len(w)-1] == "leitura" && w[len(w)-3] == "e" {
 		return true
 	}
 	for i, x := range w[1:] {
-		if x == "tem" || x == "pode" || x == "podem" || x == "pertence" || x == "herda" || x == "comeca" || x == "recebe" || x == "executa" || x == "executam" || x == "precisa" || x == "precisam" || x == "gera" {
+		if x == "tem" || x == "pode" || x == "podem" || x == "pertence" || x == "herda" || x == "comeca" || x == "recebe" || x == "executa" || x == "executam" || x == "precisa" || x == "precisam" || x == "gera" || x == "mostra" {
 			return true
 		}
 		if (x == "usa" || x == "usam") && len(w) >= 5 && (contains(w, "do") || contains(w, "da") || contains(w, "dos") || contains(w, "das")) {
@@ -182,6 +185,9 @@ func (p *Parser) intentFrom(head dline, body []dline) error {
 	case "tenha":
 		return p.parseTenha(head, body)
 	case "cada":
+		if k := pairAt(w); k > 0 {
+			return p.pairLine(head, k) // cada ligacao é única por par de issues
+		}
 		// cada cliente tem
 		name, _ := phrase(w[1 : len(w)-1])
 		in.FieldBlocks = append(in.FieldBlocks, &ast.FieldsDecl{Entity: name, Lines: tokenLines(body), Pos: pos})
@@ -392,8 +398,15 @@ func (p *Parser) intentFrom(head dline, body []dline) error {
 		p.intent().History = append(p.intent().History, &ast.HistoryDecl{Entity: subject, Pos: pos})
 		return nil
 	}
+	if k := pairAt(w); k >= 0 {
+		// ligacao é única por par de issues (GEP 0048, em teste)
+		return p.pairLine(head, k)
+	}
 	for i, x := range w {
 		switch x {
+		case "mostra":
+			// milestone mostra soma do peso das issues (GEP 0047, em teste)
+			return p.aggregateLine(head, i)
 		case "gera":
 			// issue gera pendência para responsaveis (GEP 0009, em teste)
 			subject, _ := phrase(w[:i])

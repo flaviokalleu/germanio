@@ -938,6 +938,7 @@ func (ps *pageSite) details(ctx *interp.Context, e *ast.Entity, row map[string]a
 		}
 		out = append(out, item)
 	}
+	out = append(out, aggregateDetails(e, row)...) // GEP 0047
 	if v, ok := row["created_at"]; ok {
 		out = append(out, detailItem{Label: "Criado em", Value: displayFor("", v)})
 	}

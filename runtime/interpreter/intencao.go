@@ -223,6 +223,10 @@ func BeginReadCache(ctx *Context) {
 	ctx.Values[readCacheKey] = map[levelKey]map[string]any{}
 }
 
+// ReadCacheActive: a read-only scan is running on ctx (a nested reader must
+// not end it).
+func ReadCacheActive(ctx *Context) bool { return readCache(ctx) != nil }
+
 func EndReadCache(ctx *Context) {
 	if ctx != nil && ctx.Values != nil {
 		delete(ctx.Values, readCacheKey)

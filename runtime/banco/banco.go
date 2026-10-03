@@ -347,6 +347,11 @@ func (b *Banco) criarTabela(model *ast.Model) error {
 			return err
 		}
 	}
+	for _, pair := range model.Pairs {
+		if err := b.pairIndex(name, pair); err != nil {
+			return err
+		}
+	}
 
 	// Create indexes for fields with Index: true
 	for _, f := range model.Fields {
@@ -376,6 +381,30 @@ func (b *Banco) compositeIndex(table string, group []string, unique bool) error 
 	stmt := fmt.Sprintf("CREATE %s IF NOT EXISTS %s ON %s(%s)", kind, q(name), q(table), strings.Join(cols, ", "))
 	if _, err := b.DB.Exec(stmt); err != nil {
 		return fmt.Errorf("erro ao criar %s %s: %w", strings.ToLower(kind), name, err)
+	}
+	return nil
+}
+
+// pairIndex keeps two reference columns unique as a pair in any order
+// (GEP 0048): an index on the smaller and the larger of the two, so (1, 2)
+// and (2, 1) collide.
+func (b *Banco) pairIndex(table string, pair [2]string) error {
+	x, y := q(strings.ToLower(pair[0])), q(strings.ToLower(pair[1]))
+	name := q(fmt.Sprintf("par_%s_%s_%s", table, strings.ToLower(pair[0]), strings.ToLower(pair[1])))
+	var stmt string
+	switch b.Driver {
+	case "postgres", "postgresql":
+		stmt = fmt.Sprintf("CREATE UNIQUE INDEX IF NOT EXISTS %s ON %s (LEAST(%s, %s), GREATEST(%s, %s)) WHERE %s IS NOT NULL AND %s IS NOT NULL", name, q(table), x, y, x, y, x, y)
+	case "mysql":
+		stmt = fmt.Sprintf("CREATE UNIQUE INDEX %s ON %s ((LEAST(%s, %s)), (GREATEST(%s, %s)))", name, q(table), x, y, x, y)
+	default:
+		stmt = fmt.Sprintf("CREATE UNIQUE INDEX IF NOT EXISTS %s ON %s (MIN(%s, %s), MAX(%s, %s))", name, q(table), x, y, x, y)
+	}
+	if _, err := b.DB.Exec(stmt); err != nil {
+		if b.Driver == "mysql" && strings.Contains(strings.ToLower(err.Error()), "duplicate key name") {
+			return nil // already there (MySQL has no IF NOT EXISTS for indexes)
+		}
+		return fmt.Errorf("%s liga o mesmo par de registros mais de uma vez (%s e %s, em qualquer ordem), e o par precisa ser único; corrija os registros repetidos antes: %w", table, pair[0], pair[1], err)
 	}
 	return nil
 }

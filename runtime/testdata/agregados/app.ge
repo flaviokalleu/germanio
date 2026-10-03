@@ -1,0 +1,76 @@
+crie sistema Financeiro
+
+usuarios
+    tem
+        nome
+        email obrigatório e único
+        senha min 8
+        admin começa com falso
+
+tenha login
+tenha cadastro
+tenha administrador inicial "root@x.local"
+
+tenha papeis
+    leitor 10
+    tesoureiro 30
+
+# Uma conta mostra o saldo (a soma dos lançamentos) e quantos lançamentos
+# tem; zerar o saldo registra o lançamento que desconta tudo.
+contas
+    tem
+        nome obrigatório
+        membros com papel
+        lancamentos
+        vinculos
+    regras
+        quem cria vira tesoureiro
+    indicadores
+        soma do valor dos lancamentos como saldo
+        total de lancamentos
+        total de lancamentos conferidos
+    pode
+        zerar saldo
+    acesso
+        usuario
+            criar
+        leitor
+            ver
+        tesoureiro
+            administrar
+
+lancamentos
+    tem
+        valor dinheiro obrigatório
+        descrição
+        autor
+    começa pendente
+    pode
+        conferir
+        ser sigiloso
+    regras
+        sigiloso pode ser visto por
+            autor
+    acesso
+        leitor
+            ver
+        tesoureiro
+            criar
+            conferir
+
+# Contas vinculadas: o vínculo vale nos dois sentidos.
+vinculos
+    singular vinculo
+    pertence a
+        conta como vinculada
+    regras
+        único por par de contas
+    acesso
+        leitor
+            criar
+            excluir
+
+página Contas
+    mostre contas
+    permita
+        criar

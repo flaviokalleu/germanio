@@ -41,6 +41,8 @@ var ptMessages = []struct{ en, pt string }{
 	{"is not a valid date", "não é uma data válida"},
 	{"is not a valid URL", "não é um endereço válido"},
 	{"must exist", "não existe"},
+	{"cannot link a record to itself", "não pode ligar um registro a ele mesmo"},
+	{"this pair already exists (in any order)", "esse par já existe (em qualquer ordem)"},
 	{"is too short (minimum is ", "é muito curto (mínimo de "},
 	{"is too long (maximum is ", "é muito longo (máximo de "},
 	{" characters)", " caracteres)"},
@@ -290,6 +292,7 @@ func (interp *Interpreter) prepareWrite(c *Call, m *ast.Model, data map[string]a
 		out[key] = v
 	}
 	interp.address(db, m, out, create, id, errs)
+	pairs := interp.selfPairs(db, m, out, create, id, &current, errs)
 	if len(errs) > 0 {
 		lang := interp.Lang()
 		for k, list := range errs {
@@ -300,6 +303,7 @@ func (interp *Interpreter) prepareWrite(c *Call, m *ast.Model, data map[string]a
 		}
 		panic(&RuntimeError{Status: 400, Message: errs.sentence(), Payload: errs.payload(), Pos: c.Pos})
 	}
+	interp.uniquePairs(c, db, m, pairs, create, id)
 	// Secrets are transformed only after every rule passed.
 	for _, f := range m.Fields {
 		key := strings.ToLower(f.Name)
@@ -551,4 +555,67 @@ func (interp *Interpreter) checkList(db *banco.Banco, f *ast.Field, v any, own f
 	}
 	b, _ := json.Marshal(out)
 	return string(b), ""
+}
+
+// Pairs (docs/gep/0048-pares.md, em teste): `ligacao é única por par de
+// issues`. The two references never hold the same record, and the same two
+// records, in any order, are linked once. The database also keeps the pair
+// unique (banco: pairIndex), so two requests at once cannot both pass.
+
+// pairValues are the two values of one pair after the write.
+type pairValues struct {
+	fields [2]string
+	values [2]any
+}
+
+// selfPairs refuses a record linking a record to itself and returns the
+// pairs to check for repetition.
+func (interp *Interpreter) selfPairs(db *banco.Banco, m *ast.Model, out map[string]any, create bool, id int64, current *map[string]any, errs fieldErrors) []pairValues {
+	var pairs []pairValues
+	for _, pr := range m.Pairs {
+		var pv pairValues
+		pv.fields = pr
+		for i, k := range pr {
+			if v, ok := out[k]; ok {
+				pv.values[i] = v
+				continue
+			}
+			if !create {
+				if *current == nil {
+					*current, _ = db.BuscarRegistro(strings.ToLower(m.Name), id)
+				}
+				pv.values[i] = (*current)[k]
+			}
+		}
+		if pv.values[0] == nil || pv.values[1] == nil {
+			continue
+		}
+		if toNumber(pv.values[0]) == toNumber(pv.values[1]) {
+			errs.add(strings.TrimSuffix(pr[1], "_id"), "cannot link a record to itself")
+			continue
+		}
+		pairs = append(pairs, pv)
+	}
+	return pairs
+}
+
+// uniquePairs answers 409 when the pair is already linked, in either order.
+func (interp *Interpreter) uniquePairs(c *Call, db *banco.Banco, m *ast.Model, pairs []pairValues, create bool, id int64) {
+	for _, pv := range pairs {
+		a, b := pv.fields[0], pv.fields[1]
+		q := banco.Consulta{Ou: []map[string]any{
+			{a: pv.values[0], b: pv.values[1]},
+			{a: pv.values[1], b: pv.values[0]},
+		}}
+		if !create {
+			q.Filtros = map[string]any{"id__diferente": id}
+		}
+		n, err := db.ContarFiltro(strings.ToLower(m.Name), q)
+		if err != nil || n == 0 {
+			continue
+		}
+		errs := fieldErrors{}
+		errs.add(strings.TrimSuffix(b, "_id"), translate(interp.Lang(), "this pair already exists (in any order)"))
+		panic(&RuntimeError{Status: 409, Message: errs.sentence(), Payload: errs.payload(), Pos: c.Pos})
+	}
 }

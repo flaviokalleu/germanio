@@ -171,6 +171,10 @@ func (h *liveHub) onChange(ctx *interp.Context, model string, before, after map[
 				h.publish(change{model: e.ReadParent, before: p, after: p})
 			}
 		}
+		// the numbers a record shows about its records change with them (GEP 0047)
+		for _, pc := range h.a.aggregateParents(c.model, c.before, c.after) {
+			h.publish(pc)
+		}
 	}
 	if ctx != nil {
 		if st := txOf(ctx.Request); st != nil {

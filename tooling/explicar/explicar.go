@@ -199,6 +199,26 @@ func Entidade(prog *ast.Program, nome string) (string, error) {
 	if e.Marks != "" {
 		w("Marcas (GEP 0030, em teste): cada pessoa que vê um registro o marca uma vez (marcar) e desmarca (desmarcar); %s conta as marcas, na mesma transação; ?marcados=sim lista o que a pessoa marcou; ninguém vê quem marcou; as marcas saem com o registro e com a pessoa\n", e.Marks)
 	}
+	if len(e.Aggregates) > 0 {
+		w("Indicadores de cada registro (GEP 0047, em teste; calculados pelo banco numa consulta só, contando só o que quem vê pode ver; não são guardados e nunca são aceitos na entrada; páginas abertas acompanham):\n")
+		for _, ag := range e.Aggregates {
+			of := app.Entities[ag.Of]
+			what := "quantos " + of.Plural
+			if ag.Field != "" {
+				what = "a soma de " + ag.Field + " dos " + of.Plural
+			}
+			if ag.State != "" {
+				what += " " + ag.State + "s"
+			}
+			w("  %-22s %s que apontam para o registro por %s (%s)\n", ag.Name, what, ag.Via, where(ag.Pos))
+			if ag.Reset {
+				w("  %-22s zerar_%s registra, numa mudança só, um %s com %s que desconta a soma; pode quem pode criar %s no registro e vê todos eles\n", "", ag.Name, of.Singular, ag.Field, of.Plural)
+			}
+		}
+	}
+	if pr := e.Pair; pr != nil {
+		w("Único por par de %s (GEP 0048, em teste): %s e %s nunca são o mesmo registro, e o mesmo par, em qualquer ordem, aparece uma vez só (garantido também pelo banco); repetir responde 409\n", app.Entities[pr.Of].Plural, pr.Owner, pr.Other)
+	}
 	w("\nCampos:\n")
 	for _, f := range e.Model.Fields {
 		w("  %-22s %s\n", f.Name, describeField(f))

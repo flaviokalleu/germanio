@@ -265,6 +265,9 @@ type Model struct {
 	// UniqueTogether / IndexTogether are composite constraints: unico(a, b).
 	UniqueTogether [][]string
 	IndexTogether  [][]string
+	// Pairs: two reference fields that never hold the same record and whose
+	// values, in any order, appear in one record only (GEP 0048).
+	Pairs [][2]string
 	// Renames are explicit field renames (renomeie nome para nome_completo):
 	// the migration keeps the data. Discarded names fields that were removed
 	// on purpose (descarte telefone): their old data is left alone.

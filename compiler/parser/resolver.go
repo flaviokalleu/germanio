@@ -727,11 +727,18 @@ func ResolveIntent(prog *ast.Program) error {
 	}
 
 	// 7c. Capabilities: `issue pode fechar / ser confidencial` (subject is data, not a role)
-	var grants []*ast.Grant
+	var grants, resets []*ast.Grant
 	for _, g := range in.Grants {
 		// A capability has no object: "issue pode fechar", "issue pode ser
 		// confidencial". With an object it is a permission for people.
 		e := r.byName[g.Role]
+		if e != nil && app.Level(g.Role) == 0 && !reservedRoles[g.Role] && g.Verb == "zerar" {
+			// issue pode zerar tempo gasto (GEP 0047): resolved with the
+			// aggregates, once every state is known
+			resets = append(resets, g)
+			in.Capabilities = append(in.Capabilities, g)
+			continue
+		}
 		if e != nil && app.Level(g.Role) == 0 && !reservedRoles[g.Role] && g.Verb == "mudar" {
 			// issue pode mudar de projeto (GEP 0034): a record may move to
 			// another parent of the same kind
@@ -766,6 +773,18 @@ func ResolveIntent(prog *ast.Program) error {
 		}
 	}
 	in.Grants = grants
+
+	// 7c2. Numbers of each record (GEP 0047, em teste) and pairs (GEP 0048,
+	// em teste): every parent and state is known by now.
+	if err := r.aggregates(in); err != nil {
+		return err
+	}
+	if err := r.resets(resets); err != nil {
+		return err
+	}
+	if err := r.pairs(in); err != nil {
+		return err
+	}
 
 	// 7d2. Read-only while a condition holds: `projeto arquivado é somente leitura`.
 	for _, ro := range in.ReadOnly {

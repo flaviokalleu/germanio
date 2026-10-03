@@ -345,6 +345,50 @@ func (b *Banco) ContarFiltro(modelo string, c Consulta) (int64, error) {
 	return total, err
 }
 
+// Agregar groups the rows matching c by the columns por and returns, for
+// each group, those columns (typed as declared) and "_total": how many rows
+// (soma "") or the sum of the column soma (0 when every value is empty).
+// One query, computed by the database: no row is loaded (GEP 0047).
+func (b *Banco) Agregar(modelo string, c Consulta, por []string, soma string) ([]map[string]any, error) {
+	cols, err := b.columns(modelo)
+	if err != nil {
+		return nil, err
+	}
+	group := make([]string, 0, len(por))
+	for _, col := range por {
+		if !cols[col] {
+			return nil, &ErrCampo{Modelo: modelo, Campo: col}
+		}
+		group = append(group, q(col))
+	}
+	value := "COUNT(*)"
+	if soma != "" {
+		if !cols[soma] {
+			return nil, &ErrCampo{Modelo: modelo, Campo: soma}
+		}
+		value = fmt.Sprintf("COALESCE(SUM(%s), 0)", q(soma))
+	}
+	whereSQL, args, err := b.where(modelo, c)
+	if err != nil {
+		return nil, err
+	}
+	stmt := fmt.Sprintf("SELECT %s AS %s FROM %s%s", value, q("_total"), q(modelo), whereSQL)
+	if len(group) > 0 {
+		stmt = fmt.Sprintf("SELECT %s, %s AS %s FROM %s%s GROUP BY %s", strings.Join(group, ", "), value, q("_total"), q(modelo), whereSQL, strings.Join(group, ", "))
+	}
+	rows, err := b.x().Query(stmt, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	list, err := scanRowsRaw(rows)
+	if err != nil {
+		return nil, err
+	}
+	b.tipar(modelo, list)
+	return list, nil
+}
+
 // BuscarRegistro returns the full row (including every column) by id.
 func (b *Banco) BuscarRegistro(modelo string, id int64) (map[string]any, error) {
 	list, _, err := b.Filtrar(modelo, Consulta{Filtros: map[string]any{"id": id}, Limite: 1})

@@ -1,5 +1,7 @@
 package ast
 
+import "github.com/flaviokalleu/germanio/compiler/diagnostics"
+
 // Resolved intent consumed by the runtime (built by parser.ResolveIntent).
 
 // App is the resolved application: entities with their models and the
@@ -138,9 +140,36 @@ type Entity struct {
 	// ItemFilters: a filter named after one item of a list field (topico →
 	// topicos, GEP 0030).
 	ItemFilters map[string]string
-	RepoKey     string   // field whose value addresses the repository (<valor>.git)
-	Search      []string // fields searched by pesquisar
-	Filters     []string // fields accepted by filtrar
+	// Aggregates: numbers each record shows about the records that belong
+	// to it, computed for the viewer (GEP 0047, em teste).
+	Aggregates []*Aggregate
+	// Pair: records link two records of one data, never one to itself and
+	// each pair once in any order (GEP 0048, em teste); nil otherwise.
+	Pair    *Pair
+	RepoKey string   // field whose value addresses the repository (<valor>.git)
+	Search  []string // fields searched by pesquisar
+	Filters []string // fields accepted by filtrar
+}
+
+// Aggregate: a number a record shows about the records of Of that point at
+// it through Via — how many there are (Field "") or the sum of Field — only
+// in State when given, counting only what the viewer may see.
+type Aggregate struct {
+	Name  string // the value's name in the record (peso_total)
+	Label string // for people ("Peso total")
+	Of    string // the data counted or summed (singular)
+	Via   string // Of's field pointing at the record (milestone_id)
+	Field string // summed field; "" counts
+	State string // only records in this state
+	// Reset: `pode zerar <nome>` — the action zerar_<nome> records, in one
+	// change, the entry that brings the sum back to zero.
+	Reset bool
+	Pos   diagnostics.Position
+}
+
+// Pair: Owner and Other are the two fields of the record pointing at Of.
+type Pair struct {
+	Of, Owner, Other string
 }
 
 // Address: the record's address is its container's address + "/" + its

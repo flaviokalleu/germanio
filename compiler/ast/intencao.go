@@ -76,6 +76,31 @@ type Intent struct {
 	Renames []*RenameDecl
 	// Discards: descarte telefone de clientes (removed on purpose, data kept).
 	Discards []*RenameDecl
+	// Aggregates: numbers a record shows about what belongs to it
+	// (`indicadores` › `soma do peso das issues`; GEP 0047, em teste).
+	Aggregates []*AggregateDecl
+	// Pairs: `ligacao é única por par de issues` (GEP 0048, em teste).
+	Pairs []*PairDecl
+}
+
+// AggregateDecl: a line of a data block's `indicadores` (or `X mostra …`):
+// `total de <dado> [estado]` counts, `soma do <campo> dos <dado> [estado]`
+// sums. Words are the line after "total de"/"soma", resolved later; Name is
+// the optional `como <nome>`; Line is the line as written.
+type AggregateDecl struct {
+	Entity string
+	Sum    bool
+	Words  []string
+	Name   string
+	Line   string
+	Pos    diagnostics.Position
+}
+
+// PairDecl: records of Entity link two records of Of: never one to itself,
+// and each pair (in any order) once.
+type PairDecl struct {
+	Entity, Of string
+	Pos        diagnostics.Position
 }
 
 // RenameDecl: a field of Entity renamed (From → To), or discarded (To "").
@@ -307,6 +332,8 @@ func MergeIntent(a, b *Intent) *Intent {
 	}
 	a.Renames = append(a.Renames, b.Renames...)
 	a.Discards = append(a.Discards, b.Discards...)
+	a.Aggregates = append(a.Aggregates, b.Aggregates...)
+	a.Pairs = append(a.Pairs, b.Pairs...)
 	a.InitialFiles = append(a.InitialFiles, b.InitialFiles...)
 	a.ReservedAddresses = append(a.ReservedAddresses, b.ReservedAddresses...)
 	a.ReadOnly = append(a.ReadOnly, b.ReadOnly...)

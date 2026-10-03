@@ -150,6 +150,9 @@ type Interpreter struct {
 	// Decorate, when set, adds values computed for the viewer to a record
 	// being shown (unread counts, GEP 0022).
 	Decorate func(atual map[string]any, e *ast.Entity, row, out map[string]any)
+	// Aggregates, when set, adds the numbers a record shows about what
+	// belongs to it, computed for the viewer (GEP 0047).
+	Aggregates func(ctx *Context, atual map[string]any, e *ast.Entity, row, out map[string]any)
 }
 
 // New creates a new interpreter.

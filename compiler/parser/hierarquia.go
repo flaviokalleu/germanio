@@ -140,14 +140,14 @@ var legacyBlockWords = map[string]bool{
 // sections are the aspects a data block may contain (folded words).
 var sections = []string{"tem", "pertence a", "comeca", "pode", "regras", "acesso", "permita",
 	"integracao", "quando", "antes de", "recebe", "executa", "executam", "repositorio", "singular", "pendencia para",
-	"renomeie", "descarte", "guarda historico", "guarda leitura", "usam", "usa", "espelham", "espelha"}
+	"renomeie", "descarte", "guarda historico", "guarda leitura", "usam", "usa", "espelham", "espelha", "indicadores"}
 
 func sectionOf(w []string) string {
 	if len(w) == 0 {
 		return ""
 	}
 	switch w[0] {
-	case "tem", "comeca", "pode", "regras", "acesso", "permita", "integracao", "quando", "recebe", "executa", "executam", "repositorio", "singular", "renomeie", "descarte", "usam", "usa", "espelham", "espelha":
+	case "tem", "comeca", "pode", "regras", "acesso", "permita", "integracao", "quando", "recebe", "executa", "executam", "repositorio", "singular", "renomeie", "descarte", "usam", "usa", "espelham", "espelha", "indicadores":
 		return w[0]
 	case "pertence":
 		return "pertence a"
@@ -386,6 +386,24 @@ func (p *Parser) dataSection(name string, header []lexer.Token, sec *node) error
 			}
 		}
 		return nil
+	case "indicadores":
+		// indicadores › soma do peso das issues → milestone mostra soma do
+		// peso das issues (GEP 0047, em teste)
+		if len(toks) != 1 || len(sec.children) == 0 {
+			return p.teach(at, "a seção indicadores está vazia", "indicadores lista, um por linha, os números que cada registro mostra sobre o que pertence a ele",
+				"escreva abaixo de indicadores, por exemplo:\n    indicadores\n        total de issues abertas\n        soma do peso das issues como peso total", name)
+		}
+		for _, c := range sec.children {
+			if err := p.leaf(c, "indicadores", path); err != nil {
+				return err
+			}
+			if err := p.withContext(path+" › "+lineText(c.line), func() error {
+				return p.intentFrom(dline{toks: join(placed(header, c.line.toks[0]), synth(c.line.toks[0], "mostra"), c.line.toks)}, nil)
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
 	case "regras":
 		for _, r := range sec.children {
 			if err := p.rule(name, subject, path, r); err != nil {
@@ -521,7 +539,7 @@ func (p *Parser) access(name string, header []lexer.Token, path string, actor *n
 }
 
 func displaySections() []string {
-	return []string{"tem", "pertence a", "começa", "pode", "regras", "acesso", "permita", "integração", "quando", "antes de", "recebe", "executa", "executam", "repositório", "singular", "espelham"}
+	return []string{"tem", "pertence a", "começa", "pode", "regras", "acesso", "permita", "integração", "quando", "antes de", "recebe", "executa", "executam", "repositório", "singular", "espelham", "indicadores"}
 }
 
 // suggest proposes the closest section for a misspelled word.

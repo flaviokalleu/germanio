@@ -60,6 +60,7 @@ func (s *Servidor) registerIntent(mux *routeMux) error {
 	a.live = newLiveHub(a)
 	a.setupReading()
 	a.setupMarks()
+	a.setupAggregates()
 	a.setupTextImages()
 	s.registerTaskModule()
 	s.tasks().handle("entrega", a.deliver)
@@ -133,6 +134,11 @@ func (a *intentAPI) mountLevel(mux *routeMux, base string, chain []*ast.Entity, 
 	}
 	if e.MoveField != "" {
 		actions["mudar"] = true // GEP 0034
+	}
+	for _, ag := range e.Aggregates {
+		if ag.Reset {
+			actions["zerar_"+ag.Name] = true // GEP 0047
+		}
 	}
 	if e.Execution != nil {
 		actions["cancelar"] = true
@@ -372,6 +378,9 @@ func serializeFor(ctx *interp.Context, in *interp.Interpreter, atual map[string]
 		default:
 			out[k] = v
 		}
+	}
+	if in != nil && ctx != nil && in.Aggregates != nil && len(e.Aggregates) > 0 {
+		in.Aggregates(ctx, atual, e, row, out)
 	}
 	return out
 }
@@ -810,6 +819,10 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 		}
 		if verb == "mudar" && e.MoveField != "" {
 			a.move(w, r, ctx, atual, e, row, a.inwardBody(e, body), deny)
+			return
+		}
+		if ag := resettable(e, verb); ag != nil {
+			a.resetAggregate(w, r, ctx, atual, e, row, ag, deny) // GEP 0047
 			return
 		}
 		checkVerb := verb
@@ -1455,8 +1468,13 @@ func (a *intentAPI) list(w http.ResponseWriter, r *http.Request, ctx *interp.Con
 			return
 		}
 		m := res.(map[string]any)
+		var rows []map[string]any
 		for _, it := range m["itens"].([]any) {
-			items = append(items, serializeFor(ctx, a.in, atual, e, it.(map[string]any), false))
+			rows = append(rows, it.(map[string]any))
+		}
+		a.fillAggregates(ctx, atual, e, rows) // one query per number for the page (GEP 0047)
+		for _, row := range rows {
+			items = append(items, serializeFor(ctx, a.in, atual, e, row, false))
 		}
 		total = int(m["total"].(float64))
 	} else {
@@ -1470,6 +1488,7 @@ func (a *intentAPI) list(w http.ResponseWriter, r *http.Request, ctx *interp.Con
 			groups = g
 		}
 		start := (page - 1) * per
+		var pageRows []map[string]any
 		for batch := 1; ; batch++ {
 			opts["limite"], opts["pagina"] = 500, batch
 			if groups != nil {
@@ -1487,13 +1506,17 @@ func (a *intentAPI) list(w http.ResponseWriter, r *http.Request, ctx *interp.Con
 					continue
 				}
 				if total >= start && total < start+per {
-					items = append(items, serializeFor(ctx, a.in, atual, e, row, false))
+					pageRows = append(pageRows, row)
 				}
 				total++
 			}
 			if len(rows) < 500 {
 				break
 			}
+		}
+		a.fillAggregates(ctx, atual, e, pageRows)
+		for _, row := range pageRows {
+			items = append(items, serializeFor(ctx, a.in, atual, e, row, false))
 		}
 	}
 	if items == nil {
