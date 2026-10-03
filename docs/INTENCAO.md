@@ -476,7 +476,7 @@ Equivale a: developer pode enviar código para projetos
 | `tenha busca geral em projetos, issues e merge requests` | um único ponto de busca (`/_ge/api/busca?tipo_busca=issues&q=…`; nomes externos pelo vocabulário) responde com a listagem do tipo escolhido: mesma pesquisa, filtros, páginas e regra de quem vê. Cada tipo precisa de `permita pesquisar` |
 | `labels por nome` (linha de `issue tem`) | lista escrita e lida pelo nome (`"bug,ux"` → `["bug","ux"]`), procurado entre os itens do mesmo pai (labels do projeto); nome novo cria o item quando a pessoa pode criá-lo ali; `?labels=bug` filtra pelo nome. Itens de outro pai nunca entram |
 | `runners executam jobs` | trabalho remoto: cada runner (um `token secreto`, `ativo`, opcionalmente `pode pertencer a projeto`) pega trabalhos pendentes com reserva renovável; reserva vencida devolve o trabalho à fila (3 tentativas, depois falha); cancelamento visível ao executor; token temporário (só do próprio trabalho, lê o repositório só enquanto executa). Vale para qualquer dado: `trabalhadores executam conversoes`. Protocolos externos falam com isso por um adaptador em `integracoes/` usando `trabalho_remoto.*` |
-| `projeto executa pipelines a cada envio de código conforme "arquivo.yml"` | o arquivo, no formato nativo (`estagios`, `etapas` com `comandos`, `depois`, `quando: automatico / manual / sempre`, `pode_falhar`, `imagem`, `artefatos`), vira uma execução por envio; um adaptador pode ler outro formato com `traduza arquivos de execução com f` e dar variáveis às etapas com `traduza variáveis das etapas com f` (só em `integracoes/`) |
+| `projeto executa pipelines a cada envio de código conforme "arquivo.yml"` | o arquivo, no formato nativo (`estagios`, `etapas` com `comandos`, `depois`, `quando: automatico / manual / sempre`, `pode_falhar`, `imagem`, `artefatos`, `artefatos_expiram_em`, `precisa`, `recebe_artefatos_de`, `somente_em`, `exceto_em`, `regras`; veja [Arquivo de execução](#arquivo-de-execução-formato-nativo)), vira uma execução por envio; um adaptador pode ler outro formato com `traduza arquivos de execução com f` e dar variáveis às etapas com `traduza variáveis das etapas com f` (só em `integracoes/`) |
 | `quem cria projeto vira owner` | quem cria vira membro com esse papel — exceto quando o dado herda membros de um pai e foi criado dentro dele (os membros já vêm do pai) |
 | `todo grupo precisa ter pelo menos um owner` | ninguém remove nem rebaixa o último membro com esse papel (ou superior) |
 | `repositório do projeto pode começar com "README.md" contendo "# {nome}"` | ao criar com `iniciar_repositorio` (nome externo pelo vocabulário), o repositório nasce com esse arquivo; `{campo}` vira o valor do registro |
@@ -909,6 +909,57 @@ Antes de adicionar mecanismo ao runtime, pergunte: **isso faria sentido em pelo 
 aplicação sem modificar sua essência?** Git, HTTP, executor remoto e token temporário são
 mecanismos genéricos. GitLab Runner, `CI_JOB_ID` e `access_level` são contratos específicos
 de adaptador. Regras próprias do produto pertencem à aplicação.
+
+### Arquivo de execução (formato nativo)
+
+`X executa Ys a cada envio de código conforme "arquivo"` lê, no commit enviado, um arquivo
+YAML neste formato. Não é sintaxe `.ge`: é o conteúdo do repositório, e um adaptador em
+`integracoes/` pode traduzir outro formato para ele (`traduza arquivos de execução com f`).
+Teste sem GitLab: `runtime/execucao_test.go`.
+
+```yaml
+estagios: [construir, conferir]
+etapas:
+  base:
+    estagio: construir
+    comandos: [make]            # ou uma linha
+    depois: [make limpar]       # roda depois dos comandos, mesmo com falha
+    imagem: golang:1.23         # executor docker
+    artefatos: [saida/]         # guardados quando a etapa passa
+    artefatos_expiram_em: 7 dias
+  usa:
+    estagio: conferir
+    precisa: [base, {etapa: lint, opcional: sim}]
+    recebe_artefatos_de: [base]
+    comandos: make conferir
+    quando: automatico          # automatico | manual | sempre
+    pode_falhar: não
+    somente_em: [branch padrão, release/*]
+    exceto_em: [rascunho/*]
+    regras:
+      - em: [main]
+        quando: manual
+        pode_falhar: não
+      - quando: nunca
+```
+
+| Chave | Significado |
+| --- | --- |
+| `estagio` | sem `precisa`, a etapa espera todas as etapas dos estágios anteriores |
+| `precisa` | a etapa começa quando estas terminam bem, sem esperar o estágio inteiro; `precisa: []` começa logo. Nomes inexistentes e círculos (`a` precisa de `b` que precisa de `a`) são erro de configuração. `opcional: sim` deixa de esperar a etapa quando ela não existe na branch; sem isso, é erro |
+| `quando` | `automatico`: quando o que espera passou; `sempre`: mesmo depois de falhas; `manual`: espera alguém executar |
+| `pode_falhar` | a falha não reprova a execução nem o que espera por ela. Uma etapa manual que pode falhar não segura os estágios seguintes; uma que não pode falhar segura o que vem depois e deixa a execução em `manual` até ser executada. Quem a cita em `precisa` sempre espera |
+| `somente_em` / `exceto_em` | branches em que a etapa existe / não existe. `*` vale qualquer texto (`release/*` casa `release/1.0` e `release/a/b`); `branch padrão` é a branch principal do dono (nomes de branch não têm espaço). `somente_em: []` não existe em branch nenhuma |
+| `regras` | a primeira regra cuja `em`/`exceto_em` casa com a branch decide `quando` (`nunca` tira a etapa) e `pode_falhar`; nenhuma regra casando tira a etapa |
+| `artefatos` | arquivos e pastas (relativos ao código; nada fora dele, sem seguir links) guardados no campo de arquivo da etapa (`artefatos arquivo`, ou o único campo de arquivo) |
+| `artefatos_expiram_em` | `N segundos/minutos/horas/dias/semanas/meses/anos` (pares podem somar: `1 hora 30 minutos`; mês = 30 dias, ano = 365) ou `nunca`; sem a chave, ficam. Vencidos não são mais entregues e uma limpeza (a cada minuto) apaga o arquivo |
+| `recebe_artefatos_de` | etapas cujos artefatos a etapa recebe antes de começar; sem a chave, as que ela espera; `[]` nenhuma |
+
+Uma execução cuja branch não tem nenhuma etapa não é criada. A etapa que roda fora (`runners
+executam jobs`) recebe em `dependencias` os artefatos que lhe cabem, e o token do trabalho em
+execução lê só esses, enviado no cabeçalho que o vocabulário chama `cabecalho_trabalho`
+(padrão `X-Germanio-Trabalho`). Repetir uma etapa devolve ao início o que foi ignorado por
+causa dela.
 
 ## Detector de complexidade acidental
 

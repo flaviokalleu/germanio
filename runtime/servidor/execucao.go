@@ -53,6 +53,33 @@ type stepSpec struct {
 	Artifacts                []string // files the step keeps (artefatos), for executors that collect them
 	AllowFailure             bool
 	Order                    int
+	// flow (execucao_regras.go)
+	Only, Except []string
+	OnlySet      bool
+	Rules        []stepRule
+	Needs        []need
+	NeedsSet     bool
+	From         []string // recebe_artefatos_de
+	FromSet      bool
+	Expire       time.Duration // artefatos_expiram_em (0: kept)
+}
+
+// stepPlan is what a created step keeps of its spec (the step's script field).
+type stepPlan struct {
+	Script    []string `json:"script"`
+	After     []string `json:"after"`
+	Artifacts []string `json:"artifacts"`
+	Needs     []string `json:"needs,omitempty"`
+	NeedsSet  bool     `json:"needs_set,omitempty"`
+	From      []string `json:"from,omitempty"`
+	FromSet   bool     `json:"from_set,omitempty"`
+	Expire    float64  `json:"expire,omitempty"` // seconds
+}
+
+func planOf(job map[string]any) stepPlan {
+	var p stepPlan
+	json.Unmarshal([]byte(toStr(job["script"])), &p)
+	return p
 }
 
 // When a step runs, in the native format.
@@ -91,6 +118,16 @@ func lines(v any) []string {
 //	    quando: automatico | manual | sempre
 //	    pode_falhar: sim | não
 //	    imagem: golang:1.23       # container image (docker executor)
+//	    artefatos: [saida/]       # files kept after success
+//	    artefatos_expiram_em: 7 dias   # then deleted (default: kept)
+//	    precisa: [preparar, {etapa: lint, opcional: sim}]  # starts when these end, not the whole stage
+//	    recebe_artefatos_de: [preparar]  # default: the steps it waits for
+//	    somente_em: [main, release/*, branch padrão]  # branches where it exists
+//	    exceto_em: [rascunho/*]
+//	    regras:                   # the first that matches the branch decides
+//	      - em: [main]
+//	        quando: manual        # automatico | manual | sempre | nunca
+//	        pode_falhar: não
 func (a *intentAPI) readRunFile(data []byte) ([]stepSpec, error) {
 	var doc map[string]any
 	if err := yaml.Unmarshal(data, &doc); err != nil {
@@ -186,11 +223,23 @@ func parseNativeRun(doc map[string]any) ([]stepSpec, error) {
 		}
 		sp := stepSpec{Name: name, Stage: stage, When: when, Order: idx + 1, Script: commands, After: lines(job["depois"]), Artifacts: lines(job["artefatos"])}
 		sp.Image, _ = job["imagem"].(string)
-		sp.AllowFailure, _ = job["pode_falhar"].(bool)
+		if v, ok := job["pode_falhar"]; ok && v != nil {
+			b, valid := yes(v)
+			if !valid {
+				return nil, fmt.Errorf("configuração inválida: a etapa %s tem pode_falhar %v (use sim ou não)", name, v)
+			}
+			sp.AllowFailure = b
+		}
+		if err := parseFlow(&sp, job); err != nil {
+			return nil, err
+		}
 		specs = append(specs, sp)
 	}
 	if len(specs) == 0 {
 		return nil, fmt.Errorf("configuração inválida: nenhuma etapa definida")
+	}
+	if err := checkGraph(specs); err != nil {
+		return nil, err
 	}
 	sort.SliceStable(specs, func(i, j int) bool { return specs[i].Order < specs[j].Order })
 	return specs, nil
@@ -238,6 +287,12 @@ func (a *intentAPI) createRun(ctx *interp.Context, atual map[string]any, run *as
 		return nil, false, nil
 	}
 	specs, perr := a.readRunFile(blob.Content)
+	if perr == nil {
+		specs, perr = forBranch(specs, branch, defaultBranch(owner))
+		if none, ok := perr.(errNoSteps); ok {
+			return nil, true, none // nothing to run here: no run at all
+		}
+	}
 	data := map[string]any{x.OwnerField: owner["id"], "branch": branch, "versao": sha}
 	if atual != nil {
 		data[a.app.LoginEntity+"_id"] = atual["id"]
@@ -255,7 +310,11 @@ func (a *intentAPI) createRun(ctx *interp.Context, atual map[string]any, run *as
 	}
 	step := a.app.Entities[x.Step]
 	for _, sp := range specs {
-		body, _ := json.Marshal(map[string]any{"script": sp.Script, "after": sp.After, "artifacts": sp.Artifacts})
+		plan := stepPlan{Script: sp.Script, After: sp.After, Artifacts: sp.Artifacts, NeedsSet: sp.NeedsSet, From: sp.From, FromSet: sp.FromSet, Expire: sp.Expire.Seconds()}
+		for _, n := range sp.Needs {
+			plan.Needs = append(plan.Needs, n.Name)
+		}
+		body, _ := json.Marshal(plan)
 		if _, err := a.in.Op(ctx, step.Singular, "criar", map[string]any{
 			step.Execution.RunField: row["id"], "nome": sp.Name, "etapa": sp.Stage, "ordem": float64(sp.Order),
 			"script": string(body), "quando": sp.When, "permitir_falha": sp.AllowFailure, "imagem": sp.Image,
@@ -284,7 +343,7 @@ func (a *intentAPI) startRuns(ctx *interp.Context, atual map[string]any, owner *
 			if branch == "" || u["tipo"] == "excluir" {
 				continue
 			}
-			if _, _, err := a.createRun(ctx, atual, run, ownerRow, branch, fmt.Sprint(u["depois"])); err != nil {
+			if _, _, err := a.createRun(ctx, atual, run, ownerRow, branch, fmt.Sprint(u["depois"])); err != nil && !errorsAs(err, new(errNoSteps)) {
 				fmt.Printf("[germanio] execução para %s: %v\n", branch, err)
 			}
 		}
@@ -315,101 +374,184 @@ func (a *intentAPI) runLock(id any) *sync.Mutex {
 	return m.(*sync.Mutex)
 }
 
-// advance moves a run forward: the next stage becomes pending when the
-// current one succeeded; a failure skips what is left; the run's state
-// summarises its steps.
+// advance moves a run forward. A created step becomes pending (or manual)
+// when what it waits for ended well: the steps it needs (precisa) or, by
+// default, every step of the earlier stages. A step whose prerequisites
+// failed is skipped, unless it runs always (sempre). A manual step that may
+// not fail blocks what waits for it until someone starts it; one that may
+// fail does not block the stages after it. The run's state summarises its
+// steps.
 func (a *intentAPI) advance(ctx *interp.Context, run *ast.Entity, runID any) {
 	lock := a.runLock(runID)
 	lock.Lock()
 	defer lock.Unlock()
 	step := a.app.Entities[run.Execution.Step]
 	jobs := a.steps(ctx, run, runID)
-	byOrder := map[int][]map[string]any{}
-	var orders []int
+	for _, j := range progress(jobs) {
+		a.in.Op(ctx, step.Singular, "atualizar", j["id"], map[string]any{"estado": j["estado"]})
+	}
+	st, done := summarize(jobs)
+	res, _ := a.in.Op(ctx, run.Singular, "buscar", runID)
+	row, _ := res.(map[string]any)
+	if row == nil {
+		return
+	}
+	current := toStr(row["estado"])
+	if !done {
+		if current != st {
+			a.in.Op(ctx, run.Singular, "atualizar", runID, map[string]any{"estado": st})
+		}
+		return
+	}
+	if current == st && toStr(row["terminado_em"]) != "" {
+		return // already finished like this: no second event
+	}
+	change := map[string]any{"estado": st, "terminado_em": now()}
+	if started := toStr(row["iniciado_em"]); started != "" {
+		if t0, err := time.Parse(time.RFC3339, started); err == nil {
+			change["duracao"] = time.Since(t0).Seconds()
+		}
+	}
+	a.in.Op(ctx, run.Singular, "atualizar", runID, change)
+	if res, _ := a.in.Op(ctx, run.Singular, "buscar", runID); res != nil {
+		a.emit(ctx, run, st, res.(map[string]any), nil) // run finished
+		a.history(ctx, nil, run, st, nil, res.(map[string]any))
+	}
+}
+
+func allowedToFail(j map[string]any) bool { b, _ := j["permitir_falha"].(bool); return b }
+
+// progress decides, in memory, which created steps may leave that state
+// (see advance) and returns the ones it changed (their estado is updated).
+func progress(jobs []map[string]any) []map[string]any {
+	g := newStepGraph(jobs)
+	var out []map[string]any
+	for changed := true; changed; {
+		changed = false
+		for _, j := range jobs {
+			if toStr(j["estado"]) != stCreated {
+				continue
+			}
+			explicit := g.plans[toStr(j["id"])].NeedsSet
+			waiting, broken := false, false
+			for _, p := range g.prerequisites(j) {
+				switch toStr(p["estado"]) {
+				case stSuccess:
+				case stFailed:
+					broken = broken || !allowedToFail(p)
+				case stCanceled, stSkipped:
+					broken = true
+				case stManual:
+					// a step that needs it by name waits for it to run;
+					// a later stage waits only when it may not fail
+					waiting = waiting || explicit || !allowedToFail(p)
+				default: // created, pending, running
+					waiting = true
+				}
+			}
+			if waiting {
+				continue
+			}
+			switch when := toStr(j["quando"]); {
+			case broken && when != whenAlways:
+				j["estado"] = stSkipped
+			case when == whenManual:
+				j["estado"] = stManual
+			default:
+				j["estado"] = stPending
+			}
+			out = append(out, j)
+			changed = true
+		}
+	}
+	return out
+}
+
+// summarize gives the run's state from its steps; done says it is final.
+// Running steps keep it running; a step waiting for a manual one that may
+// not fail leaves it manual; then a failure (not allowed) fails it, a
+// cancellation cancels it, and otherwise it succeeded.
+func summarize(jobs []map[string]any) (string, bool) {
+	busy, blocked, failed, canceled := false, false, false, false
 	for _, j := range jobs {
-		o := int(asNumber(j["ordem"]))
-		if _, ok := byOrder[o]; !ok {
-			orders = append(orders, o)
-		}
-		byOrder[o] = append(byOrder[o], j)
-	}
-	sort.Ints(orders)
-	set := func(j map[string]any, st string) {
-		a.in.Op(ctx, step.Singular, "atualizar", j["id"], map[string]any{"estado": st})
-		j["estado"] = st
-	}
-	finish := func(st string) {
-		res, _ := a.in.Op(ctx, run.Singular, "buscar", runID)
-		row, _ := res.(map[string]any)
-		change := map[string]any{"estado": st, "terminado_em": now()}
-		if row != nil {
-			if started := toStr(row["iniciado_em"]); started != "" {
-				if t0, err := time.Parse(time.RFC3339, started); err == nil {
-					change["duracao"] = time.Since(t0).Seconds()
-				}
-			}
-		}
-		a.in.Op(ctx, run.Singular, "atualizar", runID, change)
-		if res, _ := a.in.Op(ctx, run.Singular, "buscar", runID); res != nil {
-			a.emit(ctx, run, st, res.(map[string]any), nil) // run finished
-			a.history(ctx, nil, run, st, nil, res.(map[string]any))
+		switch toStr(j["estado"]) {
+		case stPending, stRunning:
+			busy = true
+		case stCreated:
+			blocked = true // waiting for a manual step
+		case stManual:
+			blocked = blocked || !allowedToFail(j)
+		case stFailed:
+			failed = failed || !allowedToFail(j)
+		case stCanceled:
+			canceled = true
 		}
 	}
-	for i, o := range orders {
-		stage := byOrder[o]
-		busy, fresh, failed, canceled := false, false, false, false
-		for _, j := range stage {
-			switch toStr(j["estado"]) {
-			case stPending, stRunning:
-				busy = true
-			case stCreated:
-				fresh = true
-			case stFailed:
-				if b, _ := j["permitir_falha"].(bool); !b {
-					failed = true
-				}
-			case stCanceled:
-				canceled = true
+	switch {
+	case busy:
+		return stRunning, false
+	case blocked:
+		return stManual, false
+	case failed:
+		return stFailed, true
+	case canceled:
+		return stCanceled, true
+	}
+	return stSuccess, true
+}
+
+// stepGraph answers, for the current steps of one run, what each waits for
+// and whose files it receives.
+type stepGraph struct {
+	jobs   []map[string]any
+	byName map[string]map[string]any
+	plans  map[string]stepPlan
+}
+
+func newStepGraph(jobs []map[string]any) *stepGraph {
+	g := &stepGraph{jobs: jobs, byName: map[string]map[string]any{}, plans: map[string]stepPlan{}}
+	for _, j := range jobs {
+		g.byName[toStr(j["nome"])] = j
+		g.plans[toStr(j["id"])] = planOf(j)
+	}
+	return g
+}
+
+// prerequisites: the steps j needs by name, or every step of earlier stages.
+func (g *stepGraph) prerequisites(j map[string]any) []map[string]any {
+	plan := g.plans[toStr(j["id"])]
+	var out []map[string]any
+	if plan.NeedsSet {
+		for _, n := range plan.Needs {
+			if p := g.byName[n]; p != nil {
+				out = append(out, p)
 			}
 		}
-		if fresh {
-			for _, j := range stage {
-				if toStr(j["estado"]) == stCreated {
-					if toStr(j["quando"]) == whenManual {
-						set(j, stManual)
-					} else {
-						set(j, stPending)
-					}
-				}
-			}
-			// Manual steps wait for someone to start them; they do not block.
-			for _, j := range stage {
-				if toStr(j["estado"]) == stPending {
-					busy = true
-				}
-			}
-		}
-		if busy {
-			a.in.Op(ctx, run.Singular, "atualizar", runID, map[string]any{"estado": stRunning})
-			return
-		}
-		if failed || canceled {
-			for _, later := range orders[i+1:] {
-				for _, j := range byOrder[later] {
-					if st := toStr(j["estado"]); st == stCreated || st == stManual {
-						set(j, stSkipped)
-					}
-				}
-			}
-			if canceled && !failed {
-				finish(stCanceled)
-			} else {
-				finish(stFailed)
-			}
-			return
+		return out
+	}
+	order := asNumber(j["ordem"])
+	for _, p := range g.jobs {
+		if asNumber(p["ordem"]) < order {
+			out = append(out, p)
 		}
 	}
-	finish(stSuccess)
+	return out
+}
+
+// sources: the steps whose artifacts j receives (recebe_artefatos_de, or
+// what it waits for).
+func (g *stepGraph) sources(j map[string]any) []map[string]any {
+	plan := g.plans[toStr(j["id"])]
+	if !plan.FromSet {
+		return g.prerequisites(j)
+	}
+	var out []map[string]any
+	for _, n := range plan.From {
+		if p := g.byName[n]; p != nil {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 // ---------- executor ----------
@@ -587,7 +729,7 @@ func (x *executor) run(step *ast.Entity, job map[string]any) {
 			}
 		}
 	}()
-	status := x.execute(jctx, log, ownerRow, runRow, job, spec.Script, spec.After)
+	status := x.execute(jctx, log, step, ownerRow, runRow, job, spec.Script, spec.After)
 	close(done)
 	if jctx.Err() == context.Canceled {
 		status = stCanceled
@@ -608,7 +750,7 @@ func (x *executor) run(step *ast.Entity, job map[string]any) {
 // execute clones the commit into a private directory and runs each script
 // line with sh (no shell expansion of application data happens here: the
 // lines come from the repository's own file).
-func (x *executor) execute(ctx context.Context, log *logBuffer, owner, run, job map[string]any, script, after []string) string {
+func (x *executor) execute(ctx context.Context, log *logBuffer, step *ast.Entity, owner, run, job map[string]any, script, after []string) string {
 	dir, err := os.MkdirTemp("", "germanio-job-*")
 	if err != nil {
 		fmt.Fprintf(log, "ERRO: %v\n", err)
@@ -638,6 +780,7 @@ func (x *executor) execute(ctx context.Context, log *logBuffer, owner, run, job 
 		env = append(env, k+"="+v)
 	}
 	log.mask(hiddenValues(local)...)
+	x.a.unpackArtifacts(step, job, work, log)
 	runLines := func(list []string) bool {
 		for _, line := range list {
 			fmt.Fprintf(log, "$ %s\n", line)
@@ -663,6 +806,9 @@ func (x *executor) execute(ctx context.Context, log *logBuffer, owner, run, job 
 	ok := runLines(script)
 	if len(after) > 0 && ctx.Err() == nil {
 		runLines(after)
+	}
+	if ok && ctx.Err() == nil {
+		ok = x.a.collectArtifacts(step, job, work, log)
 	}
 	if ok {
 		fmt.Fprintln(log, "Job concluído com sucesso")
@@ -704,6 +850,12 @@ func (a *intentAPI) executionAction(ctx *interp.Context, atual map[string]any, e
 				"ordem": row["ordem"], "script": row["script"], "quando": whenAuto, "permitir_falha": row["permitir_falha"], "imagem": row["imagem"]})
 			if err != nil {
 				return nil, err
+			}
+			// what was skipped because of it waits again
+			for _, j := range a.steps(ctx, run, row[x.RunField]) {
+				if toStr(j["estado"]) == stSkipped {
+					a.in.Op(ctx, e.Singular, "atualizar", j["id"], map[string]any{"estado": stCreated})
+				}
 			}
 			a.reopenRun(ctx, run, row[x.RunField])
 			a.advance(ctx, run, row[x.RunField])

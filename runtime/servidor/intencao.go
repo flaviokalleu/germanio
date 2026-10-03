@@ -57,6 +57,7 @@ func (s *Servidor) registerIntent(mux *routeMux) error {
 	a.mountSearch(mux)
 	a.registerRemoteModule()
 	a.startLeases()
+	a.startArtifactCleanup()
 	for _, name := range app.Order {
 		e := app.Entities[name]
 		if len(e.Rules) == 0 && e.Integrate == "" {
@@ -1618,6 +1619,10 @@ func (a *intentAPI) manualRun(w http.ResponseWriter, r *http.Request, ctx *inter
 		return
 	}
 	row, found, err := a.createRun(ctx, atual, e, ownerRow, branch, sha)
+	if none := (errNoSteps{}); errorsAs(err, &none) {
+		a.fail(w, 400, none.Error())
+		return
+	}
 	if err != nil {
 		a.failErr(w, r, err)
 		return

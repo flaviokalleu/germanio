@@ -871,7 +871,7 @@ func ResolveIntent(prog *ast.Program) error {
 			&ast.Field{Name: "quando", Type: ast.FieldEnum, EnumValues: []string{"automatico", "manual", "sempre"}, System: true, Pos: x.Pos}, sys("permitir_falha", ast.FieldBooleano),
 			&ast.Field{Name: "log", Type: ast.FieldTextoLongo, System: true, Hidden: true},
 			sys("iniciado_em", ast.FieldTexto), sys("terminado_em", ast.FieldTexto), sys("duracao", ast.FieldNumero),
-			sys("repetido", ast.FieldBooleano), sys("imagem", ast.FieldTexto))
+			sys("repetido", ast.FieldBooleano), sys("imagem", ast.FieldTexto), sys("artefatos_expiram_em", ast.FieldTexto))
 	}
 	if err := r.runVariables(in); err != nil {
 		return err
