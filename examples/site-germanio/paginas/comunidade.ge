@@ -36,7 +36,7 @@ pagina "/comunidade"
                 tag "VS CODE"
                 titulo "Extensão para VS Code"
                 texto "Realce de sintaxe para arquivos .ge no VS Code."
-                link "https://github.com/flaviokalleu/germanio/tree/master/vscode-germanio"
+                link "https://github.com/flaviokalleu/germanio/tree/main/vscode-germanio"
 
     rodape
         copyright "Germanio © 2026 — Comunidade Open Source."

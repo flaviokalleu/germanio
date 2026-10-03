@@ -18,7 +18,7 @@ pagina "/"
         descricao "Uma linguagem orientada à intenção: você descreve o que existe, quem pode fazer o quê, o que acontece e o que aparece. O Germanio deriva o banco, a API, as permissões e as páginas, de forma determinística e sem IA na execução."
         botao primario "Começar com Germanio →" "/docs"
         botao secundario "Como experimentar" "/playground"
-        comando "curl -fsSL https://raw.githubusercontent.com/flaviokalleu/germanio/master/install.sh | bash"
+        comando "curl -fsSL https://raw.githubusercontent.com/flaviokalleu/germanio/main/install.sh | bash"
         codigo "clientes.ge" "crie sistema Clientes\n\nclientes\n    tem\n        nome obrigatório\n        email obrigatório e único\n        telefone\n\n    permita\n        pesquisar\n\npágina Clientes\n    mostre clientes\n    permita\n        cadastrar\n        editar\n        excluir"
 
     secao "Pilares Fundamentais"

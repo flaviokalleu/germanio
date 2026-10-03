@@ -14,7 +14,7 @@ pagina "/roadmap"
         titulo "Metas e Próximos Passos."
         descricao "Prioridades do projeto: correção, segurança, desempenho medido e ergonomia. As lacunas conhecidas estão em GERMANIO_GAPS.md, no repositório."
         botao primario "Contribuir no GitHub" "https://github.com/flaviokalleu/germanio"
-        botao secundario "Ver as lacunas" "https://github.com/flaviokalleu/germanio/blob/master/GERMANIO_GAPS.md"
+        botao secundario "Ver as lacunas" "https://github.com/flaviokalleu/germanio/blob/main/GERMANIO_GAPS.md"
 
     secao "Próximos Marcos de Desenvolvimento"
         subtitulo "Recursos planejados; nenhum deles existe ainda."

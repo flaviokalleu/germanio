@@ -14,7 +14,7 @@ pagina "/docs"
         titulo "Aprenda a Linguagem e a CLI."
         descricao "Visão geral da camada de intenção e dos comandos da CLI ge. A especificação normativa é o arquivo docs/INTENCAO.md, no repositório."
         botao primario "Guia Passo a Passo" "/aprender"
-        botao secundario "Ler a especificação" "https://github.com/flaviokalleu/germanio/blob/master/docs/INTENCAO.md"
+        botao secundario "Ler a especificação" "https://github.com/flaviokalleu/germanio/blob/main/docs/INTENCAO.md"
         codigo "backend/produtos.ge" "produtos\n    tem\n        nome obrigatório\n        descrição formatada\n        preco obrigatório\n        estoque começa com 0\n\n    acesso\n        todos\n            ver\n        somente administrador\n            criar\n            editar\n            excluir\n\n    permita\n        pesquisar por nome"
 
     secao "Comandos da CLI ge"

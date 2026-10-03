@@ -152,7 +152,7 @@ go build -o ge ./cmd/ge
 ```
 
 Or install with the script (clones and builds into `~/.local/bin`):
-`curl -fsSL https://raw.githubusercontent.com/flaviokalleu/germanio/master/install.sh | bash`.
+`curl -fsSL https://raw.githubusercontent.com/flaviokalleu/germanio/main/install.sh | bash`.
 To run an application in Docker, see the [Dockerfile](Dockerfile).
 Prebuilt binaries for Linux, macOS and Windows are on the [releases page](https://github.com/flaviokalleu/germanio/releases/latest):
 download, unpack and run `ge`, no Go needed (the releases v0.2–v0.6 predate the rename and are published as *Flang*).

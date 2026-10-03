@@ -24,7 +24,7 @@ pagina "/instalar"
                 tag "LINUX E MACOS"
                 titulo "1. Script de instalação"
                 texto "Clona o repositório em ~/.germanio, compila ge e germanio com Go e os coloca em ~/.local/bin."
-                code "curl -fsSL https://raw.githubusercontent.com/flaviokalleu/germanio/master/install.sh | bash"
+                code "curl -fsSL https://raw.githubusercontent.com/flaviokalleu/germanio/main/install.sh | bash"
             card
                 icone "🐹"
                 tag "QUALQUER SISTEMA COM GO"
