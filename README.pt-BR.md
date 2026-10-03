@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://github.com/flaviokalleu/germanio/actions/workflows/ci.yml"><img src="https://github.com/flaviokalleu/germanio/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <img src="https://img.shields.io/badge/vers%C3%A3o-0.7.0--dev%20(pr%C3%A9--lan%C3%A7amento)-2fb4ff" alt="versão 0.7.0-dev, pré-lançamento">
+  <img src="https://img.shields.io/badge/vers%C3%A3o-0.7.0%20(pr%C3%A9--1.0)-2fb4ff" alt="versão 0.7.0, pré-1.0">
   <img src="https://img.shields.io/badge/feito%20em-Go-2fb4ff" alt="feito em Go">
   <a href="LICENSE"><img src="https://img.shields.io/badge/licen%C3%A7a-MIT-2fb4ff" alt="licença MIT"></a>
 </p>
@@ -24,6 +24,11 @@
   <a href="#estado-do-projeto">Estado</a> ·
   <a href="CONTRIBUTING.md">Contribuir</a> ·
   <a href="README.md">English</a>
+</p>
+
+<p align="center">
+  <img src="assets/demo/tarefas.gif" alt="Demonstração: as 38 linhas do app.ge ao lado de ge run app.ge; depois o cadastro, a criação de tarefas, a conclusão de uma delas e uma segunda pessoa que não vê as tarefas da primeira" width="800">
+  <br><sub>As 38 linhas de <a href="#mostre-me">Mostre-me</a>, rodando: cadastro, tarefas, concluir, e outra pessoa que não vê nada da primeira.</sub>
 </p>
 
 Você descreve **o que existe, quem pode fazer o quê, o que acontece e o que aparece**. O
@@ -54,7 +59,7 @@ login usa email
 
 tarefas
     tem
-        titulo obrigatório até 120
+        título obrigatório até 120
         descrição
         prazo data
     pertence a usuario
@@ -103,7 +108,7 @@ Quem pode:
   ver            o dono/autor
   administrador  tudo
 De onde vem cada fato (frase plana equivalente — origem):
-  tarefa tem titulo obrigatório até 120 — app.ge:15 (tarefas › tem)
+  tarefa tem título obrigatório até 120 — app.ge:15 (tarefas › tem)
   tarefa pode concluir — app.ge:21 (tarefas › pode)
 ```
 
@@ -148,8 +153,8 @@ go build -o ge ./cmd/ge
 Ou instale com o script (clona e compila em `~/.local/bin`):
 `curl -fsSL https://raw.githubusercontent.com/flaviokalleu/germanio/master/install.sh | bash`.
 Para rodar uma aplicação no Docker, veja o [Dockerfile](Dockerfile).
-Binários prontos virão no próximo [release](https://github.com/flaviokalleu/germanio/releases)
-(os releases v0.2–v0.6 são anteriores à mudança de nome e estão publicados como *Flang*).
+Binários prontos para Linux, macOS e Windows estão na [página de releases](https://github.com/flaviokalleu/germanio/releases/latest):
+baixe, descompacte e rode o `ge`, sem precisar do Go (os releases v0.2–v0.6 são anteriores à mudança de nome e estão publicados como *Flang*).
 
 | Comando | O que faz |
 | --- | --- |

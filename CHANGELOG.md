@@ -8,10 +8,14 @@ minor versions may still change the language, and changes of meaning go through
 The project was called **Flang** (files `.fg`) until 2026-09-27. Releases up to v0.6.0 were
 published under that name.
 
-## [Unreleased] — 0.7.0-dev
+## [Unreleased]
 
-Germanio as it is today: the rename, a strict typed core, the intent layer and the
-hierarchical syntax. Nothing below is in a tagged release yet.
+Nothing yet.
+
+## [0.7.0] — 2026-09-29
+
+The first release as Germanio: the rename, a strict typed core, the intent layer and the
+hierarchical syntax.
 
 ### Language
 
@@ -105,6 +109,10 @@ hierarchical syntax. Nothing below is in a tagged release yet.
   against SSRF; list references must share the record's parent; `administrar` only governs
   data that belongs to the record; real time (`/ws`) requires a session, the same origin, and
   change notices no longer carry record data.
+- The SSRF guard recognizes `localhost` and the short IPv4 spellings (`127.1`, `2130706433`,
+  `0x7f.1`) itself, before resolving, so the answer no longer depends on the system resolver.
+- Pages agree in gender with the data ("Nova tarefa", "Tarefa criada", "Novo pedido") and show
+  dates as dd/mm/aaaa and moments as dd/mm/aaaa hh:mm; forms keep the browser's format.
 
 ### Stress test
 
@@ -139,7 +147,8 @@ hierarchical syntax. Nothing below is in a tagged release yet.
   screens, events), REST API, SQLite/MySQL/PostgreSQL, WebSocket, rate limiting and
   role-based access.
 
-[Unreleased]: https://github.com/flaviokalleu/germanio/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/flaviokalleu/germanio/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/flaviokalleu/germanio/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/flaviokalleu/germanio/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/flaviokalleu/germanio/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/flaviokalleu/germanio/compare/v0.2.0...v0.5.0

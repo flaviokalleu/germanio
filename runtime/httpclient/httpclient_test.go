@@ -34,6 +34,19 @@ func TestChamarNaoAlcancaRedeLocal(t *testing.T) {
 	}
 }
 
+func TestNomesLocaisSemResolver(t *testing.T) {
+	for host, want := range map[string]bool{
+		"localhost": true, "LOCALHOST.": true, "api.localhost": true, "127.1": true,
+		"2130706433": true, "0x7f.1": true, "0177.0.0.1": true, "10.1": true, "0": true,
+		"8.8.8.8": false, "134744072": false, "exemplo.com": false, "1.2.3.4.5": false,
+		"256.1.1.1": false, "1.2.65536": false, "localhost.exemplo.com": false,
+	} {
+		if got := nomeLocal(host); got != want {
+			t.Errorf("%s: nomeLocal=%v, esperado %v", host, got, want)
+		}
+	}
+}
+
 func TestEnderecosLocais(t *testing.T) {
 	for addr, want := range map[string]bool{
 		"127.0.0.1": true, "10.1.2.3": true, "169.254.169.254": true, "100.64.0.1": true,

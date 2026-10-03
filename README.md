@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://github.com/flaviokalleu/germanio/actions/workflows/ci.yml"><img src="https://github.com/flaviokalleu/germanio/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <img src="https://img.shields.io/badge/version-0.7.0--dev%20(pre--release)-2fb4ff" alt="version 0.7.0-dev, pre-release">
+  <img src="https://img.shields.io/badge/version-0.7.0%20(pre--1.0)-2fb4ff" alt="version 0.7.0, pre-1.0">
   <img src="https://img.shields.io/badge/built%20with-Go-2fb4ff" alt="built with Go">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-2fb4ff" alt="MIT license"></a>
 </p>
@@ -24,6 +24,11 @@
   <a href="#project-status">Status</a> ·
   <a href="CONTRIBUTING.md">Contributing</a> ·
   <a href="README.pt-BR.md">Português</a>
+</p>
+
+<p align="center">
+  <img src="assets/demo/tarefas.gif" alt="Demo: the 38 lines of app.ge next to ge run app.ge; then sign-up, creating tasks, completing one, and a second person who sees none of the first person's tasks" width="800">
+  <br><sub>The 38 lines from <a href="#show-me">Show me</a>, running: sign-up, tasks, complete, and another person who sees none of them.</sub>
 </p>
 
 You describe **what exists, who may do what, what happens and what appears**. Germanio turns
@@ -56,7 +61,7 @@ login usa email
 
 tarefas
     tem
-        titulo obrigatório até 120
+        título obrigatório até 120
         descrição
         prazo data
     pertence a usuario
@@ -105,7 +110,7 @@ Quem pode:
   ver            o dono/autor
   administrador  tudo
 De onde vem cada fato (frase plana equivalente — origem):
-  tarefa tem titulo obrigatório até 120 — app.ge:15 (tarefas › tem)
+  tarefa tem título obrigatório até 120 — app.ge:15 (tarefas › tem)
   tarefa pode concluir — app.ge:21 (tarefas › pode)
 ```
 
@@ -149,8 +154,8 @@ go build -o ge ./cmd/ge
 Or install with the script (clones and builds into `~/.local/bin`):
 `curl -fsSL https://raw.githubusercontent.com/flaviokalleu/germanio/master/install.sh | bash`.
 To run an application in Docker, see the [Dockerfile](Dockerfile).
-Prebuilt binaries will be attached to the next [release](https://github.com/flaviokalleu/germanio/releases)
-(the releases v0.2–v0.6 predate the rename and are published as *Flang*).
+Prebuilt binaries for Linux, macOS and Windows are on the [releases page](https://github.com/flaviokalleu/germanio/releases/latest):
+download, unpack and run `ge`, no Go needed (the releases v0.2–v0.6 predate the rename and are published as *Flang*).
 
 | Command | What it does |
 | --- | --- |

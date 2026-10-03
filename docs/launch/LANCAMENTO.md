@@ -2,6 +2,9 @@
 
 Documento de trabalho (2026-09-28). Não é norma nem documentação da linguagem.
 
+Os textos prontos para publicar (TabNews, Show HN, Reddit, vídeo curto) e as primeiras
+issues para quem quer contribuir estão em [POSTS.md](POSTS.md).
+
 ## O que já foi configurado
 
 **GitHub About** (aplicado com `gh repo edit`):

@@ -83,7 +83,7 @@ func TestInterfaceWeb(t *testing.T) {
 		t.Fatalf("página de projetos sem formulário de criação:\n%s", page)
 	}
 	code, page, at = b.submit("/projetos/novo", url.Values{"_csrf": {csrf}, "_campos": {"1"}, "nome": {"Web App"}, "caminho": {"web-app"}, "visibilidade": {"private"}})
-	if code != 200 || !strings.Contains(page, "Criado com sucesso") || !strings.Contains(at, "/projetos/1") {
+	if code != 200 || !strings.Contains(page, "Projeto criado") || !strings.Contains(at, "/projetos/1") {
 		t.Fatalf("criar projeto: %d %s\n%s", code, at, page)
 	}
 	for _, want := range []string{"ada/web-app", "Issues", "Merge requests", "Pipelines", "repositório ainda está vazio"} {

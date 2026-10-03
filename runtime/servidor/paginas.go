@@ -12,6 +12,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/flaviokalleu/germanio/compiler/ast"
 	interp "github.com/flaviokalleu/germanio/runtime/interpreter"
@@ -316,6 +317,25 @@ func label(name string) string {
 	return strings.ToUpper(name[:1]) + name[1:]
 }
 
+// displayFor shows a value to people: dates as dd/mm/aaaa and moments as
+// dd/mm/aaaa hh:mm in the server's time zone. Forms keep display, since the
+// browser's date input needs the technical form.
+func displayFor(t ast.FieldType, v any) string {
+	s, ok := v.(string)
+	if !ok {
+		return display(v)
+	}
+	if t == ast.FieldData {
+		if d, err := time.Parse("2006-01-02", s); err == nil {
+			return d.Format("02/01/2006")
+		}
+	}
+	if m, err := time.Parse(time.RFC3339, s); err == nil && strings.Contains(s, "T") {
+		return m.Local().Format("02/01/2006 15:04")
+	}
+	return display(v)
+}
+
 func display(v any) string {
 	switch x := v.(type) {
 	case nil:
@@ -448,7 +468,7 @@ func (ps *pageSite) tableWith(e *ast.Entity, rows []any, base string, names []st
 			tr.Title, tr.Body = e.Label+" "+display(row["id"]), body
 		}
 		for _, c := range cols {
-			tr.Cells = append(tr.Cells, cell{Text: display(row[strings.ToLower(c.Name)]), Badge: strings.ToLower(c.Name) == "estado" || c.Type == ast.FieldVisibilidade})
+			tr.Cells = append(tr.Cells, cell{Text: displayFor(c.Type, row[strings.ToLower(c.Name)]), Badge: strings.ToLower(c.Name) == "estado" || c.Type == ast.FieldVisibilidade})
 		}
 		td.Rows = append(td.Rows, tr)
 	}
@@ -719,7 +739,7 @@ func (ps *pageSite) serve(w http.ResponseWriter, r *http.Request) {
 			v.Title = pg.Title
 		}
 		canCreate := atual != nil && ps.a.canCreateFor(ctx, atual, last.e, chain)
-		createLabel := "Novo " + strings.ToLower(last.e.Label)
+		createLabel := last.e.NovoRotulo()
 		body.WriteString(string(htmlOf(headingTpl, v.Title)))
 		if own && pg.Text != "" {
 			body.WriteString(string(htmlOf(introTpl, pg.Text)))
@@ -828,7 +848,7 @@ func (ps *pageSite) serve(w http.ResponseWriter, r *http.Request) {
 		body.WriteString(`</div>`)
 		childChain := append(append([]step{}, chain...), step{e: c})
 		if atual != nil && ps.a.canCreateFor(ctx, atual, c, childChain) {
-			body.WriteString(string(ps.form(base+"/"+c.Plural+"/novo", "Criar", v.CSRF, "Novo "+strings.ToLower(c.Label), ps.inputs(r, childChain, c, nil, ps.fixedFor(childChain)))))
+			body.WriteString(string(ps.form(base+"/"+c.Plural+"/novo", "Criar", v.CSRF, c.NovoRotulo(), ps.inputs(r, childChain, c, nil, ps.fixedFor(childChain)))))
 		}
 	}
 	v.Body = template.HTML(body.String())
@@ -864,7 +884,7 @@ func (ps *pageSite) details(ctx *interp.Context, e *ast.Entity, row map[string]a
 		if !ok || f.Hidden || f.IsSecret() || isFileField(f) {
 			continue // files have their own section (fileViews)
 		}
-		text := display(v)
+		text := displayFor(f.Type, v)
 		// References show who/what they point to, not a number.
 		if ref := f.Reference; ref != "" && v != nil {
 			text = ps.nameOf(ctx, ref, v)
@@ -884,7 +904,7 @@ func (ps *pageSite) details(ctx *interp.Context, e *ast.Entity, row map[string]a
 		out = append(out, item)
 	}
 	if v, ok := row["created_at"]; ok {
-		out = append(out, detailItem{Label: "Criado em", Value: display(v)})
+		out = append(out, detailItem{Label: "Criado em", Value: displayFor("", v)})
 	}
 	return out
 }
@@ -1103,11 +1123,11 @@ func (ps *pageSite) post(w http.ResponseWriter, r *http.Request) {
 	target := back
 	switch op {
 	case "novo":
-		method, path, done = "POST", api, "Criado com sucesso"
+		method, path, done = "POST", api, last.e.Label+" "+last.e.Concorda("criado", "criada")
 	case "editar":
 		method, path, done = "PATCH", api, "Alterações salvas"
 	case "excluir":
-		method, path, done = "DELETE", api, "Excluído"
+		method, path, done = "DELETE", api, last.e.Label+" "+last.e.Concorda("excluído", "excluída")
 		up := body[:len(body)-1]
 		target = "/" + slug(pg.Name)
 		if len(up) > 0 {
