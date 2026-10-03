@@ -2,7 +2,8 @@
 #
 # Rotas de issues da API v4 do GitLab que têm outra forma que a superfície
 # gerada: controle de tempo (time_estimate, add_spent_time, time_stats) e
-# ligações entre issues (links, com o projeto e o número da outra issue).
+# ligações entre issues (links, com o projeto e o número da outra issue) e
+# mover uma issue para outro projeto (move).
 # Cada rota traduz o formato do GitLab e pede à própria aplicação (GEP 0033),
 # como a pessoa que chamou: quem pode estimar, registrar tempo ou ver a issue
 # está em backend/issues/.
@@ -162,3 +163,12 @@ rotas
         definir outra = exigir(superficie.pedir("GET", ["issues", outra_id]))
         exigir(superficie.pedir("DELETE", ["ligacoes", requisicao.parametros.ligacao]))
         responder(200, {source_issue: esta.corpo, target_issue: outra.corpo, link_type: "relates_to"})
+
+    # Mover para outro projeto: a issue muda de projeto (GEP 0034) e ganha o
+    # próximo número de lá.
+    rota POST "/api/v4/projects/:id/issues/:iid/move"
+        definir destino = parametro(requisicao, "to_project_id", nulo)
+        se destino == nulo
+            responder(400, {message: "to_project_id is missing"})
+        definir r = exigir(superficie.pedir("POST", adicionar(issue_em(requisicao), "mudar"), {project_id: destino}))
+        responder(201, r.corpo)
