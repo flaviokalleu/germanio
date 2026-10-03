@@ -74,6 +74,32 @@ function fail(msg) { console.error('FALHA: ' + msg); process.exit(1); }
   await pa.keyboard.press('Escape');
   if (await pa.locator('dialog.painel[open]').count() !== 0) fail('Esc não fechou o painel');
 
+  // selection: two cards selected with Ctrl+click move together; undo brings both back
+  await pa.goto(base + '/quadros/1');
+  await pa.fill('form[action="/quadros/1/cartoes/novo"] input[name=titulo]', 'Terceiro');
+  await Promise.all([pa.waitForNavigation(), pa.click('form[action="/quadros/1/cartoes/novo"] button')]);
+  await pa.goto(base + '/quadros/1'); // creating a card leads to the card's page
+  const pend = (t) => pa.locator('.coluna[data-estado=pendente] .cartao', { hasText: t });
+  await pend('Durante a queda').click({ modifiers: ['Control'], position: { x: 2, y: 2 } });
+  await pend('Terceiro').click({ modifiers: ['Control'], position: { x: 2, y: 2 } });
+  if (await pa.locator('.cartao.selecionado').count() !== 2) fail('Ctrl+clique não selecionou dois cartões');
+  await pend('Terceiro').focus();
+  await pa.keyboard.press('ArrowRight');
+  await pb.waitForFunction(() => document.querySelectorAll('.coluna[data-estado=comecado] .cartao').length === 2, null, { timeout: 8000 })
+    .catch(() => fail('a seleção não se moveu junta'));
+  await pa.click('[data-desfazer]');
+  await pb.waitForFunction(() => document.querySelectorAll('.coluna[data-estado=comecado] .cartao').length === 0, null, { timeout: 8000 })
+    .catch(() => fail('desfazer não devolveu os dois cartões'));
+
+  // local filter hides what does not match, without a request
+  await pa.goto(base + '/quadros/1');
+  let requests = [];
+  await pa.waitForTimeout(300); // the page's own live subscription opens after loading
+  pa.on('request', (r) => { if (!r.url().includes('/_ge/atualiza')) requests.push(r.url()); });
+  await pa.fill('[data-filtro-quadro]', 'terceiro');
+  if (await pa.locator('.quadro .cartao:visible').count() !== 1) fail('o filtro local não escondeu os outros cartões');
+  if (requests.length !== 0) fail('o filtro local pediu algo ao servidor: ' + requests.join(', '));
+
   console.log('ok');
   await browser.close();
 })().catch(e => fail(e.message));

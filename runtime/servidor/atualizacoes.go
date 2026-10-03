@@ -444,28 +444,61 @@ const liveScript = `(function () {
     var col = document.querySelector('.coluna[data-estado="' + state + '"]');
     return col ? col.getAttribute('aria-label') : state;
   }
+  // the cards a move applies to: the selected ones, when the moved card is
+  // selected; each goes only if that move is one of its own buttons
+  function group(card) {
+    if (!card.classList.contains('selecionado')) return [card];
+    return Array.prototype.slice.call(document.querySelectorAll('.cartao.selecionado'));
+  }
   function move(card, form, remember) {
-    var from = card.closest('.coluna').getAttribute('data-estado');
     var to = form.getAttribute('data-alvo');
     var col = document.querySelector('.coluna[data-estado="' + to + '"]');
-    if (col) col.querySelector('ul').appendChild(card);
+    var moved = [];
+    group(card).forEach(function (c) {
+      var f = c === card ? form : c.querySelector('form[data-alvo="' + to + '"]');
+      if (!f) return;
+      moved.push({card: c, form: f, from: c.closest('.coluna').getAttribute('data-estado')});
+      if (col) col.querySelector('ul').appendChild(c);
+    });
     card.focus();
-    fetch(form.action, {method: 'POST', body: new URLSearchParams(new FormData(form)), credentials: 'same-origin'})
-      .then(function (r) {
-        if (!r.ok) { say('Não foi possível mover.'); location.reload(); return; }
-        if (remember) { done.push({id: card.getAttribute('data-id'), state: from}); showUndo(); }
-        say((card.querySelector('a') || card).textContent + ' movido para ' + columnName(to) + '.');
-      });
+    Promise.all(moved.map(function (m) {
+      return fetch(m.form.action, {method: 'POST', body: new URLSearchParams(new FormData(m.form)), credentials: 'same-origin'});
+    })).then(function (rs) {
+      if (rs.some(function (r) { return !r.ok; })) { say('Não foi possível mover.'); location.reload(); return; }
+      if (remember) {
+        done.push(moved.map(function (m) { return {id: m.card.getAttribute('data-id'), state: m.from}; }));
+        showUndo();
+      }
+      say(moved.length === 1 ? (card.querySelector('a') || card).textContent + ' movido para ' + columnName(to) + '.'
+                             : moved.length + ' cartões movidos para ' + columnName(to) + '.');
+    });
   }
   function undo() {
     var last = done.pop();
     showUndo();
     if (!last) return;
-    var card = document.querySelector('.cartao[data-id="' + last.id + '"]');
-    var form = card && card.querySelector('form[data-alvo="' + last.state + '"]');
-    if (!form) { say('Não é possível desfazer este movimento.'); return; }
-    move(card, form, false);
+    var back = [];
+    last.forEach(function (m) {
+      var card = document.querySelector('.cartao[data-id="' + m.id + '"]');
+      var form = card && card.querySelector('form[data-alvo="' + m.state + '"]');
+      if (form) back.push(fetch(form.action, {method: 'POST', body: new URLSearchParams(new FormData(form)), credentials: 'same-origin'}));
+    });
+    if (back.length < last.length) say('Não é possível desfazer todo o movimento.');
+    else say('Movimento desfeito.');
+    Promise.all(back).then(refresh);
   }
+  function toggle(card) {
+    card.classList.toggle('selecionado');
+    say(document.querySelectorAll('.cartao.selecionado').length + ' cartões selecionados.');
+  }
+  // local filter: hides the cards that do not match, without asking the server
+  document.addEventListener('input', function (e) {
+    if (!e.target.matches('[data-filtro-quadro]')) return;
+    var q = e.target.value.trim().toLowerCase();
+    document.querySelectorAll('.quadro .cartao').forEach(function (c) {
+      c.hidden = q !== '' && c.textContent.toLowerCase().indexOf(q) < 0;
+    });
+  });
   function showUndo() {
     var board = document.querySelector('.quadro');
     if (!board) return;
@@ -492,6 +525,7 @@ const liveScript = `(function () {
   document.addEventListener('keydown', function (e) {
     if ((e.ctrlKey || e.metaKey) && e.key === 'z' && done.length && !(e.target.form)) { e.preventDefault(); undo(); return; }
     var card = e.target.closest && e.target.closest('.cartao');
+    if (card && e.key === ' ' && e.target === card) { e.preventDefault(); toggle(card); return; }
     if (!card || (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft')) return;
     var col = card.closest('.coluna');
     var next = e.key === 'ArrowRight' ? col.nextElementSibling : col.previousElementSibling;
@@ -538,6 +572,8 @@ const liveScript = `(function () {
     });
   }
   document.addEventListener('click', function (e) {
+    var picked = e.target.closest && e.target.closest('.cartao');
+    if (picked && (e.ctrlKey || e.metaKey) && !e.target.closest('form')) { e.preventDefault(); toggle(picked); return; }
     var a = e.target.closest && e.target.closest('.cartao a');
     if (!a || e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return;
     e.preventDefault();
@@ -561,6 +597,8 @@ const liveScript = `(function () {
           var fresh = doc.querySelector('[data-vivo="' + el.getAttribute('data-vivo') + '"]');
           if (fresh) el.replaceWith(document.importNode(fresh, true));
         });
+        var filter = document.querySelector('[data-filtro-quadro]');
+        if (filter && filter.value) filter.dispatchEvent(new Event('input', {bubbles: true}));
       })
       .then(function () { busy = false; if (pending) refresh(); },
             function () { busy = false; pending = true; setTimeout(refresh, 2000); }); // offline: try again
