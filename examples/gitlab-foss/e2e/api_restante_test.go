@@ -225,17 +225,14 @@ func TestMergePorPutEAprovacoes(t *testing.T) {
 	path := "/api/v4/projects/" + pid + "/merge_requests/" + jsonNum(mr["iid"])
 
 	ap := ada.must("GET", path+"/approvals", nil, 200)
-	if jsonNum(ap["approvals_required"]) != "1" || jsonNum(ap["approvals_left"]) != "1" || ap["approved"] != false || len(ap["approved_by"].([]any)) != 0 || ap["title"] != "Capítulo" || jsonNum(ap["iid"]) != jsonNum(mr["iid"]) {
+	// GitLab FOSS has no approval minimum: nothing required, nothing left
+	if jsonNum(ap["approvals_required"]) != "0" || jsonNum(ap["approvals_left"]) != "0" || ap["approved"] != true || len(ap["approved_by"].([]any)) != 0 || ap["title"] != "Capítulo" || jsonNum(ap["iid"]) != jsonNum(mr["iid"]) {
 		t.Fatalf("aprovações antes: %v", ap)
 	}
-	// the author's approval does not count (GEP 0026)
+	// approving is still possible, and shows who approved
 	bob.must("POST", path+"/approve", nil, 200)
-	if ap := bob.must("GET", path+"/approvals", nil, 200); jsonNum(ap["approvals_left"]) != "1" || len(ap["approved_by"].([]any)) != 1 {
+	if ap := bob.must("GET", path+"/approvals", nil, 200); jsonNum(ap["approvals_left"]) != "0" || len(ap["approved_by"].([]any)) != 1 {
 		t.Fatalf("aprovação do autor: %v", ap)
-	}
-	// not approved yet: the merge waits, by PUT as by POST
-	if code, _, _ := ada.call("PUT", path+"/merge", nil); code != 405 {
-		t.Fatalf("PUT merge sem aprovação: %d", code)
 	}
 	ada.must("POST", path+"/approve", nil, 200)
 	ap = bob.must("GET", path+"/approvals", nil, 200)
