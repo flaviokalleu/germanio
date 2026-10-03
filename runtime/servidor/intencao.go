@@ -51,6 +51,7 @@ func (s *Servidor) registerIntent(mux *routeMux) error {
 	s.intent = a
 	a.live = newLiveHub(a)
 	a.setupReading()
+	a.setupTextImages()
 	s.registerTaskModule()
 	s.tasks().handle("entrega", a.deliver)
 	a.mountSearch(mux)
@@ -131,6 +132,12 @@ func (a *intentAPI) mountLevel(mux *routeMux, base string, chain []*ast.Entity, 
 		}
 	}
 	a.mountFiles(mux, item, chain, integration)
+	if !integration && a.takesImages(e) {
+		mux.HandleFunc("GET "+item+"/imagens/{chave}", h("imagem_texto", ""))
+		// streamed outside any transaction (the write lock is never held
+		// while bytes arrive); the record of the image is one insert after
+		mux.HandleFunc("POST "+item+"/imagens", func(w http.ResponseWriter, r *http.Request) { a.serve(w, r, chain, "imagem_texto", "") })
+	}
 	for verb := range actions {
 		path := verb
 		if integration {
@@ -492,6 +499,8 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 		}
 	}
 	switch op {
+	case "imagem_texto":
+		a.textImageOp(w, r, ctx, atual, e, a.find(ctx, e, ref, scope))
 	case "arquivo_ver", "arquivo_enviar", "arquivo_remover":
 		a.fileOp(w, r, ctx, atual, e, a.find(ctx, e, ref, scope), op, deny)
 	case "listar":
@@ -1143,7 +1152,7 @@ func (a *intentAPI) cascade(ctx *interp.Context, e *ast.Entity, row map[string]a
 	if _, err := a.in.Op(ctx, e.Singular, "deletar", row["id"]); err != nil {
 		return err
 	}
-	afterCommit(ctx, func() { a.removeRepository(e, row); a.removeFiles(e, row) })
+	afterCommit(ctx, func() { a.removeRepository(e, row); a.removeFiles(e, row); a.removeTextImages(e, row["id"]) })
 	return nil
 }
 

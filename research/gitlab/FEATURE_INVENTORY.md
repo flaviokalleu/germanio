@@ -104,7 +104,7 @@ Escopo núcleo v1 = features marcadas **[N]** (fluxos 1–5 da missão + testes 
 | NT-03 | E-mail de notificação | e-mail ao ser atribuído | — | mailer | | dono | email | SUPPORTED (GEP 0013, em teste) | PARTIAL (e-mail de cada nova pendência, depois do commit, sem título do que a pessoa não pode ver; menções, preferências por pessoa e resumos ainda não) | TestAvisosPorEmail |
 | AD-01 | Admin dashboard | contagens, usuários, projetos | `/admin` | `/admin` | | admin | | SUPPORTED (GEP 0012, em teste) | PARTIAL (página `/painel` com as contagens, cada uma sob a visibilidade de quem vê — o administrador vê o total; a lista de usuários e projetos do admin são as páginas comuns; `/api/v4/application/statistics` ainda não) | TestPainel, TestIndicadores |
 | SR-01 | Busca global | projetos/issues/MRs | search | `/search` | | leitura | | | PASS | TestBuscaGeral (API; página de busca ainda não) |
-| UP-01 | Uploads em markdown | `/uploads` | | | uploads | | | PARTIAL (upload genérico existe) | ADIADO → FASE 3 (editor de texto com imagens; usa a GEP 0014) | |
+| UP-01 | Uploads em markdown | `/uploads` | | | uploads | | | PARTIAL (upload genérico existe) | PASS (FASE 3: imagem colada ou solta num texto formatado vai para o registro da página — a issue de um comentário — e vira Markdown; só imagens; vista por quem vê o registro; sai com ele. Pela superfície de integração `/uploads` ainda não) | TestImagensNoTexto, TestNavegador |
 
 ## Fora do núcleo (classificado, não omitido)
 

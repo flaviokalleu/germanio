@@ -124,6 +124,19 @@ function fail(msg) { console.error('FALHA: ' + msg); process.exit(1); }
     .catch(() => fail('Bia não viu que Ana está digitando'));
   if (await pa.locator('[data-digitando]', { hasText: 'Ana está digitando' }).count() !== 0) fail('Ana viu o próprio aviso');
 
+  // an image dropped into a formatted text is sent and its Markdown inserted
+  await pa.goto(base + '/quadros/1/cartoes/1');
+  await pa.evaluate(() => {
+    const bytes = Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='), c => c.charCodeAt(0));
+    const file = new File([bytes], 'tela.png', { type: 'image/png' });
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    const area = document.querySelector('textarea[data-formatado]');
+    area.dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }));
+  });
+  await pa.waitForFunction(() => /!\[tela\.png\]\(\/_ge\/api\/quadros\/1\/cartoes\/1\/imagens\//.test(document.querySelector('textarea[data-formatado]').value), null, { timeout: 5000 })
+    .catch(() => fail('a imagem solta no texto não virou Markdown'));
+
   // accessibility: no serious or critical axe-core violation on the board
   // (the page's CSP rightly forbids injected scripts: the audit context bypasses it)
   const audit = await browser.newContext({ bypassCSP: true });

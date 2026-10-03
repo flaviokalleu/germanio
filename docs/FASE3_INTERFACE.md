@@ -131,7 +131,7 @@ Provado no navegador: abre, edita o título (o quadro mostra o novo) e Esc fecha
 
 Responsividade: num celular (375 px) a página não rola para o lado, e o quadro rola dentro dele.
 
-Ainda na fase (itens adiados para cá): uploads dentro do Markdown (UP-01).
+Os itens adiados para esta fase estão feitos (passos 8 a 10).
 
 ### Passo 8 — "digitando…" (2026-10-02)
 
@@ -149,3 +149,16 @@ Sem sintaxe nova, como parte da capability de repositório:
   como depois de um push.
 
 Provado pelo GitLab, na API (`PUT …/repository/files/…`) e na página (`TestEditarArquivoPelaWeb`).
+
+### Passo 10 — imagens no texto (UP-01, 2026-10-02)
+
+Na GEP 0014, sem sintaxe nova:
+- num texto `formatado`, colar ou soltar uma imagem a envia ao registro da página e insere o
+  Markdown;
+- só imagens de verdade, com o tipo detectado pelo conteúdo;
+- vista por quem vê o registro, e excluída junto com ele;
+- o envio fica fora de qualquer transação.
+
+Achado na revisão: o envio passaria pela transação da requisição, com a trava presa enquanto os
+bytes chegam. Corrigido antes do commit.
+Provado no servidor (`TestImagensNoTexto`) e no navegador (soltar uma imagem vira Markdown).

@@ -65,6 +65,8 @@ hierarchical syntax.
 - Variables of executions (GEP 0015, in test): `pipelines usam as variaveis do projeto` gives
   every step the owner's variables; a `valor oculto` is never returned and is masked in logs
   (by whole lines, so a secret written in two pieces never leaks); the execution's own names win.
+- Images pasted or dropped into a formatted text are kept with the record of the page, seen by
+  whoever sees it, and inserted as Markdown (UP-01).
 - Files of a record (GEP 0014, in test): fields declared `arquivo` or `imagem` (`anexo arquivo`,
   `foto imagem`; a type that comes only from the name keeps storing text) are sent to
   `…/<registro>/<campo>` (streamed, outside the transaction, with a size limit), downloaded only by

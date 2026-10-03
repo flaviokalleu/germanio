@@ -500,6 +500,7 @@ func (ps *pageSite) tableWith(e *ast.Entity, rows []any, base string, names []st
 
 type input struct {
 	Name, Label, Type, Value string
+	Formatted                bool // a formatted text: images can be pasted or dropped into it
 	Required, Checked        bool
 	Options                  []option
 	Multiple                 bool
@@ -560,7 +561,7 @@ func (ps *pageSite) inputs(r *http.Request, chain []step, e *ast.Entity, values 
 			in.Type = "checkbox"
 			in.Checked = v == true || (v == nil && f.HasDefault && f.DefaultValue == true)
 		case ast.FieldTextoLongo:
-			in.Type = "textarea"
+			in.Type, in.Formatted = "textarea", f.Formatted
 		case ast.FieldData:
 			in.Type = "date"
 		case ast.FieldVisibilidade:
@@ -849,6 +850,9 @@ func (ps *pageSite) serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	body.WriteString(string(htmlOf(headingTpl, v.Title)))
+	if atual != nil && ps.a.takesImages(last.e) && ps.a.mayAddImage(ctx, atual, last.e, record) {
+		body.WriteString(`<meta name="ge-imagens" content="` + template.HTMLEscapeString(api+"/imagens") + `">`)
+	}
 	body.WriteString(string(htmlOf(detailTpl, ps.details(ctx, last.e, row))))
 	base := strings.TrimSuffix(r.URL.Path, "/")
 	body.WriteString(string(ps.actions(ctx, atual, last.e, record, base, v.CSRF)))
@@ -1507,7 +1511,7 @@ var tableTpl = tpl(`{{define "linha"}}` + rowMarkup + `{{end}}{{if .Rows}}<div c
 var formTpl = tpl(`<form class="{{if .Title}}caixa{{end}}" method="post" action="{{.Action}}">{{if .Title}}<h3>{{.Title}}</h3>{{end}}
 <input type="hidden" name="_csrf" value="{{.CSRF}}"><input type="hidden" name="_campos" value="1">
 {{range .Inputs}}{{if eq .Type "checkbox"}}<label><span><input type="checkbox" name="{{.Name}}" value="true" {{if .Checked}}checked{{end}}> {{.Label}}</span></label>
-{{else if eq .Type "textarea"}}<label>{{.Label}}<textarea name="{{.Name}}" {{if .Required}}required{{end}}>{{.Value}}</textarea></label>
+{{else if eq .Type "textarea"}}<label>{{.Label}}<textarea name="{{.Name}}" {{if .Required}}required{{end}}{{if .Formatted}} data-formatado{{end}}>{{.Value}}</textarea></label>
 {{else if eq .Type "select"}}<label>{{.Label}}<select name="{{.Name}}" {{if .Multiple}}multiple{{end}} {{if .Required}}required{{end}}>{{range .Options}}<option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Text}}</option>{{end}}</select></label>
 {{else}}<label>{{.Label}}<input type="{{.Type}}" name="{{.Name}}" value="{{.Value}}" {{if .Required}}required{{end}}></label>{{end}}{{end}}
 <button {{if .Danger}}class="perigo"{{end}}>{{.Submit}}</button></form>`)

@@ -542,6 +542,33 @@ const liveScript = `(function () {
   });
   document.addEventListener('dragend', function () { dragged = null; });
 
+  // an image pasted or dropped into a formatted text is sent to the record
+  // of the page and its Markdown inserted where the cursor is
+  function sendImage(area, file) {
+    var dest = document.querySelector('meta[name=ge-imagens]');
+    var csrf = area.form && area.form.querySelector('input[name=_csrf]');
+    if (!dest || !csrf || !/^image\//.test(file.type)) return false;
+    fetch(dest.content + '?nome=' + encodeURIComponent(file.name || 'imagem'), {method: 'POST', body: file,
+      credentials: 'same-origin', headers: {'X-CSRF-Token': csrf.value}})
+      .then(function (r) { return r.ok ? r.json() : r.json().then(function (e) { throw new Error(e.message); }); })
+      .then(function (out) {
+        var at = area.selectionStart || area.value.length;
+        area.value = area.value.slice(0, at) + out.markdown + area.value.slice(at);
+      })
+      .catch(function (e) { alert('Não foi possível enviar a imagem: ' + e.message); });
+    return true;
+  }
+  document.addEventListener('paste', function (e) {
+    if (!e.target.matches || !e.target.matches('textarea[data-formatado]')) return;
+    var files = Array.prototype.filter.call(e.clipboardData.files || [], function (f) { return /^image\//.test(f.type); });
+    if (files.length) { e.preventDefault(); files.forEach(function (f) { sendImage(e.target, f); }); }
+  });
+  document.addEventListener('drop', function (e) {
+    if (!e.target.matches || !e.target.matches('textarea[data-formatado]') || !e.dataTransfer.files.length) return;
+    e.preventDefault();
+    Array.prototype.forEach.call(e.dataTransfer.files, function (f) { sendImage(e.target, f); });
+  });
+
   // a card opens in a panel over the board (its link still works on its
   // own); forms inside the panel submit without leaving the board
   var panel = null;

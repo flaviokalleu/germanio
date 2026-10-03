@@ -34,6 +34,7 @@ cartoes
     singular cartao
     tem
         titulo obrigatório
+        descricao formatado
     pertence a quadro
     começa pendente
     pode

@@ -1,0 +1,44 @@
+crie sistema ImagensTexto
+
+usuarios
+    tem
+        nome obrigatório
+        email obrigatório e único
+        senha min 8
+
+tenha login
+tenha cadastro
+
+issues
+    tem
+        titulo obrigatório
+        descricao formatado
+        autor
+        comentarios
+    pode
+        ser confidencial
+    regras
+        confidencial pode ser vista por
+            autor
+    acesso
+        usuario
+            criar
+            ver
+        autor
+            editar
+            excluir
+
+comentarios
+    tem
+        texto obrigatório e formatado
+        autor
+    pertence a issue
+    acesso
+        usuario
+            ver
+            criar
+
+página Issues
+    mostre issues
+    permita
+        criar

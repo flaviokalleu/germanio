@@ -47,6 +47,15 @@ says so on such a field).
 - Storage is a folder (`GERMANIO_ARQUIVOS`); object storage is a future adapter, not part of this
   GEP.
 
+## Images in formatted text (UP-01)
+
+A text declared `formatado` accepts images pasted or dropped into it on the page. The image
+belongs to the record of the page where the text is written (the issue of a comment), is served at
+`…/<registro>/imagens/<chave>` to whoever may see that record, and is removed with it. Sending one
+needs the right to edit the record or to create something inside it with a formatted text. Only
+PNG, JPEG, GIF and WebP (detected from the content) are accepted. The upload is streamed outside
+any transaction, and the page inserts `![nome](endereço)` where the cursor is.
+
 ## Errors
 
 A JSON body that sets a file field: 400 with how to send it. A file over the limit: 413 with the
