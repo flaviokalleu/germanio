@@ -528,6 +528,23 @@ func ResolveIntent(prog *ast.Program) error {
 				&ast.Field{Name: "tentativas_falhas", Type: ast.FieldInteiro, HasDefault: true, DefaultValue: 0.0, Hidden: true, System: true},
 				&ast.Field{Name: "bloqueado_ate", Type: ast.FieldTexto, Hidden: true, System: true})
 		}
+		hasEmail := false
+		for _, f := range le.Model.Fields {
+			hasEmail = hasEmail || f.Type == ast.FieldEmail
+		}
+		if in.Login.Confirmation {
+			// GEP 0031: people created by sign-up start unconfirmed; everyone
+			// else (created by an administrator, or before the phrase) is
+			// confirmed, so declaring it never locks anyone out.
+			if !hasEmail {
+				return r.errAt(in.Login.Pos, "tenha confirmação de e-mail confirma o e-mail das pessoas, mas %s não tem um campo de e-mail\nComo corrigir: acrescente em %s › tem a linha: email obrigatório e único", le.Plural, le.Plural)
+			}
+			le.Model.Fields = append(le.Model.Fields, &ast.Field{Name: "email_confirmado", Label: "e-mail confirmado", Type: ast.FieldBooleano, HasDefault: true, DefaultValue: true, System: true, Private: true, Pos: in.Login.Pos})
+		}
+		if in.Login.TwoFactor {
+			// GEP 0032: opt-in per person; the secret lives outside the record
+			le.Model.Fields = append(le.Model.Fields, &ast.Field{Name: "dois_fatores", Label: "dois fatores", Type: ast.FieldBooleano, HasDefault: true, DefaultValue: false, System: true, Private: true, Pos: in.Login.Pos})
+		}
 		if in.Login.TokenEntity != "" {
 			te, err := r.entity(in.Login.TokenEntity, in.Login.Pos)
 			if err != nil {

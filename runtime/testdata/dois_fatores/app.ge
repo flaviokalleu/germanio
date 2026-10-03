@@ -1,0 +1,15 @@
+crie sistema Cofre
+
+usuarios
+    tem
+        nome obrigatório
+        email obrigatório e único
+        senha min 8
+    acesso
+        usuario
+            editar seu perfil
+
+tenha login
+tenha cadastro
+tenha autenticação em dois fatores
+login usa email

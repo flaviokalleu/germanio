@@ -77,7 +77,8 @@ Rules:
 | [0021](0021-presenca.md) | Presence (`tenha presença`) | Em teste |
 | [0022](0022-leitura.md) | Reading and unread counts (`guarda leitura`) | Em teste |
 | [0023](0023-por-estado.md) | Showing data by state, boards (`cartoes por estado`) | Em teste |
-| [0032](0032-dois-fatores-e-chaves.md) | Credentials beyond the password: public keys (`chave pública`) and two-factor authentication | Em teste |
+| [0031](0031-confirmacao-de-email.md) | E-mail confirmation (`tenha confirmação de e-mail`) | Em teste |
+| [0032](0032-dois-fatores-e-chaves.md) | Credentials beyond the password: public keys (`chave pública`) and two-factor authentication (`tenha autenticação em dois fatores`) | Em teste |
 
 Revisão final das GEPs em teste 0010–0017, com recomendação por GEP e sem mudança de status:
 [REVISAO_0010_0017.md](REVISAO_0010_0017.md).

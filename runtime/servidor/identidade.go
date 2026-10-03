@@ -61,6 +61,12 @@ func (s *Servidor) identify(ctx *interp.Context, r *http.Request) (map[string]an
 		if user == nil {
 			user = s.authenticate(ctx, bu, bp)
 			ctx.Values["token"] = "basic"
+			// a password alone is not enough when the e-mail is unconfirmed
+			// (GEP 0031) or the person has a second factor (GEP 0032): git
+			// clients use an access token then
+			if user != nil && (s.unconfirmed(user) || s.secondFactorOn(user)) {
+				user = nil
+			}
 		}
 		if user == nil || !s.active(user) {
 			return nil, errInvalidCredential
@@ -178,23 +184,49 @@ func (s *Servidor) authenticate(ctx *interp.Context, login, password string) map
 	}
 	ok, _ := s.Interpreter.Op(ctx, app.LoginEntity, "verificar_senha", user, password)
 	if ok != true {
-		if lock {
-			fails := int(asNumber(user["tentativas_falhas"])) + 1
-			change := map[string]any{"tentativas_falhas": fails}
-			if fails >= app.Login.LockAttempts {
-				change = map[string]any{"tentativas_falhas": 0, "bloqueado_ate": time.Now().UTC().Add(time.Duration(app.Login.LockMinutes) * time.Minute).Format(time.RFC3339)}
-			}
-			s.Interpreter.Op(ctx, app.LoginEntity, "atualizar", user["id"], change)
-		}
+		s.failedAttempt(ctx, user)
 		return nil
 	}
 	if !s.active(user) {
 		return nil
 	}
-	if lock {
-		s.Interpreter.Op(ctx, app.LoginEntity, "atualizar", user["id"], map[string]any{"tentativas_falhas": 0, "bloqueado_ate": nil})
+	// with a second factor the count of failures is cleared only once the
+	// code is right too: retyping the password never buys more guesses
+	if lock && !s.secondFactorOn(user) {
+		s.clearAttempts(ctx, user)
 	}
 	return user
+}
+
+// locked: the login of user is locked by wrong attempts right now.
+func (s *Servidor) locked(user map[string]any) bool {
+	if s.Program.App.Login.LockAttempts <= 0 {
+		return false
+	}
+	until := toStr(user["bloqueado_ate"])
+	return until != "" && until > time.Now().UTC().Format(time.RFC3339)
+}
+
+// failedAttempt counts a wrong secret of user (a password or a code) toward
+// the lock of the login.
+func (s *Servidor) failedAttempt(ctx *interp.Context, user map[string]any) {
+	app := s.Program.App
+	if app.Login.LockAttempts <= 0 || user == nil {
+		return
+	}
+	fails := int(asNumber(user["tentativas_falhas"])) + 1
+	change := map[string]any{"tentativas_falhas": fails}
+	if fails >= app.Login.LockAttempts {
+		change = map[string]any{"tentativas_falhas": 0, "bloqueado_ate": time.Now().UTC().Add(time.Duration(app.Login.LockMinutes) * time.Minute).Format(time.RFC3339)}
+	}
+	s.Interpreter.Op(ctx, app.LoginEntity, "atualizar", user["id"], change)
+}
+
+// clearAttempts forgets the wrong attempts of user.
+func (s *Servidor) clearAttempts(ctx *interp.Context, user map[string]any) {
+	if s.Program.App.Login.LockAttempts > 0 {
+		s.Interpreter.Op(ctx, s.Program.App.LoginEntity, "atualizar", user["id"], map[string]any{"tentativas_falhas": 0, "bloqueado_ate": nil})
+	}
 }
 
 func asNumber(v any) float64 {
@@ -223,10 +255,7 @@ func (a *intentAPI) mountIdentity(mux *routeMux) {
 	isForm := func(r *http.Request) bool {
 		return strings.HasPrefix(r.Header.Get("Content-Type"), "application/x-www-form-urlencoded")
 	}
-	start := func(ctx *interp.Context, w http.ResponseWriter, user map[string]any) {
-		t, _ := interp.AssinarToken(map[string]any{"pessoa_id": user["id"], "csrf": randomCSRF()}, 24*time.Hour)
-		http.SetCookie(w, &http.Cookie{Name: interp.SessionCookie, Value: t, Path: "/", HttpOnly: true, SameSite: http.SameSiteLaxMode, MaxAge: 86400, Secure: ctx.Request.TLS != nil})
-	}
+	start := startSession
 	mux.HandleFunc("POST /entrar", func(w http.ResponseWriter, r *http.Request) {
 		ctx := &interp.Context{Request: r, Writer: w}
 		body, err := readBody(r)
@@ -243,6 +272,19 @@ func (a *intentAPI) mountIdentity(mux *routeMux) {
 			a.fail(w, 401, map[string]string{"pt": "Login ou senha incorretos", "en": "Invalid login or password"}[app.Messages])
 			return
 		}
+		// only whoever typed the right password learns these two answers
+		if a.s.unconfirmed(user) {
+			if isForm(r) {
+				http.Redirect(w, r, "/entrar?confirme=1", http.StatusSeeOther)
+				return
+			}
+			a.json(w, http.StatusForbidden, map[string]any{"message": msgConfirmFirst, "email_confirmado": false}, nil)
+			return
+		}
+		if a.s.secondFactorOn(user) {
+			a.askSecondFactor(ctx, w, r, user)
+			return
+		}
 		start(ctx, w, user)
 		if isForm(r) {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -252,6 +294,12 @@ func (a *intentAPI) mountIdentity(mux *routeMux) {
 	})
 	if app.Login.Recovery {
 		a.mountRecovery(mux)
+	}
+	if app.Login.Confirmation {
+		a.mountConfirmation(mux)
+	}
+	if app.Login.TwoFactor {
+		a.mountSecondFactor(mux)
 	}
 	if app.EmailNotices {
 		if _, why := mailerFromEnv(); why != "" {
@@ -276,6 +324,15 @@ func (a *intentAPI) mountIdentity(mux *routeMux) {
 				a.failErr(w, r, err)
 				return
 			}
+			if app.Login.Confirmation && !a.confirmAvailable {
+				msg := "O cadastro ainda não está disponível: este sistema confirma e-mails, mas o envio de e-mail não está configurado."
+				if isForm(r) {
+					http.Redirect(w, r, "/cadastro?erro="+urlQuery(msg), http.StatusSeeOther)
+					return
+				}
+				a.fail(w, http.StatusServiceUnavailable, msg)
+				return
+			}
 			data := map[string]any{}
 			for _, f := range le.Model.Fields {
 				switch f.Type {
@@ -289,6 +346,9 @@ func (a *intentAPI) mountIdentity(mux *routeMux) {
 						}
 					}
 				}
+			}
+			if app.Login.Confirmation {
+				data["email_confirmado"] = false
 			}
 			res, err := a.in.Op(ctx, le.Singular, "criar", data)
 			if err != nil {
@@ -306,6 +366,25 @@ func (a *intentAPI) mountIdentity(mux *routeMux) {
 					a.failErr(w, r, err)
 					return
 				}
+			}
+			if app.Login.Confirmation {
+				// no session until the e-mail is confirmed (GEP 0031); the
+				// e-mail goes after the link is saved
+				ctx.Effects = &interp.Effects{}
+				if err := a.issueConfirmation(ctx, a.s.DB, user); err != nil {
+					a.in.Op(ctx, le.Singular, "deletar", user["id"])
+					a.failErr(w, r, err)
+					return
+				}
+				runEffects(ctx.Effects.Take())
+				if isForm(r) {
+					http.Redirect(w, r, "/entrar?confirme=1", http.StatusSeeOther)
+					return
+				}
+				out := serialize(le, user)
+				out["message"] = msgConfirmSent
+				a.json(w, 201, out, nil)
+				return
 			}
 			start(ctx, w, user)
 			if isForm(r) {
@@ -332,6 +411,15 @@ func (a *intentAPI) mountIdentity(mux *routeMux) {
 				a.json(w, 400, map[string]any{"error": "invalid_grant", "error_description": "The provided authorization grant is invalid."}, nil)
 				return
 			}
+			if a.s.unconfirmed(user) {
+				a.json(w, 400, map[string]any{"error": "invalid_grant", "error_description": msgConfirmFirst}, nil)
+				return
+			}
+			if a.s.secondFactorOn(user) {
+				// a password alone never opens an account with a second factor
+				a.json(w, 400, map[string]any{"error": "invalid_grant", "error_description": "Esta conta usa dois fatores: entre pela página de login ou use um token de acesso."}, nil)
+				return
+			}
 			t, _ := interp.AssinarToken(map[string]any{"tipo": "oauth", "pessoa_id": user["id"]}, time.Duration(app.Login.OAuthSeconds)*time.Second)
 			a.json(w, 200, map[string]any{"access_token": t, "token_type": "Bearer", "expires_in": app.Login.OAuthSeconds, "created_at": time.Now().Unix()}, nil)
 		})
@@ -353,6 +441,44 @@ func (a *intentAPI) mountIdentity(mux *routeMux) {
 		ext.extern = true // same names and state values as the rest of the integration
 		mux.HandleFunc("GET "+app.Integration+"/"+parser.Singular(le.Integrate), me(&ext))
 	}
+}
+
+// startSession signs the person in on this browser (a session cookie).
+func startSession(ctx *interp.Context, w http.ResponseWriter, user map[string]any) {
+	t, _ := interp.AssinarToken(map[string]any{"pessoa_id": user["id"], "csrf": randomCSRF()}, 24*time.Hour)
+	http.SetCookie(w, &http.Cookie{Name: interp.SessionCookie, Value: t, Path: "/", HttpOnly: true, SameSite: http.SameSiteLaxMode, MaxAge: 86400, Secure: ctx.Request.TLS != nil})
+}
+
+// isFalse: a boolean column that holds false (drivers return bool or 0).
+func isFalse(v any) bool {
+	switch x := v.(type) {
+	case bool:
+		return !x
+	case int64:
+		return x == 0
+	case float64:
+		return x == 0
+	case string:
+		return x == "0" || x == "false"
+	}
+	return false
+}
+
+// unconfirmed: the person signed up and has not confirmed the e-mail yet
+// (GEP 0031). People without the flag (created otherwise) are confirmed.
+func (s *Servidor) unconfirmed(user map[string]any) bool {
+	l := s.Program.App.Login
+	return l != nil && l.Confirmation && user != nil && isFalse(user["email_confirmado"])
+}
+
+// secondFactorOn: the person turned on the second factor (GEP 0032).
+func (s *Servidor) secondFactorOn(user map[string]any) bool {
+	l := s.Program.App.Login
+	if l == nil || !l.TwoFactor || user == nil {
+		return false
+	}
+	b, _ := user["dois_fatores"].(bool)
+	return b || user["dois_fatores"] == int64(1) || user["dois_fatores"] == float64(1)
 }
 
 func randomCSRF() string {

@@ -773,6 +773,22 @@ login, como `tenha cadastro`) oferece `/esqueci` e `/redefinir`:
   ou `GERMANIO_CORREIO_PASTA` em desenvolvimento), nunca do `.ge`; sem ele, a página diz que a
   recuperação ainda não está disponível.
 
+`tenha confirmação de e-mail` ([GEP 0031](gep/0031-confirmacao-de-email.md), **em teste**, não
+normativa até a decisão do mantenedor; implica o login) faz quem se cadastra confirmar o endereço
+antes de entrar: o link vale 24 horas e uma vez, guardado só como SHA-256 e preso ao endereço para
+onde foi; até lá a senha não abre sessão, OAuth nem git (a mensagem explica, e só para quem acertou
+a senha); `/reenviar-confirmacao` responde igual exista ou não a conta; mudar o e-mail pede nova
+confirmação; quem foi criado por administrador já nasce confirmado (`email_confirmado`); sem e-mail
+configurado, o cadastro fica fechado e o log diz por quê.
+
+`tenha autenticação em dois fatores` ([GEP 0032](gep/0032-dois-fatores-e-chaves.md), **em
+teste**, não normativa até a decisão do mantenedor) deixa cada pessoa ligar, em `/dois-fatores`,
+um código de aplicativo autenticador (TOTP): ligado, a senha certa só dá um desafio de 5 minutos e
+`/entrar/codigo` pede o código; cada código vale uma vez, erros contam no bloqueio do login (e a
+senha certa não zera a conta), há 10 códigos de recuperação de uso único; senha sozinha não serve
+para OAuth nem git (o token de acesso continua valendo); o segredo fica cifrado com
+`GERMANIO_SEGREDO` (sem ela, ligar é recusado) e nunca é mostrado depois de ligar.
+
 `tenha administrador inicial "root"` cria a primeira pessoa administradora (login `root`)
 quando ainda não existe ninguém e o servidor recebeu `GERMANIO_ADMIN_SENHA`
 (e, opcionalmente, `GERMANIO_ADMIN_EMAIL`); a senha nunca aparece no `.ge`.
@@ -888,7 +904,7 @@ Nada disto aparece no `.ge`; é configuração de quem hospeda a aplicação.
 
 | Variável | Para quê |
 |----------|----------|
-| `GERMANIO_SEGREDO` | chave das sessões e tokens (≥ 32 bytes); sem ela, uma chave aleatória por processo |
+| `GERMANIO_SEGREDO` | chave das sessões e tokens (≥ 32 bytes) e da cifra dos segredos dos dois fatores; sem ela, uma chave aleatória por processo e os dois fatores não podem ser ligados |
 | `GERMANIO_SQLITE` | arquivo do banco SQLite |
 | `GERMANIO_GIT_RAIZ` | pasta dos repositórios |
 | `GERMANIO_EXECUTOR` | `local` ou `docker` para executar etapas neste servidor (padrão: nenhum) |

@@ -135,6 +135,12 @@ func Entidade(prog *ast.Program, nome string) (string, error) {
 		if app.Login.Recovery {
 			w("  recuperação de senha: /esqueci envia por e-mail um link de uso único, válido por 1 hora, para o endereço público (GERMANIO_URL_PUBLICA); a resposta não revela se a conta existe; o e-mail vem do ambiente (GERMANIO_SMTP_* ou GERMANIO_CORREIO_PASTA)\n")
 		}
+		if app.Login.Confirmation {
+			w("  confirmação de e-mail (GEP 0031, em teste): quem se cadastra recebe um link de uso único, válido por 24 horas, e só entra depois de confirmar; mudar o e-mail pede nova confirmação; pessoas criadas por administradores já nascem confirmadas (email_confirmado)\n")
+		}
+		if app.Login.TwoFactor {
+			w("  dois fatores (GEP 0032, em teste): cada pessoa pode ligar um código de aplicativo autenticador (TOTP, RFC 6238); ligado, entrar pede o código depois da senha, cada código vale uma vez, erros contam no bloqueio; senha sozinha não serve para git nem oauth (use um token de acesso); 10 códigos de recuperação de uso único; o segredo fica cifrado e nunca é mostrado de novo\n")
+		}
 	}
 	for _, pb := range e.ProtectedBranches {
 		if d := app.Entities[pb.Data]; d != nil {

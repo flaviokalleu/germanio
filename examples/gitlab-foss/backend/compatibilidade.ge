@@ -17,6 +17,7 @@ vocabulário da integração
     chave é "key"
     conteudo é "key"
     impressao_digital é "fingerprint_sha256"
+    dois_fatores é "two_factor_enabled"
     valor é "value"
     recurso é "target_type"
     recurso_id é "target_id"

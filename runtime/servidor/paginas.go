@@ -1387,6 +1387,12 @@ func (ps *pageSite) identityPages(mux *routeMux) {
 		if r.URL.Query().Get("redefinida") == "1" {
 			v.Flash = "Senha nova criada. Entre com ela."
 		}
+		if r.URL.Query().Get("confirme") == "1" {
+			v.Flash = msgConfirmFirst
+		}
+		if r.URL.Query().Get("confirmado") == "1" {
+			v.Flash = "E-mail confirmado. Agora você já pode entrar."
+		}
 		v.Body = htmlOf(loginTpl, map[string]any{"Signup": v.Signup, "Label": strings.Join(app.Login.Fields, " ou "), "Recovery": app.Login.Recovery})
 		ps.render(w, v, http.StatusOK)
 	})
@@ -1410,6 +1416,29 @@ func (ps *pageSite) identityPages(mux *routeMux) {
 			v.Body = htmlOf(resetTpl, map[string]any{"Token": r.URL.Query().Get("token")})
 			ps.render(w, v, http.StatusOK)
 		})
+	}
+	if app.Login.Confirmation {
+		mux.HandleFunc("GET /confirmar-email", func(w http.ResponseWriter, r *http.Request) {
+			v := ps.base(r, "Confirmar e-mail")
+			// a button, not the link itself: opening a link (or a mail
+			// scanner fetching it) never confirms by accident
+			v.Body = htmlOf(confirmTpl, map[string]any{"Token": r.URL.Query().Get("token")})
+			ps.render(w, v, http.StatusOK)
+		})
+		mux.HandleFunc("GET /reenviar-confirmacao", func(w http.ResponseWriter, r *http.Request) {
+			v := ps.base(r, "Reenviar confirmação")
+			if r.URL.Query().Get("enviado") == "1" {
+				v.Flash = msgConfirmAgain
+			}
+			if !ps.a.confirmAvailable {
+				v.Error = "A confirmação de e-mail ainda não está disponível neste sistema."
+			}
+			v.Body = htmlOf(resendTpl, map[string]any{"Label": strings.Join(app.Login.Fields, " ou ")})
+			ps.render(w, v, http.StatusOK)
+		})
+	}
+	if app.Login.TwoFactor {
+		ps.secondFactorPages(mux)
 	}
 	if app.Login.Signup {
 		mux.HandleFunc("GET /cadastro", func(w http.ResponseWriter, r *http.Request) {
@@ -1530,6 +1559,8 @@ var logTpl = tpl(`{{if .}}<pre>{{.}}</pre>{{else}}<div class="vazio">Sem saída 
 var loginTpl = tpl(`<form class="caixa" method="post" action="/entrar"><h3>Entrar</h3><label>{{.Label}}<input name="login" required autofocus></label>
 <label>Senha<input type="password" name="senha" required></label><button>Entrar</button>{{if .Signup}}<a href="/cadastro">Criar conta</a>{{end}}{{if .Recovery}}<a href="/esqueci">Esqueci minha senha</a>{{end}}</form>`)
 var forgotTpl = tpl(`<form class="caixa" method="post" action="/esqueci"><h3>Esqueci minha senha</h3><label>{{.Label}}<input name="login" required autofocus></label><button>Enviar link</button><a href="/entrar">Voltar</a></form>`)
+var confirmTpl = tpl(`<form class="caixa" method="post" action="/confirmar-email"><h3>Confirmar e-mail</h3><input type="hidden" name="token" value="{{.Token}}"><p>Confirme que este e-mail é seu.</p><button>Confirmar e-mail</button><a href="/reenviar-confirmacao">Pedir outro link</a></form>`)
+var resendTpl = tpl(`<form class="caixa" method="post" action="/reenviar-confirmacao"><h3>Reenviar confirmação</h3><label>{{.Label}}<input name="login" required autofocus></label><button>Enviar link</button><a href="/entrar">Voltar</a></form>`)
 var resetTpl = tpl(`<form class="caixa" method="post" action="/redefinir"><h3>Criar senha nova</h3><input type="hidden" name="token" value="{{.Token}}"><label>Senha nova<input type="password" name="senha" required autofocus autocomplete="new-password"></label><button>Salvar senha</button></form>`)
 
 // nameOf shows a referenced record by its title (people by name).

@@ -32,6 +32,8 @@ type intentAPI struct {
 	exec *executor
 	// recoveryAvailable: password recovery is declared and configured.
 	recoveryAvailable bool
+	// confirmAvailable: e-mail confirmation is declared and can send links.
+	confirmAvailable bool
 	// live announces changes to open pages (GEP 0020).
 	live *liveHub
 	// archives bounds how many downloads of code run at the same time.
@@ -617,12 +619,26 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 			a.failErr(w, r, err)
 			return
 		}
+		reconfirm := a.emailChange(e, row, data)
+		if reconfirm {
+			data["email_confirmado"] = false // a new address is confirmed again (GEP 0031)
+		}
 		updated, err := a.in.Op(ctx, e.Singular, "atualizar", row["id"], data)
 		if err != nil {
 			a.failErr(w, r, err)
 			return
 		}
 		urow := updated.(map[string]any)
+		if reconfirm {
+			db := ctx.DB
+			if db == nil {
+				db = a.s.DB
+			}
+			if err := a.issueConfirmation(ctx, db, urow); err != nil {
+				a.failErr(w, r, err)
+				return
+			}
+		}
 		if e.MinRole != "" && (movedTo(data, row, e.HierarchyField) || movedTo(data, row, e.InheritVia)) {
 			if err := a.keepsHolderAfter(ctx, e, urow); err != nil {
 				a.failErr(w, r, err)

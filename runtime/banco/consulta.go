@@ -546,6 +546,11 @@ func (b *Banco) Executar(query string, args ...any) (sql.Result, error) {
 	return b.x().Exec(query, args...)
 }
 
+// Linha reads one row on the current transaction (or the pool).
+func (b *Banco) Linha(query string, args ...any) *sql.Row {
+	return b.x().QueryRow(query, args...)
+}
+
 func (b *Banco) x() executor {
 	if b.tx != nil {
 		return b.tx

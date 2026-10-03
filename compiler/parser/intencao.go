@@ -703,6 +703,28 @@ func (p *Parser) parseTenha(head dline, body []dline) error {
 			return nil
 		}
 	}
+	// tenha confirmação de e-mail (GEP 0031, em teste) and tenha autenticação
+	// em dois fatores (GEP 0032, em teste): read whole (the "e" of e-mail is
+	// not a list); like tenha cadastro, each one implies the login
+	if w := wordsOf(head.toks); len(w) >= 3 {
+		rest := strings.Join(w[1:], " ")
+		confirm := w[1] == "confirmacao" && w[2] == "de" && (strings.Join(w[3:], "") == "e-mail" || strings.Join(w[3:], "") == "email")
+		twoFactor := rest == "autenticacao em dois fatores"
+		if confirm || twoFactor {
+			if len(body) > 0 {
+				return p.errorf(body[0].toks[0], "%q é uma frase completa e não tem nada abaixo dela", lineText(head))
+			}
+			if in.Login == nil {
+				in.Login = &ast.LoginDecl{Pos: p.at(head.toks[0])}
+			}
+			in.Login.Confirmation = in.Login.Confirmation || confirm
+			in.Login.TwoFactor = in.Login.TwoFactor || twoFactor
+			return nil
+		}
+		if w[1] == "confirmacao" || (w[1] == "autenticacao" && strings.Contains(rest, "fator")) {
+			return p.teach(head.toks[0], "não entendi \""+lineText(head)+"\"", "as frases de identidade são fixas", "escreva tenha confirmação de e-mail ou tenha autenticação em dois fatores", "")
+		}
+	}
 	items := splitItems(head.toks[1:])
 	// tenha papeis + indented list of roles
 	if len(items) == 1 && len(items[0]) == 1 && (items[0][0] == "papeis" || items[0][0] == "papel") && len(body) > 0 {

@@ -230,6 +230,23 @@ func (s *Servidor) Handler() (http.Handler, error) {
 	return handler, nil
 }
 
+// credentialPaths are the posts that test a secret or send an e-mail: they
+// share the limit per address of the login. "todas" counts every request,
+// "falhas e 400" counts 401 and 400, "falhas" only 401.
+var credentialPaths = map[string]string{
+	"/entrar":                 "falhas",
+	"/oauth/token":            "falhas e 400",
+	"/esqueci":                "todas",
+	"/redefinir":              "falhas e 400",
+	"/reenviar-confirmacao":   "todas",
+	"/confirmar-email":        "falhas e 400",
+	"/entrar/codigo":          "falhas",
+	"/dois-fatores/ativar":    "falhas e 400",
+	"/dois-fatores/confirmar": "falhas e 400",
+	"/dois-fatores/desativar": "falhas e 400",
+	"/dois-fatores/codigos":   "falhas e 400",
+}
+
 func (s *Servidor) middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
@@ -263,7 +280,7 @@ func (s *Servidor) middleware(next http.Handler) http.Handler {
 
 		// Rate limiting inteligente por IP real
 		loginPath := r.URL.Path == "/api/login" || r.URL.Path == "/api/auth/login"
-		if (r.URL.Path == "/entrar" || r.URL.Path == "/oauth/token" || r.URL.Path == "/esqueci" || r.URL.Path == "/redefinir") && r.Method == http.MethodPost {
+		if credentialPaths[r.URL.Path] != "" && r.Method == http.MethodPost {
 			// Password spraying across many accounts: count the failed logins
 			// of an address; the per-account lock handles a single account.
 			ip := getRealIP(r)
@@ -274,9 +291,12 @@ func (s *Servidor) middleware(next http.Handler) http.Handler {
 			}
 			sw := &statusWriter{ResponseWriter: w, status: http.StatusOK}
 			next.ServeHTTP(sw, r)
-			// every recovery request counts (its answer never says whether the
-			// account exists); elsewhere only failures count
-			if r.URL.Path == "/esqueci" || sw.status == http.StatusUnauthorized || sw.status == http.StatusBadRequest && (r.URL.Path == "/oauth/token" || r.URL.Path == "/redefinir") {
+			// every request that sends an e-mail counts (its answer never
+			// says whether the account exists); elsewhere only failures count
+			switch rule := credentialPaths[r.URL.Path]; {
+			case rule == "todas",
+				sw.status == http.StatusUnauthorized,
+				sw.status == http.StatusBadRequest && rule == "falhas e 400":
 				s.loginFailures(ip, true)
 			}
 			return
@@ -1524,7 +1544,8 @@ func (s *Servidor) reserveAddresses() {
 	if s.Interpreter == nil || s.Program.App == nil {
 		return
 	}
-	names := map[string]bool{"_ge": true, "api": true, "entrar": true, "sair": true, "cadastro": true, "oauth": true, "uploads": true}
+	names := map[string]bool{"_ge": true, "api": true, "entrar": true, "sair": true, "cadastro": true, "oauth": true, "uploads": true,
+		"esqueci": true, "redefinir": true, "confirmar-email": true, "reenviar-confirmacao": true, "dois-fatores": true}
 	app := s.Program.App
 	first := func(path string) string {
 		parts := strings.Split(strings.Trim(path, "/"), "/")
