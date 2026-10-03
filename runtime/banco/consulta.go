@@ -237,8 +237,10 @@ func (b *Banco) filterSQL(modelo string, cols map[string]bool, filtros map[strin
 }
 
 func escapeLike(s string) string {
-	return strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(s)
+	return likeEscaper.Replace(s)
 }
+
+var likeEscaper = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
 
 // Filtrar runs a Consulta and returns the page of rows plus the total count.
 func (b *Banco) Filtrar(modelo string, c Consulta) ([]map[string]any, int64, error) {

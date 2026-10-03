@@ -35,8 +35,12 @@ func wordsOf(t []lexer.Token) []string {
 }
 
 func foldWord(s string) string {
-	return strings.NewReplacer("á", "a", "à", "a", "â", "a", "ã", "a", "é", "e", "ê", "e", "í", "i", "ó", "o", "ô", "o", "õ", "o", "ú", "u", "ç", "c").Replace(s)
+	return accentFolder.Replace(s)
 }
+
+// accentFolder is built once: a Replacer is safe for concurrent use, and
+// building one per word dominated compile time.
+var accentFolder = strings.NewReplacer("á", "a", "à", "a", "â", "a", "ã", "a", "é", "e", "ê", "e", "í", "i", "ó", "o", "ô", "o", "õ", "o", "ú", "u", "ç", "c")
 
 // phrase joins target words into one name: "tokens de acesso" → tokens_de_acesso.
 // Leading fillers are dropped; a leading possessive sets own.

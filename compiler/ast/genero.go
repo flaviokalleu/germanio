@@ -72,8 +72,11 @@ var masculinosEmA = map[string]bool{
 
 // dobrar lowers a word and removes its Portuguese accents.
 func dobrar(s string) string {
-	return strings.NewReplacer(
-		"á", "a", "à", "a", "â", "a", "ã", "a", "é", "e", "ê", "e", "í", "i",
-		"ó", "o", "ô", "o", "õ", "o", "ú", "u", "ü", "u", "ç", "c",
-	).Replace(strings.ToLower(strings.TrimSpace(s)))
+	return dobrador.Replace(strings.ToLower(strings.TrimSpace(s)))
 }
+
+// dobrador is built once (a Replacer is safe for concurrent use).
+var dobrador = strings.NewReplacer(
+	"á", "a", "à", "a", "â", "a", "ã", "a", "é", "e", "ê", "e", "í", "i",
+	"ó", "o", "ô", "o", "õ", "o", "ú", "u", "ü", "u", "ç", "c",
+)
