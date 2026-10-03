@@ -20,8 +20,10 @@
    esquema, G112), 0019 (fronteira dos adaptadores, G114).
 7. FASE 1 (GitLab): ENCERRADA em 2026-10-02 — `docs/FASE1_GITLAB.md`. GEPs da fase seguem em
    teste/rascunho, AGUARDANDO DECISÃO do mantenedor (independente do encerramento).
-8. FASE 2 (tempo real): INICIADA — `docs/FASE2_TEMPO_REAL.md` (diário), referência
-   `examples/conversa/`. Próximo: GEP 0020 (páginas que permanecem atualizadas).
+8. FASE 2 (tempo real): ENCERRADA em 2026-10-02 — `docs/FASE2_TEMPO_REAL.md`. GEPs 0020–0022 em
+   teste, AGUARDANDO DECISÃO. Critérios 1–9 com evidência (p99 1,03× a 2 000 e 1,56× a 10 000
+   conexões contra o Go).
+9. FASE 3 (UI altamente interativa): próxima.
 
 ## CURRENT_GOAL
 Continuar o GitLab por intenção: issues → merge requests → CI/CD → páginas (UI),

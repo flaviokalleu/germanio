@@ -1,7 +1,9 @@
 # FASE 2 — Tempo real pesado: preparação
 
-> **Estado: INICIADA em 2026-10-02**, depois do encerramento formal da FASE 1. Aplicação de
-> referência: [`examples/conversa/`](../examples/conversa/).
+> **Estado: ENCERRADA em 2026-10-02**, com a mesma regra da FASE 1: as GEPs da fase (0020 páginas
+> vivas, 0021 presença, 0022 leitura) ficam **em teste**, implementadas e não normativas,
+> AGUARDANDO DECISÃO do mantenedor. O status delas é independente do encerramento.
+> Referência: [`examples/conversa/`](../examples/conversa/).
 
 **Pergunta da fase:** Germanio consegue construir aplicações de tempo real complexas sem que
 o autor `.ge` programe infraestrutura de tempo real?
@@ -196,14 +198,14 @@ que mostram os contêineres. As marcas são estado por pessoa e saem junto com e
 | 6 | contrapressão | **cumprido** | `TestAvisoNaoBloqueiaComClienteParado`: 10 000 avisos com um cliente parado, sem bloquear e sem acumular |
 | 7 | presença | **cumprido** | `TestPresenca` (tolerância, volta dentro da tolerância) |
 | 8 | intenção pura | **cumprido** | varredura do `.ge` da Conversa: nenhuma palavra de transporte, HTTP, JSON, fila, lógica ou rota |
-| 9 | regressão | a medir no encerramento | suíte `scripts/bench.sh` |
+| 9 | regressão | **cumprido** | [`2026-10-02-e7374fe.txt`](../bench/resultados/2026-10-02-e7374fe.txt): nenhuma piora ≥ 1,5×; EscritaConcorrente (1,44×) remedida intercalada: ruído bimodal do fsync, sem regressão atribuível |
 
 Capabilities criadas na fase até aqui:
 - páginas vivas (GEP 0020, sem sintaxe);
 - presença (GEP 0021);
 - leitura e contagem de não lidas (GEP 0022).
 
-O que falta para encerrar a fase: o critério 9 e a auditoria final.
+Todos os critérios têm evidência (o 4 com a ressalva do teste de navegador).
 
 ### Passo 7 — a melhoria de latência (2026-10-02)
 
@@ -227,3 +229,20 @@ Feita depois da missão, como o mantenedor pediu:
 desenhada uma vez por aviso. Com milhares de pessoas diferentes conectadas, cada uma recebe a
 própria linha e uma leitura da pessoa por aviso. Medir esse caso e guardar em cache a visibilidade
 por registro é trabalho da FASE 4.
+
+## Auditoria de encerramento (2026-10-02)
+
+| Exigência | Situação |
+| --- | --- |
+| implementada | páginas vivas, presença, leitura; Conversa completa no domínio |
+| testada | `go test ./...`, `go vet ./...`, `-race` verdes; E2E da Conversa (ordem sob concorrência); testes de mutação das páginas vivas |
+| documentada | GEPs 0020–0022, norma (marcadas em teste), CHANGELOG, este diário, resultados em `bench/resultados/` |
+| generalizada | nenhum mecanismo conhece "chat": páginas vivas servem qualquer página; presença, qualquer aplicação com login; leitura, qualquer contêiner (canal, caixa de entrada, fila de atendimento) |
+| auditada | critérios 1–9 acima; `.ge` da Conversa sem palavra técnica; nenhum transporte no domínio |
+
+Pendências registradas para fases seguintes:
+- "digitando…" (estado efêmero por conversa): FASE 3, junto com estado de interface;
+- presença e avisos entre vários processos: FASE 4;
+- custo com milhares de pessoas diferentes (visibilidade por registro em cache): FASE 4;
+- teste de reconexão num navegador real: FASE 3, junto com o resto do comportamento do cliente;
+- `apagar_onde` (exclusão em lote) sem aviso; o hub antigo de `/ws` (G66) só no renderizador técnico.

@@ -46,7 +46,8 @@ documentação pública é corrigida (o `tooling/doctest` recusa código `.ge` q
 | [SECURITY técnica](SECURITY.md), [DEPLOY](DEPLOY.md) | implementação de segurança e operação |
 | [PHASE1](PHASE1.md) | registro da entrega da fundação |
 | [FASE1_GITLAB](FASE1_GITLAB.md) | auditoria de encerramento da FASE 1 (GitLab): critérios, capabilities, decisões pendentes |
-| [FASE2_TEMPO_REAL](FASE2_TEMPO_REAL.md) | preparação da FASE 2: aplicação de referência, auditoria do tempo real, critérios mensuráveis |
+| [FASE2_TEMPO_REAL](FASE2_TEMPO_REAL.md) | FASE 2 (tempo real): diário, critérios e auditoria de encerramento |
+| [FASE3_INTERFACE](FASE3_INTERFACE.md) | FASE 3 (interface altamente interativa): aplicação de referência e critérios |
 | [FEATURES-200](FEATURES-200.md), [research](research/) | ideias e pesquisa, sem força normativa |
 
 ## Regra de conflito

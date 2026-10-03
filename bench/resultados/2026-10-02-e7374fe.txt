@@ -1,0 +1,159 @@
+# Germanio — benchmarks
+data:      2026-10-02T21:36:57-03:00
+commit:    e7374fe
+germanio:  0.7.0-dev
+go:        go version go1.27.1 linux/amd64
+so:        Linux 7.1.5-76070105-generic x86_64 GNU/Linux
+cpu:       Intel(R) Core(TM) i7-10750H CPU @ 2.60GHz (12 núcleos)
+memória:   15,445 GB
+governor:  powersave
+dataset:   bench/testdata (clientes: 1000 registros semeados; sintético: 10/100/1000 dados)
+comando:   go test -run '^$' -bench . -benchmem -count 6 ./bench/
+
+goos: linux
+goarch: amd64
+pkg: github.com/flaviokalleu/germanio/bench
+cpu: Intel(R) Core(TM) i7-10750H CPU @ 2.60GHz
+BenchmarkAplicacao/listar/germanio-12         	    5631	    243849 ns/op	   62055 B/op	    1190 allocs/op
+BenchmarkAplicacao/listar/germanio-12         	    4912	    244119 ns/op	   62032 B/op	    1190 allocs/op
+BenchmarkAplicacao/listar/germanio-12         	    4915	    241800 ns/op	   62049 B/op	    1190 allocs/op
+BenchmarkAplicacao/listar/germanio-12         	    4837	    243028 ns/op	   62030 B/op	    1190 allocs/op
+BenchmarkAplicacao/listar/germanio-12         	    5028	    243840 ns/op	   62101 B/op	    1190 allocs/op
+BenchmarkAplicacao/listar/germanio-12         	    5002	    243702 ns/op	   62069 B/op	    1190 allocs/op
+BenchmarkAplicacao/obter/germanio-12          	   12157	     98745 ns/op	   12163 B/op	     175 allocs/op
+BenchmarkAplicacao/obter/germanio-12          	   12730	     93899 ns/op	   12163 B/op	     175 allocs/op
+BenchmarkAplicacao/obter/germanio-12          	   12786	     93603 ns/op	   12163 B/op	     175 allocs/op
+BenchmarkAplicacao/obter/germanio-12          	   12888	     92917 ns/op	   12166 B/op	     175 allocs/op
+BenchmarkAplicacao/obter/germanio-12          	   12950	     94177 ns/op	   12165 B/op	     175 allocs/op
+BenchmarkAplicacao/obter/germanio-12          	   12763	     94210 ns/op	   12165 B/op	     175 allocs/op
+BenchmarkAplicacao/criar/germanio-12          	     271	   4334486 ns/op	   21495 B/op	     293 allocs/op
+BenchmarkAplicacao/criar/germanio-12          	     278	   7417125 ns/op	   20256 B/op	     293 allocs/op
+BenchmarkAplicacao/criar/germanio-12          	     218	   4867130 ns/op	   20086 B/op	     293 allocs/op
+BenchmarkAplicacao/criar/germanio-12          	     265	   4597590 ns/op	   20456 B/op	     293 allocs/op
+BenchmarkAplicacao/criar/germanio-12          	     262	   4426119 ns/op	   19902 B/op	     293 allocs/op
+BenchmarkAplicacao/criar/germanio-12          	     279	   4326261 ns/op	   20709 B/op	     293 allocs/op
+BenchmarkAplicacao/pagina/germanio-12         	    2262	    607290 ns/op	  187102 B/op	    3423 allocs/op
+BenchmarkAplicacao/pagina/germanio-12         	    1956	    613407 ns/op	  186913 B/op	    3422 allocs/op
+BenchmarkAplicacao/pagina/germanio-12         	    1982	    616520 ns/op	  186919 B/op	    3422 allocs/op
+BenchmarkAplicacao/pagina/germanio-12         	    1981	    617700 ns/op	  186870 B/op	    3422 allocs/op
+BenchmarkAplicacao/pagina/germanio-12         	    1984	    613765 ns/op	  186973 B/op	    3423 allocs/op
+BenchmarkAplicacao/pagina/germanio-12         	    1969	    613812 ns/op	  187000 B/op	    3422 allocs/op
+BenchmarkAplicacao/listar/go-12               	    9616	    145960 ns/op	   23815 B/op	     522 allocs/op
+BenchmarkAplicacao/listar/go-12               	    7963	    144510 ns/op	   23828 B/op	     522 allocs/op
+BenchmarkAplicacao/listar/go-12               	    8156	    145069 ns/op	   23804 B/op	     522 allocs/op
+BenchmarkAplicacao/listar/go-12               	    8329	    146382 ns/op	   23797 B/op	     522 allocs/op
+BenchmarkAplicacao/listar/go-12               	    8180	    146012 ns/op	   23805 B/op	     522 allocs/op
+BenchmarkAplicacao/listar/go-12               	    8046	    144129 ns/op	   23841 B/op	     522 allocs/op
+BenchmarkAplicacao/obter/go-12                	   24116	     50033 ns/op	    7721 B/op	      66 allocs/op
+BenchmarkAplicacao/obter/go-12                	   23894	     50108 ns/op	    7721 B/op	      66 allocs/op
+BenchmarkAplicacao/obter/go-12                	   23766	     50364 ns/op	    7721 B/op	      66 allocs/op
+BenchmarkAplicacao/obter/go-12                	   23797	     50221 ns/op	    7721 B/op	      66 allocs/op
+BenchmarkAplicacao/obter/go-12                	   23701	     50295 ns/op	    7722 B/op	      66 allocs/op
+BenchmarkAplicacao/obter/go-12                	   24169	     49781 ns/op	    7722 B/op	      66 allocs/op
+BenchmarkAplicacao/criar/go-12                	     262	   4354509 ns/op	    9557 B/op	      72 allocs/op
+BenchmarkAplicacao/criar/go-12                	     289	   4163961 ns/op	    9490 B/op	      72 allocs/op
+BenchmarkAplicacao/criar/go-12                	     254	   6268819 ns/op	    9754 B/op	      72 allocs/op
+BenchmarkAplicacao/criar/go-12                	     242	   4594924 ns/op	    9952 B/op	      72 allocs/op
+BenchmarkAplicacao/criar/go-12                	     271	   4426170 ns/op	    8856 B/op	      72 allocs/op
+BenchmarkAplicacao/criar/go-12                	     268	   4458444 ns/op	    9381 B/op	      72 allocs/op
+BenchmarkAplicacao/pagina/go-12               	    6375	    220262 ns/op	   36549 B/op	    1002 allocs/op
+BenchmarkAplicacao/pagina/go-12               	    5481	    218311 ns/op	   36547 B/op	    1002 allocs/op
+BenchmarkAplicacao/pagina/go-12               	    5578	    217155 ns/op	   36548 B/op	    1002 allocs/op
+BenchmarkAplicacao/pagina/go-12               	    5485	    218003 ns/op	   36547 B/op	    1002 allocs/op
+BenchmarkAplicacao/pagina/go-12               	    5452	    220902 ns/op	   36548 B/op	    1002 allocs/op
+BenchmarkAplicacao/pagina/go-12               	    5416	    215769 ns/op	   36548 B/op	    1002 allocs/op
+BenchmarkEscritaConcorrente-12                	      46	  25793121 ns/op	   31202 B/op	     359 allocs/op
+BenchmarkEscritaConcorrente-12                	      61	  19452088 ns/op	   30263 B/op	     339 allocs/op
+BenchmarkEscritaConcorrente-12                	      27	  65808826 ns/op	   46482 B/op	     426 allocs/op
+BenchmarkEscritaConcorrente-12                	      25	  67379800 ns/op	   49117 B/op	     440 allocs/op
+BenchmarkEscritaConcorrente-12                	      54	  44072527 ns/op	   30769 B/op	     348 allocs/op
+BenchmarkEscritaConcorrente-12                	      40	  26922010 ns/op	   33957 B/op	     373 allocs/op
+BenchmarkLexer/dados=10-12                    	   14510	     83502 ns/op	  21.75 MB/s	   96611 B/op	     622 allocs/op
+BenchmarkLexer/dados=10-12                    	   14382	     83122 ns/op	  21.85 MB/s	   96612 B/op	     622 allocs/op
+BenchmarkLexer/dados=10-12                    	   14452	     84102 ns/op	  21.59 MB/s	   96612 B/op	     622 allocs/op
+BenchmarkLexer/dados=10-12                    	   14509	     82802 ns/op	  21.93 MB/s	   96612 B/op	     622 allocs/op
+BenchmarkLexer/dados=10-12                    	   14454	     83029 ns/op	  21.87 MB/s	   96612 B/op	     622 allocs/op
+BenchmarkLexer/dados=10-12                    	   14400	     81213 ns/op	  22.36 MB/s	   96613 B/op	     622 allocs/op
+BenchmarkLexer/dados=100-12                   	    1603	    804985 ns/op	  22.43 MB/s	  979135 B/op	    6064 allocs/op
+BenchmarkLexer/dados=100-12                   	    1509	    821285 ns/op	  21.98 MB/s	  979135 B/op	    6064 allocs/op
+BenchmarkLexer/dados=100-12                   	    1509	    806776 ns/op	  22.38 MB/s	  979129 B/op	    6064 allocs/op
+BenchmarkLexer/dados=100-12                   	    1491	    808453 ns/op	  22.33 MB/s	  979135 B/op	    6064 allocs/op
+BenchmarkLexer/dados=100-12                   	    1494	    803638 ns/op	  22.46 MB/s	  979139 B/op	    6064 allocs/op
+BenchmarkLexer/dados=100-12                   	    1471	    807960 ns/op	  22.34 MB/s	  979140 B/op	    6064 allocs/op
+BenchmarkLexer/dados=1000-12                  	      99	  10263541 ns/op	  17.68 MB/s	14956678 B/op	   60985 allocs/op
+BenchmarkLexer/dados=1000-12                  	     100	  10254963 ns/op	  17.69 MB/s	14956694 B/op	   60986 allocs/op
+BenchmarkLexer/dados=1000-12                  	     100	  10153768 ns/op	  17.87 MB/s	14956656 B/op	   60985 allocs/op
+BenchmarkLexer/dados=1000-12                  	     100	  10562374 ns/op	  17.18 MB/s	14956558 B/op	   60984 allocs/op
+BenchmarkLexer/dados=1000-12                  	     100	  10244235 ns/op	  17.71 MB/s	14956670 B/op	   60985 allocs/op
+BenchmarkLexer/dados=1000-12                  	     100	  10153512 ns/op	  17.87 MB/s	14956651 B/op	   60985 allocs/op
+BenchmarkParser/dados=10-12                   	    1436	    843174 ns/op	   2.15 MB/s	  867563 B/op	    9162 allocs/op
+BenchmarkParser/dados=10-12                   	    1435	    837821 ns/op	   2.17 MB/s	  867563 B/op	    9162 allocs/op
+BenchmarkParser/dados=10-12                   	    1394	    846373 ns/op	   2.15 MB/s	  867563 B/op	    9162 allocs/op
+BenchmarkParser/dados=10-12                   	    1479	    806761 ns/op	   2.25 MB/s	  867563 B/op	    9162 allocs/op
+BenchmarkParser/dados=10-12                   	    1432	    840460 ns/op	   2.16 MB/s	  867563 B/op	    9162 allocs/op
+BenchmarkParser/dados=10-12                   	    1447	    847698 ns/op	   2.14 MB/s	  867562 B/op	    9162 allocs/op
+BenchmarkParser/dados=100-12                  	     153	   7780177 ns/op	   2.32 MB/s	 8413484 B/op	   88917 allocs/op
+BenchmarkParser/dados=100-12                  	     153	   7779139 ns/op	   2.32 MB/s	 8413488 B/op	   88917 allocs/op
+BenchmarkParser/dados=100-12                  	     152	   7830277 ns/op	   2.31 MB/s	 8413484 B/op	   88917 allocs/op
+BenchmarkParser/dados=100-12                  	     152	   7855111 ns/op	   2.30 MB/s	 8413490 B/op	   88917 allocs/op
+BenchmarkParser/dados=100-12                  	     153	   7775687 ns/op	   2.32 MB/s	 8413481 B/op	   88917 allocs/op
+BenchmarkParser/dados=100-12                  	     152	   7832233 ns/op	   2.30 MB/s	 8413492 B/op	   88917 allocs/op
+BenchmarkParser/dados=1000-12                 	      15	  72198898 ns/op	   2.51 MB/s	83916995 B/op	  886333 allocs/op
+BenchmarkParser/dados=1000-12                 	      15	  71729124 ns/op	   2.53 MB/s	83917008 B/op	  886333 allocs/op
+BenchmarkParser/dados=1000-12                 	      16	  71376154 ns/op	   2.54 MB/s	83916975 B/op	  886333 allocs/op
+BenchmarkParser/dados=1000-12                 	      16	  70468801 ns/op	   2.57 MB/s	83916995 B/op	  886333 allocs/op
+BenchmarkParser/dados=1000-12                 	      16	  71078874 ns/op	   2.55 MB/s	83917023 B/op	  886333 allocs/op
+BenchmarkParser/dados=1000-12                 	      15	  71892384 ns/op	   2.52 MB/s	83916998 B/op	  886333 allocs/op
+BenchmarkResolver/dados=10-12                 	    3902	    310816 ns/op	  326191 B/op	    2975 allocs/op
+BenchmarkResolver/dados=10-12                 	    4489	    313108 ns/op	  326187 B/op	    2975 allocs/op
+BenchmarkResolver/dados=10-12                 	    3854	    310445 ns/op	  326202 B/op	    2975 allocs/op
+BenchmarkResolver/dados=10-12                 	    3556	    314044 ns/op	  326191 B/op	    2975 allocs/op
+BenchmarkResolver/dados=10-12                 	    3895	    315543 ns/op	  326181 B/op	    2975 allocs/op
+BenchmarkResolver/dados=10-12                 	    4570	    288242 ns/op	  326181 B/op	    2975 allocs/op
+BenchmarkResolver/dados=100-12                	     456	   2866685 ns/op	 3255969 B/op	   29480 allocs/op
+BenchmarkResolver/dados=100-12                	     396	   3037806 ns/op	 3255965 B/op	   29480 allocs/op
+BenchmarkResolver/dados=100-12                	     393	   2954731 ns/op	 3255906 B/op	   29480 allocs/op
+BenchmarkResolver/dados=100-12                	     390	   3035830 ns/op	 3255947 B/op	   29480 allocs/op
+BenchmarkResolver/dados=100-12                	     393	   3026265 ns/op	 3255899 B/op	   29480 allocs/op
+BenchmarkResolver/dados=100-12                	     394	   3063700 ns/op	 3255958 B/op	   29480 allocs/op
+BenchmarkResolver/dados=1000-12               	      39	  30353956 ns/op	32716266 B/op	  294172 allocs/op
+BenchmarkResolver/dados=1000-12               	      38	  30236972 ns/op	32716393 B/op	  294173 allocs/op
+BenchmarkResolver/dados=1000-12               	      40	  30423302 ns/op	32716296 B/op	  294172 allocs/op
+BenchmarkResolver/dados=1000-12               	      39	  30361994 ns/op	32716497 B/op	  294174 allocs/op
+BenchmarkResolver/dados=1000-12               	      39	  30332029 ns/op	32716179 B/op	  294172 allocs/op
+BenchmarkResolver/dados=1000-12               	      38	  30035765 ns/op	32716537 B/op	  294173 allocs/op
+BenchmarkCompilarProjeto/clientes-12          	    6566	    199404 ns/op	  178074 B/op	    1792 allocs/op
+BenchmarkCompilarProjeto/clientes-12          	    5644	    202372 ns/op	  178075 B/op	    1792 allocs/op
+BenchmarkCompilarProjeto/clientes-12          	    7059	    190007 ns/op	  178075 B/op	    1792 allocs/op
+BenchmarkCompilarProjeto/clientes-12          	    6156	    210620 ns/op	  178073 B/op	    1792 allocs/op
+BenchmarkCompilarProjeto/clientes-12          	    5833	    207155 ns/op	  178074 B/op	    1792 allocs/op
+BenchmarkCompilarProjeto/clientes-12          	    5864	    204325 ns/op	  178073 B/op	    1792 allocs/op
+BenchmarkCompilarProjeto/gitlab-12            	     126	   9401427 ns/op	 8628548 B/op	   82476 allocs/op
+BenchmarkCompilarProjeto/gitlab-12            	     139	   8435468 ns/op	 8626596 B/op	   82475 allocs/op
+BenchmarkCompilarProjeto/gitlab-12            	     151	   7942530 ns/op	 8627402 B/op	   82476 allocs/op
+BenchmarkCompilarProjeto/gitlab-12            	     135	   8904663 ns/op	 8627749 B/op	   82475 allocs/op
+BenchmarkCompilarProjeto/gitlab-12            	     128	   9391553 ns/op	 8627787 B/op	   82476 allocs/op
+BenchmarkCompilarProjeto/gitlab-12            	     128	   9274573 ns/op	 8628266 B/op	   82476 allocs/op
+BenchmarkInterpretador-12                     	     589	   1935993 ns/op	 1142916 B/op	   16417 allocs/op
+BenchmarkInterpretador-12                     	     625	   1924908 ns/op	 1142916 B/op	   16417 allocs/op
+BenchmarkInterpretador-12                     	     626	   1858815 ns/op	 1142917 B/op	   16417 allocs/op
+BenchmarkInterpretador-12                     	     627	   1911399 ns/op	 1142916 B/op	   16417 allocs/op
+BenchmarkInterpretador-12                     	     600	   1966098 ns/op	 1142917 B/op	   16417 allocs/op
+BenchmarkInterpretador-12                     	     620	   1926593 ns/op	 1142917 B/op	   16417 allocs/op
+BenchmarkVisibilidade-12                      	      36	  32305794 ns/op	 2239321 B/op	   50120 allocs/op
+BenchmarkVisibilidade-12                      	      37	  32869786 ns/op	 2238979 B/op	   50118 allocs/op
+BenchmarkVisibilidade-12                      	      36	  32271901 ns/op	 2239490 B/op	   50119 allocs/op
+BenchmarkVisibilidade-12                      	      36	  32177508 ns/op	 2239150 B/op	   50119 allocs/op
+BenchmarkVisibilidade-12                      	      36	  32316353 ns/op	 2239263 B/op	   50119 allocs/op
+BenchmarkVisibilidade-12                      	      37	  32399619 ns/op	 2238062 B/op	   50117 allocs/op
+PASS
+ok  	github.com/flaviokalleu/germanio/bench	243.499s
+
+## análise (comparação com 2026-09-28-043f2ca)
+
+- Nenhum benchmark piorou 1,5× ou mais; a maior parte melhorou de 3% a 19% (o mesmo vale para o
+  Go direto, que não mudou: estado da máquina).
+- EscritaConcorrente apareceu com 1,44×. Remedido intercalando os dois commits, 6 repetições de
+  cada: as duas versões alternam entre ~20 ms e ~65 ms por operação (bimodal, limitado pelo fsync
+  do disco). Mediana 043f2ca ≈ 45 ms, HEAD ≈ 24 ms nesta rodada. Sem regressão atribuível ao
+  gancho de mudanças das páginas vivas (que só agenda o aviso; sem assinantes, publish retorna).
