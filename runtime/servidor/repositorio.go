@@ -83,6 +83,7 @@ func (a *intentAPI) removeRepository(e *ast.Entity, row map[string]any) {
 	if e.Repository && a.s.Git != nil {
 		if p, ok := row["repositorio"].(string); ok && p != "" {
 			a.s.Git.Remove(p)
+			lfsStore().RemoveRepo(p) // the large files go with the repository
 		}
 	}
 }
@@ -111,6 +112,10 @@ func (s *Servidor) gitMiddleware(next http.Handler) http.Handler {
 		}
 		key := strings.TrimPrefix(r.URL.Path[:i], "/")
 		sub := r.URL.Path[i+5:]
+		if lfs, ok := strings.CutPrefix(sub, "info/lfs/"); ok {
+			a.serveLFS(w, r, repoEntities, key, lfs)
+			return
+		}
 		service, advertise, ok := git.ServiceFromRequest(r, sub)
 		if !ok {
 			http.NotFound(w, r)
@@ -120,52 +125,61 @@ func (s *Servidor) gitMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (a *intentAPI) serveGit(w http.ResponseWriter, r *http.Request, entities []*ast.Entity, key, service string, advertise bool) {
-	ctx := &interp.Context{Request: r, Writer: w}
-	challenge := func() {
-		w.Header().Set("WWW-Authenticate", `Basic realm="Germanio"`)
-		http.Error(w, "HTTP Basic: Access denied", http.StatusUnauthorized)
-	}
-	var e *ast.Entity
-	var row map[string]any
+// repoRecord finds the record whose repository is addressed by key.
+func (a *intentAPI) repoRecord(ctx *interp.Context, entities []*ast.Entity, key string) (*ast.Entity, map[string]any) {
 	for _, cand := range entities {
 		res, err := a.in.Op(ctx, cand.Singular, "encontrar", map[string]any{cand.RepoKey: key})
 		if m, ok := res.(map[string]any); ok && err == nil {
-			e, row = cand, m
-			break
+			return cand, m
 		}
 	}
-	// A running step's token reads the repository of that step (remote executors clone with it).
-	if _, pass, ok := r.BasicAuth(); ok && row != nil && service == "upload-pack" {
+	return nil, nil
+}
+
+// codeGrant is who may use a repository over a Git transport.
+type codeGrant struct {
+	e          *ast.Entity
+	row, atual map[string]any
+	step       bool // a running step's token (reads only)
+}
+
+// codeAccess applies the rules of every Git transport (smart HTTP, LFS):
+// reading needs to see the record and, when declared, baixar código;
+// writing needs enviar código, a record that is not read-only and a token
+// scope that allows it. A running step's token may read the repository of
+// that step (remote executors clone with it). deny answers a refusal in the
+// transport's own format; 401 asks for credentials.
+func (a *intentAPI) codeAccess(ctx *interp.Context, r *http.Request, entities []*ast.Entity, key string, write, stepReads bool, deny func(status int, msg string)) (codeGrant, bool) {
+	e, row := a.repoRecord(ctx, entities, key)
+	if _, pass, ok := r.BasicAuth(); ok && row != nil && !write && stepReads {
 		if step, job := a.stepByToken(ctx, pass, true); job != nil && a.stepOwnerIs(ctx, step, job, e, row) {
-			a.gitProtocol(w, r, ctx, row, service, advertise)
-			return
+			return codeGrant{e: e, row: row, step: true}, true
 		}
 	}
 	atual, err := a.s.identify(ctx, r)
 	if err != nil {
-		challenge()
-		return
+		deny(http.StatusUnauthorized, "")
+		return codeGrant{}, false
 	}
 	if row == nil || !a.in.Can(ctx, atual, e, "ver", row) {
 		if atual == nil {
-			challenge()
-			return
+			deny(http.StatusUnauthorized, "")
+		} else {
+			deny(http.StatusNotFound, "")
 		}
-		http.NotFound(w, r)
-		return
+		return codeGrant{}, false
 	}
 	verb := "baixar_codigo"
-	if service == "receive-pack" {
+	if write {
 		verb = "enviar_codigo"
 		if le, _ := a.lockedAncestor(ctx, e, row, true, 0); le != nil {
-			http.Error(w, interp.Friendly(a.readOnlyError(le)), http.StatusForbidden)
-			return
+			deny(http.StatusForbidden, interp.Friendly(a.readOnlyError(le)))
+			return codeGrant{}, false
 		}
 	}
 	if !a.s.scopeAllows(ctx, verb) {
-		http.Error(w, "The token does not have the scope for this operation", http.StatusForbidden)
-		return
+		deny(http.StatusForbidden, "The token does not have the scope for this operation")
+		return codeGrant{}, false
 	}
 	allowed := false
 	if verb == "baixar_codigo" && len(e.Rules["baixar_codigo"]) == 0 {
@@ -175,12 +189,36 @@ func (a *intentAPI) serveGit(w http.ResponseWriter, r *http.Request, entities []
 	}
 	if !allowed {
 		if atual == nil {
-			challenge()
-			return
+			deny(http.StatusUnauthorized, "")
+		} else {
+			deny(http.StatusForbidden, "You are not allowed to "+strings.ReplaceAll(verb, "_codigo", " code")+" in this repository")
 		}
-		http.Error(w, "You are not allowed to "+strings.ReplaceAll(verb, "_codigo", " code")+" in this repository", http.StatusForbidden)
+		return codeGrant{}, false
+	}
+	return codeGrant{e: e, row: row, atual: atual}, true
+}
+
+func (a *intentAPI) serveGit(w http.ResponseWriter, r *http.Request, entities []*ast.Entity, key, service string, advertise bool) {
+	ctx := &interp.Context{Request: r, Writer: w}
+	acc, ok := a.codeAccess(ctx, r, entities, key, service == "receive-pack", service == "upload-pack", func(status int, msg string) {
+		switch status {
+		case http.StatusUnauthorized:
+			w.Header().Set("WWW-Authenticate", `Basic realm="Germanio"`)
+			http.Error(w, "HTTP Basic: Access denied", http.StatusUnauthorized)
+		case http.StatusNotFound:
+			http.NotFound(w, r)
+		default:
+			http.Error(w, msg, status)
+		}
+	})
+	if !ok {
 		return
 	}
+	if acc.step {
+		a.gitProtocol(w, r, ctx, acc.row, service, advertise)
+		return
+	}
+	e, row, atual := acc.e, acc.row, acc.atual
 	repo, _ := row["repositorio"].(string)
 	vars := func(list []git.RefUpdate) map[string]any {
 		return map[string]any{"atual": nilIfEmpty(atual), "registro": row, e.Singular: row, "atualizacoes": updatesToMaps(list)}
@@ -217,6 +255,7 @@ func (a *intentAPI) serveGit(w http.ResponseWriter, r *http.Request, entities []
 			fmt.Printf("[germanio] histórico do envio de código: %v\n", err)
 		}
 		a.startRuns(ctx, atual, e, row, updatesToMaps(applied))
+		a.codeChanged(ctx, e, row)
 		if h := e.Hooks["enviar_codigo"]; h != nil {
 			if _, _, err := a.in.RunHook(ctx, h, vars(applied)); err != nil {
 				// The push already happened; report the failure in the log.
@@ -487,6 +526,7 @@ func (a *intentAPI) mountRepository(mux *routeMux, base string, e *ast.Entity) {
 		}
 		update.New = id
 		a.startRuns(ctx, atual, e, row, updatesToMaps([]git.RefUpdate{update}))
+		a.codeChanged(ctx, e, row)
 		a.json(w, 200, map[string]any{"file_path": path, "branch": branch, "commit_id": id}, nil)
 	}, true))
 	mux.HandleFunc("GET "+root+"/"+names["compare"], h(func(w http.ResponseWriter, r *http.Request, ctx *interp.Context, atual, row map[string]any, repo string) {
@@ -692,6 +732,9 @@ func (a *intentAPI) merge(ctx *interp.Context, atual map[string]any, e *ast.Enti
 		return err
 	}
 	_, err = a.in.Op(ctx, e.Singular, "atualizar", row["id"], map[string]any{"commit_mesclagem": sha})
+	if err == nil {
+		a.codeChanged(ctx, pe, parent)
+	}
 	return err
 }
 

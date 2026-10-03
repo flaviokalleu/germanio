@@ -54,6 +54,7 @@ func (s *Servidor) registerIntent(mux *routeMux) error {
 	a.setupTextImages()
 	s.registerTaskModule()
 	s.tasks().handle("entrega", a.deliver)
+	a.startMirrors()
 	a.mountSearch(mux)
 	a.registerRemoteModule()
 	a.startLeases()
@@ -604,6 +605,10 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 				return
 			}
 		}
+		if err := a.mirrorInput(e, data, row); err != nil {
+			a.failErr(w, r, err)
+			return
+		}
 		merged := map[string]any{}
 		for k, v := range row {
 			merged[k] = v
@@ -621,6 +626,7 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 			return
 		}
 		urow := updated.(map[string]any)
+		a.mirrorSaved(ctx, e, urow)
 		if e.MinRole != "" && (movedTo(data, row, e.HierarchyField) || movedTo(data, row, e.InheritVia)) {
 			if err := a.keepsHolderAfter(ctx, e, urow); err != nil {
 				a.failErr(w, r, err)
@@ -856,6 +862,10 @@ func (a *intentAPI) create(w http.ResponseWriter, r *http.Request, ctx *interp.C
 			return
 		}
 	}
+	if err := a.mirrorInput(e, data, nil); err != nil {
+		a.failErr(w, r, err)
+		return
+	}
 	if err := a.guards(ctx, atual, e, data, nil); err != nil {
 		a.failErr(w, r, err)
 		return
@@ -882,6 +892,7 @@ func (a *intentAPI) create(w http.ResponseWriter, r *http.Request, ctx *interp.C
 		a.failErr(w, r, err)
 		return
 	}
+	a.mirrorSaved(ctx, e, row)
 	out := serializeFor(ctx, a.in, atual, e, row, false)
 	for _, f := range e.Model.Fields {
 		if f.Type == ast.FieldSegredo {

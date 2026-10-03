@@ -355,6 +355,7 @@ válidas. `construcao_do_sistema` são as construções sem sujeito único (`ten
 | `guarda histórico` ([GEP 0011](gep/0011-historico.md), em teste) | `d guarda histórico` |
 | `guarda leitura` ([GEP 0022](gep/0022-leitura.md), em teste) | `d guarda leitura` (abrir o contêiner lê; ele mostra `nao_lidas` a cada pessoa) |
 | `usam variaveis do projeto` ([GEP 0015](gep/0015-variaveis-das-execucoes.md), em teste; nas execuções) | `pipelines usam as variaveis do projeto` |
+| `espelham o repositório do projeto` ([GEP 0036](gep/0036-espelhos.md), em teste; no dado dos espelhos, com `url` e `pertence a projeto`) | `espelhos espelham o repositório do projeto` |
 
 Uma **ação sem alvo** vale para o próprio dado (a coleção: `administrar` sem alvo inclui
 criar, como `administrar projetos`). Uma ação com alvo explícito (`adicionar membros`,
@@ -480,7 +481,8 @@ Equivale a: developer pode enviar código para projetos
 | `quem cria projeto vira owner` | quem cria vira membro com esse papel — exceto quando o dado herda membros de um pai e foi criado dentro dele (os membros já vêm do pai) |
 | `todo grupo precisa ter pelo menos um owner` | ninguém remove nem rebaixa o último membro com esse papel (ou superior) |
 | `repositório do projeto pode começar com "README.md" contendo "# {nome}"` | ao criar com `iniciar_repositorio` (nome externo pelo vocabulário), o repositório nasce com esse arquivo; `{campo}` vira o valor do registro |
-| `projeto tem repositório` | cada registro tem um repositório Git criado e removido com ele e servido em `/<campo único>.git`; branches, tags, commits, árvore, arquivos e comparação seguem as regras de baixar e enviar código |
+| `projeto tem repositório` | cada registro tem um repositório Git criado e removido com ele e servido em `/<campo único>.git`; branches, tags, commits, árvore, arquivos e comparação seguem as regras de baixar e enviar código; arquivos grandes (Git LFS) seguem as mesmas regras, conferidos pelo sha256 e limitados por objeto ([GEP 0035](gep/0035-git-lfs.md), em teste) |
+| `espelhos espelham o repositório do projeto` | cada espelho (`url`) é uma cópia do repositório em outro servidor Git, só http(s) e nunca na rede local: `sentido` `enviar` manda o repositório inteiro depois de cada mudança do código, `receber` traz o da url periodicamente; usuário e senha da url ficam ocultos; cada tentativa fica registrada sem atrapalhar quem envia código ([GEP 0036](gep/0036-espelhos.md), em teste) |
 
 **Tipo pelo nome** (quando não há tipo): `email`→email · `senha`/`password`→senha protegida ·
 `telefone`→telefone · `foto`/`avatar`/`imagem`→imagem · `descricao`/`description`→texto longo ·
@@ -891,7 +893,9 @@ Nada disto aparece no `.ge`; é configuração de quem hospeda a aplicação.
 | `GERMANIO_JOB_TIMEOUT` | tempo máximo de uma etapa |
 | `GERMANIO_PROXIES_CONFIAVEIS` | IPs/CIDRs dos proxies reversos; só deles se aceita `X-Forwarded-For`/`X-Real-IP`/`CF-Connecting-IP` (padrão: nenhum — o IP é o da conexão) |
 | `GERMANIO_ADMIN_SENHA` / `GERMANIO_ADMIN_EMAIL` | senha (e e-mail) do `administrador inicial`, usados só enquanto não existe ninguém |
-| `GERMANIO_PERMITIR_REDE_LOCAL` | permite webhooks/chamadas para endereços internos (desligado por padrão, proteção SSRF) |
+| `GERMANIO_PERMITIR_REDE_LOCAL` | permite webhooks/chamadas/espelhos para endereços internos (desligado por padrão, proteção SSRF) |
+| `GERMANIO_LFS_MAX_MB` | maior arquivo grande (Git LFS) aceito por objeto, em MB (padrão 100) |
+| `GERMANIO_ESPELHO_MINUTOS` | de quantos em quantos minutos os espelhos que recebem buscam o código (padrão 30) |
 
 ## Trabalho remoto e teste de generalização
 

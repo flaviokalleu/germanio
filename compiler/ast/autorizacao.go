@@ -103,6 +103,9 @@ type Entity struct {
 	Execution *Execution
 	// Subscription: records of this entity receive events of an owner (webhooks).
 	Subscription *Subscription
+	// Mirror: records of this entity are mirrors of the owner's repository
+	// (`espelhos espelham o repositório do projeto`, GEP 0036).
+	Mirror *Mirror
 	// ReadOnlyWhen: flag that freezes the record and what belongs to it
 	// (`projeto arquivado é somente leitura`).
 	ReadOnlyWhen string
@@ -207,6 +210,14 @@ type Subscription struct {
 	Owner      string
 	OwnerField string
 	Kinds      []string // enviar_codigo, issues, merge_requests…
+}
+
+// Mirror: each record (with a url) is an external repository that receives
+// the owner's code after every change, or from which the owner's repository
+// is brought periodically, according to its sentido (GEP 0036).
+type Mirror struct {
+	Owner      string
+	OwnerField string
 }
 
 // ViewThrough names the fields of a record that point at the record it

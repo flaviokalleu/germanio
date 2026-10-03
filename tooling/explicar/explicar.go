@@ -137,6 +137,12 @@ func Entidade(prog *ast.Program, nome string) (string, error) {
 			w("Branches protegidas: as que cada %s nomeia em %s (nome; * vale qualquer texto) só mudam com %s ou superior\n", d.Label, d.Plural, pb.Role)
 		}
 	}
+	if m := e.Mirror; m != nil {
+		w("Espelhos: cada %s é uma cópia do repositório de %s em outro servidor Git (só http ou https; endereços da rede local recusados, salvo GERMANIO_PERMITIR_REDE_LOCAL=1). sentido enviar: depois de cada mudança no código, o repositório inteiro (branches e tags) vai para a url; sentido receber: a cada GERMANIO_ESPELHO_MINUTOS (padrão 30) o repositório passa a ser uma cópia da url. Usuário e senha escritos na url ficam em credencial, nunca mostrada; falhas ficam em ultimo_erro e são tentadas de novo, sem atrapalhar quem envia código\n", e.Label, m.Owner)
+	}
+	if e.Repository {
+		w("Git LFS: arquivos grandes vão para %s.git/info/lfs com as mesmas regras de baixar e enviar código; cada objeto é conferido pelo sha256 e pelo tamanho, até GERMANIO_LFS_MAX_MB (padrão 100)\n", "/<"+e.RepoKey+">")
+	}
 	if e.History && app.ActivityEntity != "" {
 		w("Histórico: cada mudança fica em %s (quem, o quê, quando e quais campos, nunca os valores)\n", app.ActivityEntity)
 	}

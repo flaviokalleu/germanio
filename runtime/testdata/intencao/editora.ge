@@ -1,0 +1,50 @@
+crie sistema Editora
+
+# Um domínio sem GitLab: livros escritos em repositórios Git, com arquivos
+# grandes (Git LFS, GEP 0035) e cópias em outros servidores (GEP 0036).
+
+tenha papeis
+    leitor 10
+    autor 30
+    editor 40
+
+usuarios
+    tem
+        nome obrigatório
+        email obrigatório e único
+        senha
+
+tenha login
+tenha cadastro
+login usa email
+
+livros
+    tem
+        titulo obrigatório
+        caminho obrigatório e único
+        repositório
+        membros com papel
+        copias
+    pode
+        ser arquivado
+    regras
+        quem cria vira editor
+        arquivado é somente leitura
+    acesso
+        usuario
+            criar
+        leitor
+            ver
+            baixar código
+        autor
+            enviar código
+        editor
+            administrar
+
+copias
+    tem
+        url obrigatório
+    espelham o repositório do livro
+    acesso
+        editor
+            administrar
