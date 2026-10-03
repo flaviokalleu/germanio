@@ -32,15 +32,15 @@ already means: while someone is looking at it, the page follows the changes of w
   announces nothing.
 - **Who is told:** only someone who may see the changed record, before or after the change, by
   the same rules as the list. A record the viewer cannot see changes silently for them.
-- **What is sent:** nothing about the record. The notice only says "what you are looking at
-  changed". The page then asks for itself again with the viewer's own session, so all data goes
-  through the ordinary rules; even a wrong notice cannot leak data.
-- **Partial refresh:** in tables (the list, sections of children) the notice carries the row
-  already drawn for the viewer, with the ordinary rules, and the page inserts, replaces or removes
-  only that row. Other live regions (indicators, details), pages with search or filters, and a
-  viewer whose queue of rows is full get a refresh of their live regions. Each table knows the
-  parent record it belongs to, so a change elsewhere does not reach it. What the person is typing is not touched: while a form field has focus,
-  the refresh waits.
+- **What is sent:** for tables, the row drawn for that viewer by the same rules as the page
+  (`serializeFor`, the table's columns), only after the viewer's right to see the record was
+  checked; for every other region, nothing about the record: the page asks for itself again with
+  the viewer's own session.
+- **Partial refresh:** tables insert, replace or remove only the changed row. Other live regions
+  (indicators, details), pages with search or filters, and a viewer whose queue of rows is full
+  get a refresh of their live regions. Each table knows the parent record it belongs to, so a
+  change elsewhere does not reach it. What the person is typing is not touched: while a form field
+  has focus, a refresh waits.
 - **Bounded:** many changes in a row become one refresh (notices coalesce). A slow viewer never
   holds memory or slows the others; if the connection drops, the page reconnects and refreshes
   once, so nothing is missed.
