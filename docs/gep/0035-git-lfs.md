@@ -93,5 +93,8 @@ domain without GitLab: anonymous 401 with `LFS-Authenticate`, outsider 404, read
 author uploads, wrong content 422, a link used for another object or direction 401, forged link
 401, limit 413/422, reader downloads with the link and with git credentials, read-only record
 refuses uploads and keeps downloads, deleting the record deletes the objects) and the GitLab E2E
-`examples/gitlab-foss/e2e/lfs_espelhos_test.go`. The official `git lfs` client was not installed
-where this was implemented; the tests follow the published batch and basic-transfer specification.
+`examples/gitlab-foss/e2e/lfs_espelhos_test.go`. When `git-lfs` is on the PATH the E2E uses the
+official client end to end (`git lfs track`, `git push`, a reporter's `git clone` + `git lfs pull`
+gets the same bytes; verified with git-lfs 3.5.1, locks left at their default); without it, the
+same exchange is made with HTTP requests that follow the published batch and basic-transfer
+specification.
