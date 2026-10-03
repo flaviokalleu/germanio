@@ -55,6 +55,13 @@ name (`copias espelham o repositório do livro`).
   do not apply to it (it is a copy, decided by whoever may manage mirrors), and executions are not
   started by it.
 - Creating or editing a mirror schedules an update right away.
+- **Update now** (amendment): the built-in action `atualizar_agora` (`POST …/<espelho>/
+  atualizar_agora`; the vocabulary may rename it, `atualizar_agora é "sync"`) schedules an update
+  without waiting for a change of the code or the period. Only whoever may edit the mirror (404
+  for whoever does not see it); a disabled mirror is refused (400); a read-only owner (archived)
+  refuses it like any action. It is the same background task: the same guarded transport and SSRF
+  checks at connection time, retries and record of attempts; a mirror already waiting is not
+  queued twice.
 - **Background, never in the way:** updates are persistent background tasks queued in the same
   transaction as the change that caused them (a change undone queues nothing), run after it, and
   are tried again with the queue's backoff. A failing mirror never breaks a push; each attempt is
@@ -96,8 +103,7 @@ budget of 2 GiB per update (the same bound as a push received), a stall limit an
 timeout. Credentials reach git through its environment as an `Authorization` header — never in
 the command line or the url — and are removed from error messages. The scheduler reads receiving
 mirrors a page at a time. Pending: the task queue runs one task at a time, so a long mirror update
-delays other background tasks (webhook deliveries) until it ends or times out; SSH mirrors; an
-"update now" action; mirroring only protected branches; keeping divergent refs.
+delays other background tasks (webhook deliveries) until it ends or times out; SSH mirrors; mirroring only protected branches; keeping divergent refs.
 
 ## Tests
 
@@ -113,4 +119,7 @@ without the permission, other transports refused, only managers create mirrors, 
 returned, a web edit reaches the mirror, a failing mirror is recorded without breaking the edit
 and without the password, a new address forgets the credentials, a receiving mirror fills another
 repository) and the GitLab E2E `examples/gitlab-foss/e2e/lfs_espelhos_test.go` (remote mirrors
-through the GitLab API after a real `git push`).
+through the GitLab API after a real `git push`). Update now: `runtime` `TestEspelhoAtualizarAgora`
+(publishing house: a ref added behind the mirror's back is removed on demand, only by the editor,
+refused when disabled) and the GitLab E2E `TestEspelhoAtualizarAgora` (`/sync`; a local address
+fails at connection time without the permission; disabled; archived project).

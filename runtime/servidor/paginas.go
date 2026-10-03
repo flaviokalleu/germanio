@@ -436,10 +436,6 @@ type tableData struct {
 	Caption string
 }
 
-func (ps *pageSite) table(e *ast.Entity, rows []any, base string) template.HTML {
-	return ps.tableWith(e, rows, base, nil)
-}
-
 // tableWith renders rows with the given columns (field names, in order), or
 // the entity's visible fields when names is empty.
 // tableColumns: the columns a table of e shows (the page's own, or the
@@ -479,12 +475,57 @@ func tableRowOf(e *ast.Entity, row map[string]any, base string, cols []*ast.Fiel
 	return tr
 }
 
-// rowHTML: the HTML of one row (a live page inserts or replaces it).
-func rowHTML(e *ast.Entity, row map[string]any, base string, names []string) string {
-	return string(htmlOf(rowTpl, tableRowOf(e, row, base, tableColumns(e, names))))
+// rowHTML: the HTML of one row (a live page inserts or replaces it); title,
+// when not empty, names a record that has no title of its own.
+func rowHTML(e *ast.Entity, row map[string]any, base string, names []string, title string) string {
+	tr := tableRowOf(e, row, base, tableColumns(e, names))
+	if title != "" {
+		tr.Title = title
+	}
+	return string(htmlOf(rowTpl, tr))
+}
+
+// namedBy: the title of a record that has none of its own but points at
+// another record — a link between two issues is shown as the other issue.
+// The fields in scope (the parent the list belongs to), people and records
+// the viewer cannot see never name it.
+func (a *intentAPI) namedBy(ctx *interp.Context, atual map[string]any, e *ast.Entity, row, scope map[string]any) string {
+	for _, k := range []string{"titulo", "nome", "name", "title", "endereco", "caminho_completo", "username", "email"} {
+		if v, ok := row[k]; ok && v != nil && fmt.Sprint(v) != "" {
+			return ""
+		}
+	}
+	for _, f := range e.Model.Fields {
+		if f.Type == ast.FieldTextoLongo && !f.Hidden && !f.System && toStr(row[strings.ToLower(f.Name)]) != "" {
+			return "" // the main text already summarises it
+		}
+	}
+	for _, f := range e.Model.Fields {
+		key := strings.ToLower(f.Name)
+		if _, inScope := scope[key]; inScope || f.Reference == "" || f.Reference == a.app.LoginEntity || f.Hidden || row[key] == nil {
+			continue
+		}
+		te := a.app.Entities[f.Reference]
+		if te == nil {
+			continue
+		}
+		res, err := a.in.Op(ctx, te.Singular, "buscar", row[key])
+		target, _ := res.(map[string]any)
+		if err != nil || target == nil || !a.in.Can(ctx, atual, te, "ver", target) {
+			continue
+		}
+		return titleOf(te, target)
+	}
+	return ""
 }
 
 func (ps *pageSite) tableWith(e *ast.Entity, rows []any, base string, names []string) template.HTML {
+	return ps.tableNamed(e, rows, base, names, nil)
+}
+
+// tableNamed: tableWith, naming the records without a title of their own
+// with title (nil: none).
+func (ps *pageSite) tableNamed(e *ast.Entity, rows []any, base string, names []string, title func(map[string]any) string) template.HTML {
 	cols := tableColumns(e, names)
 	td := tableData{Empty: fmt.Sprintf("Nenhum registro de %s ainda.", strings.ToLower(e.Label)), Caption: pluralLabel(e)}
 	td.Heads = append(td.Heads, e.Label)
@@ -493,7 +534,13 @@ func (ps *pageSite) tableWith(e *ast.Entity, rows []any, base string, names []st
 	}
 	for _, it := range rows {
 		row, _ := it.(map[string]any)
-		td.Rows = append(td.Rows, tableRowOf(e, row, base, cols))
+		tr := tableRowOf(e, row, base, cols)
+		if title != nil {
+			if t := title(row); t != "" {
+				tr.Title = t
+			}
+		}
+		td.Rows = append(td.Rows, tr)
 	}
 	return htmlOf(tableTpl, td)
 }
@@ -588,7 +635,7 @@ func (ps *pageSite) inputs(r *http.Request, chain []step, e *ast.Entity, values 
 			for _, it := range asList(v) {
 				selected[display(it)] = true
 			}
-			for _, opt := range ps.optionsFor(r, chain, f.ListOf) {
+			for _, opt := range ps.optionsFor(r, chain, f.ListOf, "") {
 				opt.Selected = selected[opt.Value]
 				in.Options = append(in.Options, opt)
 			}
@@ -598,7 +645,7 @@ func (ps *pageSite) inputs(r *http.Request, chain []step, e *ast.Entity, values 
 			if !f.Required {
 				in.Options = append(in.Options, option{"", "—", v == nil})
 			}
-			for _, opt := range ps.optionsFor(r, chain, f.Reference) {
+			for _, opt := range ps.optionsFor(r, chain, f.Reference, display(v)) {
 				opt.Selected = display(v) == opt.Value
 				in.Options = append(in.Options, opt)
 			}
@@ -611,14 +658,21 @@ func (ps *pageSite) inputs(r *http.Request, chain []step, e *ast.Entity, values 
 // optionsFor lists records of entity name the person can see, preferring
 // the ones that belong to an ancestor in the current chain (labels of this
 // project).
-func (ps *pageSite) optionsFor(r *http.Request, chain []step, name string) []option {
+//
+// A reference to a record of the same kind as one in the chain (a link from
+// an issue to another issue) never offers that record itself, unless it is
+// the value already chosen (keep).
+func (ps *pageSite) optionsFor(r *http.Request, chain []step, name, keep string) []option {
 	target := ps.a.app.Entities[name]
 	if target == nil {
 		return nil
 	}
 	path := "/_ge/api/" + target.Plural + "?per_page=100"
 	api := "/_ge/api/" + chain[0].e.Plural
-	for _, st := range chain {
+	self := map[string]bool{}
+	ctx := &interp.Context{Request: r}
+	scope := map[string]any{}
+	for i, st := range chain {
 		if st.ref == "" {
 			break
 		}
@@ -631,6 +685,14 @@ func (ps *pageSite) optionsFor(r *http.Request, chain []step, name string) []opt
 				path = api + "/" + target.Plural + "?per_page=100"
 			}
 		}
+		if row := ps.a.find(ctx, st.e, st.ref, scope); row != nil {
+			if st.e == target {
+				self[display(row["id"])] = true
+			}
+			if i+1 < len(chain) {
+				scope = ps.a.parentScope(st.e, row, chain[i+1].e)
+			}
+		}
 	}
 	code, out, _ := ps.call(r, "GET", path, nil)
 	if code != 200 {
@@ -639,7 +701,7 @@ func (ps *pageSite) optionsFor(r *http.Request, chain []step, name string) []opt
 	var opts []option
 	for _, it := range asList(out) {
 		row, _ := it.(map[string]any)
-		if row != nil {
+		if row != nil && (!self[display(row["id"])] || display(row["id"]) == keep) {
 			opts = append(opts, option{Value: display(row["id"]), Text: titleOf(target, row)})
 		}
 	}
@@ -816,7 +878,9 @@ func (ps *pageSite) serve(w http.ResponseWriter, r *http.Request) {
 			if byState(pg, last.e) {
 				body.WriteString(string(ps.board(ctx, atual, last.e, rows, base, v.CSRF, "quadro")))
 			} else {
-				body.WriteString(string(ps.tableWith(last.e, rows, base, cols)))
+				body.WriteString(string(ps.tableNamed(last.e, rows, base, cols, func(row map[string]any) string {
+					return ps.a.namedBy(ctx, atual, last.e, row, nil)
+				})))
 			}
 		}
 		body.WriteString(string(htmlOf(pagerTpl, pager(q, len(rows), per))))
@@ -856,10 +920,13 @@ func (ps *pageSite) serve(w http.ResponseWriter, r *http.Request) {
 	body.WriteString(string(htmlOf(detailTpl, ps.details(ctx, last.e, row))))
 	base := strings.TrimSuffix(r.URL.Path, "/")
 	body.WriteString(string(ps.actions(ctx, atual, last.e, record, base, v.CSRF)))
+	body.WriteString(string(ps.actionForms(r, ctx, atual, chain, last.e, record, base, v.CSRF)))
 	body.WriteString(string(ps.fileViews(ctx, atual, last.e, record, row, api, base, v.CSRF)))
 	body.WriteString(string(ps.capabilityViews(r, last.e, record, api, base)))
 	if atual != nil && ps.a.in.Can(ctx, atual, last.e, "editar", record) {
-		body.WriteString(string(ps.form(base+"/editar", "Salvar", v.CSRF, "Editar", ps.inputs(r, chain, last.e, row, nil))))
+		// the place (the parent in the address) is not edited: it changes only
+		// by moving (GEP 0034), as the API ignores it on edit
+		body.WriteString(string(ps.form(base+"/editar", "Salvar", v.CSRF, "Editar", ps.inputs(r, chain, last.e, row, ps.fixedFor(chain)))))
 	}
 	// Children: what belongs to this record
 	for _, c := range ps.a.childrenOf(last.e) {
@@ -878,7 +945,10 @@ func (ps *pageSite) serve(w http.ResponseWriter, r *http.Request) {
 			body.WriteString(string(ps.board(ctx, atual, c, asList(cout), base+"/"+c.Plural, v.CSRF, "filhos-"+c.Plural)))
 		} else {
 			body.WriteString(`<div data-vivo="filhos-` + template.HTMLEscapeString(c.Plural) + `">`)
-			body.WriteString(string(ps.table(c, asList(cout), base+"/"+c.Plural)))
+			cscope := ps.a.parentScope(last.e, record, c)
+			body.WriteString(string(ps.tableNamed(c, asList(cout), base+"/"+c.Plural, nil, func(row map[string]any) string {
+				return ps.a.namedBy(ctx, atual, c, row, cscope)
+			})))
 			body.WriteString(`</div>`)
 		}
 		childChain := append(append([]step{}, chain...), step{e: c})
@@ -986,8 +1056,8 @@ func (ps *pageSite) actions(ctx *interp.Context, atual map[string]any, e *ast.En
 	sort.Strings(names)
 	b.WriteString(`<div class="acoes">`)
 	for _, v := range names {
-		if !ps.available(ctx, atual, e, v, record) {
-			continue
+		if formActions(e, v) || !ps.available(ctx, atual, e, v, record) {
+			continue // actions that ask something have their own form (actionForms)
 		}
 		b.WriteString(string(ps.button(base+"/acao/"+v, label(v), csrf, v == "cancelar" || v == "sair")))
 	}
@@ -995,12 +1065,6 @@ func (ps *pageSite) actions(ctx *interp.Context, atual map[string]any, e *ast.En
 		b.WriteString(string(ps.button(base+"/excluir", "Excluir", csrf, true)))
 	}
 	b.WriteString(`</div>`)
-	// an action waiting for approvals says how many are missing (GEP 0026)
-	for _, v := range names {
-		if need, have := approvals(e, v, record); have < need && ps.a.in.Can(ctx, atual, e, v, record) && toStr(record["estado"]) == e.Initial {
-			fmt.Fprintf(&b, `<p class="aviso">Para %s: %d de %d aprovações (o autor não conta).</p>`, template.HTMLEscapeString(label(v)), have, need)
-		}
-	}
 	if e.Review != nil && e.Review.Runs != "" && truthy(record["mesclar_quando_passar"]) {
 		fmt.Fprintf(&b, `<p class="aviso">Mesclagem agendada: acontece quando a última execução de %s passar.</p>`, template.HTMLEscapeString(toStr(record[e.Review.Source])))
 	}
@@ -1206,7 +1270,7 @@ func (ps *pageSite) post(w http.ResponseWriter, r *http.Request) {
 			target += "/" + strings.Join(escapeAll(up), "/")
 		}
 	case "acao":
-		method, path, done, data = "POST", api+"/"+verb, "Feito: "+label(verb), nil
+		method, path, done, data = "POST", api+"/"+verb, "Feito: "+label(verb), ps.actionData(last.e, verb, r.PostForm)
 	default:
 		http.NotFound(w, r)
 		return
@@ -1222,6 +1286,16 @@ func (ps *pageSite) post(w http.ResponseWriter, r *http.Request) {
 			if i := strings.LastIndex(back, "/"); i > 0 {
 				target = back[:i] + "/" + url.PathEscape(display(row["id"]))
 			}
+		}
+	}
+	if op == "acao" && verb == "mudar" && last.e.MoveField != "" {
+		// the record has a new place (and number): open it there (GEP 0034)
+		target = movedTarget(pg, chain, body, last.e, out)
+		done = last.e.Label + " mudou de lugar"
+	}
+	if op == "acao" && verb == "mesclar" && formActions(last.e, "mesclar") {
+		if row, ok := out.(map[string]any); ok && truthy(row["mesclar_quando_passar"]) && toStr(row[last.e.StateField]) == last.e.Initial {
+			done = "Mesclagem agendada: acontece quando a última execução passar"
 		}
 	}
 	if op == "novo" {

@@ -16,7 +16,7 @@ Escopo núcleo v1 = features marcadas **[N]** (fluxos 1–5 da missão + testes 
 | ID-05 | Admin: bloquear usuário | `state=blocked` impede login e API | admin | `POST /users/:id/block` | users | admin | | | PASS | TestBloquearUsuario |
 | ID-06 | Recuperação de senha / confirmação de e-mail | tokens por e-mail | forms | Devise | users | anônimo | email | SUPPORTED (GEP 0008, 0031) | PASS (confirmação de e-mail: capability `tenha confirmação de e-mail`, GEP 0031 em teste) | TestRecuperacaoDeSenha, TestConfirmacaoDeEmail |
 | ID-07 | 2FA, OAuth, LDAP, SAML, WebAuthn | TOTP, códigos de recuperação, entrar com conta externa | perfil, login | Devise two-factor, OmniAuth | users | dono | OIDC | SUPPORTED (GEP 0032, 0039) | PASS (2FA TOTP e OpenID Connect com PKCE; LDAP, SAML e WebAuthn fora do núcleo: ver GEP 0039) | TestDoisFatores, TestDoisFatoresGitLab, TestContaExterna, TestContaExternaGitLab |
-| ID-08 | Chaves SSH | cadastro de chave pública | perfil | `/user/keys` | keys | dono | SSH | SUPPORTED (GEP 0032, `chave pública`) | PASS (cadastro, impressão digital; transporte SSH em RP-10) | TestChavesSSH |
+| ID-08 | Chaves SSH | cadastro de chave pública | perfil | `/user/keys` | keys | dono | SSH | SUPPORTED (GEP 0032, `chave pública`) | PASS (cadastro, impressão digital; clone e push por SSH com a chave, GEP 0037) | TestChavesSSH |
 
 ## Grupos e namespaces
 
@@ -35,8 +35,8 @@ Escopo núcleo v1 = features marcadas **[N]** (fluxos 1–5 da missão + testes 
 | PR-02 [N] | Ver projeto | resolve `ns/path`; README, branches, visibilidade | `/:ns/:proj` | `GET /api/v4/projects/:id` (id ou path url-encoded) | projects | por visibilidade/membro | | | PASS | TestFluxo1 |
 | PR-03 [N] | Membros do projeto | adicionar/remover/alterar nível | members | `/projects/:id/members` | members | Maintainer+ | | | PASS | TestFluxo4 (adiciona membro) |
 | PR-04 | Editar/arquivar/remover projeto | | settings | `PUT/DELETE /projects/:id`, archive | projects | Maintainer / Owner | git | | PASS | TestProjetoArquivado (arquivar por `archived`; endpoints POST archive/unarchive ainda não) |
-| PR-05 | Fork | cópia com repositório | botão Copiar | `POST /projects/:id/fork` | projects | quem vê e baixa código | git | SUPPORTED (GEP 0029, `copiar`) | PASS (sem `/forks` e fork para namespace de pessoa) | TestFork, TestCopiasDeReceitas, TestCopy |
-| PR-06 | Estrelas, tópicos, avatar | marcar, filtrar, imagem | projeto | star/unstar, `topic`, avatar | projects | quem vê | uploads | SUPPORTED (GEP 0030, `recebe estrelas`) | PASS (sem `/starrers`; um tópico por consulta) | TestEstrelas, TestTopicos, TestAvatar |
+| PR-05 | Fork | cópia com repositório | botão Copiar | `POST /projects/:id/fork` | projects | quem vê e baixa código | git | SUPPORTED (GEP 0029, `copiar`) | PASS (`/forks` e fork em `namespace_path` pessoal ou de grupo; `namespace_id` de pessoa não existe no domínio) | TestFork, TestCopiasDeReceitas, TestCopy |
+| PR-06 | Estrelas, tópicos, avatar | marcar, filtrar, imagem | projeto | star/unstar, `topic`, avatar | projects | quem vê | uploads | SUPPORTED (GEP 0030, `recebe estrelas`) | PASS (`starred_projects` da própria pessoa; `?topic=a,b`; `/starrers` recusado de propósito pela GEP 0030, decisão do mantenedor) | TestEstrelas, TestTopicos, TestAvatar |
 
 ## Repositórios
 
@@ -51,7 +51,7 @@ Escopo núcleo v1 = features marcadas **[N]** (fluxos 1–5 da missão + testes 
 | RP-07 | Tags | criar, listar, remover | `/-/tags` | `/repository/tags` | refs | Developer+ para criar | git | SUPPORTED | PASS (tags leves por git push e pela API, com as regras de enviar código; tags anotadas e protegidas ainda não) | TestTags |
 | RP-08 | Editar arquivo pela web | commit direto | editor | `POST /repository/commits` | repo | Developer+ | git | G13 | PASS (FASE 3: editar pela API e pela página do arquivo; commit da pessoa com as regras de enviar código e branches protegidas; as execuções começam como num push) | TestEditarArquivoPelaWeb |
 | RP-09 | Compare | diff entre refs | compare | `/repository/compare` | repo | leitura | git | | PASS (API) | — |
-| RP-10 | SSH, LFS, mirrors, archive download | download do código, arquivos grandes, espelhos | repositório | `repository/archive`, `info/lfs`, `remote_mirrors` | remote_mirrors | baixar/enviar código, maintainer | git | PARTIAL (GEP 0035, 0036) | PARTIAL (archive, LFS e espelhos feitos; transporte SSH em andamento) | TestArchive, TestBaixarCodigo, TestGitLFS, TestGitLFSNoProjeto, TestEspelhos, TestEspelhosRemotos |
+| RP-10 | SSH, LFS, mirrors, archive download | git por SSH, download do código, arquivos grandes, espelhos | repositório | `ssh://`, `repository/archive`, `info/lfs`, `remote_mirrors` | remote_mirrors | baixar/enviar código, maintainer | git, SSH | SUPPORTED (GEP 0035, 0036, 0037) | PASS (SSH só por chave, mesmas regras do HTTP; sem LFS por SSH nem protocolo v2 por SSH; espelhos só http(s)) | TestGitPorSSH, TestGitPorSSHGitLab, TestArchive, TestBaixarCodigo, TestGitLFS, TestGitLFSNoProjeto, TestEspelhos, TestEspelhosRemotos |
 
 ## Issues
 
@@ -65,7 +65,7 @@ Escopo núcleo v1 = features marcadas **[N]** (fluxos 1–5 da missão + testes 
 | IS-06 | Milestones | | milestones | `/milestones` | milestones | Reporter+ | | | PASS | TestMilestones |
 | IS-07 [N] | Filtros e busca | state, labels, assignee, author, search | lista | `GET /issues?state&labels&search` | issues | leitura | | | PASS | TestFluxo3 |
 | IS-08 [N] | Confidencial | visível só a Reporter+, autor, assignees | | `confidential` | issues | | | | PASS | TestFluxo3, TestIssuesPrivadasNaoVazam |
-| IS-09 | Boards, weights, time tracking, links, moves | colunas por estado, peso, estimativa e tempo gasto, ligações, mover | quadro, API | `weight`, `time_stats`, `links`, `move` | issues | developer | — | SUPPORTED (GEP 0023, 0033, 0034) | PASS (soma de pesos por milestone fica para uma GEP de agregados; só `relates_to`; páginas ainda sem mover/tempo/ligações) | TestPorEstado, TestPesosDasIssues, TestControleDeTempo, TestLigacoesEntreIssues, TestMoverIssue, TestMudarDeLugar |
+| IS-09 | Boards, weights, time tracking, links, moves | colunas por estado, peso, estimativa e tempo gasto, ligações, mover | quadro, API | `weight`, `time_stats`, `links`, `move` | issues | developer | — | SUPPORTED (GEP 0023, 0033, 0034) | PASS (soma de pesos por milestone fica para uma GEP de agregados; só `relates_to`; mover, tempo e ligações também nas páginas) | TestPorEstado, TestPesosDasIssues, TestControleDeTempo, TestLigacoesEntreIssues, TestMoverIssue, TestMudarDeLugar |
 
 ## Merge Requests
 
@@ -77,7 +77,7 @@ Escopo núcleo v1 = features marcadas **[N]** (fluxos 1–5 da missão + testes 
 | MR-04 [N] | Merge | merge commit; conflito → `cannot_be_merged` | merge btn | `PUT /merge` | merge_requests | Developer+ (Maintainer se protegida) | git merge | G13 | PASS | TestFluxo4 |
 | MR-05 [N] | Conflito detectado | `merge_status=cannot_be_merged`, 406/405 no merge | | | | | git merge-tree | G13 | PASS | TestFluxo4 |
 | MR-06 | Fechar/reabrir, draft | | | `state_event` | | | | | PASS | TestFluxo4 |
-| MR-07 | Squash, rebase, merge when pipeline succeeds, approvals rules | squash, linear, merge agendado, mínimo de aprovações | botões do MR | `merge` (`squash`, `merge_when_pipeline_succeeds`), `merge_method`, `approvals_required` | merge_requests | developer | git, CI | SUPPORTED (GEP 0026, 0027) | PASS (sem `PUT /merge`, `GET /approvals` e regras de aprovação por papel; botão web de agendar ainda não) | TestAprovacoesEMetodosDeMesclagem, TestMinimoDeAprovacoes, TestFormasDeMesclar, TestMesclarQuandoPassar, TestSquash, TestRebaseFastForward |
+| MR-07 | Squash, rebase, merge when pipeline succeeds, approvals rules | squash, linear, merge agendado, mínimo de aprovações | botões do MR | `merge` (`squash`, `merge_when_pipeline_succeeds`), `merge_method`, `approvals_required` | merge_requests | developer | git, CI | SUPPORTED (GEP 0026, 0027) | PASS (aprovação opcional como no FOSS; mínimo disponível pela GEP 0026; `PUT /merge`, `GET /approvals`, botões na página; regras de aprovação por papel não) | TestAprovacoesEMetodosDeMesclagem, TestMinimoDeAprovacoes, TestMesclarQuandoPassarComAprovacoes, TestFormasDeMesclar, TestMesclarQuandoPassar, TestSquash, TestRebaseFastForward |
 
 ## CI/CD
 
@@ -100,7 +100,7 @@ Escopo núcleo v1 = features marcadas **[N]** (fluxos 1–5 da missão + testes 
 |----|------|--------------|----------|---------|-------|-----------|------|---------|--------|-------|
 | WH-01 | Webhooks de projeto | eventos push/issue/MR/pipeline com `X-Gitlab-Token`, em worker | settings | `/hooks` | web_hooks | Maintainer+ | tarefas, http | G15 | PASS | TestWebhooks |
 | NT-01 | Todos | atribuição/menção gera todo | `/dashboard/todos` | `/todos` | todos | dono | | SUPPORTED (GEP 0009) | PASS (atribuição e menção @nome em issues e comentários, só para quem pode ver; marcar como feito e excluir) | TestPendencias, TestMencoes, TestFluxo3Issues |
-| NT-02 | Eventos de atividade | histórico | — | `/events`, `/projects/:id/events` | events | quem vê | — | SUPPORTED (histórico + adaptador, GEP 0033) | PASS (nomes de ação do GitLab na borda, paginação, sem vazamento; filtro `action` ainda não) | TestAtividade, TestEventosDoProjeto |
+| NT-02 | Eventos de atividade | histórico | — | `/events`, `/projects/:id/events` | events | quem vê | — | SUPPORTED (histórico + adaptador, GEP 0033) | PASS (nomes de ação do GitLab na borda, paginação, sem vazamento; filtro `action`) | TestAtividade, TestEventosDoProjeto |
 | NT-03 | E-mail de notificação | e-mail por pendência e menção | perfil | `/notification_settings` | users | dono | email | SUPPORTED (GEP 0013, emenda) | PASS (pendências e menções por e-mail depois do commit, sem vazar títulos; escolha por pessoa `avisos_por_email`; níveis finos e resumos não) | TestPreferenciaDeAvisos, TestAvisosPorEmailEscolhaDaPessoa |
 | AD-01 | Admin dashboard | contagens | `/painel` | `/application/statistics` | — | admin | — | SUPPORTED (GEP 0012, 0033) | PASS (só o administrador recebe os números; 403/401 para os outros) | TestEstatisticasDaAplicacao |
 | SR-01 | Busca global | projetos/issues/MRs | search | `/search` | | leitura | | | PASS | TestBuscaGeral (API; página de busca ainda não) |

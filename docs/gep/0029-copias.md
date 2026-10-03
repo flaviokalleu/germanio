@@ -57,8 +57,24 @@ copiar` keeps it: the built-in meaning only applies when the program says nothin
   (`repositório pode começar com`) is not added to a copy.
 - **Read-only originals.** An archived (read-only) original may still be copied: copying reads it.
 - **Address.** `POST …/<registro>/copiar`; the integration vocabulary may rename it
-  (`copiar é "fork"`). The answer is 201 with the copy. Pages show a "Copiar" button to whoever may
-  copy, and open the copy afterwards.
+  (`copiar é "fork"`). The answer is 201 with the copy. Pages show a short "Copiar" form to whoever
+  may copy, asking the values that place the copy: its title, its address segment (the path) and
+  any value that must be unique, filled with the original's (a value unique everywhere starts
+  empty, since the original's would be refused). A copy next to its original therefore gets a new
+  path instead of failing; a refusal comes back on the page with the reason. The page opens the
+  copy afterwards.
+
+## Amendment: the copies of one original
+
+The listing of a data with copies accepts `?copiado_de_id=<original>` (the original by its
+reference or unique field; the vocabulary renames the parameter like the field,
+`forked_from_project_id`). It keeps the copies of that original that the person sees — each copy
+still passes `ver` — and only when the person also sees the original; otherwise the list is empty,
+so a copy never tells someone where it came from (the rule of `copiado_de` above). Pagination,
+search and the other filters work as on any listing. The GitLab adapter answers
+`GET /projects/:id/forks` with it (404 when the project is hidden). Creating the copy in a place
+named by its address is GEP 0044. Tests: `runtime` `TestVariosValoresLugarECopias`, GitLab E2E
+`TestForksDoProjeto`.
 
 ## Alternatives studied
 
@@ -89,4 +105,5 @@ by hand, deleting the original); `examples/gitlab-foss/e2e` `TestFork` (fork wit
 the copy, the origin in `forked_from_project`, owner, same path refused, never more visible on
 create and edit, lowered inside a private group, someone else's group refused, a private project
 not forked by a non-member nor by a guest, by a reporter yes, the origin hidden once it is no longer
-visible, deleting the original keeps the fork).
+visible, deleting the original keeps the fork); the page form in `TestPaginasAcoes` (runtime) and
+`TestPaginasRestantes` (GitLab: forking one's own project with a new path).

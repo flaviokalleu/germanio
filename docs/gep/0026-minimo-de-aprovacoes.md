@@ -37,8 +37,9 @@ thing is the number and the action after `para`.
 - **Who counts:** distinct people in the record's approvals. The approval of the record's owner
   (the author) never counts: whoever proposes does not approve their own proposal.
 - **Everywhere:** the API, the page buttons, the board (GEP 0023) and merges that happen later
-  (GEP 0027) go through the same check. A page hides the button and says how many approvals
-  there are out of how many.
+  (GEP 0027) go through the same check. A page hides the button and, where it would be, says how
+  many approvals are missing (`aprovacoes_faltando`) and how many there are out of how many, to
+  everyone who sees the record.
 - **Visible:** the record shows `aprovacoes_necessarias` and `aprovacoes_faltando` (the largest
   minimum, when several actions have one). `ge explain` shows the rule and its origin.
 - **Errors:** the data must `recebe aprovações`, the action must exist, the number is between 1

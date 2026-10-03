@@ -52,6 +52,18 @@ favoritos`, `recebe curtidas`).
 - **Address.** `POST …/<registro>/marcar` and `…/desmarcar`; the vocabulary may rename them
   (`marcar é "star"`). Pages show "Marcar" or "Desmarcar", whichever applies.
 
+### Amendment: who marked, and the marks of a person
+
+- **Who marked a record is not listed** (GitLab `GET /projects/:id/starrers`). GitLab shows it
+  to anyone; here it would reverse the rule above ("who marked what is never shown to anyone
+  else"), which is the safe default for likes, favourites and bookmarks. The adapter does not
+  offer the route (404). Making marks public would need an explicit opt-in phrase decided by the
+  maintainer (a draft idea, not implemented: `recebe estrelas públicas`); nothing changes
+  silently.
+- **The marks of a person** (GitLab `GET /users/:id/starred_projects`) are answered only to that
+  person (`?marcados=sim` through the adapter); asking for someone else's is refused (403), and
+  an unknown person is 404.
+
 ### Alternatives studied
 
 - **Ordinary data (`estrelas` › `tem dono`, `pertence a projeto`).** Needs uniqueness per pair and
@@ -68,7 +80,8 @@ favoritos`, `recebe curtidas`).
 list (`?topico=go` keeps the records whose `topicos` contain exactly `go`, never `golang`). The
 filter is named by the singular of the list (the same singular rules as data names). Before, the
 only way was `?topicos=go`, which reads as "the topics are go". As every filter, it narrows what
-the person already sees. One item per query for now.
+the person already sees. Several items (`?topico=go,web`) keep the records with all of them
+(GEP 0043).
 
 ## Part C — the address of a file
 

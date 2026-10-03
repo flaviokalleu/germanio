@@ -135,6 +135,9 @@ func (a *intentAPI) mountLevel(mux *routeMux, base string, chain []*ast.Entity, 
 	if e.MoveField != "" {
 		actions["mudar"] = true // GEP 0034
 	}
+	if e.Mirror != nil {
+		actions["atualizar_agora"] = true // GEP 0036
+	}
 	for _, ag := range e.Aggregates {
 		if ag.Reset {
 			actions["zerar_"+ag.Name] = true // GEP 0047
@@ -627,6 +630,10 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 		if scope == nil {
 			scope = map[string]any{}
 		}
+		if err := a.placeIn(ctx, atual, e, body); err != nil {
+			a.failErr(w, r, err)
+			return
+		}
 		if f := fileIn(e, body); f != "" {
 			a.fail(w, 400, fmt.Sprintf("%s é um arquivo: envie-o para o endereço do registro (PUT …/%s, com o arquivo no corpo), não como texto", f, f))
 			return
@@ -821,6 +828,10 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 			a.move(w, r, ctx, atual, e, row, a.inwardBody(e, body), deny)
 			return
 		}
+		if verb == "atualizar_agora" && e.Mirror != nil {
+			a.mirrorNow(w, r, ctx, atual, e, row, deny)
+			return
+		}
 		if ag := resettable(e, verb); ag != nil {
 			a.resetAggregate(w, r, ctx, atual, e, row, ag, deny) // GEP 0047
 			return
@@ -873,7 +884,7 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 		if tr := e.Transitions[verb]; tr != nil && verb == "mesclar" && review {
 			in := a.inwardBody(e, body)
 			if e.Review.Runs != "" && truthy(in["mesclar_quando_passar"]) {
-				scheduled, err := a.scheduleMerge(ctx, atual, e, row)
+				scheduled, err := a.scheduleMerge(ctx, atual, e, row, in)
 				if err != nil {
 					a.failErr(w, r, err)
 					return
@@ -1406,21 +1417,31 @@ func (a *intentAPI) list(w http.ResponseWriter, r *http.Request, ctx *interp.Con
 	}
 	states := a.stateFields()
 	for _, f := range e.Filters {
-		v := q.Get(f)
+		name := f
 		if a.extern {
-			v = q.Get(a.ext(f))
-			if states[f] {
-				v = a.inwardState(e, v)
+			name = a.ext(f)
+		}
+		vals := filterValues(q[name])
+		if len(vals) == 0 {
+			continue
+		}
+		if a.extern && states[f] {
+			for i := range vals {
+				vals[i] = a.inwardState(e, vals[i])
 			}
 		}
-		if v == "" {
-			continue
-		}
 		if list := e.ItemFilters[f]; list != "" {
-			// one item of a list (?topico=go → topicos has "go"), GEP 0030
-			filters[list+"__contem"] = `"` + strings.ReplaceAll(v, `"`, "") + `"`
+			// one item of a list (?topico=go → topicos has "go"), GEP 0030;
+			// several items (?topico=go,rust) must all be there, GEP 0043
+			items := listItemsOf(vals)
+			if len(items) == 1 {
+				filters[list+"__contem"] = items[0]
+			} else if len(items) > 1 {
+				filters[list+"__contem_todos"] = items
+			}
 			continue
 		}
+		v := vals[0]
 		if fd := fieldOf(e, f); fd != nil && fd.Type == ast.FieldLista {
 			if fd.ByName != "" {
 				ids, _ := a.nameFilter(ctx, e, fd, v, filters)
@@ -1430,7 +1451,31 @@ func (a *intentAPI) list(w http.ResponseWriter, r *http.Request, ctx *interp.Con
 			filters[f+"__contem"] = `"` + strings.ReplaceAll(v, `"`, "") + `"`
 			continue
 		}
+		if len(vals) > 1 {
+			// the same filter repeated: any of the values (GEP 0043)
+			anyOf := make([]any, len(vals))
+			for i, x := range vals {
+				anyOf[i] = x
+			}
+			filters[f+"__em"] = anyOf
+			continue
+		}
 		filters[f] = v
+	}
+	if e.Copies {
+		// the copies of one original (GEP 0029): only of an original the
+		// person sees; otherwise nothing, and nothing is said about it
+		key := "copiado_de_id"
+		if a.extern {
+			key = a.ext(key)
+		}
+		if ref := q.Get(key); ref != "" {
+			if orig := a.find(ctx, e, ref, nil); orig != nil && a.in.Can(ctx, atual, e, "ver", orig) {
+				filters["copiado_de_id"] = orig["id"]
+			} else {
+				filters["copiado_de_id__em"] = []any{}
+			}
+		}
 	}
 	marked := "marcados"
 	if a.extern {
@@ -1533,6 +1578,35 @@ func (a *intentAPI) narrowVisible(ctx *interp.Context, atual map[string]any, e *
 	if atual == nil && e.Visibility != "" && (e.HasMembers || e.InheritVia != "") {
 		filters[e.Visibility] = "public"
 	}
+}
+
+// filterValues: the non-empty values a query gives a filter.
+func filterValues(vals []string) []string {
+	var out []string
+	for _, v := range vals {
+		if v != "" {
+			out = append(out, v)
+		}
+	}
+	return out
+}
+
+// listItemsOf: the items asked of a list filter, each in the stored form
+// of a list item; commas separate items (?topico=go,rust).
+func listItemsOf(vals []string) []any {
+	var out []any
+	seen := map[string]bool{}
+	for _, v := range vals {
+		for _, it := range strings.Split(v, ",") {
+			it = strings.TrimSpace(strings.ReplaceAll(it, `"`, ""))
+			if it == "" || seen[it] {
+				continue
+			}
+			seen[it] = true
+			out = append(out, `"`+it+`"`)
+		}
+	}
+	return out
 }
 
 func first(vals ...string) string {

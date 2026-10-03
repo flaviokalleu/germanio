@@ -33,6 +33,10 @@ func (a *intentAPI) copyRecord(w http.ResponseWriter, r *http.Request, ctx *inte
 		return
 	}
 	body = a.inwardBody(e, body)
+	if err := a.placeIn(ctx, atual, e, body); err != nil {
+		a.failErr(w, r, err)
+		return
+	}
 	if f := fileIn(e, body); f != "" {
 		a.fail(w, 400, fmt.Sprintf("%s é um arquivo: envie-o para o endereço da cópia depois de criá-la", f))
 		return

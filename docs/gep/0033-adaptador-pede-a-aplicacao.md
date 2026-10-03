@@ -72,6 +72,8 @@ rotas
   written, never leaving the prefix: no `..`, `?` or `#`) or a list of pieces, each escaped (an
   address with `/` is one piece). `consulta` is a map of query parameters; `corpo` is sent as
   JSON.
+- A list in the query map repeats the parameter, one value per item: the generated listing reads
+  it as "any of" those values (GEP 0043).
 - The answer is `estado` (the status), `corpo` (decoded JSON, or text) and `cabecalhos` (the
   response headers, as named in the response, e.g. `X-Total`). Nothing is thrown on a refusal:
   the adapter decides what its protocol says.

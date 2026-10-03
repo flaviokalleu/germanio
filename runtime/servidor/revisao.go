@@ -123,7 +123,10 @@ func (a *intentAPI) latestRun(ctx *interp.Context, e *ast.Entity, row map[string
 // or nothing runs for that version, nil means "merge now"; a failed or
 // canceled execution refuses, because the person asked to merge only if it
 // passes.
-func (a *intentAPI) scheduleMerge(ctx *interp.Context, atual map[string]any, e *ast.Entity, row map[string]any) (map[string]any, error) {
+//
+// A squash choice sent with the request (juntar_commits) is kept on the
+// record, so the merge made later honours it.
+func (a *intentAPI) scheduleMerge(ctx *interp.Context, atual map[string]any, e *ast.Entity, row, in map[string]any) (map[string]any, error) {
 	if err := a.mergeReady(ctx, atual, e, row); err != nil {
 		return nil, err
 	}
@@ -138,7 +141,11 @@ func (a *intentAPI) scheduleMerge(ctx *interp.Context, atual map[string]any, e *
 		}
 		return nil, &interp.RuntimeError{Status: 405, Message: msg}
 	}
-	res, err := a.in.Op(ctx, e.Singular, "atualizar", row["id"], map[string]any{"mesclar_quando_passar": true, "mesclagem_agendada_por_id": atual["id"]})
+	change := map[string]any{"mesclar_quando_passar": true, "mesclagem_agendada_por_id": atual["id"]}
+	if v, ok := in["juntar_commits"]; ok {
+		change["juntar_commits"] = truthy(v)
+	}
+	res, err := a.in.Op(ctx, e.Singular, "atualizar", row["id"], change)
 	if err != nil {
 		return nil, err
 	}

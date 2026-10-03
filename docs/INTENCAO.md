@@ -347,8 +347,8 @@ válidas. `construcao_do_sistema` são as construções sem sujeito único (`ten
 | `integração` / `integração` › `nome "projects"` | `disponibilize D para integração [como "projects"]` |
 | `quando criar` / `antes de excluir` + corpo | `quando criar d` / `antes de excluir d` |
 | `recebe aprovações`, `recebe eventos do projeto` + tipos | `d recebe …` |
-| `recebe estrelas` ([GEP 0030](gep/0030-estrelas-topicos-avatar.md), em teste) | `d recebe estrelas` (cada pessoa que vê o registro marca uma vez e desmarca; `estrelas` conta; `?marcados=sim` lista as suas) |
-| `acesso` › `usuario` › `copiar` ([GEP 0029](gep/0029-copias.md), em teste) | `usuario pode copiar D` (cópia em nome de quem copia, com as regras de criar, `copiado_de_id`, repositório copiado, nunca mais visível que o original) |
+| `recebe estrelas` ([GEP 0030](gep/0030-estrelas-topicos-avatar.md), em teste) | `d recebe estrelas` (cada pessoa que vê o registro marca uma vez e desmarca; `estrelas` conta; `?marcados=sim` lista as suas; quem marcou nunca é listado para outra pessoa) |
+| `acesso` › `usuario` › `copiar` ([GEP 0029](gep/0029-copias.md), em teste) | `usuario pode copiar D` (cópia em nome de quem copia, com as regras de criar, `copiado_de_id`, repositório copiado, nunca mais visível que o original; `?copiado_de_id=` lista as cópias que a pessoa vê de um original que ela vê) |
 | `executa pipelines a cada envio de código conforme "arquivo"` | `d executa …` |
 | `executam jobs` (em `runners`) | `runners executam jobs` |
 | `repositório pode começar com "README.md" contendo "# {nome}"` | `repositório do d pode começar com …` |
@@ -481,7 +481,7 @@ Equivale a: developer pode enviar código para projetos
 | `cliente tem pedidos` | relação de um cliente com seus pedidos; cada pedido exige um cliente (a referência interna é derivada) |
 | `pedido pertence a cliente [opcional] [como dono]` | relação com cliente, opcional ou nomeada como dono; referência validada |
 | `grupo tem subgrupos` | hierarquia; a referência ao pai é interna |
-| `endereço dentro do grupo pai ou do criador` (linha de `X tem`) | `endereco` = endereço do primeiro contêiner definido + `/` + `caminho` (`empresa/web/app`); calculado, nunca aceito da entrada; único entre todos os endereçados e os nomes das pessoas; renomear um contêiner (ou a pessoa) atualiza o que está dentro; repositórios passam a ser servidos pelo endereço |
+| `endereço dentro do grupo pai ou do criador` (linha de `X tem`) | `endereco` = endereço do primeiro contêiner definido + `/` + `caminho` (`empresa/web/app`); calculado, nunca aceito da entrada; único entre todos os endereçados e os nomes das pessoas; renomear um contêiner (ou a pessoa) atualiza o que está dentro; repositórios passam a ser servidos pelo endereço; ao criar ou copiar, `lugar` nomeia onde o registro fica pelo endereço (`empresa/web`, ou o próprio nome para o próprio espaço; um contêiner que a pessoa não vê é "não encontrado", o espaço de outra pessoa é recusado), em teste na [GEP 0044](gep/0044-lugar-pelo-endereco.md) |
 | `endereços reservados` + nomes | nomes de primeiro nível que o produto guarda para si; o runtime também reserva as rotas do próprio app (`api`, `entrar`, `cadastro`, `oauth`, páginas, rotas declaradas). Todo segmento de endereço — e o nome das pessoas que dividem esse espaço — usa letras, números, `_ . -`, começa por letra, número ou `_`, não termina em `.`, não tem `..` nem termina em `.git`; até 255 caracteres |
 | `tenha busca geral em projetos, issues e merge requests` | um único ponto de busca (`/_ge/api/busca?tipo_busca=issues&q=…`; nomes externos pelo vocabulário) responde com a listagem do tipo escolhido: mesma pesquisa, filtros, páginas e regra de quem vê. Cada tipo precisa de `permita pesquisar` |
 | `labels por nome` (linha de `issue tem`) | lista escrita e lida pelo nome (`"bug,ux"` → `["bug","ux"]`), procurado entre os itens do mesmo pai (labels do projeto); nome novo cria o item quando a pessoa pode criá-lo ali; `?labels=bug` filtra pelo nome. Itens de outro pai nunca entram |
@@ -492,7 +492,7 @@ Equivale a: developer pode enviar código para projetos
 | `repositório do projeto pode começar com "README.md" contendo "# {nome}"` | ao criar com `iniciar_repositorio` (nome externo pelo vocabulário), o repositório nasce com esse arquivo; `{campo}` vira o valor do registro |
 | `projeto tem repositório` | cada registro tem um repositório Git criado e removido com ele e servido em `/<campo único>.git`; branches, tags, commits, árvore, arquivos e comparação seguem as regras de baixar e enviar código; quem pode baixar código também baixa uma revisão inteira como um arquivo (`repositorio/baixar.zip`, `.tar.gz`, `.tar`; nome externo pelo vocabulário: `repository/archive.zip?sha=`), gerado em fluxo pelo git, sem shell, com poucos downloads ao mesmo tempo; arquivos grandes (Git LFS) seguem as mesmas regras, conferidos pelo sha256 e limitados por objeto ([GEP 0035](gep/0035-git-lfs.md), em teste) |
 | `origem: branch` e `destino: branch` (linhas de `X tem`, num dado que pertence a algo com repositório) | X propõe mudanças: as branches precisam existir e ser diferentes; X mostra mudanças, commits e conflitos; `mesclar` junta a origem no destino (rascunho não mescla; mesclar no destino segue as regras de enviar código). Em teste na [GEP 0027](gep/0027-formas-de-mesclar.md), sem frase nova: `forma_de_mesclar` do dono do repositório (`mesclagem`, `semi_linear`, `linear`), `juntar_commits` de X e, quando o dono `executa` algo, `mesclar_quando_passar` (espera a última execução da origem e mescla como quem pediu, verificando tudo de novo) |
-| `espelhos espelham o repositório do projeto` | cada espelho (`url`) é uma cópia do repositório em outro servidor Git, só http(s) e nunca na rede local: `sentido` `enviar` manda o repositório inteiro depois de cada mudança do código, `receber` traz o da url periodicamente; usuário e senha da url ficam ocultos; cada tentativa fica registrada sem atrapalhar quem envia código ([GEP 0036](gep/0036-espelhos.md), em teste) |
+| `espelhos espelham o repositório do projeto` | cada espelho (`url`) é uma cópia do repositório em outro servidor Git, só http(s) e nunca na rede local: `sentido` `enviar` manda o repositório inteiro depois de cada mudança do código, `receber` traz o da url periodicamente; usuário e senha da url ficam ocultos; cada tentativa fica registrada sem atrapalhar quem envia código; `atualizar_agora` pede a atualização na hora, a quem pode editar o espelho ([GEP 0036](gep/0036-espelhos.md), em teste) |
 
 **Tipo pelo nome** (quando não há tipo): `email`→email · `senha`/`password`→senha protegida ·
 `telefone`→telefone · `foto`/`avatar`/`imagem`→imagem · `descricao`/`description`→texto longo ·
@@ -658,7 +658,9 @@ todos podem ver produtos
 há login). `permita filtrar clientes por cidade` e `permita pesquisar clientes` habilitam filtro e busca.
 Em teste na [GEP 0030](gep/0030-estrelas-topicos-avatar.md): o singular de uma lista de textos filtra
 por um item dela (`permita filtrar projetos por topico` → `?topico=go`), e um registro com arquivo
-mostra também `<campo>_endereco`, onde baixá-lo.
+mostra também `<campo>_endereco`, onde baixá-lo. Em teste na [GEP 0043](gep/0043-varios-valores-num-filtro.md),
+sem frase nova: um filtro repetido (`?estado=aberta&estado=fechada`) fica com qualquer um dos valores, e
+vários itens de uma lista (`?topico=go,web`) ficam com os registros que têm todos eles.
 
 ## Pendências
 
@@ -855,7 +857,8 @@ Quando uma chamada externa é outra forma de uma operação que a aplicação j�
 caminho, outros nomes, uma busca antes), o adaptador, em `integracoes/`, pede à própria aplicação
 com `superficie.pedir(metodo, caminho, corpo, consulta)` e conta com `superficie.contar(dado,
 estado)` ([GEP 0033](gep/0033-adaptador-pede-a-aplicacao.md), **em teste**): o pedido roda como a
-pessoa que chamou, com as mesmas regras, visibilidade, transação, histórico e eventos. Um
+pessoa que chamou, com as mesmas regras, visibilidade, transação, histórico e eventos. Uma lista na
+consulta vira o mesmo parâmetro repetido (qualquer um dos valores, GEP 0043). Um
 adaptador nunca lê nem escreve registros por fora dessas regras.
 
 ## Estados e transições: contrato genérico
@@ -955,6 +958,18 @@ Nada disto aparece no `.ge`; é configuração de quem hospeda a aplicação.
 | `GERMANIO_LFS_MAX_MB` | maior arquivo grande (Git LFS) aceito por objeto, em MB (padrão 100) |
 | `GERMANIO_ESPELHO_MINUTOS` | de quantos em quantos minutos os espelhos que recebem buscam o código (padrão 30) |
 | `GERMANIO_OIDC_EMISSOR` / `_CLIENTE` / `_SEGREDO` / `_NOME` | provedor do `tenha login com conta externa`: emissor exato, cliente, segredo do cliente (só do ambiente, nunca no log) e nome do botão |
+| `GERMANIO_SSH_ENDERECO` | liga o git por SSH nesse endereço (`:2222`); sem ela, nenhum servidor SSH existe ([GEP 0037](gep/0037-git-por-ssh.md), em teste) |
+| `GERMANIO_SSH_CHAVE_HOST` | arquivo da chave do servidor SSH (padrão `<GERMANIO_GIT_RAIZ>/.ssh/chave_host_ed25519`): criada uma vez com permissão 0600, nunca mostrada; legível por outros, a partida para |
+| `GERMANIO_SSH_CONEXOES` | conexões SSH atendidas ao mesmo tempo (padrão 64; 8 por endereço) |
+
+Git por SSH ([GEP 0037](gep/0037-git-por-ssh.md), **em teste**, sem frase no `.ge`): com
+`GERMANIO_SSH_ENDERECO`, quem cadastrou uma chave (`chave pública` num dado que pertence às
+pessoas) clona e envia com `git clone ssh://git@servidor:2222/grupo/projeto.git`, com as mesmas
+regras do HTTP (baixar e enviar código, somente leitura, branches protegidas, `antes de enviar
+código`, e depois do envio os eventos, o histórico, as execuções e os espelhos). Só a chave autentica; só
+`git-upload-pack` e `git-receive-pack` rodam, nunca um shell; pessoa bloqueada ou com e-mail não
+confirmado é recusada com o motivo. Um programa sem repositórios ou sem chaves das pessoas não
+parte com a variável definida, e o erro diz o que declarar.
 
 ## Trabalho remoto e teste de generalização
 

@@ -154,7 +154,7 @@ func Entidade(prog *ast.Program, nome string) (string, error) {
 		}
 	}
 	if m := e.Mirror; m != nil {
-		w("Espelhos: cada %s é uma cópia do repositório de %s em outro servidor Git (só http ou https; endereços da rede local recusados, salvo GERMANIO_PERMITIR_REDE_LOCAL=1). sentido enviar: depois de cada mudança no código, o repositório inteiro (branches e tags) vai para a url; sentido receber: a cada GERMANIO_ESPELHO_MINUTOS (padrão 30) o repositório passa a ser uma cópia da url. Usuário e senha escritos na url ficam em credencial, nunca mostrada; falhas ficam em ultimo_erro e são tentadas de novo, sem atrapalhar quem envia código\n", e.Label, m.Owner)
+		w("Espelhos: cada %s é uma cópia do repositório de %s em outro servidor Git (só http ou https; endereços da rede local recusados, salvo GERMANIO_PERMITIR_REDE_LOCAL=1). sentido enviar: depois de cada mudança no código, o repositório inteiro (branches e tags) vai para a url; sentido receber: a cada GERMANIO_ESPELHO_MINUTOS (padrão 30) o repositório passa a ser uma cópia da url. Usuário e senha escritos na url ficam em credencial, nunca mostrada; falhas ficam em ultimo_erro e são tentadas de novo, sem atrapalhar quem envia código; atualizar_agora pede a atualização na hora, a quem pode editar o espelho (GEP 0036)\n", e.Label, m.Owner)
 	}
 	if e.Repository {
 		w("Git LFS: arquivos grandes vão para %s.git/info/lfs com as mesmas regras de baixar e enviar código; cada objeto é conferido pelo sha256 e pelo tamanho, até GERMANIO_LFS_MAX_MB (padrão 100)\n", "/<"+e.RepoKey+">")
@@ -194,7 +194,7 @@ func Entidade(prog *ast.Program, nome string) (string, error) {
 		if e.Repository {
 			repo = "; exige baixar código e leva uma cópia do repositório (branches, tags, branch padrão)"
 		}
-		w("Cópias (GEP 0029, em teste): quem pode copiar faz uma cópia de um registro que vê, criada em nome de quem copia com as regras de criar; leva os valores simples (não os pais, arquivos, segredos nem referências); lembra o original em copiado_de_id, mostrado só a quem vê o original; nunca é mais visível que o original%s\n", repo)
+		w("Cópias (GEP 0029, em teste): quem pode copiar faz uma cópia de um registro que vê, criada em nome de quem copia com as regras de criar; leva os valores simples (não os pais, arquivos, segredos nem referências); lembra o original em copiado_de_id, mostrado só a quem vê o original (?copiado_de_id= lista as cópias que a pessoa vê de um original que ela vê); nunca é mais visível que o original%s\n", repo)
 	}
 	if e.Marks != "" {
 		w("Marcas (GEP 0030, em teste): cada pessoa que vê um registro o marca uma vez (marcar) e desmarca (desmarcar); %s conta as marcas, na mesma transação; ?marcados=sim lista o que a pessoa marcou; ninguém vê quem marcou; as marcas saem com o registro e com a pessoa\n", e.Marks)
@@ -317,10 +317,13 @@ func Entidade(prog *ast.Program, nome string) (string, error) {
 		for i, f := range e.Filters {
 			filters[i] = f
 			if list := e.ItemFilters[f]; list != "" {
-				filters[i] = fmt.Sprintf("%s (um item de %s, GEP 0030)", f, list)
+				filters[i] = fmt.Sprintf("%s (um item de %s, GEP 0030; vários itens: todos eles)", f, list)
 			}
 		}
 		w("\nPesquisa: %s\nFiltros: %s\n", strings.Join(e.Search, ", "), strings.Join(filters, ", "))
+		if len(e.Filters) > 0 {
+			w("  um filtro repetido fica com qualquer um dos valores (GEP 0043, em teste)\n")
+		}
 	}
 	if len(e.Hooks) > 0 {
 		w("\nRegras explícitas:\n")

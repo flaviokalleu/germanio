@@ -23,7 +23,8 @@ published under that name.
 - Marks by people (`recebe estrelas`, GEP 0030, em teste), filtering by one item of a list
   (topics), and `<campo>_endereco` for files (avatar).
 - A minimum of approvals before an action (`precisa de 2 aprovações para mesclar`, GEP 0026,
-  em teste); the author's approval does not count.
+  em teste); the author's approval does not count. The GitLab example does not require approvals,
+  like GitLab FOSS.
 - Ways to merge (GEP 0027, em teste, no syntax): squash, semi-linear, linear (fast-forward after
   rebase), and merging when the executions of the source pass.
 - Git LFS over HTTP (GEP 0035, em teste, no syntax): batch API, sha256 and size checked while
@@ -34,11 +35,26 @@ published under that name.
   project (`pode mudar de projeto`, GEP 0034, em teste).
 - Adapters may ask the application itself as the caller (`superficie.pedir`, `superficie.contar`,
   GEP 0033, em teste): GitLab events, `/application/statistics`, time tracking.
+- Git over SSH (GEP 0037, em teste, no syntax; `GERMANIO_SSH_ENDERECO`): public-key only, the
+  person found by the key's fingerprint, only `git-upload-pack`/`git-receive-pack`, the same
+  authorization and after-push path as smart HTTP, connection limits and timeouts.
 - Sign-in with an external account (`tenha login com conta externa`, GEP 0039, em teste):
   OpenID Connect code flow with PKCE, state and nonce, ID token verified by JWKS (RS256/ES256)
   with the standard library only; linking needs the e-mail verified on both sides; two factors
   still asked.
+- Pages offer what the API already did: merge with squash or when the executions pass, cancel a
+  scheduled merge, move a record to another parent, copy with a new name and path, and the
+  approvals still missing; a reference to the same kind never offers the record itself.
+- GitLab API: `/projects/:id/forks`, `/users/:id/starred_projects` (oneself only), fork into a
+  `namespace_path`, events `action` filter, `PUT …/merge`, `GET …/approvals`, mirror `sync`
+  (generic `atualizar_agora`), `?topic=a,b`. Several values in one filter (GEP 0043) and a
+  place given by its address (GEP 0044), both em teste. `/starrers` stays refused (GEP 0030).
 - Per-person choice of notification e-mail (`avisos_por_email`, amendment to GEP 0013).
+
+### Tests
+
+- The examples smoke test runs from a temporary directory, so the legacy WhatsApp example no longer
+  leaves `whatsapp.db` inside the repository.
 
 ## [0.7.0] — 2026-09-29
 

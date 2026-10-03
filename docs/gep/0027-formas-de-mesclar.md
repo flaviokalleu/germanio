@@ -50,8 +50,13 @@ the records and are inspected by `ge explain`:
   the person who asked, with every rule checked again; if anything refuses, or the execution
   failed or was canceled, the proposal stops waiting and stays open. Closing the proposal stops
   the waiting too. The merge happens after the execution's lock is released.
-- **Pages:** the project form offers the three forms, the proposal form the checkbox; a waiting
-  proposal says so and offers "Cancelar mesclagem" to whoever may merge.
+- **A squash choice sent with "merge when it passes"** is kept on the proposal, so the merge made
+  later honours it.
+- **Pages:** the project form offers the three forms, the proposal form the checkbox. The merge on
+  the proposal's page is a short form, for whoever may merge right now: "Juntar os commits em um
+  só" (checked when the proposal says so), "Mesclar" and, when the record with the repository runs
+  executions, "Mesclar quando passar"; both post, with CSRF, to the same action as the API. A
+  waiting proposal says so and offers "Cancelar mesclagem" to whoever may merge.
 
 ## Alternatives studied
 
@@ -72,4 +77,6 @@ the records and are inspected by `ge explain`:
 branches and builds as executions: squash, linear, semi-linear, a value outside the list, merge
 after a passing build, a failing build stops the waiting and refuses a new request, cancel,
 merge now when the build already passed); `TestAprovacoesEMetodosDeMesclagem` (GitLab E2E:
-`merge_method: ff`, `squash: true`, `merge_when_pipeline_succeeds`).
+`merge_method: ff`, `squash: true`, `merge_when_pipeline_succeeds`); the page forms in
+`TestPaginasAcoes` (runtime) and `TestPaginasRestantes` (GitLab E2E), and by clicking in
+`TestNavegadorAcoes` (optional browser test, with axe-core).

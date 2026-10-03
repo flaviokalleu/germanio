@@ -3,6 +3,7 @@ package servidor
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 	"strconv"
@@ -75,6 +76,42 @@ func (a *intentAPI) mirrorSaved(ctx *interp.Context, e *ast.Entity, row map[stri
 		return
 	}
 	a.s.tasks().enqueue(ctx, "espelho", map[string]any{"entidade": e.Singular, "id": row["id"]})
+}
+
+// mirrorNow is the built-in action atualizar_agora: whoever may edit the
+// mirror asks for an update now instead of waiting for the next change of
+// the code or the next period. It goes through the same background task
+// (the same guarded transport, retries and record of attempts); a mirror
+// already waiting for its turn is not queued twice.
+func (a *intentAPI) mirrorNow(w http.ResponseWriter, r *http.Request, ctx *interp.Context, atual map[string]any, e *ast.Entity, row map[string]any, deny func(map[string]any)) {
+	if !a.in.Can(ctx, atual, e, "editar", row) {
+		deny(row)
+		return
+	}
+	if !truthy(row["habilitado"]) {
+		msg := "O espelho está desligado: ligue-o (habilitado) para atualizá-lo"
+		if a.app.Messages == "en" {
+			msg = "The mirror is disabled: enable it to update it"
+		}
+		a.fail(w, 400, msg)
+		return
+	}
+	if a.s.Git == nil {
+		a.fail(w, 503, "o servidor não tem repositórios (GERMANIO_GIT_RAIZ)")
+		return
+	}
+	if toStr(row["situacao"]) != "agendada" {
+		updated, err := a.in.Op(ctx, e.Singular, "atualizar", row["id"], map[string]any{"situacao": "agendada"})
+		if err != nil {
+			a.failErr(w, r, err)
+			return
+		}
+		if m, ok := updated.(map[string]any); ok {
+			row = m
+		}
+		a.s.tasks().enqueue(ctx, "espelho", map[string]any{"entidade": e.Singular, "id": row["id"]})
+	}
+	a.json(w, 200, serializeFor(ctx, a.in, atual, e, row, false), nil)
 }
 
 // codeChanged queues the push mirrors of a record whose code just changed.
