@@ -56,6 +56,7 @@ func (s *Servidor) registerIntent(mux *routeMux) error {
 	s.tasks().handle("entrega", a.deliver)
 	a.mountSearch(mux)
 	a.registerRemoteModule()
+	s.registerSurfaceModule(a)
 	a.startLeases()
 	for _, name := range app.Order {
 		e := app.Entities[name]

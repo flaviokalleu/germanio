@@ -1,0 +1,28 @@
+# NÍVEL AVANÇADO / ADAPTADOR DE COMPATIBILIDADE
+#
+# Um catálogo externo que fala outro protocolo. Só traduz para a superfície
+# da própria aplicação (GEP 0033): quem pode o quê fica em backend/.
+
+rotas
+    rota POST "/catalogo/estantes/:id/livros/:n/renomear"
+        definir r = superficie.pedir("PUT", ["shelves", requisicao.parametros.id, "books", requisicao.parametros.n], {title: requisicao.corpo.novo})
+        responder(r.estado, r.corpo)
+
+    rota GET "/catalogo/estantes/:id/resumo"
+        definir est = superficie.pedir("GET", ["shelves", requisicao.parametros.id])
+        se est.estado != 200
+            responder(est.estado, est.corpo)
+        definir l = superficie.pedir("GET", ["shelves", requisicao.parametros.id, "books"], nulo, {per_page: 1})
+        responder(200, {nome: est.corpo.name, livros: l.cabecalhos["X-Total"], visiveis: superficie.contar("livros"), disponiveis: superficie.contar("livros", "disponivel")})
+
+    rota GET "/catalogo/fora"
+        responder(200, superficie.pedir("GET", "../entrar"))
+
+    rota GET "/catalogo/estado"
+        responder(200, superficie.contar("livros", "perdido"))
+
+    rota GET "/catalogo/eco"
+        responder(200, superficie.pedir("GET", "eco"))
+
+    rota GET "/api/v1/eco"
+        responder(200, {ok: verdadeiro})
