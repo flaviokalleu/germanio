@@ -30,19 +30,12 @@ não todo o full-stack. Não há data de lançamento anunciada.
 Uma fase termina implementada, testada, documentada, generalizada e auditada. Ideias de fases
 futuras são registradas aqui e não desviam a fase atual.
 
-### Adiado da FASE 1 (não descartado)
+### Adiado da FASE 1: concluído (2026-10-02)
 
-| Item (inventário) | Destino | Por quê |
-| --- | --- | --- |
-| confirmação de e-mail (ID-06) | FASE 5 | amplitude de identidade; precisa de decisão de produto (bloquear login até confirmar?) |
-| fork (PR-05) | FASE 5 | amplitude |
-| estrelas, tópicos, avatar (PR-06) | FASE 5 | amplitude; avatar usa os arquivos da GEP 0014 |
-| edição de arquivo pela web (RP-08) | **FASE 3** | editor: estado local, pré-visualização, commit |
-| boards (IS-09) | **FASE 3** | arrastar e soltar, estado derivado; a sincronização entre pessoas usa a FASE 2 |
-| uploads dentro de Markdown (UP-01) | FASE 3 | editor de texto com imagens; usa a GEP 0014 |
-| regras avançadas de merge request (MR-07) | BACKLOG | regras de aprovação e merge automático: capability futura com GEP própria |
-| DAG avançado de CI (CI-09) | BACKLOG | capability de fluxo de execução (dependências, regras, manual) |
-| isolamento de CI em containers (CI-10) | FASE 4 | infraestrutura de execução |
+Todos os itens adiados da FASE 1 foram feitos como capabilities genéricas; o inventário do
+GitLab está com os 61 itens PASS. O que foi feito, com a GEP de cada item, está em
+[FASE1_GITLAB.md](FASE1_GITLAB.md#depois-do-encerramento-amplitude-concluída-2026-10-02).
+Ficam fora de propósito LDAP, SAML e WebAuthn (justificativa na GEP 0039).
 
 ## Prioridade: conformidade da intenção
 

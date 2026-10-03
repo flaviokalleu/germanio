@@ -23,11 +23,14 @@
 8. FASE 2 (tempo real): ENCERRADA em 2026-10-02 — `docs/FASE2_TEMPO_REAL.md`. GEPs 0020–0022 em
    teste, AGUARDANDO DECISÃO. Critérios 1–9 com evidência (p99 1,03× a 2 000 e 1,56× a 10 000
    conexões contra o Go).
-9. FASE 3 (UI altamente interativa): próxima.
+9. FASE 3 (UI altamente interativa): ENCERRADA em 2026-10-02 — `docs/FASE3_INTERFACE.md`.
+10. GitLab completo (2026-10-02): os itens adiados da FASE 1 feitos; inventário 61/61 PASS. GEPs
+    0023, 0026, 0027, 0029–0037, 0039, 0043, 0044, 0047, 0048 em teste, AGUARDANDO DECISÃO.
+    Benchmarks: `bench/resultados/2026-10-02-7486cee.txt` (nenhuma piora ≥ 1,5×; compilação 1,2–4× mais rápida).
+11. Próxima: FASE 4 (escala).
 
 ## CURRENT_GOAL
-Continuar o GitLab por intenção: issues → merge requests → CI/CD → páginas (UI),
-evoluindo o Germanio a cada parede encontrada.
+FASE 4 (escala), depois FASE 5 (amplitude). GitLab: completo; decisões de GEP com o mantenedor.
 
 ## LAST_GOOD_COMMIT
 (ver `git log -1`; todos os testes verdes neste commit)

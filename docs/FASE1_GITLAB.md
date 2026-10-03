@@ -100,6 +100,13 @@ GitLab (`TestMinimoDeAprovacoes`, `TestMesclarQuandoPassarComAprovacoes`).
 Acoplamento: busca por `gitlab`, `/api/v4`, `merge_request`, `PRIVATE-TOKEN`, `forked_from`,
 `remote_mirror` no core (`compiler/`, `runtime/`, `tooling/`): só comentários de exemplo.
 
+Evidência final: `go vet ./...`, `go test ./...` (com o `gitlab-runner` oficial e o navegador
+real) e `go test -race` do runtime, compilador e ferramentas verdes; `ge check` do GitLab passa;
+benchmarks em [`2026-10-02-7486cee.txt`](../bench/resultados/2026-10-02-7486cee.txt), sem piora ≥ 1,5× contra `2026-10-02-494cfa0`
+(o lexer, sem mudança de código, oscilou 1,36× com a máquina; o Go puro de referência, 1,12×).
+A regressão encontrada na compilação (um `strings.Replacer` montado por palavra) foi corrigida
+antes do registro: compilar o GitLab caiu de 18 ms para 8 ms.
+
 ## Decisões
 
 | Decisão | Estado |
