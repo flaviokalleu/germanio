@@ -480,7 +480,7 @@ Equivale a: developer pode enviar código para projetos
 | `quem cria projeto vira owner` | quem cria vira membro com esse papel — exceto quando o dado herda membros de um pai e foi criado dentro dele (os membros já vêm do pai) |
 | `todo grupo precisa ter pelo menos um owner` | ninguém remove nem rebaixa o último membro com esse papel (ou superior) |
 | `repositório do projeto pode começar com "README.md" contendo "# {nome}"` | ao criar com `iniciar_repositorio` (nome externo pelo vocabulário), o repositório nasce com esse arquivo; `{campo}` vira o valor do registro |
-| `projeto tem repositório` | cada registro tem um repositório Git criado e removido com ele e servido em `/<campo único>.git`; branches, tags, commits, árvore, arquivos e comparação seguem as regras de baixar e enviar código |
+| `projeto tem repositório` | cada registro tem um repositório Git criado e removido com ele e servido em `/<campo único>.git`; branches, tags, commits, árvore, arquivos e comparação seguem as regras de baixar e enviar código; quem pode baixar código também baixa uma revisão inteira como um arquivo (`repositorio/baixar.zip`, `.tar.gz`, `.tar`; nome externo pelo vocabulário: `repository/archive.zip?sha=`), gerado em fluxo pelo git, sem shell, com poucos downloads ao mesmo tempo |
 
 **Tipo pelo nome** (quando não há tipo): `email`→email · `senha`/`password`→senha protegida ·
 `telefone`→telefone · `foto`/`avatar`/`imagem`→imagem · `descricao`/`description`→texto longo ·

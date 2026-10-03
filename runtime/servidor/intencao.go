@@ -34,6 +34,8 @@ type intentAPI struct {
 	recoveryAvailable bool
 	// live announces changes to open pages (GEP 0020).
 	live *liveHub
+	// archives bounds how many downloads of code run at the same time.
+	archives chan struct{}
 }
 
 func (s *Servidor) registerIntent(mux *routeMux) error {
@@ -41,7 +43,7 @@ func (s *Servidor) registerIntent(mux *routeMux) error {
 	if app == nil {
 		return nil
 	}
-	a := &intentAPI{s: s, app: app, in: s.Interpreter}
+	a := &intentAPI{s: s, app: app, in: s.Interpreter, archives: make(chan struct{}, 4)}
 	for _, name := range app.Order {
 		if x := app.Entities[name].Execution; x != nil && x.Role == "step" && s.Git != nil {
 			a.startExecutor()
