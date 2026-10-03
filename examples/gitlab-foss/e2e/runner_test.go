@@ -49,7 +49,7 @@ func TestRunnerOficial(t *testing.T) {
 	work := filepath.Join(dir, "app")
 	run(t, work, "git", "config", "user.email", "ada@example.com")
 	run(t, work, "git", "config", "user.name", "Ada")
-	os.WriteFile(filepath.Join(work, ".gitlab-ci.yml"), []byte("stages: [build, test]\nbuild:\n  stage: build\n  script:\n    - echo compilando $CI_COMMIT_REF_NAME em $CI_PROJECT_PATH\n    - test -f README.md\n    - echo resultado do build > saida.txt\n    - echo token=$DEPLOY_TOKEN\n    - test \"$DEPLOY_TOKEN\" = s3cr3t-valor\n  artifacts:\n    paths:\n      - saida.txt\ntest:\n  stage: test\n  script:\n    - echo falhando de propósito\n    - exit 3\n"), 0o644)
+	os.WriteFile(filepath.Join(work, ".gitlab-ci.yml"), []byte("stages: [build, test]\nbuild:\n  stage: build\n  script:\n    - echo compilando $CI_COMMIT_REF_NAME em $CI_PROJECT_PATH\n    - test -f README.md\n    - echo resultado do build > saida.txt\n    - echo token=$DEPLOY_TOKEN\n    - test \"$DEPLOY_TOKEN\" = s3cr3t-valor\n  artifacts:\n    paths:\n      - saida.txt\n    expire_in: 1 week\nusa:\n  stage: test\n  needs: [build]\n  script:\n    - grep \"resultado do build\" saida.txt\ntest:\n  stage: test\n  script:\n    - echo falhando de propósito\n    - exit 3\n"), 0o644)
 	run(t, work, "git", "add", ".")
 	run(t, work, "git", "commit", "--quiet", "-m", "ci")
 	run(t, work, "git", "push", "--quiet", "origin", "main")
@@ -59,7 +59,7 @@ func TestRunnerOficial(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, bin, "run-single", "--url", base, "--token", rtoken, "--executor", "shell",
-		"--max-builds", "2", "--wait-timeout", "60", "--builds-dir", filepath.Join(home, "builds"), "--cache-dir", filepath.Join(home, "cache"))
+		"--max-builds", "3", "--wait-timeout", "60", "--builds-dir", filepath.Join(home, "builds"), "--cache-dir", filepath.Join(home, "cache"))
 	cmd.Env = append(os.Environ(), "HOME="+home, "GIT_CONFIG_NOSYSTEM=1")
 	var out strings.Builder
 	cmd.Stdout, cmd.Stderr = &out, &out
@@ -110,6 +110,15 @@ func TestRunnerOficial(t *testing.T) {
 	eve := signup(t, base, "eve")
 	if code, _ := download(t, eve, "/api/v4/jobs/"+id(b)+"/artifacts"); code != 404 {
 		t.Fatalf("artefatos de projeto privado para quem não é membro: %d", code)
+	}
+	// CI-08/CI-09: the job that needs build downloads its artifacts with its
+	// own job token; the expiry from expire_in reaches the job
+	usa := jobByName(t, ada, pid, pipe, "usa")
+	if log := trace(t, ada, "/api/v4/jobs/"+id(usa)+"/trace"); usa["state"] != "success" || !strings.Contains(log, "Downloading artifacts") {
+		t.Fatalf("usa (needs: [build]): %v\n%s", usa["state"], log)
+	}
+	if toText(b["artifacts_expire_at"]) == "" {
+		t.Fatalf("expire_in não chegou ao build: %v", b)
 	}
 	f := jobByName(t, ada, pid, pipe, "test")
 	if f["state"] != "failed" {
@@ -187,6 +196,19 @@ func TestProtocoloRunner(t *testing.T) {
 		}
 		resp.Body.Close()
 		return resp.StatusCode
+	}
+	// a job token reads only the artifacts of the jobs it depends on
+	for _, tok := range []string{jobToken, "token-falso"} {
+		req, _ := http.NewRequest("GET", base+"/api/v4/jobs/"+jid+"/artifacts", nil)
+		req.Header.Set("JOB-TOKEN", tok)
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		if resp.StatusCode < 400 {
+			t.Fatalf("artefatos fora das dependências do job: %d", resp.StatusCode)
+		}
 	}
 	if c := trace(0, "linha 1\n", jobToken); c != 202 {
 		t.Fatalf("trace: %d", c)

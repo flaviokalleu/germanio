@@ -34,6 +34,16 @@ logica
                 lista = adicionar(lista, {key: variavel.nome, value: variavel.valor, public: nao variavel.oculto, masked: variavel.oculto})
         retornar lista
 
+    # Artefatos que o job recebe de jobs anteriores (needs/dependencies). O
+    # runner baixa cada um em GET /api/v4/jobs/:id/artifacts com o JOB-TOKEN
+    # do próprio job; o core só entrega o que este job recebe
+    # (cabecalho_trabalho em backend/compatibilidade.ge).
+    funcao dependencias_do_runner(t)
+        definir lista = []
+        para cada d em t.dependencias
+            lista = adicionar(lista, {id: d.id, name: d.nome, token: t.token, artifacts_file: {filename: d.arquivo.nome, size: d.arquivo.tamanho}})
+        retornar lista
+
     funcao job_gitlab(t, host)
         definir servidor = "http://" + host
         definir repo = "http://gitlab-ci-token:" + t.token + "@" + host + "/" + t.repositorio + ".git"
@@ -42,7 +52,7 @@ logica
         definir passos = [{name: "script", script: t.comandos, timeout: t.limite_segundos, when: "on_success", allow_failure: falso}]
         se tamanho(t.depois) > 0
             passos = adicionar(passos, {name: "after_script", script: t.depois, timeout: t.limite_segundos, when: "always", allow_failure: verdadeiro})
-        definir job = {id: t.id, token: t.token, allow_git_fetch: verdadeiro, job_info: {id: t.id, name: t.dados.nome, stage: t.dados.etapa, project_id: t.dono.id, project_name: t.dono.nome}, git_info: {repo_url: repo, ref: ref, sha: t.execucao.versao, before_sha: "0000000000000000000000000000000000000000", ref_type: "branch", refspecs: ["+refs/heads/" + ref + ":refs/remotes/origin/" + ref], depth: 20}, runner_info: {timeout: t.limite_segundos}, variables: variaveis, steps: passos, services: [], artifacts: [], cache: [], credentials: [], dependencies: [], features: {trace_sections: verdadeiro}}
+        definir job = {id: t.id, token: t.token, allow_git_fetch: verdadeiro, job_info: {id: t.id, name: t.dados.nome, stage: t.dados.etapa, project_id: t.dono.id, project_name: t.dono.nome}, git_info: {repo_url: repo, ref: ref, sha: t.execucao.versao, before_sha: "0000000000000000000000000000000000000000", ref_type: "branch", refspecs: ["+refs/heads/" + ref + ":refs/remotes/origin/" + ref], depth: 20}, runner_info: {timeout: t.limite_segundos}, variables: variaveis, steps: passos, services: [], artifacts: [], cache: [], credentials: [], dependencies: dependencias_do_runner(t), features: {trace_sections: verdadeiro}}
         se t.dados.imagem != nulo
             job.image = {name: t.dados.imagem}
         se tamanho(t.artefatos) > 0
