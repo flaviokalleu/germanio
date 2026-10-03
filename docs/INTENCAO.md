@@ -361,6 +361,7 @@ válidas. `construcao_do_sistema` são as construções sem sujeito único (`ten
 | `usam variaveis do projeto` ([GEP 0015](gep/0015-variaveis-das-execucoes.md), em teste; nas execuções) | `pipelines usam as variaveis do projeto` |
 | `indicadores` › `total de issues abertas`, `soma do peso das issues como peso total` ([GEP 0047](gep/0047-agregados.md), em teste) | `milestone mostra soma do peso das issues como peso total` (cada registro mostra quantos registros apontam para ele, ou a soma de um campo de número deles, contando só o que quem vê pode ver; calculado pelo banco numa consulta, nunca guardado nem aceito na entrada; o nome vem de `como` ou da própria linha) |
 | `pode` › `zerar tempo gasto` ([GEP 0047](gep/0047-agregados.md), em teste) | `issue pode zerar tempo gasto` (a ação `zerar_tempo_gasto` registra, numa mudança só e com o registro travado, o registro que desconta a soma; pode quem pode criar esses registros ali e vê todos eles) |
+| `regras` › `não pode ficar com tempo gasto negativo` ([GEP 0050](gep/0050-soma-nunca-negativa.md), em teste) | `issue não pode ficar com tempo gasto negativo` (uma soma de `indicadores` nunca fica abaixo de zero: criar, editar ou excluir um registro contado que a deixaria negativa é recusado — 400 no campo somado —, na mesma mudança e com o registro travado, mesmo com pedidos ao mesmo tempo; excluir o próprio registro não é recusado) |
 | `regras` › `única por par de issues` ([GEP 0048](gep/0048-pares.md), em teste) | `ligacao é única por par de issues` (as duas referências à issue nunca são a mesma — 400 — e o mesmo par, em qualquer ordem, aparece uma vez — 409; o banco também garante) |
 | `espelham o repositório do projeto` ([GEP 0036](gep/0036-espelhos.md), em teste; no dado dos espelhos, com `url` e `pertence a projeto`) | `espelhos espelham o repositório do projeto` |
 
@@ -492,7 +493,7 @@ Equivale a: developer pode enviar código para projetos
 | `repositório do projeto pode começar com "README.md" contendo "# {nome}"` | ao criar com `iniciar_repositorio` (nome externo pelo vocabulário), o repositório nasce com esse arquivo; `{campo}` vira o valor do registro |
 | `projeto tem repositório` | cada registro tem um repositório Git criado e removido com ele e servido em `/<campo único>.git`; branches, tags, commits, árvore, arquivos e comparação seguem as regras de baixar e enviar código; quem pode baixar código também baixa uma revisão inteira como um arquivo (`repositorio/baixar.zip`, `.tar.gz`, `.tar`; nome externo pelo vocabulário: `repository/archive.zip?sha=`), gerado em fluxo pelo git, sem shell, com poucos downloads ao mesmo tempo; arquivos grandes (Git LFS) seguem as mesmas regras, conferidos pelo sha256 e limitados por objeto ([GEP 0035](gep/0035-git-lfs.md), em teste) |
 | `origem: branch` e `destino: branch` (linhas de `X tem`, num dado que pertence a algo com repositório) | X propõe mudanças: as branches precisam existir e ser diferentes; X mostra mudanças, commits e conflitos; `mesclar` junta a origem no destino (rascunho não mescla; mesclar no destino segue as regras de enviar código). Em teste na [GEP 0027](gep/0027-formas-de-mesclar.md), sem frase nova: `forma_de_mesclar` do dono do repositório (`mesclagem`, `semi_linear`, `linear`), `juntar_commits` de X e, quando o dono `executa` algo, `mesclar_quando_passar` (espera a última execução da origem e mescla como quem pediu, verificando tudo de novo) |
-| `espelhos espelham o repositório do projeto` | cada espelho (`url`) é uma cópia do repositório em outro servidor Git, só http(s) e nunca na rede local: `sentido` `enviar` manda o repositório inteiro depois de cada mudança do código, `receber` traz o da url periodicamente; usuário e senha da url ficam ocultos; cada tentativa fica registrada sem atrapalhar quem envia código; `atualizar_agora` pede a atualização na hora, a quem pode editar o espelho ([GEP 0036](gep/0036-espelhos.md), em teste) |
+| `espelhos espelham o repositório do projeto` | cada espelho (`url`) é uma cópia do repositório em outro servidor Git, só http(s) e nunca na rede local: `sentido` `enviar` manda o repositório inteiro depois de cada mudança do código, `receber` traz o da url periodicamente; usuário e senha da url ficam ocultos e cifrados no banco ([GEP 0049](gep/0049-segredos-guardados.md)); cada tentativa fica registrada sem atrapalhar quem envia código; `atualizar_agora` pede a atualização na hora, a quem pode editar o espelho ([GEP 0036](gep/0036-espelhos.md), em teste) |
 
 **Tipo pelo nome** (quando não há tipo): `email`→email · `senha`/`password`→senha protegida ·
 `telefone`→telefone · `foto`/`avatar`/`imagem`→imagem · `descricao`/`description`→texto longo ·
@@ -519,11 +520,16 @@ Relações são escritas como `issue tem autor`, `issue tem responsaveis` e
 mas não são exigidos do autor do domínio.
 
 **Modificadores**: `obrigatório`, `único`, `privado` (só o dono e administradores veem),
-`oculto` (nunca aparece), `imutável`, `min N`, `max N`, `formato "regex"`, `valida função`,
+`oculto` (nunca aparece; um texto oculto escrito pelas pessoas, como `token oculto`, só serve ao
+próprio sistema para falar com outro sistema, e por isso fica **cifrado no banco**: nunca é
+pesquisado, filtrado, ordenado nem `único` — em teste na [GEP 0049](gep/0049-segredos-guardados.md)), `imutável`, `min N`, `max N`, `formato "regex"`, `valida função`,
 `segredo prefixo "x"` (gerado, guardado como hash, mostrado só na criação),
 `expira em N dias`, `revogavel`. `senha sem criptografia` é recusado.
 
-**Garantias automáticas**: senha com bcrypt e nunca devolvida; e-mails normalizados;
+**Garantias automáticas**: senha com bcrypt e nunca devolvida; segredos que o sistema precisa
+ler de volta (textos ocultos, a credencial dos espelhos, o segredo dos dois fatores) cifrados no
+banco com AES-256-GCM e a chave de `GERMANIO_SEGREDO`, com rotação da chave e cifra, na partida,
+do que estava em claro ([GEP 0049](gep/0049-segredos-guardados.md), em teste); e-mails normalizados;
 erros de validação reunidos por campo (`{"message": {"email": ["já está em uso"]}}`);
 excluir remove o que pertence ao registro; cada alteração (criar, editar, excluir, ações)
 roda numa transação junto com seus `antes de`/`quando`: se algo falha ou é recusado, nada
@@ -811,7 +817,8 @@ um código de aplicativo autenticador (TOTP): ligado, a senha certa só dá um d
 `/entrar/codigo` pede o código; cada código vale uma vez, erros contam no bloqueio do login (e a
 senha certa não zera a conta), há 10 códigos de recuperação de uso único; senha sozinha não serve
 para OAuth nem git (o token de acesso continua valendo); o segredo fica cifrado com
-`GERMANIO_SEGREDO` (sem ela, ligar é recusado) e nunca é mostrado depois de ligar.
+`GERMANIO_SEGREDO` (sem ela, ligar é recusado; a troca da chave segue a
+[GEP 0049](gep/0049-segredos-guardados.md)) e nunca é mostrado depois de ligar.
 
 `tenha login com conta externa` ([GEP 0039](gep/0039-login-com-conta-externa.md), **em teste**,
 não normativa até a decisão do mantenedor; implica o login) põe na página de entrar o botão
@@ -947,7 +954,8 @@ Nada disto aparece no `.ge`; é configuração de quem hospeda a aplicação.
 
 | Variável | Para quê |
 |----------|----------|
-| `GERMANIO_SEGREDO` | chave das sessões e tokens (≥ 32 bytes) e da cifra dos segredos dos dois fatores; sem ela, uma chave aleatória por processo e os dois fatores não podem ser ligados |
+| `GERMANIO_SEGREDO` | chave das sessões e tokens (≥ 32 bytes) e da cifra dos segredos guardados (textos ocultos, credenciais dos espelhos, dois fatores; [GEP 0049](gep/0049-segredos-guardados.md)); sem ela, uma chave aleatória por processo, os dois fatores não podem ser ligados e os segredos ficam sem cifra — só em desenvolvimento: com `GERMANIO_PRODUCAO=1` e segredos no programa, a partida é recusada |
+| `GERMANIO_SEGREDO_ANTERIOR` | chaves anteriores (separadas por espaço), só para ler o que foi cifrado com elas: na partida, tudo é cifrado de novo com `GERMANIO_SEGREDO`; depois, podem sair. Um segredo cifrado com uma chave que o servidor não tem impede a partida, com o motivo |
 | `GERMANIO_SQLITE` | arquivo do banco SQLite |
 | `GERMANIO_GIT_RAIZ` | pasta dos repositórios |
 | `GERMANIO_EXECUTOR` | `local` ou `docker` para executar etapas neste servidor (padrão: nenhum) |
