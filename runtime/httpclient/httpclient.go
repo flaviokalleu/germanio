@@ -111,6 +111,25 @@ func ipv4Numerico(h string) net.IP {
 	return net.IPv4(byte(v>>24), byte(v>>16), byte(v>>8), byte(v))
 }
 
+// LocalAllowed reports whether GERMANIO_PERMITIR_REDE_LOCAL=1 lets
+// outgoing connections reach the server's own networks (development only).
+func LocalAllowed() bool { return os.Getenv("GERMANIO_PERMITIR_REDE_LOCAL") == "1" }
+
+// LocalHost reports whether host — a name or an address literal, with or
+// without brackets — is recognisably local before any resolution. It gives
+// an early, clear refusal when an address is saved; the dialer of Transport
+// still checks every resolved address when connecting.
+func LocalHost(host string) bool {
+	h := strings.TrimSuffix(strings.TrimPrefix(host, "["), "]")
+	if nomeLocal(h) {
+		return true
+	}
+	if ip := net.ParseIP(h); ip != nil {
+		return local(ip)
+	}
+	return false
+}
+
 func local(ip net.IP) bool {
 	if ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() || ip.IsUnspecified() || ip.IsMulticast() {
 		return true

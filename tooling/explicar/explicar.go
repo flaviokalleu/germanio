@@ -132,6 +132,9 @@ func Entidade(prog *ast.Program, nome string) (string, error) {
 			w("  cadastro: qualquer pessoa cria a própria conta (/cadastro); campos como admin nunca são aceitos\n")
 		}
 		w("  bloqueio: %d senhas erradas seguidas bloqueiam a conta por %d minutos; um endereço que erra 50 logins em 10 minutos espera\n", app.Login.LockAttempts, app.Login.LockMinutes)
+		if app.EmailNotices && app.EmailChoiceField != "" {
+			w("  avisos por e-mail: cada pessoa recebe as novas pendências por e-mail, a não ser que desligue %s (a pendência continua)\n", app.EmailChoiceField)
+		}
 		if app.Login.Recovery {
 			w("  recuperação de senha: /esqueci envia por e-mail um link de uso único, válido por 1 hora, para o endereço público (GERMANIO_URL_PUBLICA); a resposta não revela se a conta existe; o e-mail vem do ambiente (GERMANIO_SMTP_* ou GERMANIO_CORREIO_PASTA)\n")
 		}
@@ -150,14 +153,51 @@ func Entidade(prog *ast.Program, nome string) (string, error) {
 			w("Branches protegidas: as que cada %s nomeia em %s (nome; * vale qualquer texto) só mudam com %s ou superior\n", d.Label, d.Plural, pb.Role)
 		}
 	}
+	if m := e.Mirror; m != nil {
+		w("Espelhos: cada %s é uma cópia do repositório de %s em outro servidor Git (só http ou https; endereços da rede local recusados, salvo GERMANIO_PERMITIR_REDE_LOCAL=1). sentido enviar: depois de cada mudança no código, o repositório inteiro (branches e tags) vai para a url; sentido receber: a cada GERMANIO_ESPELHO_MINUTOS (padrão 30) o repositório passa a ser uma cópia da url. Usuário e senha escritos na url ficam em credencial, nunca mostrada; falhas ficam em ultimo_erro e são tentadas de novo, sem atrapalhar quem envia código\n", e.Label, m.Owner)
+	}
+	if e.Repository {
+		w("Git LFS: arquivos grandes vão para %s.git/info/lfs com as mesmas regras de baixar e enviar código; cada objeto é conferido pelo sha256 e pelo tamanho, até GERMANIO_LFS_MAX_MB (padrão 100)\n", "/<"+e.RepoKey+">")
+	}
+	if rv := e.Review; rv != nil && rv.Target != "" {
+		owner := app.Entities[e.Parents[rv.RepoVia]]
+		w("Mesclagem (GEP 0027, em teste): mesclar junta %s em %s como %s escolhe em forma_de_mesclar (mesclagem: commit de mescla; semi_linear: commit de mescla depois de pôr %s em dia; linear: sem commit de mescla, %s só avança); juntar_commits escreve tudo num commit só\n", rv.Source, rv.Target, owner.Singular, rv.Source, rv.Target)
+		if rv.Runs != "" {
+			w("  mesclar_quando_passar: a mesclagem espera a última execução (%s) de %s e acontece como quem pediu, com as regras verificadas de novo; falha ou cancelamento param a espera (cancelar_mesclagem também)\n", app.Entities[rv.Runs].Plural, rv.Source)
+		}
+	}
+	var approvalVerbs []string
+	for v := range e.ApprovalsNeeded {
+		approvalVerbs = append(approvalVerbs, v)
+	}
+	sort.Strings(approvalVerbs)
+	for _, v := range approvalVerbs {
+		w("Aprovações: %s só depois de %s de pessoas que não são o dono do registro, cada pessoa contando uma vez (GEP 0026, em teste)\n", v, approvalCount(e.ApprovalsNeeded[v]))
+	}
 	if e.History && app.ActivityEntity != "" {
 		w("Histórico: cada mudança fica em %s (quem, o quê, quando e quais campos, nunca os valores)\n", app.ActivityEntity)
 	}
 	if vt := e.ViewThrough; vt != nil {
 		w("Visibilidade: cada registro é visto por quem vê o registro que ele descreve (%s, %s); se ele não existe mais, por quem vê %s; senão, só por %s. Ninguém além do administrador muda ou exclui\n", vt.Kind, vt.ID, vt.ParentKind, strings.TrimSuffix(vt.Author, "_id"))
 	}
+	if e.MoveField != "" {
+		w("Pode mudar de %s: quem pode editar o registro onde ele está e criar um no destino o leva para outro; ganha o próximo número de lá; listas por nome ficam com os nomes que o destino também tem, e outras referências ao lugar antigo saem\n", strings.TrimSuffix(e.MoveField, "_id"))
+	}
+	if len(e.IndependentParents) >= 2 {
+		w("Vários donos: cada registro nomeia %s; é visto e mudado só por quem vê todos eles, e sai com qualquer um\n", strings.Join(e.IndependentParents, " e "))
+	}
 	if len(e.PendingFields) > 0 {
 		w("Pendências: quem passa a estar em %s recebe uma pendência (dado %s); quem sai perde as abertas; excluir o registro exclui as pendências\n", strings.Join(e.PendingFields, ", "), app.PendingEntity)
+	}
+	if e.Copies {
+		repo := ""
+		if e.Repository {
+			repo = "; exige baixar código e leva uma cópia do repositório (branches, tags, branch padrão)"
+		}
+		w("Cópias (GEP 0029, em teste): quem pode copiar faz uma cópia de um registro que vê, criada em nome de quem copia com as regras de criar; leva os valores simples (não os pais, arquivos, segredos nem referências); lembra o original em copiado_de_id, mostrado só a quem vê o original; nunca é mais visível que o original%s\n", repo)
+	}
+	if e.Marks != "" {
+		w("Marcas (GEP 0030, em teste): cada pessoa que vê um registro o marca uma vez (marcar) e desmarca (desmarcar); %s conta as marcas, na mesma transação; ?marcados=sim lista o que a pessoa marcou; ninguém vê quem marcou; as marcas saem com o registro e com a pessoa\n", e.Marks)
 	}
 	w("\nCampos:\n")
 	for _, f := range e.Model.Fields {
@@ -253,7 +293,14 @@ func Entidade(prog *ast.Program, nome string) (string, error) {
 		w("  quem cria vira %s\n", e.CreatorRole)
 	}
 	if len(e.Search) > 0 || len(e.Filters) > 0 {
-		w("\nPesquisa: %s\nFiltros: %s\n", strings.Join(e.Search, ", "), strings.Join(e.Filters, ", "))
+		filters := make([]string, len(e.Filters))
+		for i, f := range e.Filters {
+			filters[i] = f
+			if list := e.ItemFilters[f]; list != "" {
+				filters[i] = fmt.Sprintf("%s (um item de %s, GEP 0030)", f, list)
+			}
+		}
+		w("\nPesquisa: %s\nFiltros: %s\n", strings.Join(e.Search, ", "), strings.Join(filters, ", "))
 	}
 	if len(e.Hooks) > 0 {
 		w("\nRegras explícitas:\n")
@@ -449,6 +496,11 @@ func origins(prog *ast.Program, app *ast.App, e *ast.Entity) []fact {
 			add("todo "+e.Singular+" precisa ter pelo menos um "+m.Role, m.Pos)
 		}
 	}
+	for _, m := range in.ApprovalMinimums {
+		if is(m.Entity) {
+			add(fmt.Sprintf("%s precisam de %s para %s", strings.ReplaceAll(e.Plural, "_", " "), approvalCount(m.Count), m.Verb), m.Pos)
+		}
+	}
 	for _, ro := range in.ReadOnly {
 		if is(ro.Entity) {
 			add(e.Singular+" "+ro.Flag+" é somente leitura", ro.Pos)
@@ -488,4 +540,12 @@ func origins(prog *ast.Program, app *ast.App, e *ast.Entity) []fact {
 func posOf(t lexer.Token, decl diagnostics.Position) diagnostics.Position {
 	decl.Line = t.Line
 	return decl
+}
+
+// approvalCount: "1 aprovação", "2 aprovações".
+func approvalCount(n int) string {
+	if n == 1 {
+		return "1 aprovação"
+	}
+	return fmt.Sprintf("%d aprovações", n)
 }

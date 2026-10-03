@@ -1,0 +1,13 @@
+# Espelhos: cópias do repositório do projeto em outros servidores Git
+# (enviar: depois de cada mudança; receber: de tempos em tempos).
+
+espelhos
+    tem
+        url obrigatório
+    pertence a projeto
+    espelham o repositório do projeto
+    acesso
+        maintainer
+            administrar
+    integração
+        nome "remote_mirrors"

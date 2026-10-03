@@ -1,0 +1,43 @@
+crie sistema Arquivo
+
+usuarios
+    tem
+        nome
+        email obrigatório e único
+        senha min 8
+
+tenha login
+tenha cadastro
+
+pastas
+    tem
+        nome obrigatório
+        visibilidade
+        autor
+        documentos
+    acesso
+        usuario
+            criar
+        autor
+            administrar
+
+documentos
+    tem
+        titulo obrigatório
+        autor
+        citacoes
+    acesso
+        usuario
+            criar
+        autor
+            editar
+            excluir
+
+# Uma citação liga um documento a outro, de qualquer pasta.
+citacoes
+    pertence a
+        documento como citado
+    acesso
+        usuario
+            criar
+            excluir

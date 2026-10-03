@@ -103,11 +103,14 @@ func (p *Parser) isIntentLine() bool {
 		return true
 	}
 	for i, x := range w[1:] {
-		if x == "tem" || x == "pode" || x == "podem" || x == "pertence" || x == "herda" || x == "comeca" || x == "recebe" || x == "executa" || x == "executam" || x == "precisa" || x == "gera" {
+		if x == "tem" || x == "pode" || x == "podem" || x == "pertence" || x == "herda" || x == "comeca" || x == "recebe" || x == "executa" || x == "executam" || x == "precisa" || x == "precisam" || x == "gera" {
 			return true
 		}
 		if (x == "usa" || x == "usam") && len(w) >= 5 && (contains(w, "do") || contains(w, "da") || contains(w, "dos") || contains(w, "das")) {
 			return true // pipelines usam as variaveis do projeto (GEP 0015)
+		}
+		if (x == "espelha" || x == "espelham") && contains(w, "repositorio") {
+			return true // espelhos espelham o repositório do projeto (GEP 0036)
 		}
 		if x == "guarda" && i+2 == len(w)-1 && (w[i+2] == "historico" || w[i+2] == "leitura") {
 			return true // issue guarda histórico (GEP 0011)
@@ -405,11 +408,15 @@ func (p *Parser) intentFrom(head dline, body []dline) error {
 			}
 			p.intent().PendingItems = append(p.intent().PendingItems, &ast.PendingRule{Entity: subject, Fields: fields, Pos: pos})
 			return nil
-		case "precisa":
+		case "precisa", "precisam":
 			// todo grupo precisa ter pelo menos um owner
 			k := len(w) - 1
 			subject, _ := phrase(w[:i])
 			subject = strings.TrimPrefix(strings.TrimPrefix(strings.TrimPrefix(subject, "todo_"), "toda_"), "cada_")
+			if isApprovalMinimum(w[i+1:]) {
+				// merge requests precisam de 2 aprovações para mesclar (GEP 0026)
+				return p.approvalMinimum(head, subject, w[i+1:], pos)
+			}
 			if subject == "" || k <= i+4 || strings.Join(w[i+1:k], " ") != "ter pelo menos um" && strings.Join(w[i+1:k], " ") != "ter pelo menos uma" {
 				return p.errorf(head.toks[0], "use: todo <dado> precisa ter pelo menos um <papel>")
 			}
@@ -463,6 +470,24 @@ func (p *Parser) intentFrom(head dline, body []dline) error {
 			}
 			in.Executions = append(in.Executions, &ast.ExecutionDecl{Owner: owner, Entity: runs, File: file, Pos: pos})
 			return nil
+		case "espelha", "espelham":
+			// espelhos espelham o repositório do projeto (GEP 0036, em teste)
+			subject, _ := phrase(w[:i])
+			rest := w[i+1:]
+			if len(rest) > 0 && rest[0] == "o" {
+				rest = rest[1:]
+			}
+			owner := ""
+			if len(rest) >= 3 && rest[0] == "repositorio" && (rest[1] == "do" || rest[1] == "da" || rest[1] == "dos" || rest[1] == "das") {
+				owner, _ = phrase(rest[2:])
+			}
+			if subject == "" || owner == "" || len(body) > 0 {
+				return p.teach(head.toks[0], "\""+lineText(head)+"\" não diz o que é espelho de qual repositório",
+					"um espelho é uma cópia do repositório de um dado em outro servidor Git",
+					"escreva: espelhos espelham o repositório do projeto (ou, no bloco de espelhos: espelham o repositório do projeto)", "")
+			}
+			in.Mirrors = append(in.Mirrors, &ast.MirrorDecl{Data: subject, Owner: owner, Pos: pos})
+			return nil
 		case "recebe":
 			subject, _ := phrase(w[:i])
 			// webhook recebe eventos do projeto + tipos de evento
@@ -485,11 +510,18 @@ func (p *Parser) intentFrom(head dline, body []dline) error {
 				return nil
 			}
 			// merge request recebe aprovações
-			if i != len(w)-2 || !strings.HasPrefix(w[i+1], "aprovac") {
-				return p.errorf(head.toks[0], "use: <dado> recebe aprovações")
+			if i == len(w)-2 && strings.HasPrefix(w[i+1], "aprovac") {
+				in.Approvals = append(in.Approvals, subject)
+				return nil
 			}
-			in.Approvals = append(in.Approvals, subject)
-			return nil
+			// projeto recebe estrelas: people mark the record (GEP 0030)
+			if i == len(w)-2 && len(body) == 0 && strings.HasSuffix(w[i+1], "s") && len(w[i+1]) > 2 {
+				in.Marks = append(in.Marks, &ast.MarksDecl{Entity: subject, Name: w[i+1], Pos: pos})
+				return nil
+			}
+			return p.teach(head.toks[0], "\""+lineText(head)+"\" não diz o que o dado recebe",
+				"um dado recebe aprovações, eventos de outro dado ou marcas das pessoas, com o nome delas no plural",
+				"escreva: <dado> recebe aprovações, ou <dado> recebe estrelas", "")
 		case "comeca":
 			// issue começa aberta
 			if i == 0 || i != len(w)-2 {

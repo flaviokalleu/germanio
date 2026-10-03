@@ -10,7 +10,31 @@ published under that name.
 
 ## [Unreleased]
 
-Nothing yet.
+### GitLab and identity
+
+- E-mail confirmation (`tenha confirmação de e-mail`, GEP 0031, em teste): no sign-in until the
+  address is confirmed; single-use tokens.
+- Two-factor authentication (`tenha autenticação em dois fatores`, GEP 0032, em teste): TOTP with
+  the secret sealed by AES-GCM under `GERMANIO_SEGREDO`, hashed single-use recovery codes.
+- Public keys (`chave pública` field type, GEP 0032) with fingerprint; GitLab `/user/keys`.
+- Repository archive download (`repository/archive`), under `baixar_codigo`.
+- Copies of a record (`acesso` › papel › `copiar`, GEP 0029, em teste): GitLab fork, with the
+  repository cloned, never more visible than the original.
+- Marks by people (`recebe estrelas`, GEP 0030, em teste), filtering by one item of a list
+  (topics), and `<campo>_endereco` for files (avatar).
+- A minimum of approvals before an action (`precisa de 2 aprovações para mesclar`, GEP 0026,
+  em teste); the author's approval does not count.
+- Ways to merge (GEP 0027, em teste, no syntax): squash, semi-linear, linear (fast-forward after
+  rebase), and merging when the executions of the source pass.
+- Git LFS over HTTP (GEP 0035, em teste, no syntax): batch API, sha256 and size checked while
+  streaming, `GERMANIO_LFS_MAX_MB`, same rules as clone and push.
+- Repository mirrors (`espelhos espelham o repositório do projeto`, GEP 0036, em teste): push and
+  pull mirrors over http(s) only, through the SSRF-protected client, credentials hidden.
+- Issues: weight, time estimate and spent time, links between issues, moving an issue to another
+  project (`pode mudar de projeto`, GEP 0034, em teste).
+- Adapters may ask the application itself as the caller (`superficie.pedir`, `superficie.contar`,
+  GEP 0033, em teste): GitLab events, `/application/statistics`, time tracking.
+- Per-person choice of notification e-mail (`avisos_por_email`, amendment to GEP 0013).
 
 ## [0.7.0] — 2026-09-29
 

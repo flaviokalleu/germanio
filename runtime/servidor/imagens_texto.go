@@ -65,10 +65,8 @@ func (a *intentAPI) mayAddImage(ctx *interp.Context, atual map[string]any, e *as
 	}
 	for _, c := range a.childrenOf(e) {
 		data := map[string]any{}
-		for field, target := range c.Parents {
-			if target == e.Singular {
-				data[field] = row["id"]
-			}
+		if field := parentFieldOf(c, e.Singular); field != "" {
+			data[field] = row["id"]
 		}
 		if a.in.Can(ctx, atual, c, "criar", data) {
 			return true

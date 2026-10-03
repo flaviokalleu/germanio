@@ -243,6 +243,12 @@ func (s *Servidor) serveRoute(w http.ResponseWriter, req *http.Request, route *a
 		s.jsonError(w, "interpretador não inicializado", http.StatusInternalServerError)
 		return
 	}
+	if req.Context().Value(innerKey{}) != nil {
+		// superficie.pedir reaches what Germanio generates, never a declared
+		// route (an adapter calling itself would loop)
+		s.writeRouteError(w, req, route, &interp.RuntimeError{Status: http.StatusLoopDetected, Message: fmt.Sprintf("superficie.pedir chega só ao que o Germanio gera; %s %s é uma rota declarada (%s:%d)", route.Method, route.Path, route.Pos.File, route.Pos.Line)})
+		return
+	}
 	requisicao, err := buildRequest(req, route)
 	if err != nil {
 		s.writeRouteError(w, req, route, err)

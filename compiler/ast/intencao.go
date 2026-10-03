@@ -34,15 +34,22 @@ type Intent struct {
 	VocabularyPos map[string]diagnostics.Position
 	// Conflicts: the same fact declared with different values in two files
 	// (found while merging; the resolver reports them with both origins).
-	Conflicts  []string
-	Ceilings   []*VisibilityCeiling
-	Creators   []*CreatorRole
-	Approvals  []string     // X recebe aprovações
-	Finals     []*StateDecl // X <estado> é final
-	Executions []*ExecutionDecl
+	Conflicts []string
+	Ceilings  []*VisibilityCeiling
+	Creators  []*CreatorRole
+	Approvals []string // X recebe aprovações
+	// Marks: `X recebe estrelas` (GEP 0030).
+	Marks []*MarksDecl
+	// ApprovalMinimums: `merge requests precisam de 2 aprovações para mesclar`
+	// (GEP 0026, em teste).
+	ApprovalMinimums []*ApprovalMinimum
+	Finals           []*StateDecl // X <estado> é final
+	Executions       []*ExecutionDecl
 	// RunVariables: `pipelines usam as variaveis do projeto` (GEP 0015).
-	RunVariables      []*RunVariablesDecl
-	Subscriptions     []*SubscriptionDecl
+	RunVariables  []*RunVariablesDecl
+	Subscriptions []*SubscriptionDecl
+	// Mirrors: `espelhos espelham o repositório do projeto` (GEP 0036).
+	Mirrors           []*MirrorDecl
 	RemoteExecutors   []*RemoteExecutorDecl
 	Translators       map[string]string // traduza <ponto> com <função> (integracoes/)
 	InitialFiles      []*InitialFileDecl
@@ -274,10 +281,13 @@ func MergeIntent(a, b *Intent) *Intent {
 	a.Ceilings = append(a.Ceilings, b.Ceilings...)
 	a.Creators = append(a.Creators, b.Creators...)
 	a.Approvals = append(a.Approvals, b.Approvals...)
+	a.Marks = append(a.Marks, b.Marks...)
+	a.ApprovalMinimums = append(a.ApprovalMinimums, b.ApprovalMinimums...)
 	a.Finals = append(a.Finals, b.Finals...)
 	a.Executions = append(a.Executions, b.Executions...)
 	a.RunVariables = append(a.RunVariables, b.RunVariables...)
 	a.Subscriptions = append(a.Subscriptions, b.Subscriptions...)
+	a.Mirrors = append(a.Mirrors, b.Mirrors...)
 	a.RemoteExecutors = append(a.RemoteExecutors, b.RemoteExecutors...)
 	for k, v := range b.Translators {
 		if a.Translators == nil {
@@ -411,6 +421,15 @@ type VisibilityCeiling struct {
 	Pos    diagnostics.Position
 }
 
+// ApprovalMinimum: records of Entity need Count approvals (by people other
+// than their owner) before Verb happens (GEP 0026).
+type ApprovalMinimum struct {
+	Entity string
+	Count  int
+	Verb   string
+	Pos    diagnostics.Position
+}
+
 // CreatorRole: `quem cria grupo vira owner`.
 type CreatorRole struct {
 	Entity string
@@ -439,6 +458,13 @@ type SubscriptionDecl struct {
 	Pos               diagnostics.Position
 }
 
+// MirrorDecl: `espelhos espelham o repositório do projeto` — records of
+// Data are mirrors of the repository of Owner.
+type MirrorDecl struct {
+	Data, Owner string
+	Pos         diagnostics.Position
+}
+
 // RemoteExecutorDecl: `runners executam jobs` — records of Executor, each
 // with a secret credential, take pending steps and run them elsewhere.
 type RemoteExecutorDecl struct {
@@ -457,4 +483,11 @@ func where(p diagnostics.Position) string {
 		return fmt.Sprintf("linha %d", p.Line)
 	}
 	return fmt.Sprintf("%s:%d", p.File, p.Line)
+}
+
+// MarksDecl: people mark records of Entity once each; Name is the marks
+// (`projetos recebe estrelas`, GEP 0030).
+type MarksDecl struct {
+	Entity, Name string
+	Pos          diagnostics.Position
 }

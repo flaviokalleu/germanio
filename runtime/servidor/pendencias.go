@@ -144,6 +144,11 @@ func (a *intentAPI) noticeByEmail(ctx *interp.Context, id int64, motivo string) 
 	}
 	res, _ := a.in.Op(ctx, le.Singular, "buscar", id)
 	person, _ := res.(map[string]any)
+	// the person's own choice (GEP 0013): the pending item stays, the e-mail
+	// does not go; an empty value (a person from before the field) means yes
+	if f := a.app.EmailChoiceField; f != "" && person[f] != nil && !truthy(person[f]) {
+		return
+	}
 	to := toStr(person[field])
 	if to == "" {
 		return

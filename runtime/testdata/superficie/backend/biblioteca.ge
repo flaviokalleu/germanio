@@ -1,0 +1,55 @@
+usuarios
+    tem
+        nome
+        email obrigatório e único
+        senha min 8
+        admin começa com falso
+
+tenha login
+tenha cadastro
+tenha administrador inicial "root@x.local"
+
+estantes
+    tem
+        nome obrigatório
+        autor
+        livros
+    acesso
+        usuario
+            criar
+            ver
+        autor
+            editar
+
+livros
+    tem
+        numero por estante
+        titulo obrigatório
+        autor
+    começa disponivel
+    pode
+        emprestar
+        devolver
+        ser raro
+    regras
+        raro pode ser vista por
+            autor
+    acesso
+        usuario
+            ver
+            criar
+        autor
+            editar
+            emprestar
+            devolver
+
+disponibilize para integração
+    estantes como "shelves"
+    livros como "books"
+
+integração em "/api/v1"
+
+vocabulário da integração
+    titulo é "title"
+    numero é "number"
+    nome é "name"
