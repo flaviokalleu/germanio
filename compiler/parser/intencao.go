@@ -103,7 +103,7 @@ func (p *Parser) isIntentLine() bool {
 		return true
 	}
 	for i, x := range w[1:] {
-		if x == "tem" || x == "pode" || x == "podem" || x == "pertence" || x == "herda" || x == "comeca" || x == "recebe" || x == "executa" || x == "executam" || x == "precisa" || x == "gera" {
+		if x == "tem" || x == "pode" || x == "podem" || x == "pertence" || x == "herda" || x == "comeca" || x == "recebe" || x == "executa" || x == "executam" || x == "precisa" || x == "precisam" || x == "gera" {
 			return true
 		}
 		if (x == "usa" || x == "usam") && len(w) >= 5 && (contains(w, "do") || contains(w, "da") || contains(w, "dos") || contains(w, "das")) {
@@ -405,11 +405,15 @@ func (p *Parser) intentFrom(head dline, body []dline) error {
 			}
 			p.intent().PendingItems = append(p.intent().PendingItems, &ast.PendingRule{Entity: subject, Fields: fields, Pos: pos})
 			return nil
-		case "precisa":
+		case "precisa", "precisam":
 			// todo grupo precisa ter pelo menos um owner
 			k := len(w) - 1
 			subject, _ := phrase(w[:i])
 			subject = strings.TrimPrefix(strings.TrimPrefix(strings.TrimPrefix(subject, "todo_"), "toda_"), "cada_")
+			if isApprovalMinimum(w[i+1:]) {
+				// merge requests precisam de 2 aprovações para mesclar (GEP 0026)
+				return p.approvalMinimum(head, subject, w[i+1:], pos)
+			}
 			if subject == "" || k <= i+4 || strings.Join(w[i+1:k], " ") != "ter pelo menos um" && strings.Join(w[i+1:k], " ") != "ter pelo menos uma" {
 				return p.errorf(head.toks[0], "use: todo <dado> precisa ter pelo menos um <papel>")
 			}

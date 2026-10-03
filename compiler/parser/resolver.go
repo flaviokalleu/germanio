@@ -806,6 +806,9 @@ func ResolveIntent(prog *ast.Program) error {
 		e.Approvals = true
 		e.Model.Fields = append(e.Model.Fields, &ast.Field{Name: "aprovacoes", Type: ast.FieldLista, ListOf: app.LoginEntity, System: true})
 	}
+	if err := r.approvalMinimums(in); err != nil {
+		return err
+	}
 
 	for _, f := range in.Finals {
 		e, err := r.entity(f.Entity, f.Pos)

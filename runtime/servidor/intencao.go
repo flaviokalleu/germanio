@@ -523,6 +523,7 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 			return
 		}
 		out := serializeFor(ctx, a.in, atual, e, row, false)
+		approvalStatus(e, row, out)
 		if e.Review != nil && e.Review.Target != "" && fmt.Sprint(row[e.StateField]) == e.Initial {
 			if check := a.mergeCheck(ctx, e, row); check != nil {
 				out["pode_mesclar"] = check["pode"]
@@ -731,6 +732,12 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 				return
 			}
 			row = a.find(ctx, e, fmt.Sprint(row["id"]), nil)
+		}
+		if tr := e.Transitions[verb]; tr != nil && !(verb == "mesclar" && e.Review != nil && e.Review.Target != "") {
+			if err := a.approvalGate(e, verb, row); err != nil {
+				a.failErr(w, r, err)
+				return
+			}
 		}
 		if tr := e.Transitions[verb]; tr != nil {
 			updated, err := a.in.Transition(ctx, atual, e, tr, row)

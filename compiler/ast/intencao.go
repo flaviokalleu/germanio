@@ -34,12 +34,15 @@ type Intent struct {
 	VocabularyPos map[string]diagnostics.Position
 	// Conflicts: the same fact declared with different values in two files
 	// (found while merging; the resolver reports them with both origins).
-	Conflicts  []string
-	Ceilings   []*VisibilityCeiling
-	Creators   []*CreatorRole
-	Approvals  []string     // X recebe aprovações
-	Finals     []*StateDecl // X <estado> é final
-	Executions []*ExecutionDecl
+	Conflicts []string
+	Ceilings  []*VisibilityCeiling
+	Creators  []*CreatorRole
+	Approvals []string // X recebe aprovações
+	// ApprovalMinimums: `merge requests precisam de 2 aprovações para mesclar`
+	// (GEP 0026, em teste).
+	ApprovalMinimums []*ApprovalMinimum
+	Finals           []*StateDecl // X <estado> é final
+	Executions       []*ExecutionDecl
 	// RunVariables: `pipelines usam as variaveis do projeto` (GEP 0015).
 	RunVariables      []*RunVariablesDecl
 	Subscriptions     []*SubscriptionDecl
@@ -271,6 +274,7 @@ func MergeIntent(a, b *Intent) *Intent {
 	a.Ceilings = append(a.Ceilings, b.Ceilings...)
 	a.Creators = append(a.Creators, b.Creators...)
 	a.Approvals = append(a.Approvals, b.Approvals...)
+	a.ApprovalMinimums = append(a.ApprovalMinimums, b.ApprovalMinimums...)
 	a.Finals = append(a.Finals, b.Finals...)
 	a.Executions = append(a.Executions, b.Executions...)
 	a.RunVariables = append(a.RunVariables, b.RunVariables...)
@@ -402,6 +406,15 @@ type VisibilityRule struct {
 type VisibilityCeiling struct {
 	Entity string
 	Parent string // entity name, or "pai" for the hierarchy parent
+	Pos    diagnostics.Position
+}
+
+// ApprovalMinimum: records of Entity need Count approvals (by people other
+// than their owner) before Verb happens (GEP 0026).
+type ApprovalMinimum struct {
+	Entity string
+	Count  int
+	Verb   string
 	Pos    diagnostics.Position
 }
 

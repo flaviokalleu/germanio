@@ -97,6 +97,8 @@ type Entity struct {
 	Review *Review
 	// Approvals: `X recebe aprovações` (aprovar/desaprovar, people list).
 	Approvals bool
+	// ApprovalsNeeded: verb → approvals required before it happens (GEP 0026).
+	ApprovalsNeeded map[string]int
 	// Finals: states no transition leaves (mesclado é final).
 	Finals []string
 	// Execution: this entity is a run of steps (pipelines) or a step (jobs).

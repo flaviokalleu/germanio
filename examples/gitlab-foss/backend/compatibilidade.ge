@@ -72,6 +72,8 @@ vocabulário da integração
     aprovar é "approve"
     desaprovar é "unapprove"
     aprovacoes é "approved_by_ids"
+    aprovacoes_necessarias é "approvals_required"
+    aprovacoes_faltando é "approvals_left"
     revisores é "reviewer_ids"
     rascunho é "draft"
     mudancas é "changes"

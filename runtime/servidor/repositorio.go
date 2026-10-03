@@ -667,6 +667,15 @@ func (a *intentAPI) merge(ctx *interp.Context, atual map[string]any, e *ast.Enti
 		}
 		return &interp.RuntimeError{Status: 406, Message: msg}
 	}
+	if len(e.ApprovalsNeeded) > 0 {
+		// conflicts are told before missing approvals: approving does not fix them
+		if check := a.mergeCheck(ctx, e, row); check != nil && check["pode"] == false {
+			return a.conflictError(toStrings(check["conflitos"]))
+		}
+		if err := a.approvalGate(e, "mesclar", row); err != nil {
+			return err
+		}
+	}
 	repo, parent := a.reviewRepo(ctx, e, row)
 	pe := a.app.Entities[e.Parents[e.Review.RepoVia]]
 	target := fmt.Sprint(row[e.Review.Target])
@@ -683,11 +692,7 @@ func (a *intentAPI) merge(ctx *interp.Context, atual map[string]any, e *ast.Enti
 	if err != nil {
 		var conf *git.ErrConflict
 		if errorsAs(err, &conf) {
-			m := "Há conflitos entre as branches: " + strings.Join(conf.Files, ", ")
-			if en {
-				m = "Branch cannot be merged"
-			}
-			return &interp.RuntimeError{Status: 406, Message: m}
+			return a.conflictError(conf.Files)
 		}
 		return err
 	}

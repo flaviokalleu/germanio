@@ -334,6 +334,7 @@ válidas. `construcao_do_sistema` são as construções sem sujeito único (`ten
 | `regras` › `não pode ser mais visível que o grupo` | `d não pode ser mais visível que o grupo` |
 | `regras` › `arquivado é somente leitura` | `d arquivado é somente leitura` |
 | `regras` › `mesclado é final` | `d mesclado é final` |
+| `regras` › `precisa de 2 aprovações para mesclar` ([GEP 0026](gep/0026-minimo-de-aprovacoes.md), em teste) | `d precisam de 2 aprovações para mesclar` (a ação espera aprovações de pessoas diferentes do autor; o dado `recebe aprovações`) |
 | `regras` › `confidencial pode ser vista por` + pessoas | `d confidencial pode ser vista por` + pessoas |
 | `acesso` › `developer` › `enviar código` | `developer pode enviar código para D` |
 | `acesso` › `usuario` › `criar seus` | `usuario pode criar seus D` |
