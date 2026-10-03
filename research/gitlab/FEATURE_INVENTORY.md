@@ -15,7 +15,7 @@ Escopo núcleo v1 = features marcadas **[N]** (fluxos 1–5 da missão + testes 
 | ID-04 | Usuário atual | `GET /api/v4/user` | — | API | users | autenticado | | | PASS | TestFluxo1 |
 | ID-05 | Admin: bloquear usuário | `state=blocked` impede login e API | admin | `POST /users/:id/block` | users | admin | | | PASS | TestBloquearUsuario |
 | ID-06 | Recuperação de senha / confirmação de e-mail | tokens por e-mail | forms | Devise | users | anônimo | email | SUPPORTED (GEP 0008, 0031) | PASS (confirmação de e-mail: capability `tenha confirmação de e-mail`, GEP 0031 em teste) | TestRecuperacaoDeSenha, TestConfirmacaoDeEmail |
-| ID-07 | 2FA, OAuth, LDAP, SAML, WebAuthn | TOTP, códigos de recuperação | perfil, login | Devise two-factor | users | dono | — | PARTIAL (GEP 0032) | PARTIAL (2FA TOTP feito; OAuth/OIDC em andamento; LDAP/SAML/WebAuthn fora) | TestDoisFatores, TestDoisFatoresGitLab |
+| ID-07 | 2FA, OAuth, LDAP, SAML, WebAuthn | TOTP, códigos de recuperação, entrar com conta externa | perfil, login | Devise two-factor, OmniAuth | users | dono | OIDC | SUPPORTED (GEP 0032, 0039) | PASS (2FA TOTP e OpenID Connect com PKCE; LDAP, SAML e WebAuthn fora do núcleo: ver GEP 0039) | TestDoisFatores, TestDoisFatoresGitLab, TestContaExterna, TestContaExternaGitLab |
 | ID-08 | Chaves SSH | cadastro de chave pública | perfil | `/user/keys` | keys | dono | SSH | SUPPORTED (GEP 0032, `chave pública`) | PASS (cadastro, impressão digital; transporte SSH em RP-10) | TestChavesSSH |
 
 ## Grupos e namespaces

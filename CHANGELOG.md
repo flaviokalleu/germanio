@@ -34,6 +34,10 @@ published under that name.
   project (`pode mudar de projeto`, GEP 0034, em teste).
 - Adapters may ask the application itself as the caller (`superficie.pedir`, `superficie.contar`,
   GEP 0033, em teste): GitLab events, `/application/statistics`, time tracking.
+- Sign-in with an external account (`tenha login com conta externa`, GEP 0039, em teste):
+  OpenID Connect code flow with PKCE, state and nonce, ID token verified by JWKS (RS256/ES256)
+  with the standard library only; linking needs the e-mail verified on both sides; two factors
+  still asked.
 - Per-person choice of notification e-mail (`avisos_por_email`, amendment to GEP 0013).
 
 ## [0.7.0] — 2026-09-29
