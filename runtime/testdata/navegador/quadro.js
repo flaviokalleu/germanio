@@ -100,6 +100,31 @@ function fail(msg) { console.error('FALHA: ' + msg); process.exit(1); }
   if (await pa.locator('.quadro .cartao:visible').count() !== 1) fail('o filtro local não escondeu os outros cartões');
   if (requests.length !== 0) fail('o filtro local pediu algo ao servidor: ' + requests.join(', '));
 
+  // accessibility: no serious or critical axe-core violation on the board
+  // (the page's CSP rightly forbids injected scripts: the audit context bypasses it)
+  const audit = await browser.newContext({ bypassCSP: true });
+  const pq = await audit.newPage();
+  await pq.goto(base + '/entrar');
+  await pq.fill('input[name=login]', 'ana@x.com');
+  await pq.fill('input[name=senha]', 'senha-segura-1');
+  await Promise.all([pq.waitForNavigation(), pq.click('form button')]);
+  await pq.goto(base + '/quadros/1');
+  await pq.addScriptTag({ path: require.resolve('axe-core/axe.min.js') });
+  const result = await pq.evaluate(async () => await axe.run(document, { resultTypes: ['violations'] }));
+  const bad = result.violations.filter(v => v.impact === 'serious' || v.impact === 'critical');
+  if (bad.length) fail('acessibilidade: ' + bad.map(v => v.id + ' (' + v.nodes.length + ')').join(', '));
+
+  // a phone: the page itself never scrolls sideways (the board scrolls inside)
+  const phone = await browser.newContext({ viewport: { width: 375, height: 740 } });
+  const pp = await phone.newPage();
+  await pp.goto(base + '/entrar');
+  await pp.fill('input[name=login]', 'ana@x.com');
+  await pp.fill('input[name=senha]', 'senha-segura-1');
+  await Promise.all([pp.waitForNavigation(), pp.click('form button')]);
+  await pp.goto(base + '/quadros/1');
+  const overflow = await pp.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  if (overflow > 0) fail('no celular a página rola para o lado: ' + overflow + 'px');
+
   console.log('ok');
   await browser.close();
 })().catch(e => fail(e.message));

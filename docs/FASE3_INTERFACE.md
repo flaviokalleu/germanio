@@ -116,3 +116,20 @@ Provado no navegador: abre, edita o título (o quadro mostra o novo) e Esc fecha
 - Um campo "Filtrar" esconde os cartões que não batem, sem pedir nada ao servidor, e o filtro
   sobrevive às atualizações ao vivo.
 - Provado no navegador, inclusive que o filtro não faz nenhuma requisição.
+
+### Passo 7 — critérios (2026-10-02)
+
+| # | Critério | Situação | Evidência |
+| --- | --- | --- | --- |
+| 1 | intenção pura | **cumprido** | o `.ge` do Quadro não tem DOM, evento, estado de componente nem JavaScript; a única linha de interface é `cartoes por estado` |
+| 2 | interação num navegador real | **cumprido** | `TestNavegador`: arrastar, painel, teclado, seleção, desfazer, filtro, outra aba |
+| 3 | regras valem na interface | **cumprido** | `TestPorEstado`: só os movimentos permitidos aparecem; movimento forjado é recusado |
+| 4 | acessibilidade | **cumprido** | botões sem mouse nem JavaScript; setas; anúncios `aria-live`; `axe-core` sem violação grave ou crítica no quadro |
+| 5 | atualização local | **cumprido** | mover não recarrega; a outra aba vê pela página viva; offline recupera |
+| 6 | desfazer | **cumprido** | Ctrl+Z e botão; volta pelo movimento inverso, conferido pelo servidor; também em grupo |
+| 7 | peso | **cumprido** | todo o JavaScript gerado: 10,4 KB (3,3 KB comprimido), sem framework |
+
+Responsividade: num celular (375 px) a página não rola para o lado, e o quadro rola dentro dele.
+
+Ainda na fase (itens adiados para cá): "digitando…" (da FASE 2), edição de arquivo pela web (RP-08)
+e uploads dentro do Markdown (UP-01).
