@@ -286,6 +286,8 @@ type App struct {
 	Interpreter *interp.Interpreter
 	Server      *servidor.Servidor
 	Handler     http.Handler
+	// SSHEndereco is where Git over SSH listens ("" when not configured).
+	SSHEndereco string
 	// closers run on Fechar (background workers, WhatsApp, cron).
 	closers []func()
 }
@@ -448,6 +450,11 @@ func Carregar(arquivo string, porta string) (*App, error) {
 	}
 	app.OnClose(srv.Fechar)
 	app.Handler = handler
+	// Git over SSH, only when the host configured it (GERMANIO_SSH_ENDERECO)
+	if app.SSHEndereco, err = srv.IniciarSSH(); err != nil {
+		app.Fechar()
+		return nil, err
+	}
 	return app, nil
 }
 

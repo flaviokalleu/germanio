@@ -93,16 +93,11 @@ func (s *Servidor) gitMiddleware(next http.Handler) http.Handler {
 	if app == nil || s.Git == nil {
 		return next
 	}
-	var repoEntities []*ast.Entity
-	for _, n := range app.Order {
-		if app.Entities[n].Repository {
-			repoEntities = append(repoEntities, app.Entities[n])
-		}
-	}
+	a := &intentAPI{s: s, app: app, in: s.Interpreter}
+	repoEntities := a.repositoryEntities()
 	if len(repoEntities) == 0 {
 		return next
 	}
-	a := &intentAPI{s: s, app: app, in: s.Interpreter}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		i := strings.Index(r.URL.Path, ".git/")
 		if i < 0 {
@@ -126,15 +121,7 @@ func (a *intentAPI) serveGit(w http.ResponseWriter, r *http.Request, entities []
 		w.Header().Set("WWW-Authenticate", `Basic realm="Germanio"`)
 		http.Error(w, "HTTP Basic: Access denied", http.StatusUnauthorized)
 	}
-	var e *ast.Entity
-	var row map[string]any
-	for _, cand := range entities {
-		res, err := a.in.Op(ctx, cand.Singular, "encontrar", map[string]any{cand.RepoKey: key})
-		if m, ok := res.(map[string]any); ok && err == nil {
-			e, row = cand, m
-			break
-		}
-	}
+	e, row := a.findRepository(ctx, entities, key)
 	// A running step's token reads the repository of that step (remote executors clone with it).
 	if _, pass, ok := r.BasicAuth(); ok && row != nil && service == "upload-pack" {
 		if step, job := a.stepByToken(ctx, pass, true); job != nil && a.stepOwnerIs(ctx, step, job, e, row) {
@@ -147,57 +134,29 @@ func (a *intentAPI) serveGit(w http.ResponseWriter, r *http.Request, entities []
 		challenge()
 		return
 	}
-	if row == nil || !a.in.Can(ctx, atual, e, "ver", row) {
-		if atual == nil {
-			challenge()
-			return
-		}
+	refusal := a.authorizeGit(ctx, atual, e, row, service)
+	switch {
+	case refusal == nil:
+	case atual == nil && refusal.kind != gitReadOnly:
+		challenge()
+		return
+	case refusal.kind == gitHidden:
 		http.NotFound(w, r)
 		return
-	}
-	verb := "baixar_codigo"
-	if service == "receive-pack" {
-		verb = "enviar_codigo"
-		if le, _ := a.lockedAncestor(ctx, e, row, true, 0); le != nil {
-			http.Error(w, interp.Friendly(a.readOnlyError(le)), http.StatusForbidden)
-			return
-		}
-	}
-	if !a.s.scopeAllows(ctx, verb) {
+	case refusal.kind == gitReadOnly:
+		http.Error(w, refusal.message, http.StatusForbidden)
+		return
+	case refusal.kind == gitScope:
 		http.Error(w, "The token does not have the scope for this operation", http.StatusForbidden)
 		return
-	}
-	allowed := false
-	if verb == "baixar_codigo" && len(e.Rules["baixar_codigo"]) == 0 {
-		allowed = true // seeing the record is enough to clone when no rule narrows it
-	} else {
-		allowed = a.in.Can(ctx, atual, e, verb, row)
-	}
-	if !allowed {
-		if atual == nil {
-			challenge()
-			return
-		}
-		http.Error(w, "You are not allowed to "+strings.ReplaceAll(verb, "_codigo", " code")+" in this repository", http.StatusForbidden)
+	default:
+		http.Error(w, "You are not allowed to "+strings.ReplaceAll(refusal.verb, "_codigo", " code")+" in this repository", http.StatusForbidden)
 		return
 	}
 	repo, _ := row["repositorio"].(string)
-	vars := func(list []git.RefUpdate) map[string]any {
-		return map[string]any{"atual": nilIfEmpty(atual), "registro": row, e.Singular: row, "atualizacoes": updatesToMaps(list)}
-	}
 	var check func([]git.RefUpdate) error
 	if service == "receive-pack" {
-		check = func(list []git.RefUpdate) error {
-			if err := a.protectedBranch(ctx, atual, e, row, list); err != nil {
-				return fmt.Errorf("%s", interp.Friendly(err))
-			}
-			if h := e.Hooks["antes_enviar_codigo"]; h != nil {
-				if _, _, err := a.in.RunHook(ctx, h, vars(list)); err != nil {
-					return fmt.Errorf("%s", interp.Friendly(err))
-				}
-			}
-			return nil
-		}
+		check = a.pushRules(ctx, atual, e, row)
 	}
 	applied, err := a.s.Git.ServeHTTP(w, r, repo, service, advertise, check)
 	if err != nil {
@@ -205,23 +164,112 @@ func (a *intentAPI) serveGit(w http.ResponseWriter, r *http.Request, entities []
 		return
 	}
 	if service == "receive-pack" && !advertise && len(applied) > 0 {
-		pushed := map[string]any{"atualizacoes": updatesToMaps(applied), "id": row["id"]}
-		for k, v := range row {
-			if _, taken := pushed[k]; !taken {
-				pushed[k] = v
+		a.afterPush(ctx, atual, e, row, applied)
+	}
+}
+
+// findRepository finds the record whose repository is addressed by key
+// (the value of its repository key), or nil.
+func (a *intentAPI) findRepository(ctx *interp.Context, entities []*ast.Entity, key string) (*ast.Entity, map[string]any) {
+	for _, cand := range entities {
+		res, err := a.in.Op(ctx, cand.Singular, "encontrar", map[string]any{cand.RepoKey: key})
+		if m, ok := res.(map[string]any); ok && err == nil {
+			return cand, m
+		}
+	}
+	return nil, nil
+}
+
+// repositoryEntities lists the data whose records have a repository.
+func (a *intentAPI) repositoryEntities() []*ast.Entity {
+	var out []*ast.Entity
+	for _, n := range a.app.Order {
+		if a.app.Entities[n].Repository {
+			out = append(out, a.app.Entities[n])
+		}
+	}
+	return out
+}
+
+// What the rules say about one Git request, whatever the transport (smart
+// HTTP, SSH): a refusal kind, or nil when the request may go on.
+type gitRefusal struct {
+	kind    int
+	verb    string // baixar_codigo or enviar_codigo
+	message string // the read-only reason, already friendly
+}
+
+const (
+	gitHidden   = iota // no such repository, or the person may not see it
+	gitReadOnly        // the record (or an ancestor) is read-only
+	gitScope           // the access token's scopes do not cover it
+	gitVerb            // the person sees it but may not download / send code
+)
+
+// authorizeGit decides whether atual may download (upload-pack) or send
+// (receive-pack) code to the repository of row.
+func (a *intentAPI) authorizeGit(ctx *interp.Context, atual map[string]any, e *ast.Entity, row map[string]any, service string) *gitRefusal {
+	if row == nil || !a.in.Can(ctx, atual, e, "ver", row) {
+		return &gitRefusal{kind: gitHidden}
+	}
+	verb := "baixar_codigo"
+	if service == "receive-pack" {
+		verb = "enviar_codigo"
+		if le, _ := a.lockedAncestor(ctx, e, row, true, 0); le != nil {
+			return &gitRefusal{kind: gitReadOnly, verb: verb, message: interp.Friendly(a.readOnlyError(le))}
+		}
+	}
+	if !a.s.scopeAllows(ctx, verb) {
+		return &gitRefusal{kind: gitScope, verb: verb}
+	}
+	if verb == "baixar_codigo" && len(e.Rules["baixar_codigo"]) == 0 {
+		return nil // seeing the record is enough to clone when no rule narrows it
+	}
+	if !a.in.Can(ctx, atual, e, verb, row) {
+		return &gitRefusal{kind: gitVerb, verb: verb}
+	}
+	return nil
+}
+
+// pushRules checks the updates of a push before anything is written:
+// protected branches, then `antes de enviar código`.
+func (a *intentAPI) pushRules(ctx *interp.Context, atual map[string]any, e *ast.Entity, row map[string]any) func([]git.RefUpdate) error {
+	return func(list []git.RefUpdate) error {
+		if err := a.protectedBranch(ctx, atual, e, row, list); err != nil {
+			return fmt.Errorf("%s", interp.Friendly(err))
+		}
+		if h := e.Hooks["antes_enviar_codigo"]; h != nil {
+			if _, _, err := a.in.RunHook(ctx, h, pushVars(atual, e, row, list)); err != nil {
+				return fmt.Errorf("%s", interp.Friendly(err))
 			}
 		}
-		a.emit(ctx, e, "enviar_codigo", pushed, atual)
-		if err := a.history(ctx, atual, e, "enviar_codigo", nil, row); err != nil {
-			// the git answer is already written: report, do not answer twice
-			fmt.Printf("[germanio] histórico do envio de código: %v\n", err)
+		return nil
+	}
+}
+
+func pushVars(atual map[string]any, e *ast.Entity, row map[string]any, list []git.RefUpdate) map[string]any {
+	return map[string]any{"atual": nilIfEmpty(atual), "registro": row, e.Singular: row, "atualizacoes": updatesToMaps(list)}
+}
+
+// afterPush runs what follows a push that changed refs: the event, the
+// history, the executions and `quando enviar código`.
+func (a *intentAPI) afterPush(ctx *interp.Context, atual map[string]any, e *ast.Entity, row map[string]any, applied []git.RefUpdate) {
+	pushed := map[string]any{"atualizacoes": updatesToMaps(applied), "id": row["id"]}
+	for k, v := range row {
+		if _, taken := pushed[k]; !taken {
+			pushed[k] = v
 		}
-		a.startRuns(ctx, atual, e, row, updatesToMaps(applied))
-		if h := e.Hooks["enviar_codigo"]; h != nil {
-			if _, _, err := a.in.RunHook(ctx, h, vars(applied)); err != nil {
-				// The push already happened; report the failure in the log.
-				fmt.Printf("[germanio] quando enviar código para %s: %v\n", e.Singular, err)
-			}
+	}
+	a.emit(ctx, e, "enviar_codigo", pushed, atual)
+	if err := a.history(ctx, atual, e, "enviar_codigo", nil, row); err != nil {
+		// the git answer is already written: report, do not answer twice
+		fmt.Printf("[germanio] histórico do envio de código: %v\n", err)
+	}
+	a.startRuns(ctx, atual, e, row, updatesToMaps(applied))
+	if h := e.Hooks["enviar_codigo"]; h != nil {
+		if _, _, err := a.in.RunHook(ctx, h, pushVars(atual, e, row, applied)); err != nil {
+			// The push already happened; report the failure in the log.
+			fmt.Printf("[germanio] quando enviar código para %s: %v\n", e.Singular, err)
 		}
 	}
 }
