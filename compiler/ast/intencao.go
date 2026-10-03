@@ -182,6 +182,8 @@ type LoginDecl struct {
 	Fields       []string // login usa username e email
 	Signup       bool     // tenha cadastro
 	Recovery     bool     // tenha recuperação de senha (GEP 0008, em teste)
+	Confirmation bool     // tenha confirmação de e-mail (GEP 0031, em teste)
+	TwoFactor    bool     // tenha autenticação em dois fatores (GEP 0032, em teste)
 	TokenEntity  string   // login aceita tokens de acesso
 	TokenHeader  string   // no cabeçalho "PRIVATE-TOKEN"
 	OAuthSeconds int      // login aceita oauth por 2 horas
@@ -343,6 +345,8 @@ func mergeLogin(a, b *LoginDecl) {
 	}
 	a.Signup = a.Signup || b.Signup
 	a.Recovery = a.Recovery || b.Recovery
+	a.Confirmation = a.Confirmation || b.Confirmation
+	a.TwoFactor = a.TwoFactor || b.TwoFactor
 	if b.TokenEntity != "" {
 		a.TokenEntity = b.TokenEntity
 	}

@@ -36,6 +36,10 @@ func describeField(f *ast.Field) string {
 	if f.Reference != "" {
 		t = "referência a " + f.Reference
 	}
+	if f.Type == ast.FieldChavePublica {
+		// GEP 0032
+		t = "chave pública (conferida; DSA e RSA abaixo de 2048 bits recusadas; nunca muda; impressao_digital calculada)"
+	}
 	parts = append(parts, t)
 	if f.TypeInferred && (f.Type == ast.FieldArquivo || f.Type == ast.FieldImagem) {
 		// GEP 0014: only a declared type turns a field into a stored file
@@ -130,6 +134,12 @@ func Entidade(prog *ast.Program, nome string) (string, error) {
 		w("  bloqueio: %d senhas erradas seguidas bloqueiam a conta por %d minutos; um endereço que erra 50 logins em 10 minutos espera\n", app.Login.LockAttempts, app.Login.LockMinutes)
 		if app.Login.Recovery {
 			w("  recuperação de senha: /esqueci envia por e-mail um link de uso único, válido por 1 hora, para o endereço público (GERMANIO_URL_PUBLICA); a resposta não revela se a conta existe; o e-mail vem do ambiente (GERMANIO_SMTP_* ou GERMANIO_CORREIO_PASTA)\n")
+		}
+		if app.Login.Confirmation {
+			w("  confirmação de e-mail (GEP 0031, em teste): quem se cadastra recebe um link de uso único, válido por 24 horas, e só entra depois de confirmar; mudar o e-mail pede nova confirmação; pessoas criadas por administradores já nascem confirmadas (email_confirmado)\n")
+		}
+		if app.Login.TwoFactor {
+			w("  dois fatores (GEP 0032, em teste): cada pessoa pode ligar um código de aplicativo autenticador (TOTP, RFC 6238); ligado, entrar pede o código depois da senha, cada código vale uma vez, erros contam no bloqueio; senha sozinha não serve para git nem oauth (use um token de acesso); 10 códigos de recuperação de uso único; o segredo fica cifrado e nunca é mostrado de novo\n")
 		}
 	}
 	for _, pb := range e.ProtectedBranches {

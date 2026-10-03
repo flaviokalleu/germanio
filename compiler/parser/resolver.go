@@ -429,6 +429,31 @@ func ResolveIntent(prog *ast.Program) error {
 		e.Transitions = map[string]*ast.Transition{}
 		e.Model.Fields = append(e.Model.Fields, &ast.Field{Name: "estado", Type: ast.FieldTexto, HasDefault: true, DefaultValue: st.Initial, System: true, Index: true, Pos: st.Pos})
 	}
+	// 7b0. Public keys (GEP 0032, em teste): the fingerprint is derived and
+	// read-only; a unique key is unique by its fingerprint (the same key
+	// with another comment is the same key).
+	for _, n := range app.Order {
+		e := app.Entities[n]
+		var key *ast.Field
+		for _, f := range e.Model.Fields {
+			if f.Type != ast.FieldChavePublica {
+				continue
+			}
+			if key != nil {
+				return r.errAt(f.Pos, "%s tem duas chaves públicas (%s e %s)\nPor quê: cada registro guarda uma chave, com uma impressão digital\nComo corrigir: crie um registro por chave (por exemplo, chaves que pertencem a usuario)", e.Plural, key.Name, f.Name)
+			}
+			key = f
+		}
+		if key == nil {
+			continue
+		}
+		if fieldByNameAST(e.Model, "impressao_digital") != nil {
+			return r.errAt(key.Pos, "%s já tem um campo impressao_digital, que a chave pública calcula\nComo corrigir: remova o campo impressao_digital; ele é derivado da chave", e.Plural)
+		}
+		e.Model.Fields = append(e.Model.Fields, &ast.Field{Name: "impressao_digital", Label: "impressão digital", Type: ast.FieldTexto, System: true, Unique: key.Unique, Index: !key.Unique, Pos: key.Pos})
+		key.Unique = false
+		key.Immutable = true
+	}
 	// 4. Login entity: the one with a senha field.
 	var withPassword []string
 	for _, n := range app.Order {
@@ -502,6 +527,23 @@ func ResolveIntent(prog *ast.Program) error {
 			le.Model.Fields = append(le.Model.Fields,
 				&ast.Field{Name: "tentativas_falhas", Type: ast.FieldInteiro, HasDefault: true, DefaultValue: 0.0, Hidden: true, System: true},
 				&ast.Field{Name: "bloqueado_ate", Type: ast.FieldTexto, Hidden: true, System: true})
+		}
+		hasEmail := false
+		for _, f := range le.Model.Fields {
+			hasEmail = hasEmail || f.Type == ast.FieldEmail
+		}
+		if in.Login.Confirmation {
+			// GEP 0031: people created by sign-up start unconfirmed; everyone
+			// else (created by an administrator, or before the phrase) is
+			// confirmed, so declaring it never locks anyone out.
+			if !hasEmail {
+				return r.errAt(in.Login.Pos, "tenha confirmação de e-mail confirma o e-mail das pessoas, mas %s não tem um campo de e-mail\nComo corrigir: acrescente em %s › tem a linha: email obrigatório e único", le.Plural, le.Plural)
+			}
+			le.Model.Fields = append(le.Model.Fields, &ast.Field{Name: "email_confirmado", Label: "e-mail confirmado", Type: ast.FieldBooleano, HasDefault: true, DefaultValue: true, System: true, Private: true, Pos: in.Login.Pos})
+		}
+		if in.Login.TwoFactor {
+			// GEP 0032: opt-in per person; the secret lives outside the record
+			le.Model.Fields = append(le.Model.Fields, &ast.Field{Name: "dois_fatores", Label: "dois fatores", Type: ast.FieldBooleano, HasDefault: true, DefaultValue: false, System: true, Private: true, Pos: in.Login.Pos})
 		}
 		if in.Login.TokenEntity != "" {
 			te, err := r.entity(in.Login.TokenEntity, in.Login.Pos)

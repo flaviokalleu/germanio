@@ -1,0 +1,23 @@
+crie sistema Livros
+
+usuarios
+    tem
+        nome obrigatório
+        email obrigatório e único
+        senha min 8
+
+tenha login
+tenha cadastro
+
+livros
+    tem
+        nome obrigatório e único
+        autor
+    tem repositório
+    acesso
+        usuario
+            criar
+        autor
+            ver
+            baixar código
+            enviar código

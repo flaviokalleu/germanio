@@ -229,10 +229,10 @@ func (a *intentAPI) serveGit(w http.ResponseWriter, r *http.Request, entities []
 // mountRepository adds browsing operations to an entity with a repository.
 func (a *intentAPI) mountRepository(mux *routeMux, base string, e *ast.Entity) {
 	seg := "repositorio"
-	names := map[string]string{"branches": "branches", "tags": "tags", "commits": "commits", "tree": "arvore", "files": "arquivos", "compare": "comparar", "diff": "diff"}
+	names := map[string]string{"branches": "branches", "tags": "tags", "commits": "commits", "tree": "arvore", "files": "arquivos", "compare": "comparar", "diff": "diff", "archive": "baixar"}
 	if a.extern && a.app.Messages == "en" {
 		seg = "repository"
-		names = map[string]string{"branches": "branches", "tags": "tags", "commits": "commits", "tree": "tree", "files": "files", "compare": "compare", "diff": "diff"}
+		names = map[string]string{"branches": "branches", "tags": "tags", "commits": "commits", "tree": "tree", "files": "files", "compare": "compare", "diff": "diff", "archive": "archive"}
 	}
 	root := base + "/{ref}/" + seg
 	h := func(fn func(w http.ResponseWriter, r *http.Request, ctx *interp.Context, atual map[string]any, row map[string]any, repo string), write bool) http.HandlerFunc {
@@ -512,6 +512,64 @@ func (a *intentAPI) mountRepository(mux *routeMux, base string, e *ast.Entity) {
 		}
 		a.json(w, 200, map[string]any{"commits": cl, "diffs": diffJSON(files)}, nil)
 	}, false))
+	// downloading the code of a revision as one file, for whoever may
+	// download code (baixar código): streamed from git, a bounded number at
+	// a time
+	archive := func(format string) http.HandlerFunc {
+		return h(func(w http.ResponseWriter, r *http.Request, ctx *interp.Context, atual, row map[string]any, repo string) {
+			ref := defaultRef(r, row, "sha", "ref")
+			id, err := a.s.Git.Resolve(repo, ref)
+			if err != nil {
+				gitErr(w, err)
+				return
+			}
+			select {
+			case a.archives <- struct{}{}:
+				defer func() { <-a.archives }()
+			case <-time.After(10 * time.Second):
+				a.fail(w, http.StatusServiceUnavailable, "Muitos downloads do código ao mesmo tempo. Tente de novo em instantes.")
+				return
+			case <-r.Context().Done():
+				return
+			}
+			key := toStr(row[e.RepoKey])
+			key = key[strings.LastIndex(key, "/")+1:]
+			name := archiveName(key + "-" + ref)
+			ext := map[string]string{"zip": "zip", "tar": "tar", "tar.gz": "tar.gz", "tgz": "tar.gz"}[format]
+			types := map[string]string{"zip": "application/zip", "tar": "application/x-tar", "tar.gz": "application/gzip"}
+			w.Header().Set("Content-Type", types[ext])
+			w.Header().Set("Content-Disposition", `attachment; filename="`+name+"."+ext+`"`)
+			w.Header().Set("X-Content-Type-Options", "nosniff")
+			if err := a.s.Git.Archive(r.Context(), repo, id, format, name+"/", w); err != nil {
+				// the headers are gone; the truncated file is the signal
+				fmt.Printf("[germanio] download do código interrompido: %v\n", err)
+			}
+		}, false)
+	}
+	arch := names["archive"]
+	mux.HandleFunc("GET "+root+"/"+arch, archive("tar.gz"))
+	for _, f := range []string{"zip", "tar", "tar.gz", "tgz"} {
+		mux.HandleFunc("GET "+root+"/"+arch+"."+f, archive(f))
+	}
+}
+
+// archiveName keeps letters, digits, dot, dash and underscore of s (the
+// rest becomes a dash): the name of a downloaded file and of its folder.
+func archiveName(s string) string {
+	b := []byte(s)
+	for i, c := range b {
+		if !(c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '.' || c == '_' || c == '-') {
+			b[i] = '-'
+		}
+	}
+	out := strings.Trim(strings.ReplaceAll(string(b), "..", "-"), ".-")
+	if len(out) > 150 {
+		out = out[:150]
+	}
+	if out == "" {
+		out = "codigo"
+	}
+	return out
 }
 
 // pushCheck runs `antes de enviar código` for changes made through the API.

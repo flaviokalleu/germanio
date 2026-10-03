@@ -480,7 +480,7 @@ Equivale a: developer pode enviar código para projetos
 | `quem cria projeto vira owner` | quem cria vira membro com esse papel — exceto quando o dado herda membros de um pai e foi criado dentro dele (os membros já vêm do pai) |
 | `todo grupo precisa ter pelo menos um owner` | ninguém remove nem rebaixa o último membro com esse papel (ou superior) |
 | `repositório do projeto pode começar com "README.md" contendo "# {nome}"` | ao criar com `iniciar_repositorio` (nome externo pelo vocabulário), o repositório nasce com esse arquivo; `{campo}` vira o valor do registro |
-| `projeto tem repositório` | cada registro tem um repositório Git criado e removido com ele e servido em `/<campo único>.git`; branches, tags, commits, árvore, arquivos e comparação seguem as regras de baixar e enviar código |
+| `projeto tem repositório` | cada registro tem um repositório Git criado e removido com ele e servido em `/<campo único>.git`; branches, tags, commits, árvore, arquivos e comparação seguem as regras de baixar e enviar código; quem pode baixar código também baixa uma revisão inteira como um arquivo (`repositorio/baixar.zip`, `.tar.gz`, `.tar`; nome externo pelo vocabulário: `repository/archive.zip?sha=`), gerado em fluxo pelo git, sem shell, com poucos downloads ao mesmo tempo |
 
 **Tipo pelo nome** (quando não há tipo): `email`→email · `senha`/`password`→senha protegida ·
 `telefone`→telefone · `foto`/`avatar`/`imagem`→imagem · `descricao`/`description`→texto longo ·
@@ -489,6 +489,10 @@ Equivale a: developer pode enviar código para projetos
 `arquivo`/`anexo`→arquivo. Um campo só guarda um arquivo de verdade (envio, download para quem vê
 o registro, limites, remoção) quando o tipo é declarado — `anexo arquivo`, `foto imagem` —, em
 teste na [GEP 0014](gep/0014-arquivos.md); pelo nome sozinho, continua guardando texto.
+`chave pública` (só declarada: `conteúdo chave pública obrigatório e único`), em teste na
+[GEP 0032](gep/0032-dois-fatores-e-chaves.md): a chave é conferida pela biblioteca SSH (DSA e RSA
+com menos de 2048 bits são recusadas), guardada numa forma só e nunca alterada; o dado ganha
+`impressao_digital`, calculada pelo sistema, e `único` vale pela impressão digital.
 `começa com 10` → inteiro; `começa com verdadeiro` → booleano.
 
 **Inferência é conveniência, não verdade absoluta.** Uma declaração explícita sempre
@@ -769,6 +773,22 @@ login, como `tenha cadastro`) oferece `/esqueci` e `/redefinir`:
   ou `GERMANIO_CORREIO_PASTA` em desenvolvimento), nunca do `.ge`; sem ele, a página diz que a
   recuperação ainda não está disponível.
 
+`tenha confirmação de e-mail` ([GEP 0031](gep/0031-confirmacao-de-email.md), **em teste**, não
+normativa até a decisão do mantenedor; implica o login) faz quem se cadastra confirmar o endereço
+antes de entrar: o link vale 24 horas e uma vez, guardado só como SHA-256 e preso ao endereço para
+onde foi; até lá a senha não abre sessão, OAuth nem git (a mensagem explica, e só para quem acertou
+a senha); `/reenviar-confirmacao` responde igual exista ou não a conta; mudar o e-mail pede nova
+confirmação; quem foi criado por administrador já nasce confirmado (`email_confirmado`); sem e-mail
+configurado, o cadastro fica fechado e o log diz por quê.
+
+`tenha autenticação em dois fatores` ([GEP 0032](gep/0032-dois-fatores-e-chaves.md), **em
+teste**, não normativa até a decisão do mantenedor) deixa cada pessoa ligar, em `/dois-fatores`,
+um código de aplicativo autenticador (TOTP): ligado, a senha certa só dá um desafio de 5 minutos e
+`/entrar/codigo` pede o código; cada código vale uma vez, erros contam no bloqueio do login (e a
+senha certa não zera a conta), há 10 códigos de recuperação de uso único; senha sozinha não serve
+para OAuth nem git (o token de acesso continua valendo); o segredo fica cifrado com
+`GERMANIO_SEGREDO` (sem ela, ligar é recusado) e nunca é mostrado depois de ligar.
+
 `tenha administrador inicial "root"` cria a primeira pessoa administradora (login `root`)
 quando ainda não existe ninguém e o servidor recebeu `GERMANIO_ADMIN_SENHA`
 (e, opcionalmente, `GERMANIO_ADMIN_EMAIL`); a senha nunca aparece no `.ge`.
@@ -884,7 +904,7 @@ Nada disto aparece no `.ge`; é configuração de quem hospeda a aplicação.
 
 | Variável | Para quê |
 |----------|----------|
-| `GERMANIO_SEGREDO` | chave das sessões e tokens (≥ 32 bytes); sem ela, uma chave aleatória por processo |
+| `GERMANIO_SEGREDO` | chave das sessões e tokens (≥ 32 bytes) e da cifra dos segredos dos dois fatores; sem ela, uma chave aleatória por processo e os dois fatores não podem ser ligados |
 | `GERMANIO_SQLITE` | arquivo do banco SQLite |
 | `GERMANIO_GIT_RAIZ` | pasta dos repositórios |
 | `GERMANIO_EXECUTOR` | `local` ou `docker` para executar etapas neste servidor (padrão: nenhum) |

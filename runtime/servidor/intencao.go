@@ -32,8 +32,12 @@ type intentAPI struct {
 	exec *executor
 	// recoveryAvailable: password recovery is declared and configured.
 	recoveryAvailable bool
+	// confirmAvailable: e-mail confirmation is declared and can send links.
+	confirmAvailable bool
 	// live announces changes to open pages (GEP 0020).
 	live *liveHub
+	// archives bounds how many downloads of code run at the same time.
+	archives chan struct{}
 }
 
 func (s *Servidor) registerIntent(mux *routeMux) error {
@@ -41,7 +45,7 @@ func (s *Servidor) registerIntent(mux *routeMux) error {
 	if app == nil {
 		return nil
 	}
-	a := &intentAPI{s: s, app: app, in: s.Interpreter}
+	a := &intentAPI{s: s, app: app, in: s.Interpreter, archives: make(chan struct{}, 4)}
 	for _, name := range app.Order {
 		if x := app.Entities[name].Execution; x != nil && x.Role == "step" && s.Git != nil {
 			a.startExecutor()
@@ -616,12 +620,26 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 			a.failErr(w, r, err)
 			return
 		}
+		reconfirm := a.emailChange(e, row, data)
+		if reconfirm {
+			data["email_confirmado"] = false // a new address is confirmed again (GEP 0031)
+		}
 		updated, err := a.in.Op(ctx, e.Singular, "atualizar", row["id"], data)
 		if err != nil {
 			a.failErr(w, r, err)
 			return
 		}
 		urow := updated.(map[string]any)
+		if reconfirm {
+			db := ctx.DB
+			if db == nil {
+				db = a.s.DB
+			}
+			if err := a.issueConfirmation(ctx, db, urow); err != nil {
+				a.failErr(w, r, err)
+				return
+			}
+		}
 		if e.MinRole != "" && (movedTo(data, row, e.HierarchyField) || movedTo(data, row, e.InheritVia)) {
 			if err := a.keepsHolderAfter(ctx, e, urow); err != nil {
 				a.failErr(w, r, err)
@@ -1455,6 +1473,25 @@ func (a *intentAPI) inward(name string) string {
 	return name
 }
 
+// inwardField is inward for a field of e: when several domain names share
+// the external name (chave and conteudo → "key"), the one that is a field of
+// e wins; otherwise the deterministic choice of inward.
+func (a *intentAPI) inwardField(e *ast.Entity, name string) string {
+	if !a.extern {
+		return name
+	}
+	if cands := a.candidates(name); len(cands) > 1 && e != nil {
+		for _, c := range cands {
+			for _, f := range e.Model.Fields {
+				if strings.EqualFold(f.Name, c) {
+					return c
+				}
+			}
+		}
+	}
+	return a.inward(name)
+}
+
 func (a *intentAPI) candidates(external string) []string {
 	var out []string
 	for k, v := range a.app.Vocabulary {
@@ -1508,7 +1545,7 @@ func (a *intentAPI) inwardBody(e *ast.Entity, body map[string]any) map[string]an
 	states := a.stateFields()
 	out := make(map[string]any, len(body))
 	for k, v := range body {
-		key := a.inward(k)
+		key := a.inwardField(e, k)
 		if s, ok := v.(string); ok && states[key] {
 			v = a.inwardState(e, s)
 		}

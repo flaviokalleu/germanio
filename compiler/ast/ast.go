@@ -319,6 +319,9 @@ const (
 	FieldTags         FieldType = "tags"
 	FieldURL          FieldType = "url"
 	FieldMoeda        FieldType = "moeda"
+	// FieldChavePublica: a public key (`chave pública`, GEP 0032): checked,
+	// written in one canonical form, with its fingerprint derived.
+	FieldChavePublica FieldType = "chave_publica"
 )
 
 type Field struct {

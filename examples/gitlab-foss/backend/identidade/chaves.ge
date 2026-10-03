@@ -1,0 +1,21 @@
+# Chaves SSH das pessoas (GEP 0032, em teste): a chave é conferida, guardada
+# numa forma só e ganha a impressão digital. Uma chave fraca é recusada.
+
+chaves ssh
+    singular chave ssh
+
+    tem
+        titulo obrigatório até 255
+        conteúdo chave pública obrigatório e único
+
+    pertence a
+        usuario
+
+    acesso
+        usuario
+            criar
+            ver seus
+            excluir seus
+
+    integração
+        nome "user/keys"

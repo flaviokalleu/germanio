@@ -300,6 +300,11 @@ func (p *Parser) fieldFromTokens(t []lexer.Token) (*ast.Field, error) {
 		f.ListOf = strings.ToLower(foldWord(t[i+2].Name()))
 		i += 3
 	}
+	// chave pública (GEP 0032, em teste): two words, one type
+	if i+1 < len(t) && f.Type == "" && foldWord(strings.ToLower(t[i].Name())) == "chave" && foldWord(strings.ToLower(t[i+1].Name())) == "publica" {
+		f.Type = ast.FieldChavePublica
+		i += 2
+	}
 	if i < len(t) && f.Type == "" {
 		if ft, err := tokenToFieldType(t[i]); err == nil && t[i].Type != lexer.TokenUnico && t[i].Type != lexer.TokenIndice {
 			f.Type = ft
