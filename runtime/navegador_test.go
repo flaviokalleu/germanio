@@ -19,6 +19,7 @@ func TestNavegador(t *testing.T) {
 	}
 	t.Setenv("GERMANIO_SQLITE", filepath.Join(t.TempDir(), "app.db"))
 	t.Setenv("GERMANIO_BCRYPT_RAPIDO", "1")
+	t.Setenv("GERMANIO_ARQUIVOS", t.TempDir())
 	app, err := Carregar("testdata/por_estado/app.ge", "0")
 	if err != nil {
 		t.Fatal(err)

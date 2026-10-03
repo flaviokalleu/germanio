@@ -45,6 +45,10 @@ hierarchical syntax.
   activity is seen only by whoever sees the record it describes. A vocabulary that translates
   the same name twice with different values is now an error instead of a silent override (G105).
 - Repositories list, create and remove tags under the same rules as code.
+- Execution graph in the native run file: `precisa` (start when the steps needed finish), branch
+  rules (`somente_em`, `exceto_em`, `regras`), `quando: sempre`, artifacts handed to the steps that
+  depend on them (local and remote executors) and `artefatos_expiram_em`. GitLab `needs`, `rules`,
+  `only/except`, `dependencies` and `expire_in` translate to them (CI-08, CI-09).
 - Isolated steps: with `GERMANIO_EXECUTOR=docker`, a step that names an image runs all its commands
   in one container with its variables, no network, no capabilities, no privilege escalation, a
   process limit and the host user (before: one container per line, without the variables).

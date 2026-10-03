@@ -18,3 +18,4 @@ docs/ebook-flang.html
 image.png
 *.vsix
 /germanio
+.claude/
