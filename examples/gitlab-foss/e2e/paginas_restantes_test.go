@@ -9,7 +9,7 @@ import (
 
 // The web pages offer what the API already did, derived from the GitLab
 // domain without any page syntax: merge when the pipeline passes, squash and
-// cancel (GEP 0027), the approvals still missing (GEP 0026), moving an issue
+// cancel (GEP 0027), no approvals missing (GitLab FOSS has no minimum), moving an issue
 // to another project (GEP 0034), time spent and links on the issue page, and
 // forking one's own project with a new path (GEP 0029).
 
@@ -78,24 +78,22 @@ func TestPaginasRestantes(t *testing.T) {
 	wd, cd := login(t, base, "dan")
 	mrPage := "/projetos/" + pid + "/merge_requests/1"
 
-	// --- approvals missing, next to the merge ---
+	// --- no approval minimum in GitLab FOSS: nothing says approvals are missing ---
 	for _, w := range []*browser{wa, wc} {
-		if page := open(t, w, mrPage); !strings.Contains(page, "Falta 1 aprovação para mesclar") || strings.Contains(page, mrPage+"/acao/mesclar") {
-			t.Fatalf("faltam aprovações, sem botão de mesclar:\n%s", page)
+		if page := open(t, w, mrPage); strings.Contains(page, "aprovacoes-faltando") || strings.Contains(page, "aprovação para") {
+			t.Fatalf("o GitLab FOSS não exige aprovações:\n%s", page)
 		}
 	}
-	code, page, at := wa.submit(mrPage+"/acao/aprovar", url.Values{"_csrf": {ca}})
-	fine(t, code, page, at)
 
 	// --- merge when the pipeline passes, with squash; cancel; merge now ---
-	page = open(t, wa, mrPage)
+	page := open(t, wa, mrPage)
 	if strings.Contains(page, "aprovacoes-faltando") || !strings.Contains(page, `name="juntar_commits"`) || !strings.Contains(page, `name="mesclar_quando_passar" value="true"`) {
 		t.Fatalf("mesclar com juntar commits e mesclar quando passar:\n%s", page)
 	}
 	if page := open(t, wc, mrPage); strings.Contains(page, "/acao/mesclar") {
 		t.Fatalf("o reporter não mescla:\n%s", page)
 	}
-	code, page, at = wc.submit(mrPage+"/acao/mesclar", url.Values{"_csrf": {cc}, "_campos": {"1"}, "mesclar_quando_passar": {"true"}})
+	code, page, at := wc.submit(mrPage+"/acao/mesclar", url.Values{"_csrf": {cc}, "_campos": {"1"}, "mesclar_quando_passar": {"true"}})
 	denied(t, code, page, at)
 	code, page, at = wa.submit(mrPage+"/acao/mesclar", url.Values{"_csrf": {ca}, "_campos": {"1"}, "juntar_commits": {"true"}, "mesclar_quando_passar": {"true"}})
 	fine(t, code, page, at)
