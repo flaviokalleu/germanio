@@ -1,7 +1,8 @@
 # NÍVEL AVANÇADO / ADAPTADOR DE COMPATIBILIDADE
 #
 # Rotas de issues da API v4 do GitLab que têm outra forma que a superfície
-# gerada: controle de tempo (time_estimate, add_spent_time, time_stats).
+# gerada: controle de tempo (time_estimate, add_spent_time, time_stats) e
+# ligações entre issues (links, com o projeto e o número da outra issue).
 # Cada rota traduz o formato do GitLab e pede à própria aplicação (GEP 0033),
 # como a pessoa que chamou: quem pode estimar, registrar tempo ou ver a issue
 # está em backend/issues/.
@@ -76,6 +77,21 @@ logica
         definir gasto = tempo_gasto(caminho)
         retornar {time_estimate: estimativa, total_time_spent: gasto, human_time_estimate: duracao_humana(estimativa), human_total_time_spent: duracao_humana(gasto)}
 
+    # Uma issue ligada, como o GitLab a mostra: a outra issue e a ligação. Uma
+    # issue que a pessoa não vê não aparece (a ligação também não).
+    funcao com_ligada(lista, outra_id, ligacao)
+        definir r = superficie.pedir("GET", ["issues", outra_id])
+        se r.estado != 200
+            retornar lista
+        definir issue = r.corpo
+        issue.issue_link_id = ligacao.id
+        issue.link_type = "relates_to"
+        issue.link_created_at = ligacao.created_at
+        retornar adicionar(lista, issue)
+
+    funcao parametro(requisicao, nome, padrao)
+        retornar obter(requisicao.consulta, nome, obter(requisicao.corpo, nome, padrao))
+
 rotas
     rota GET "/api/v4/projects/:id/issues/:iid/time_stats"
         responder(200, estatisticas_de_tempo(issue_em(requisicao)))
@@ -107,3 +123,42 @@ rotas
         se gasto != 0
             exigir(superficie.pedir("POST", adicionar(caminho, "tempos_gastos"), {duration: 0 - gasto, description: "reset"}))
         responder(200, estatisticas_de_tempo(caminho))
+
+    # Ligações: as que esta issue fez e as que outras fizeram com ela.
+    rota GET "/api/v4/projects/:id/issues/:iid/links"
+        definir caminho = issue_em(requisicao)
+        definir esta = exigir(superficie.pedir("GET", caminho))
+        definir lista = []
+        definir feitas = exigir(superficie.pedir("GET", adicionar(caminho, "ligacoes"), nulo, {per_page: 100}))
+        para cada ligacao em feitas.corpo
+            lista = com_ligada(lista, ligacao.relacionada_id, ligacao)
+        definir recebidas = exigir(superficie.pedir("GET", "ligacoes", nulo, {relacionada_id: esta.corpo.id, per_page: 100}))
+        para cada ligacao em recebidas.corpo
+            lista = com_ligada(lista, ligacao.issue_id, ligacao)
+        responder(200, lista)
+
+    rota POST "/api/v4/projects/:id/issues/:iid/links"
+        definir projeto_alvo = parametro(requisicao, "target_project_id", nulo)
+        definir numero_alvo = parametro(requisicao, "target_issue_iid", nulo)
+        definir tipo = parametro(requisicao, "link_type", "relates_to")
+        se projeto_alvo == nulo ou numero_alvo == nulo
+            responder(400, {message: "target_project_id and target_issue_iid are missing"})
+        se tipo != "relates_to"
+            responder(400, {message: {link_type: ["does not have a valid value"]}})
+        definir caminho = issue_em(requisicao)
+        definir origem = exigir(superficie.pedir("GET", caminho))
+        definir alvo = exigir(superficie.pedir("GET", ["projects", projeto_alvo, "issues", numero_alvo]))
+        exigir(superficie.pedir("POST", adicionar(caminho, "ligacoes"), {relacionada_id: alvo.corpo.id}))
+        responder(201, {source_issue: origem.corpo, target_issue: alvo.corpo, link_type: tipo})
+
+    rota DELETE "/api/v4/projects/:id/issues/:iid/links/:ligacao"
+        definir esta = exigir(superficie.pedir("GET", issue_em(requisicao)))
+        definir ligacao = exigir(superficie.pedir("GET", ["ligacoes", requisicao.parametros.ligacao])).corpo
+        se ligacao.issue_id != esta.corpo.id e ligacao.relacionada_id != esta.corpo.id
+            responder(404, {message: "404 Not found"})
+        definir outra_id = ligacao.relacionada_id
+        se ligacao.relacionada_id == esta.corpo.id
+            outra_id = ligacao.issue_id
+        definir outra = exigir(superficie.pedir("GET", ["issues", outra_id]))
+        exigir(superficie.pedir("DELETE", ["ligacoes", requisicao.parametros.ligacao]))
+        responder(200, {source_issue: esta.corpo, target_issue: outra.corpo, link_type: "relates_to"})

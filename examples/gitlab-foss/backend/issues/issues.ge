@@ -17,6 +17,7 @@ issues
         peso inteiro min 0
         estimativa inteiro min 0
         tempos gastos
+        ligacoes
 
     começa aberta
 
@@ -69,6 +70,24 @@ tempos gastos
     acesso
         planner
             criar
+
+# Ligações: uma issue relacionada a outra, de qualquer projeto. Só quem vê
+# as duas vê a ligação; ela sai com qualquer uma delas.
+ligacoes
+    singular ligacao
+
+    pertence a
+        issue como relacionada
+
+    acesso
+        guest
+            criar
+            excluir
+
+    permita
+        filtrar por relacionada
+
+    integração
 
 comentarios
     tem
