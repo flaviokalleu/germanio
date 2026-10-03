@@ -78,6 +78,7 @@ Rules:
 | [0022](0022-leitura.md) | Reading and unread counts (`guarda leitura`) | Em teste |
 | [0023](0023-por-estado.md) | Showing data by state, boards (`cartoes por estado`) | Em teste |
 | [0033](0033-adaptador-pede-a-aplicacao.md) | An adapter asks the application itself (`superficie.pedir`, `superficie.contar`) | Em teste |
+| [0034](0034-mudar-de-lugar.md) | A record moves to another parent (`pode mudar de projeto`) | Em teste |
 
 Revisão final das GEPs em teste 0010–0017, com recomendação por GEP e sem mudança de status:
 [REVISAO_0010_0017.md](REVISAO_0010_0017.md).

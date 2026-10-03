@@ -57,6 +57,9 @@ type Entity struct {
 	// (a link naming two issues); a record is then seen or changed only by
 	// whoever sees every filled one.
 	IndependentParents []string
+	// MoveField: the parent field a record may change by moving
+	// (`issue pode mudar de projeto`, GEP 0034, em teste); "" when it may not.
+	MoveField string
 	// Children (tem): entity model names.
 	Children []string
 	// HierarchyField links an entity to itself (grupo tem subgrupos).

@@ -146,6 +146,9 @@ func Entidade(prog *ast.Program, nome string) (string, error) {
 	if vt := e.ViewThrough; vt != nil {
 		w("Visibilidade: cada registro é visto por quem vê o registro que ele descreve (%s, %s); se ele não existe mais, por quem vê %s; senão, só por %s. Ninguém além do administrador muda ou exclui\n", vt.Kind, vt.ID, vt.ParentKind, strings.TrimSuffix(vt.Author, "_id"))
 	}
+	if e.MoveField != "" {
+		w("Pode mudar de %s: quem pode editar o registro onde ele está e criar um no destino o leva para outro; ganha o próximo número de lá; listas por nome ficam com os nomes que o destino também tem, e outras referências ao lugar antigo saem\n", strings.TrimSuffix(e.MoveField, "_id"))
+	}
 	if len(e.IndependentParents) >= 2 {
 		w("Vários donos: cada registro nomeia %s; é visto e mudado só por quem vê todos eles, e sai com qualquer um\n", strings.Join(e.IndependentParents, " e "))
 	}

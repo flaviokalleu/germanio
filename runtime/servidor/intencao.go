@@ -110,6 +110,9 @@ func (a *intentAPI) mountLevel(mux *routeMux, base string, chain []*ast.Entity, 
 	if e.Approvals {
 		actions["aprovar"], actions["desaprovar"] = true, true
 	}
+	if e.MoveField != "" {
+		actions["mudar"] = true // GEP 0034
+	}
 	if e.Execution != nil {
 		actions["cancelar"] = true
 		if e.Execution.Role == "step" {
@@ -746,6 +749,10 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 		}
 		if err := a.frozenFor(ctx, "acao", e, row, nil); err != nil {
 			a.failErr(w, r, err)
+			return
+		}
+		if verb == "mudar" && e.MoveField != "" {
+			a.move(w, r, ctx, atual, e, row, a.inwardBody(e, body), deny)
 			return
 		}
 		checkVerb := verb
