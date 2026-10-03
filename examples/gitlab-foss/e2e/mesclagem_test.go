@@ -98,8 +98,5 @@ func TestAprovacoesEMetodosDeMesclagem(t *testing.T) {
 		t.Fatalf("depois do pipeline: %v", m)
 	}
 
-	// sem aprovação, o agendamento é recusado como o merge
-	commit("semaprovacao", "origin/main", "quatro.txt")
-	mr4 := bob.must("POST", mrs, map[string]any{"title": "Quatro", "source_branch": "semaprovacao", "target_branch": "main"}, 201)
-	ada.must("POST", mrs+"/"+jsonNum(mr4["iid"])+"/merge", map[string]any{"merge_when_pipeline_succeeds": true}, 405)
+	// o agendamento com mínimo de aprovações: runtime TestMesclarQuandoPassarComAprovacoes
 }

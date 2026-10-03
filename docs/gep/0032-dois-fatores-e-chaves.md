@@ -62,7 +62,8 @@ tenha autenticação em dois fatores
   record may be edited, if the rules allow it.
 - Two public keys in one data are an error that tells to make one record per key.
 - Using the key (an SSH server, signatures) is not part of this GEP: the field records and
-  checks keys; a transport that authenticates with them is a separate capability.
+  checks keys; a transport that authenticates with them is a separate capability (Git over
+  SSH: [GEP 0037](0037-git-por-ssh.md)).
 
 ### Two-factor authentication
 

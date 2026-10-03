@@ -80,37 +80,25 @@ func (s *Store) ServeHTTP(w http.ResponseWriter, r *http.Request, rel, service s
 		defer gz.Close()
 		body = gz
 	}
-	body = io.LimitReader(body, 2<<30)
+	body = io.LimitReader(body, MaxPush)
 	var updates []RefUpdate
 	if service == "receive-pack" {
 		br := bufio.NewReader(body)
-		var head bytes.Buffer
-		caps := ""
-		for {
-			line, err := readPkt(br, &head)
-			if err != nil {
-				return nil, err
-			}
-			if line == nil {
-				break // flush: end of commands
-			}
-			cmd := string(line)
-			if i := strings.IndexByte(cmd, 0); i >= 0 {
-				caps = cmd[i+1:]
-				cmd = cmd[:i]
-			}
-			f := strings.Fields(strings.TrimSpace(cmd))
-			if len(f) == 3 {
-				updates = append(updates, RefUpdate{Old: f[0], New: f[1], Ref: f[2]})
-			}
+		var head *bytes.Buffer
+		var caps string
+		var err error
+		updates, caps, head, err = readCommands(br)
+		if err != nil {
+			return nil, err
 		}
 		if check != nil {
 			if err := check(updates); err != nil {
+				w.Header().Set("Content-Type", "application/x-git-receive-pack-result")
 				writeRefusal(w, updates, caps, err.Error())
 				return nil, nil
 			}
 		}
-		body = io.MultiReader(&head, br)
+		body = io.MultiReader(head, br)
 	}
 	w.Header().Set("Content-Type", "application/x-git-"+service+"-result")
 	ctx, cancel := context.WithTimeout(r.Context(), s.Timeout*5)
@@ -124,16 +112,47 @@ func (s *Store) ServeHTTP(w http.ResponseWriter, r *http.Request, rel, service s
 	if err := cmd.Run(); err != nil {
 		return nil, fmt.Errorf("git %s: %v %s", service, err, errb.String())
 	}
-	// Report only the updates git actually applied.
-	var applied []RefUpdate
+	return s.applied(p, updates), nil
+}
+
+// MaxPush bounds what one push may send (commands and pack).
+const MaxPush = 2 << 30
+
+// readCommands reads the ref updates a push asks for, up to the flush that
+// ends them. head keeps the raw bytes read, so git can read them again.
+func readCommands(br *bufio.Reader) (updates []RefUpdate, caps string, head *bytes.Buffer, err error) {
+	head = &bytes.Buffer{}
+	for {
+		line, err := readPkt(br, head)
+		if err != nil {
+			return nil, "", head, err
+		}
+		if line == nil {
+			return updates, caps, head, nil // flush: end of commands
+		}
+		cmd := string(line)
+		if i := strings.IndexByte(cmd, 0); i >= 0 {
+			caps = cmd[i+1:]
+			cmd = cmd[:i]
+		}
+		f := strings.Fields(strings.TrimSpace(cmd))
+		if len(f) == 3 {
+			updates = append(updates, RefUpdate{Old: f[0], New: f[1], Ref: f[2]})
+		}
+	}
+}
+
+// applied keeps only the updates git actually made.
+func (s *Store) applied(p string, updates []RefUpdate) []RefUpdate {
+	var out []RefUpdate
 	for _, u := range updates {
 		cur, err := s.run(p, nil, nil, "rev-parse", "--verify", "--quiet", u.Ref)
 		now := strings.TrimSpace(string(cur))
 		if (u.New == ZeroID && err != nil) || now == u.New {
-			applied = append(applied, u)
+			out = append(out, u)
 		}
 	}
-	return applied, nil
+	return out
 }
 
 // readPkt reads one pkt-line, copying its raw bytes to raw. nil = flush.
@@ -163,8 +182,7 @@ func readPkt(br *bufio.Reader, raw *bytes.Buffer) ([]byte, error) {
 
 // writeRefusal answers a push with "ng" for every ref (report-status),
 // using the side band when the client asked for it.
-func writeRefusal(w http.ResponseWriter, updates []RefUpdate, caps, reason string) {
-	w.Header().Set("Content-Type", "application/x-git-receive-pack-result")
+func writeRefusal(w io.Writer, updates []RefUpdate, caps, reason string) {
 	var status bytes.Buffer
 	status.Write(pktLine("unpack ok\n"))
 	reason = strings.ReplaceAll(reason, "\n", " ")

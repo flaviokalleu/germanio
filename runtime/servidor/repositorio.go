@@ -99,16 +99,11 @@ func (s *Servidor) gitMiddleware(next http.Handler) http.Handler {
 	if app == nil || s.Git == nil {
 		return next
 	}
-	var repoEntities []*ast.Entity
-	for _, n := range app.Order {
-		if app.Entities[n].Repository {
-			repoEntities = append(repoEntities, app.Entities[n])
-		}
-	}
+	a := &intentAPI{s: s, app: app, in: s.Interpreter}
+	repoEntities := a.repositoryEntities()
 	if len(repoEntities) == 0 {
 		return next
 	}
-	a := &intentAPI{s: s, app: app, in: s.Interpreter}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		i := strings.Index(r.URL.Path, ".git/")
 		if i < 0 {
@@ -196,11 +191,17 @@ func (a *intentAPI) codeAccess(ctx *interp.Context, r *http.Request, entities []
 		if atual == nil {
 			deny(http.StatusUnauthorized, "")
 		} else {
-			deny(http.StatusForbidden, "You are not allowed to "+strings.ReplaceAll(verb, "_codigo", " code")+" in this repository")
+			deny(http.StatusForbidden, codeDenied(verb))
 		}
 		return codeGrant{}, false
 	}
 	return codeGrant{e: e, row: row, atual: atual}, true
+}
+
+// codeDenied is the refusal of someone who sees the repository but may not
+// download (baixar_codigo) or send (enviar_codigo) code.
+func codeDenied(verb string) string {
+	return "You are not allowed to " + strings.ReplaceAll(verb, "_codigo", " code") + " in this repository"
 }
 
 func (a *intentAPI) serveGit(w http.ResponseWriter, r *http.Request, entities []*ast.Entity, key, service string, advertise bool) {
@@ -225,22 +226,9 @@ func (a *intentAPI) serveGit(w http.ResponseWriter, r *http.Request, entities []
 	}
 	e, row, atual := acc.e, acc.row, acc.atual
 	repo, _ := row["repositorio"].(string)
-	vars := func(list []git.RefUpdate) map[string]any {
-		return map[string]any{"atual": nilIfEmpty(atual), "registro": row, e.Singular: row, "atualizacoes": updatesToMaps(list)}
-	}
 	var check func([]git.RefUpdate) error
 	if service == "receive-pack" {
-		check = func(list []git.RefUpdate) error {
-			if err := a.protectedBranch(ctx, atual, e, row, list); err != nil {
-				return fmt.Errorf("%s", interp.Friendly(err))
-			}
-			if h := e.Hooks["antes_enviar_codigo"]; h != nil {
-				if _, _, err := a.in.RunHook(ctx, h, vars(list)); err != nil {
-					return fmt.Errorf("%s", interp.Friendly(err))
-				}
-			}
-			return nil
-		}
+		check = a.pushRules(ctx, atual, e, row)
 	}
 	applied, err := a.s.Git.ServeHTTP(w, r, repo, service, advertise, check)
 	if err != nil {
@@ -248,24 +236,62 @@ func (a *intentAPI) serveGit(w http.ResponseWriter, r *http.Request, entities []
 		return
 	}
 	if service == "receive-pack" && !advertise && len(applied) > 0 {
-		pushed := map[string]any{"atualizacoes": updatesToMaps(applied), "id": row["id"]}
-		for k, v := range row {
-			if _, taken := pushed[k]; !taken {
-				pushed[k] = v
+		a.afterPush(ctx, atual, e, row, applied)
+	}
+}
+
+// repositoryEntities lists the data whose records have a repository.
+func (a *intentAPI) repositoryEntities() []*ast.Entity {
+	var out []*ast.Entity
+	for _, n := range a.app.Order {
+		if a.app.Entities[n].Repository {
+			out = append(out, a.app.Entities[n])
+		}
+	}
+	return out
+}
+
+// pushRules checks the updates of a push before anything is written:
+// protected branches, then `antes de enviar código`.
+func (a *intentAPI) pushRules(ctx *interp.Context, atual map[string]any, e *ast.Entity, row map[string]any) func([]git.RefUpdate) error {
+	return func(list []git.RefUpdate) error {
+		if err := a.protectedBranch(ctx, atual, e, row, list); err != nil {
+			return fmt.Errorf("%s", interp.Friendly(err))
+		}
+		if h := e.Hooks["antes_enviar_codigo"]; h != nil {
+			if _, _, err := a.in.RunHook(ctx, h, pushVars(atual, e, row, list)); err != nil {
+				return fmt.Errorf("%s", interp.Friendly(err))
 			}
 		}
-		a.emit(ctx, e, "enviar_codigo", pushed, atual)
-		if err := a.history(ctx, atual, e, "enviar_codigo", nil, row); err != nil {
-			// the git answer is already written: report, do not answer twice
-			fmt.Printf("[germanio] histórico do envio de código: %v\n", err)
+		return nil
+	}
+}
+
+func pushVars(atual map[string]any, e *ast.Entity, row map[string]any, list []git.RefUpdate) map[string]any {
+	return map[string]any{"atual": nilIfEmpty(atual), "registro": row, e.Singular: row, "atualizacoes": updatesToMaps(list)}
+}
+
+// afterPush runs what follows a push that changed refs, on every
+// transport: the event, the history, the executions, the push mirrors
+// (codeChanged) and `quando enviar código`.
+func (a *intentAPI) afterPush(ctx *interp.Context, atual map[string]any, e *ast.Entity, row map[string]any, applied []git.RefUpdate) {
+	pushed := map[string]any{"atualizacoes": updatesToMaps(applied), "id": row["id"]}
+	for k, v := range row {
+		if _, taken := pushed[k]; !taken {
+			pushed[k] = v
 		}
-		a.startRuns(ctx, atual, e, row, updatesToMaps(applied))
-		a.codeChanged(ctx, e, row)
-		if h := e.Hooks["enviar_codigo"]; h != nil {
-			if _, _, err := a.in.RunHook(ctx, h, vars(applied)); err != nil {
-				// The push already happened; report the failure in the log.
-				fmt.Printf("[germanio] quando enviar código para %s: %v\n", e.Singular, err)
-			}
+	}
+	a.emit(ctx, e, "enviar_codigo", pushed, atual)
+	if err := a.history(ctx, atual, e, "enviar_codigo", nil, row); err != nil {
+		// the git answer is already written: report, do not answer twice
+		fmt.Printf("[germanio] histórico do envio de código: %v\n", err)
+	}
+	a.startRuns(ctx, atual, e, row, updatesToMaps(applied))
+	a.codeChanged(ctx, e, row)
+	if h := e.Hooks["enviar_codigo"]; h != nil {
+		if _, _, err := a.in.RunHook(ctx, h, pushVars(atual, e, row, applied)); err != nil {
+			// The push already happened; report the failure in the log.
+			fmt.Printf("[germanio] quando enviar código para %s: %v\n", e.Singular, err)
 		}
 	}
 }
