@@ -965,6 +965,9 @@ func (ps *pageSite) actions(ctx *interp.Context, atual map[string]any, e *ast.En
 	if e.Marks != "" {
 		verbs["marcar"], verbs["desmarcar"] = true, true
 	}
+	if e.Review != nil && e.Review.Runs != "" {
+		verbs["cancelar_mesclagem"] = true
+	}
 	if e.Execution != nil {
 		verbs["cancelar"] = true
 		verbs["repetir"] = true
@@ -991,6 +994,15 @@ func (ps *pageSite) actions(ctx *interp.Context, atual map[string]any, e *ast.En
 		b.WriteString(string(ps.button(base+"/excluir", "Excluir", csrf, true)))
 	}
 	b.WriteString(`</div>`)
+	// an action waiting for approvals says how many are missing (GEP 0026)
+	for _, v := range names {
+		if need, have := approvals(e, v, record); have < need && ps.a.in.Can(ctx, atual, e, v, record) && toStr(record["estado"]) == e.Initial {
+			fmt.Fprintf(&b, `<p class="aviso">Para %s: %d de %d aprovações (o autor não conta).</p>`, template.HTMLEscapeString(label(v)), have, need)
+		}
+	}
+	if e.Review != nil && e.Review.Runs != "" && truthy(record["mesclar_quando_passar"]) {
+		fmt.Fprintf(&b, `<p class="aviso">Mesclagem agendada: acontece quando a última execução de %s passar.</p>`, template.HTMLEscapeString(toStr(record[e.Review.Source])))
+	}
 	return template.HTML(b.String())
 }
 
@@ -1007,6 +1019,12 @@ func (ps *pageSite) available(ctx *interp.Context, atual map[string]any, e *ast.
 	}
 	if verb == "mesclar" && st != e.Initial {
 		return false
+	}
+	if need, have := approvals(e, verb, record); have < need {
+		return false
+	}
+	if verb == "cancelar_mesclagem" {
+		return truthy(record["mesclar_quando_passar"]) && ps.a.in.Can(ctx, atual, e, "mesclar", record)
 	}
 	if e.Execution != nil {
 		switch verb {

@@ -22,6 +22,10 @@ published under that name.
   repository cloned, never more visible than the original.
 - Marks by people (`recebe estrelas`, GEP 0030, em teste), filtering by one item of a list
   (topics), and `<campo>_endereco` for files (avatar).
+- A minimum of approvals before an action (`precisa de 2 aprovações para mesclar`, GEP 0026,
+  em teste); the author's approval does not count.
+- Ways to merge (GEP 0027, em teste, no syntax): squash, semi-linear, linear (fast-forward after
+  rebase), and merging when the executions of the source pass.
 
 ## [0.7.0] — 2026-09-29
 

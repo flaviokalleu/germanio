@@ -147,6 +147,21 @@ func Entidade(prog *ast.Program, nome string) (string, error) {
 			w("Branches protegidas: as que cada %s nomeia em %s (nome; * vale qualquer texto) só mudam com %s ou superior\n", d.Label, d.Plural, pb.Role)
 		}
 	}
+	if rv := e.Review; rv != nil && rv.Target != "" {
+		owner := app.Entities[e.Parents[rv.RepoVia]]
+		w("Mesclagem (GEP 0027, em teste): mesclar junta %s em %s como %s escolhe em forma_de_mesclar (mesclagem: commit de mescla; semi_linear: commit de mescla depois de pôr %s em dia; linear: sem commit de mescla, %s só avança); juntar_commits escreve tudo num commit só\n", rv.Source, rv.Target, owner.Singular, rv.Source, rv.Target)
+		if rv.Runs != "" {
+			w("  mesclar_quando_passar: a mesclagem espera a última execução (%s) de %s e acontece como quem pediu, com as regras verificadas de novo; falha ou cancelamento param a espera (cancelar_mesclagem também)\n", app.Entities[rv.Runs].Plural, rv.Source)
+		}
+	}
+	var approvalVerbs []string
+	for v := range e.ApprovalsNeeded {
+		approvalVerbs = append(approvalVerbs, v)
+	}
+	sort.Strings(approvalVerbs)
+	for _, v := range approvalVerbs {
+		w("Aprovações: %s só depois de %s de pessoas que não são o dono do registro, cada pessoa contando uma vez (GEP 0026, em teste)\n", v, approvalCount(e.ApprovalsNeeded[v]))
+	}
 	if e.History && app.ActivityEntity != "" {
 		w("Histórico: cada mudança fica em %s (quem, o quê, quando e quais campos, nunca os valores)\n", app.ActivityEntity)
 	}
@@ -463,6 +478,11 @@ func origins(prog *ast.Program, app *ast.App, e *ast.Entity) []fact {
 			add("todo "+e.Singular+" precisa ter pelo menos um "+m.Role, m.Pos)
 		}
 	}
+	for _, m := range in.ApprovalMinimums {
+		if is(m.Entity) {
+			add(fmt.Sprintf("%s precisam de %s para %s", strings.ReplaceAll(e.Plural, "_", " "), approvalCount(m.Count), m.Verb), m.Pos)
+		}
+	}
 	for _, ro := range in.ReadOnly {
 		if is(ro.Entity) {
 			add(e.Singular+" "+ro.Flag+" é somente leitura", ro.Pos)
@@ -502,4 +522,12 @@ func origins(prog *ast.Program, app *ast.App, e *ast.Entity) []fact {
 func posOf(t lexer.Token, decl diagnostics.Position) diagnostics.Position {
 	decl.Line = t.Line
 	return decl
+}
+
+// approvalCount: "1 aprovação", "2 aprovações".
+func approvalCount(n int) string {
+	if n == 1 {
+		return "1 aprovação"
+	}
+	return fmt.Sprintf("%d aprovações", n)
 }

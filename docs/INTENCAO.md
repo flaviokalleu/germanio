@@ -334,6 +334,7 @@ válidas. `construcao_do_sistema` são as construções sem sujeito único (`ten
 | `regras` › `não pode ser mais visível que o grupo` | `d não pode ser mais visível que o grupo` |
 | `regras` › `arquivado é somente leitura` | `d arquivado é somente leitura` |
 | `regras` › `mesclado é final` | `d mesclado é final` |
+| `regras` › `precisa de 2 aprovações para mesclar` ([GEP 0026](gep/0026-minimo-de-aprovacoes.md), em teste) | `d precisam de 2 aprovações para mesclar` (a ação espera aprovações de pessoas diferentes do autor; o dado `recebe aprovações`) |
 | `regras` › `confidencial pode ser vista por` + pessoas | `d confidencial pode ser vista por` + pessoas |
 | `acesso` › `developer` › `enviar código` | `developer pode enviar código para D` |
 | `acesso` › `usuario` › `criar seus` | `usuario pode criar seus D` |
@@ -483,6 +484,7 @@ Equivale a: developer pode enviar código para projetos
 | `todo grupo precisa ter pelo menos um owner` | ninguém remove nem rebaixa o último membro com esse papel (ou superior) |
 | `repositório do projeto pode começar com "README.md" contendo "# {nome}"` | ao criar com `iniciar_repositorio` (nome externo pelo vocabulário), o repositório nasce com esse arquivo; `{campo}` vira o valor do registro |
 | `projeto tem repositório` | cada registro tem um repositório Git criado e removido com ele e servido em `/<campo único>.git`; branches, tags, commits, árvore, arquivos e comparação seguem as regras de baixar e enviar código; quem pode baixar código também baixa uma revisão inteira como um arquivo (`repositorio/baixar.zip`, `.tar.gz`, `.tar`; nome externo pelo vocabulário: `repository/archive.zip?sha=`), gerado em fluxo pelo git, sem shell, com poucos downloads ao mesmo tempo |
+| `origem: branch` e `destino: branch` (linhas de `X tem`, num dado que pertence a algo com repositório) | X propõe mudanças: as branches precisam existir e ser diferentes; X mostra mudanças, commits e conflitos; `mesclar` junta a origem no destino (rascunho não mescla; mesclar no destino segue as regras de enviar código). Em teste na [GEP 0027](gep/0027-formas-de-mesclar.md), sem frase nova: `forma_de_mesclar` do dono do repositório (`mesclagem`, `semi_linear`, `linear`), `juntar_commits` de X e, quando o dono `executa` algo, `mesclar_quando_passar` (espera a última execução da origem e mescla como quem pediu, verificando tudo de novo) |
 
 **Tipo pelo nome** (quando não há tipo): `email`→email · `senha`/`password`→senha protegida ·
 `telefone`→telefone · `foto`/`avatar`/`imagem`→imagem · `descricao`/`description`→texto longo ·

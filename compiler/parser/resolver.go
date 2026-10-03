@@ -870,6 +870,9 @@ func ResolveIntent(prog *ast.Program) error {
 		e.Marks = md.Name
 		e.Model.Fields = append(e.Model.Fields, &ast.Field{Name: md.Name, Type: ast.FieldInteiro, HasDefault: true, DefaultValue: 0.0, System: true, Pos: md.Pos})
 	}
+	if err := r.approvalMinimums(in); err != nil {
+		return err
+	}
 
 	for _, f := range in.Finals {
 		e, err := r.entity(f.Entity, f.Pos)
@@ -940,6 +943,7 @@ func ResolveIntent(prog *ast.Program) error {
 	if err := r.runVariables(in); err != nil {
 		return err
 	}
+	mergeOptions(app)
 
 	// 7g1. Minimum role: `todo grupo precisa ter pelo menos um owner`.
 	for _, m := range in.MinRoles {

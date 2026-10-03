@@ -123,6 +123,9 @@ func (a *intentAPI) mountLevel(mux *routeMux, base string, chain []*ast.Entity, 
 	if e.Marks != "" {
 		actions["marcar"], actions["desmarcar"] = true, true
 	}
+	if e.Review != nil && e.Review.Runs != "" {
+		actions["cancelar_mesclagem"] = true
+	}
 	if e.Execution != nil {
 		actions["cancelar"] = true
 		if e.Execution.Role == "step" {
@@ -543,6 +546,7 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 			return
 		}
 		out := serializeFor(ctx, a.in, atual, e, row, false)
+		approvalStatus(e, row, out)
 		if e.Review != nil && e.Review.Target != "" && fmt.Sprint(row[e.StateField]) == e.Initial {
 			if check := a.mergeCheck(ctx, e, row); check != nil {
 				out["pode_mesclar"] = check["pode"]
@@ -741,6 +745,9 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 		if verb == "desaprovar" && len(e.Rules[verb]) == 0 {
 			checkVerb = "aprovar"
 		}
+		if verb == "cancelar_mesclagem" {
+			checkVerb = "mesclar" // whoever may merge may stop a scheduled merge
+		}
 		if !a.in.Can(ctx, atual, e, checkVerb, row) {
 			deny(row)
 			return
@@ -769,31 +776,50 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 			a.json(w, 200, serializeFor(ctx, a.in, atual, e, updated, false), nil)
 			return
 		}
-		if tr := e.Transitions[verb]; tr != nil && verb == "mesclar" && e.Review != nil && e.Review.Target != "" {
-			if err := a.merge(ctx, atual, e, row); err != nil {
-				a.failErr(w, r, err)
-				return
-			}
-			row = a.find(ctx, e, fmt.Sprint(row["id"]), nil)
-		}
-		if tr := e.Transitions[verb]; tr != nil {
-			updated, err := a.in.Transition(ctx, atual, e, tr, row)
+		review := e.Review != nil && e.Review.Target != ""
+		if verb == "cancelar_mesclagem" && review && e.Review.Runs != "" {
+			updated, err := a.unscheduleMerge(ctx, e, row)
 			if err != nil {
 				a.failErr(w, r, err)
 				return
 			}
-			if h := e.Hooks[verb]; h != nil {
-				if _, _, err := a.in.RunHook(ctx, h, a.hookVars(atual, e, updated, body)); err != nil {
+			a.json(w, 200, serializeFor(ctx, a.in, atual, e, updated, false), nil)
+			return
+		}
+		if tr := e.Transitions[verb]; tr != nil && verb == "mesclar" && review {
+			in := a.inwardBody(e, body)
+			if e.Review.Runs != "" && truthy(in["mesclar_quando_passar"]) {
+				scheduled, err := a.scheduleMerge(ctx, atual, e, row)
+				if err != nil {
 					a.failErr(w, r, err)
 					return
 				}
-				updated = a.find(ctx, e, fmt.Sprint(row["id"]), nil)
+				if scheduled != nil {
+					a.json(w, 200, serializeFor(ctx, a.in, atual, e, scheduled, false), nil)
+					return
+				}
 			}
-			if err := a.history(ctx, atual, e, verb, row, updated); err != nil {
+			squash := truthy(row["juntar_commits"])
+			if v, ok := in["juntar_commits"]; ok {
+				squash = truthy(v)
+			}
+			if err := a.merge(ctx, atual, e, row, squash); err != nil {
 				a.failErr(w, r, err)
 				return
 			}
-			a.emit(ctx, e, verb, updated, atual)
+			row = a.find(ctx, e, fmt.Sprint(row["id"]), nil)
+		} else if tr != nil {
+			if err := a.approvalGate(e, verb, row); err != nil {
+				a.failErr(w, r, err)
+				return
+			}
+		}
+		if tr := e.Transitions[verb]; tr != nil {
+			updated, err := a.transition(ctx, atual, e, tr, row, body)
+			if err != nil {
+				a.failErr(w, r, err)
+				return
+			}
 			a.json(w, 200, serializeFor(ctx, a.in, atual, e, updated, false), nil)
 			return
 		}
@@ -820,6 +846,32 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 		}
 		a.json(w, 200, result, nil)
 	}
+}
+
+// transition performs a declared action: the state change, its hook, the
+// history and the events. A record waiting to be merged stops waiting
+// when it leaves the initial state (GEP 0027).
+func (a *intentAPI) transition(ctx *interp.Context, atual map[string]any, e *ast.Entity, tr *ast.Transition, row, body map[string]any) (map[string]any, error) {
+	updated, err := a.in.Transition(ctx, atual, e, tr, row)
+	if err != nil {
+		return nil, err
+	}
+	if e.Review != nil && e.Review.Runs != "" && truthy(updated["mesclar_quando_passar"]) && tr.Target != e.Initial {
+		if updated, err = a.unscheduleMerge(ctx, e, updated); err != nil {
+			return nil, err
+		}
+	}
+	if h := e.Hooks[tr.Verb]; h != nil {
+		if _, _, err := a.in.RunHook(ctx, h, a.hookVars(atual, e, updated, body)); err != nil {
+			return nil, err
+		}
+		updated = a.find(ctx, e, fmt.Sprint(row["id"]), nil)
+	}
+	if err := a.history(ctx, atual, e, tr.Verb, row, updated); err != nil {
+		return nil, err
+	}
+	a.emit(ctx, e, tr.Verb, updated, atual)
+	return updated, nil
 }
 
 func (a *intentAPI) hookVars(atual map[string]any, e *ast.Entity, row map[string]any, body map[string]any) map[string]any {
@@ -1471,7 +1523,8 @@ func (a *intentAPI) stateFields() map[string]bool {
 			out[e.StateField] = true
 		}
 		for _, f := range e.Model.Fields {
-			if f.Type == ast.FieldEnum && f.System {
+			// roles (papel) travel as their levels instead
+			if f.Type == ast.FieldEnum && (f.System || strings.ToLower(f.Name) != "papel") {
 				out[strings.ToLower(f.Name)] = true
 			}
 		}
@@ -1588,6 +1641,32 @@ func (a *intentAPI) inwardState(e *ast.Entity, v string) string {
 	return v
 }
 
+// enumValues: the fixed choices of e's field named key (nil if none).
+func enumValues(e *ast.Entity, key string) []string {
+	if e == nil || e.Model == nil {
+		return nil
+	}
+	for _, f := range e.Model.Fields {
+		if f.Type == ast.FieldEnum && strings.EqualFold(f.Name, key) {
+			return f.EnumValues
+		}
+	}
+	return nil
+}
+
+// inwardChoice reads an external word as one of the field's choices (one
+// external word may name words of different fields: "merge").
+func (a *intentAPI) inwardChoice(choices []string, v string) string {
+	for _, k := range a.candidates(v) {
+		for _, c := range choices {
+			if k == c {
+				return k
+			}
+		}
+	}
+	return v
+}
+
 func (a *intentAPI) inwardBody(e *ast.Entity, body map[string]any) map[string]any {
 	if !a.extern || len(a.app.Vocabulary) == 0 {
 		return body
@@ -1597,7 +1676,11 @@ func (a *intentAPI) inwardBody(e *ast.Entity, body map[string]any) map[string]an
 	for k, v := range body {
 		key := a.inwardField(e, k)
 		if s, ok := v.(string); ok && states[key] {
-			v = a.inwardState(e, s)
+			if choices := enumValues(e, key); choices != nil {
+				v = a.inwardChoice(choices, s)
+			} else {
+				v = a.inwardState(e, s)
+			}
 		}
 		if n, ok := v.(float64); ok && key == "papel" {
 			for _, role := range a.app.Roles {

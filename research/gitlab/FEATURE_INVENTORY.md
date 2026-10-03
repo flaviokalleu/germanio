@@ -77,7 +77,7 @@ Escopo núcleo v1 = features marcadas **[N]** (fluxos 1–5 da missão + testes 
 | MR-04 [N] | Merge | merge commit; conflito → `cannot_be_merged` | merge btn | `PUT /merge` | merge_requests | Developer+ (Maintainer se protegida) | git merge | G13 | PASS | TestFluxo4 |
 | MR-05 [N] | Conflito detectado | `merge_status=cannot_be_merged`, 406/405 no merge | | | | | git merge-tree | G13 | PASS | TestFluxo4 |
 | MR-06 | Fechar/reabrir, draft | | | `state_event` | | | | | PASS | TestFluxo4 |
-| MR-07 | Squash, rebase, merge when pipeline succeeds, approvals rules | | | | | | | | ADIADO → BACKLOG (regras de aprovação e merge automático: capability futura, GEP própria) | |
+| MR-07 | Squash, rebase, merge when pipeline succeeds, approvals rules | squash, linear, merge agendado, mínimo de aprovações | botões do MR | `merge` (`squash`, `merge_when_pipeline_succeeds`), `merge_method`, `approvals_required` | merge_requests | developer | git, CI | SUPPORTED (GEP 0026, 0027) | PASS (sem `PUT /merge`, `GET /approvals` e regras de aprovação por papel; botão web de agendar ainda não) | TestAprovacoesEMetodosDeMesclagem, TestMinimoDeAprovacoes, TestFormasDeMesclar, TestMesclarQuandoPassar, TestSquash, TestRebaseFastForward |
 
 ## CI/CD
 

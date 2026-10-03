@@ -97,6 +97,8 @@ type Entity struct {
 	Review *Review
 	// Approvals: `X recebe aprovações` (aprovar/desaprovar, people list).
 	Approvals bool
+	// ApprovalsNeeded: verb → approvals required before it happens (GEP 0026).
+	ApprovalsNeeded map[string]int
 	// Finals: states no transition leaves (mesclado é final).
 	Finals []string
 	// Execution: this entity is a run of steps (pipelines) or a step (jobs).
@@ -183,7 +185,15 @@ type Restriction struct {
 type Review struct {
 	Source, Target string // field names
 	RepoVia        string // parent field leading to the record with the repository
+	// Runs: the executions of the record with the repository; a merge can
+	// wait for the latest one of the source branch to succeed (GEP 0027).
+	Runs string
 }
+
+// Merge methods of the record with the repository (GEP 0027): a merge
+// commit, a merge commit over a source brought up to date, or no merge
+// commit at all (the target only advances).
+var MergeMethods = []string{"mesclagem", "semi_linear", "linear"}
 
 // Execution describes runs defined by a file in the repository.
 type Execution struct {
