@@ -1,0 +1,23 @@
+crie sistema Servidores
+
+usuarios
+    tem
+        nome obrigatório
+        email obrigatório e único
+        senha min 8
+
+tenha login
+tenha cadastro
+
+acessos
+    tem
+        rotulo obrigatório
+        segredo chave pública obrigatório e único
+    pertence a
+        usuario
+    acesso
+        usuario
+            criar
+            ver seus
+            editar seus
+            excluir seus

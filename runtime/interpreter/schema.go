@@ -46,6 +46,8 @@ var ptMessages = []struct{ en, pt string }{
 	{" characters)", " caracteres)"},
 	{"must be greater than or equal to ", "deve ser pelo menos "},
 	{"must be less than or equal to ", "deve ser no máximo "},
+	{"uses an algorithm that is no longer safe (DSA)", "usa um algoritmo que não é mais seguro (DSA)"},
+	{"is too weak (RSA needs at least 2048 bits)", "é fraca demais (RSA precisa de pelo menos 2048 bits)"},
 }
 
 // Lang is the language of messages: "pt" for apps with intent (unless
@@ -210,6 +212,15 @@ func (interp *Interpreter) prepareWrite(c *Call, m *ast.Model, data map[string]a
 			}
 			out[key] = list
 			continue
+		}
+		if f.Type == ast.FieldChavePublica {
+			canonical, fingerprint, msg := PublicKey(toString(v))
+			if msg != "" {
+				errs.add(f.Name, msg)
+				continue
+			}
+			v = canonical
+			out["impressao_digital"] = fingerprint
 		}
 		if msg := checkType(f, v); msg != "" {
 			errs.add(f.Name, msg)

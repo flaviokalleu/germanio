@@ -429,6 +429,31 @@ func ResolveIntent(prog *ast.Program) error {
 		e.Transitions = map[string]*ast.Transition{}
 		e.Model.Fields = append(e.Model.Fields, &ast.Field{Name: "estado", Type: ast.FieldTexto, HasDefault: true, DefaultValue: st.Initial, System: true, Index: true, Pos: st.Pos})
 	}
+	// 7b0. Public keys (GEP 0032, em teste): the fingerprint is derived and
+	// read-only; a unique key is unique by its fingerprint (the same key
+	// with another comment is the same key).
+	for _, n := range app.Order {
+		e := app.Entities[n]
+		var key *ast.Field
+		for _, f := range e.Model.Fields {
+			if f.Type != ast.FieldChavePublica {
+				continue
+			}
+			if key != nil {
+				return r.errAt(f.Pos, "%s tem duas chaves públicas (%s e %s)\nPor quê: cada registro guarda uma chave, com uma impressão digital\nComo corrigir: crie um registro por chave (por exemplo, chaves que pertencem a usuario)", e.Plural, key.Name, f.Name)
+			}
+			key = f
+		}
+		if key == nil {
+			continue
+		}
+		if fieldByNameAST(e.Model, "impressao_digital") != nil {
+			return r.errAt(key.Pos, "%s já tem um campo impressao_digital, que a chave pública calcula\nComo corrigir: remova o campo impressao_digital; ele é derivado da chave", e.Plural)
+		}
+		e.Model.Fields = append(e.Model.Fields, &ast.Field{Name: "impressao_digital", Label: "impressão digital", Type: ast.FieldTexto, System: true, Unique: key.Unique, Index: !key.Unique, Pos: key.Pos})
+		key.Unique = false
+		key.Immutable = true
+	}
 	// 4. Login entity: the one with a senha field.
 	var withPassword []string
 	for _, n := range app.Order {

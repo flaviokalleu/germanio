@@ -1456,6 +1456,25 @@ func (a *intentAPI) inward(name string) string {
 	return name
 }
 
+// inwardField is inward for a field of e: when several domain names share
+// the external name (chave and conteudo → "key"), the one that is a field of
+// e wins; otherwise the deterministic choice of inward.
+func (a *intentAPI) inwardField(e *ast.Entity, name string) string {
+	if !a.extern {
+		return name
+	}
+	if cands := a.candidates(name); len(cands) > 1 && e != nil {
+		for _, c := range cands {
+			for _, f := range e.Model.Fields {
+				if strings.EqualFold(f.Name, c) {
+					return c
+				}
+			}
+		}
+	}
+	return a.inward(name)
+}
+
 func (a *intentAPI) candidates(external string) []string {
 	var out []string
 	for k, v := range a.app.Vocabulary {
@@ -1509,7 +1528,7 @@ func (a *intentAPI) inwardBody(e *ast.Entity, body map[string]any) map[string]an
 	states := a.stateFields()
 	out := make(map[string]any, len(body))
 	for k, v := range body {
-		key := a.inward(k)
+		key := a.inwardField(e, k)
 		if s, ok := v.(string); ok && states[key] {
 			v = a.inwardState(e, s)
 		}

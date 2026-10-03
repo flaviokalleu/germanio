@@ -489,6 +489,10 @@ Equivale a: developer pode enviar código para projetos
 `arquivo`/`anexo`→arquivo. Um campo só guarda um arquivo de verdade (envio, download para quem vê
 o registro, limites, remoção) quando o tipo é declarado — `anexo arquivo`, `foto imagem` —, em
 teste na [GEP 0014](gep/0014-arquivos.md); pelo nome sozinho, continua guardando texto.
+`chave pública` (só declarada: `conteúdo chave pública obrigatório e único`), em teste na
+[GEP 0032](gep/0032-dois-fatores-e-chaves.md): a chave é conferida pela biblioteca SSH (DSA e RSA
+com menos de 2048 bits são recusadas), guardada numa forma só e nunca alterada; o dado ganha
+`impressao_digital`, calculada pelo sistema, e `único` vale pela impressão digital.
 `começa com 10` → inteiro; `começa com verdadeiro` → booleano.
 
 **Inferência é conveniência, não verdade absoluta.** Uma declaração explícita sempre

@@ -36,6 +36,10 @@ func describeField(f *ast.Field) string {
 	if f.Reference != "" {
 		t = "referência a " + f.Reference
 	}
+	if f.Type == ast.FieldChavePublica {
+		// GEP 0032
+		t = "chave pública (conferida; DSA e RSA abaixo de 2048 bits recusadas; nunca muda; impressao_digital calculada)"
+	}
 	parts = append(parts, t)
 	if f.TypeInferred && (f.Type == ast.FieldArquivo || f.Type == ast.FieldImagem) {
 		// GEP 0014: only a declared type turns a field into a stored file
