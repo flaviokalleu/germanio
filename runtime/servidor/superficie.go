@@ -148,14 +148,15 @@ func (s *Servidor) registerSurfaceModule(a *intentAPI) {
 			}
 			// the same person: credentials and session travel, the body does not
 			req.Header = orig.Header.Clone()
-			for _, h := range []string{"Content-Length", "Content-Type", "Content-Range", "Content-Encoding", "Accept-Encoding", "Range", "If-Match", "If-None-Match", "If-Modified-Since", "Expect"} {
+			for _, h := range []string{"Content-Length", "Content-Type", "Content-Range", "Content-Encoding", "Accept-Encoding", "Range", "X-CSRF-Token", "If-Match", "If-None-Match", "If-Modified-Since", "Expect"} {
 				req.Header.Del(h)
 			}
 			if body != nil {
 				req.Header.Set("Content-Type", "application/json")
 			}
-			if sess := interp.SessaoDaRequisicao(orig); sess != nil {
-				// the outer route already proved the request came from the app
+			if sess := interp.SessaoDaRequisicao(orig); sess != nil && unsafeMethods[orig.Method] {
+				// the outer route already proved the request came from the app;
+				// a GET never did, so a write it asks for is refused (CSRF)
 				if csrf, _ := sess["csrf"].(string); csrf != "" {
 					req.Header.Set("X-CSRF-Token", csrf)
 				}

@@ -26,8 +26,11 @@ func TestAdaptadorPedeAAplicacao(t *testing.T) {
 	if b := ana.expect("GET", "/_ge/api/estantes/1/livros/1", nil, 200); b["titulo"] != "Memórias" {
 		t.Fatalf("só a autora renomeia: %v", b)
 	}
+	link := *ana // a link planted on another site: the session cookie, no CSRF proof
+	link.csrf = ""
+	link.expect("GET", "/catalogo/estantes/1/livros/1/renomear_por_link", nil, 403)
 	// a refused change leaves nothing behind
-	if code, _, raw := ana.do("GET", "/_ge/api/estantes/1/livros", nil); code != 200 || strings.Contains(raw, "Roubado") {
+	if code, _, raw := ana.do("GET", "/_ge/api/estantes/1/livros", nil); code != 200 || strings.Contains(raw, "Roubado") || strings.Contains(raw, "Por link") {
 		t.Fatalf("nada de quem não podia: %s", raw)
 	}
 

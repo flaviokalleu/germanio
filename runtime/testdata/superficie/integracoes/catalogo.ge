@@ -8,6 +8,12 @@ rotas
         definir r = superficie.pedir("PUT", ["shelves", requisicao.parametros.id, "books", requisicao.parametros.n], {title: requisicao.corpo.novo})
         responder(r.estado, r.corpo)
 
+    # a link someone could plant on another site: a GET never writes for a
+    # browser session
+    rota GET "/catalogo/estantes/:id/livros/:n/renomear_por_link"
+        definir r = superficie.pedir("PUT", ["shelves", requisicao.parametros.id, "books", requisicao.parametros.n], {title: "Por link"})
+        responder(r.estado, r.corpo)
+
     rota GET "/catalogo/estantes/:id/resumo"
         definir est = superficie.pedir("GET", ["shelves", requisicao.parametros.id])
         se est.estado != 200

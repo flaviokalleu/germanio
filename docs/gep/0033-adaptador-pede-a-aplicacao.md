@@ -65,7 +65,9 @@ rotas
   derives under `integração em`) **as the person of the current request**: the same credentials
   (token, session), the same token scopes, rules, visibility, read-only records, transaction,
   history, pending items and events as if that person had called it. A browser session's CSRF
-  proof is the one the outer route already checked.
+  proof is the one the outer route already checked; a route answering a GET was never checked,
+  so a write it asks for with a browser session is refused (a link planted on another site
+  cannot change anything). Tokens are unaffected.
 - `caminho` is relative to the integration prefix: a text (`"projects/1/issues"`, used as
   written, never leaving the prefix: no `..`, `?` or `#`) or a list of pieces, each escaped (an
   address with `/` is one piece). `consulta` is a map of query parameters; `corpo` is sent as
@@ -120,7 +122,7 @@ direct database access as the only way to reshape a call — the unsafe one.
 ## Tests
 
 `TestAdaptadorPedeAAplicacao` (runtime, a library with no Git or CI: a write as the person — the
-author may, others get 403/404 and nothing changes; reads and counts see only what the person
+author may, others get 403/404 and nothing changes; a GET route cannot write for a browser session; reads and counts see only what the person
 sees; a path leaving the integration and an unknown state are refused; a declared route is never
 reached). GitLab end-to-end: `TestControleDeTempo`, `TestLigacoesEntreIssues`,
 `TestMoverIssue`, `TestEventosDoProjeto`, `TestEstatisticasDaAplicacao`,
