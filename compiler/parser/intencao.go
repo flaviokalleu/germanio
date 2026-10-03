@@ -743,6 +743,9 @@ func (p *Parser) parseTenha(head dline, body []dline) error {
 				in.Login = &ast.LoginDecl{Pos: pos}
 			}
 			in.Login.Signup = true
+		case name == "presenca":
+			// tenha presença (GEP 0021, em teste)
+			in.Presence = true
 		case name == "recuperacao_de_senha":
 			// tenha recuperação de senha (GEP 0008, em teste)
 			if in.Login == nil {

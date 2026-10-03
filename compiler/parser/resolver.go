@@ -1236,6 +1236,14 @@ func ResolveIntent(prog *ast.Program) error {
 		app.EmailNotices = true
 	}
 
+	// 10a3. Presence (GEP 0021, em teste) is about the people who log in.
+	if in.Presence {
+		if app.LoginEntity == "" {
+			return fmt.Errorf("tenha presença mostra quem está com a aplicação aberta: declare também tenha login")
+		}
+		app.Presence = true
+	}
+
 	// 10b. History (GEP 0011, em teste).
 	if err := r.history(in, app); err != nil {
 		return err

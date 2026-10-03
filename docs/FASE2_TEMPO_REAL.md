@@ -121,7 +121,7 @@ Obstáculos encontrados:
 | --- | --- | --- | --- |
 | 1 | um dado chamado `mensagens` derrubava o compilador (pânico: colisão com a frase `mensagens em inglês`) | bug do core | corrigido, com teste de equivalência |
 | 2 | nenhuma página se atualiza sozinha quando o que ela mostra muda | capability faltante (a central da fase) | GEP 0020, em teste: feito (`TestPaginasVivas`, com mutação provando visibilidade e commit) |
-| 3 | presença (online/offline) e "digitando" não existem | capability faltante | depois da 0020 |
+| 3 | presença (online/offline) e "digitando" não existem | capability faltante | presença: GEP 0021, em teste, feita (`TestPresenca`); "digitando" fica para depois |
 | 4 | lido/não lido e contadores por pessoa não existem | capability faltante | depois da 0020 |
 | 5 | o hub de tempo real atual manda tudo a todos e descarta em silêncio (G66) | dívida do core | substituído pelo mecanismo da 0020 |
 
@@ -164,3 +164,15 @@ Próximo passo, sem mudar a semântica (as regras continuam num só lugar):
   regras da lista; a visibilidade já foi conferida para decidir o aviso), e a página aplica a
   mudança na região viva;
 - a busca completa fica só para a reconexão e para mudanças que tiram o registro de vista.
+
+### Passo 4 — presença (2026-10-02)
+
+Decisão do mantenedor: completar primeiro as capabilities da Conversa (a missão) e deixar as
+melhorias de latência para depois. A otimização do passo 3 fica registrada como melhoria
+pendente.
+
+GEP 0021 (`tenha presença`): a assinatura da página viva já é o sinal, sem pedido extra. A
+pessoa fica offline depois que a última página fecha e passa a tolerância (10 s por padrão). A
+mudança de presença é uma mudança da pessoa, então as páginas que mostram pessoas se atualizam.
+Um erro de contagem (voltar dentro da tolerância deixava a pessoa online para sempre) foi achado
+na revisão e tem teste.

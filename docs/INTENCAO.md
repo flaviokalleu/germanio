@@ -420,6 +420,9 @@ página Clientes
 | `colunas` | um campo por linha, na ordem | o campo precisa existir e não ser privado, oculto nem secreto | os campos visíveis |
 | `vazio` | `título`, `texto`, `ação verbo "rótulo"` | a ação segue a regra de `ações` | "Nenhum registro de … ainda." |
 
+`tenha presença` ([GEP 0021](gep/0021-presenca.md), **em teste**) mostra quem está com a aplicação
+aberta: as pessoas ganham `online`, nunca gravado, visto por quem pode ver a pessoa.
+
 Uma página aberta acompanha as mudanças do que mostra ([GEP 0020](gep/0020-paginas-vivas.md),
 **em teste**, sem sintaxe): cada mudança salva avisa quem pode ver o registro, e só as regiões
 vivas da página (lista, indicadores, detalhes, filhos) são trocadas, sem mexer no que a pessoa

@@ -74,6 +74,7 @@ Rules:
 | [0018](0018-identidade-do-esquema.md) | Schema identity: human, canonical and physical names (G112) | Rascunho |
 | [0019](0019-fronteira-dos-adaptadores.md) | The boundary between domain and adapters (G114) | Rascunho |
 | [0020](0020-paginas-vivas.md) | Pages stay up to date (no syntax; FASE 2) | Em teste |
+| [0021](0021-presenca.md) | Presence (`tenha presença`) | Em teste |
 
 Revisão final das GEPs em teste 0010–0017, com recomendação por GEP e sem mudança de status:
 [REVISAO_0010_0017.md](REVISAO_0010_0017.md).

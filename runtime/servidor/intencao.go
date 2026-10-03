@@ -315,6 +315,9 @@ func serializeFor(ctx *interp.Context, in *interp.Interpreter, atual map[string]
 	for _, f := range fileFields(e) {
 		files[strings.ToLower(f.Name)] = true
 	}
+	if in != nil && in.Online != nil && in.App != nil && e.Singular == in.App.LoginEntity && row["id"] != nil {
+		out["online"] = in.Online(row["id"])
+	}
 	for k, v := range row {
 		switch {
 		case files[k]:

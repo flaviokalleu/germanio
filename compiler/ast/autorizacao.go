@@ -19,13 +19,15 @@ type App struct {
 	ActivityEntity string
 	// EmailNotices: every new pending item is also sent by e-mail (GEP 0013).
 	EmailNotices bool
-	Login        *LoginDecl
-	Integration  string // prefix, default "/api"
-	Pages        []*PageDecl
-	Init         []*Statement
-	MemberModel  string // model holding memberships (polymorphic)
-	Messages     string // "pt" (default) or "en"
-	Vocabulary   map[string]string
+	// Presence: people show whether they have a page open (GEP 0021).
+	Presence    bool
+	Login       *LoginDecl
+	Integration string // prefix, default "/api"
+	Pages       []*PageDecl
+	Init        []*Statement
+	MemberModel string // model holding memberships (polymorphic)
+	Messages    string // "pt" (default) or "en"
+	Vocabulary  map[string]string
 	// GlobalSearch: entities searched together (`tenha busca geral em …`).
 	GlobalSearch []string
 	// InitialAdmin: `tenha administrador inicial "root"` — login name of the

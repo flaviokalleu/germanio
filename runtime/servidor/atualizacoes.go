@@ -3,6 +3,7 @@ package servidor
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -33,12 +34,96 @@ type liveHub struct {
 	a        *intentAPI
 	mu       sync.RWMutex
 	watchers map[*watcher]bool
+	// presence (GEP 0021): open pages per person, and when each person
+	// went offline is still pending (grace period)
+	pages   map[string]int
+	leaving map[string]*time.Timer
 }
 
 func newLiveHub(a *intentAPI) *liveHub {
-	h := &liveHub{a: a, watchers: map[*watcher]bool{}}
+	h := &liveHub{a: a, watchers: map[*watcher]bool{}, pages: map[string]int{}, leaving: map[string]*time.Timer{}}
 	a.in.OnChange = h.onChange
+	if a.app.Presence {
+		a.in.Online = h.online
+	}
 	return h
+}
+
+// presenceGrace: how long after the last page closes a person stays online
+// (a reload or a short drop does not flicker).
+func presenceGrace() time.Duration {
+	if d, err := time.ParseDuration(os.Getenv("GERMANIO_PRESENCA_TOLERANCIA")); err == nil && d >= 0 {
+		return d
+	}
+	return 10 * time.Second
+}
+
+func (h *liveHub) online(id any) bool {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	return h.pages[fmt.Sprint(id)] > 0
+}
+
+// arrive and leave count the open pages of a person; a change of presence
+// is a change of the person (pages showing people refresh).
+func (h *liveHub) arrive(id any) {
+	if !h.a.app.Presence || id == nil {
+		return
+	}
+	k := fmt.Sprint(id)
+	h.mu.Lock()
+	if t := h.leaving[k]; t != nil {
+		// back within the grace period: the page that was leaving is this one
+		t.Stop()
+		delete(h.leaving, k)
+		h.mu.Unlock()
+		return
+	}
+	h.pages[k]++
+	first := h.pages[k] == 1
+	h.mu.Unlock()
+	if first {
+		h.presenceChanged(id)
+	}
+}
+
+func (h *liveHub) leave(id any) {
+	if !h.a.app.Presence || id == nil {
+		return
+	}
+	k := fmt.Sprint(id)
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if h.pages[k] > 1 {
+		h.pages[k]--
+		return
+	}
+	if h.leaving[k] != nil {
+		return
+	}
+	h.leaving[k] = time.AfterFunc(presenceGrace(), func() {
+		h.mu.Lock()
+		gone := h.leaving[k] != nil
+		delete(h.leaving, k)
+		if gone {
+			h.pages[k]--
+			if h.pages[k] <= 0 {
+				delete(h.pages, k)
+			}
+		}
+		h.mu.Unlock()
+		if gone && !h.online(id) {
+			h.presenceChanged(id)
+		}
+	})
+}
+
+func (h *liveHub) presenceChanged(id any) {
+	le := h.a.app.LoginEntity
+	res, _ := h.a.in.Op(&interp.Context{}, le, "buscar", id)
+	if row, _ := res.(map[string]any); row != nil {
+		h.publish(change{model: le, before: row, after: row})
+	}
 }
 
 // onChange records a write; it is announced once the change is kept.
@@ -163,6 +248,8 @@ func (ps *pageSite) serveLive(w http.ResponseWriter, r *http.Request) {
 	hub := ps.a.live
 	hub.add(wt)
 	defer hub.remove(wt)
+	hub.arrive(wt.person)
+	defer hub.leave(wt.person)
 
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-store")

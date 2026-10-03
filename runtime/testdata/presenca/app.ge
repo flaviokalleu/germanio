@@ -1,13 +1,17 @@
-# Quem conversa.
+crie sistema Presenca
 
 usuarios
     tem
         nome obrigatório
-        username obrigatório e único
         email obrigatório e único
         senha min 8
+    acesso
+        usuario
+            ver
 
 tenha login
 tenha cadastro
 tenha presença
-login usa username e email
+
+página Pessoas
+    mostre usuarios

@@ -290,3 +290,11 @@ func TestHierarquiaFusao(t *testing.T) {
 		t.Fatalf("fusão diferente:\n%s", diffHint(string(a), string(b)))
 	}
 }
+
+// Presence is about the people who log in (GEP 0021).
+func TestPresencaSemLogin(t *testing.T) {
+	err := resolveErr("crie sistema x\n\ntenha clientes\n\ncada cliente tem\n    nome\n\ntenha presença\n")
+	if err == nil || !strings.Contains(err.Error(), "declare também tenha login") {
+		t.Fatalf("presença sem login: %v", err)
+	}
+}

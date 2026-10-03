@@ -144,6 +144,9 @@ type Interpreter struct {
 	// interpreter (before is nil on create, after is nil on delete), so the
 	// server can announce it after the commit (GEP 0020).
 	OnChange func(ctx *Context, model string, before, after map[string]any)
+	// Online, when set, tells whether the person with this id has a page of
+	// the application open (presence, GEP 0021).
+	Online func(id any) bool
 }
 
 // New creates a new interpreter.

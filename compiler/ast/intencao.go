@@ -56,6 +56,8 @@ type Intent struct {
 	MinRoles     []*CreatorRole    // todo grupo precisa ter pelo menos um owner
 	// Pending items (GEP 0009): issue gera pendência para responsaveis.
 	PendingItems []*PendingRule
+	// Presence: `tenha presença` (GEP 0021, em teste).
+	Presence bool
 	// EmailNotices: `tenha avisos por e-mail` (GEP 0013, em teste).
 	EmailNotices    bool
 	EmailNoticesPos diagnostics.Position
@@ -275,6 +277,7 @@ func MergeIntent(a, b *Intent) *Intent {
 	a.PendingItems = append(a.PendingItems, b.PendingItems...)
 	a.History = append(a.History, b.History...)
 	a.EmailNotices = a.EmailNotices || b.EmailNotices
+	a.Presence = a.Presence || b.Presence
 	if a.EmailNoticesPos.Line == 0 {
 		a.EmailNoticesPos = b.EmailNoticesPos
 	}
