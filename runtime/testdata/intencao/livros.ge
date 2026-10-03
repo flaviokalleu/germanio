@@ -1,0 +1,58 @@
+crie sistema Livros
+
+usuarios
+    tem
+        nome obrigatório
+        email obrigatório e único
+        senha
+
+tenha login
+tenha cadastro
+login usa email
+
+livros
+    tem
+        nome obrigatório e único
+        repositório
+        revisoes
+        compilacoes
+    executa compilacoes a cada envio de código conforme "compilar.yml"
+    acesso
+        usuario
+            criar
+            ver
+            editar
+            baixar código
+            enviar código
+
+compilacoes
+    tem
+        etapas
+    acesso
+        usuario
+            ver
+            ver etapas
+
+etapas
+    acesso
+        usuario
+            ver
+
+revisoes
+    tem
+        numero por livro
+        titulo obrigatório
+        autor
+        origem: branch
+        destino: branch
+    começa aberta
+    pode
+        mesclar
+        fechar
+    acesso
+        usuario
+            ver
+            criar
+            editar
+            mesclar
+            fechar

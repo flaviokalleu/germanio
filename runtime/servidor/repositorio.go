@@ -643,10 +643,11 @@ func (a *intentAPI) checkBranches(ctx *interp.Context, e *ast.Entity, data map[s
 	return nil
 }
 
-// merge joins origem into destino in the repository. Merging into the main
-// branch counts as sending code to it (protected branch rules apply);
-// drafts (rascunho) cannot be merged; conflicts refuse with the file list.
-func (a *intentAPI) merge(ctx *interp.Context, atual map[string]any, e *ast.Entity, row map[string]any) error {
+// mergeReady checks what must hold before merging, except waiting for
+// executions: the record is open and not a draft, the branches do not
+// conflict, the approvals are there (GEP 0026) and merging into the target
+// counts as sending code to it (protected branch rules apply).
+func (a *intentAPI) mergeReady(ctx *interp.Context, atual map[string]any, e *ast.Entity, row map[string]any) error {
 	en := a.app.Messages == "en"
 	for _, final := range e.Finals {
 		if fmt.Sprint(row[e.StateField]) == final {
@@ -676,19 +677,64 @@ func (a *intentAPI) merge(ctx *interp.Context, atual map[string]any, e *ast.Enti
 			return err
 		}
 	}
-	repo, parent := a.reviewRepo(ctx, e, row)
+	_, parent := a.reviewRepo(ctx, e, row)
 	pe := a.app.Entities[e.Parents[e.Review.RepoVia]]
 	target := fmt.Sprint(row[e.Review.Target])
-	if err := a.protectedBranch(ctx, atual, pe, parent, []git.RefUpdate{{Old: "(atual)", New: "(mescla)", Ref: "refs/heads/" + target}}); err != nil {
+	return a.protectedBranch(ctx, atual, pe, parent, []git.RefUpdate{{Old: "(atual)", New: "(mescla)", Ref: "refs/heads/" + target}})
+}
+
+// merge joins origem into destino in the repository, in the way the record
+// with the repository chooses (forma_de_mesclar, GEP 0027): a merge commit
+// (mesclagem); a merge commit over an origem brought up to date first
+// (semi_linear); or no merge commit, destino only advancing to an origem
+// brought up to date (linear). squash writes every change as one commit
+// on top of destino instead. Bringing origem up to date rewrites it, so it
+// follows the rules of sending code to origem. Conflicts refuse with the
+// file list.
+func (a *intentAPI) merge(ctx *interp.Context, atual map[string]any, e *ast.Entity, row map[string]any, squash bool) error {
+	if err := a.mergeReady(ctx, atual, e, row); err != nil {
 		return err
 	}
+	repo, parent := a.reviewRepo(ctx, e, row)
+	pe := a.app.Entities[e.Parents[e.Review.RepoVia]]
+	target, source := fmt.Sprint(row[e.Review.Target]), fmt.Sprint(row[e.Review.Source])
+	targetRef, sourceRef := "refs/heads/"+target, "refs/heads/"+source
 	title := fmt.Sprint(first(toStr(row["titulo"]), toStr(row["title"])))
-	msg := fmt.Sprintf("Merge branch '%s' into '%s'\n\n%s\n", row[e.Review.Source], target, title)
+	msg := fmt.Sprintf("Merge branch '%s' into '%s'\n\n%s\n", source, target, title)
 	author := git.Signature{Name: toStr(atual["nome"]), Email: toStr(atual["email"])}
 	if author.Name == "" {
 		author.Name = toStr(atual["username"])
 	}
-	sha, err := a.s.Git.Merge(repo, target, "refs/heads/"+fmt.Sprint(row[e.Review.Source]), msg, author)
+	before, err := a.s.Git.Resolve(repo, targetRef)
+	if err != nil {
+		return err
+	}
+	method := toStr(parent["forma_de_mesclar"])
+	var sha string
+	switch {
+	case squash:
+		sha, err = a.s.Git.Squash(repo, target, sourceRef, title+"\n", author)
+	case method == "linear" || method == "semi_linear":
+		upToDate, aerr := a.s.Git.IsAncestor(repo, targetRef, sourceRef)
+		if aerr != nil {
+			return aerr
+		}
+		if !upToDate {
+			if err := a.protectedBranch(ctx, atual, pe, parent, []git.RefUpdate{{Old: "(atual)", New: "(rebase)", Ref: sourceRef}}); err != nil {
+				return err
+			}
+			if _, err = a.s.Git.Rebase(repo, source, targetRef, author); err != nil {
+				break
+			}
+		}
+		if method == "linear" {
+			sha, err = a.s.Git.FastForward(repo, target, sourceRef)
+		} else {
+			sha, err = a.s.Git.Merge(repo, target, sourceRef, msg, author)
+		}
+	default:
+		sha, err = a.s.Git.Merge(repo, target, sourceRef, msg, author)
+	}
 	if err != nil {
 		var conf *git.ErrConflict
 		if errorsAs(err, &conf) {
@@ -696,7 +742,11 @@ func (a *intentAPI) merge(ctx *interp.Context, atual map[string]any, e *ast.Enti
 		}
 		return err
 	}
-	_, err = a.in.Op(ctx, e.Singular, "atualizar", row["id"], map[string]any{"commit_mesclagem": sha})
+	change := map[string]any{"commit_mesclagem": sha, "base_mesclagem": before}
+	if e.Review.Runs != "" {
+		change["mesclar_quando_passar"], change["mesclagem_agendada_por_id"] = false, nil
+	}
+	_, err = a.in.Op(ctx, e.Singular, "atualizar", row["id"], change)
 	return err
 }
 
@@ -737,6 +787,9 @@ func (a *intentAPI) reviewView(w http.ResponseWriter, r *http.Request, ctx *inte
 		// after merging, compare the merge commit with its first parent
 		if c, err := a.s.Git.GetCommit(repo, sha); err == nil && len(c.ParentIDs) == 2 {
 			dst, src = c.ParentIDs[0], c.ParentIDs[1]
+		} else if base, _ := row["base_mesclagem"].(string); err == nil && base != "" {
+			// squashed or fast-forwarded (GEP 0027): from destino before the merge
+			dst, src = base, sha
 		}
 	}
 	base, err := a.s.Git.MergeBase(repo, dst, src)

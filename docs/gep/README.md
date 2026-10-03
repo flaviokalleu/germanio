@@ -78,6 +78,7 @@ Rules:
 | [0022](0022-leitura.md) | Reading and unread counts (`guarda leitura`) | Em teste |
 | [0023](0023-por-estado.md) | Showing data by state, boards (`cartoes por estado`) | Em teste |
 | [0026](0026-minimo-de-aprovacoes.md) | A minimum of approvals before an action (`precisa de 2 aprovações para mesclar`) | Em teste |
+| [0027](0027-formas-de-mesclar.md) | How a proposal is merged (squash, linear) and merging when the executions pass (no syntax) | Em teste |
 
 Revisão final das GEPs em teste 0010–0017, com recomendação por GEP e sem mudança de status:
 [REVISAO_0010_0017.md](REVISAO_0010_0017.md).

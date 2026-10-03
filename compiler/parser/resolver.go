@@ -879,6 +879,7 @@ func ResolveIntent(prog *ast.Program) error {
 	if err := r.runVariables(in); err != nil {
 		return err
 	}
+	mergeOptions(app)
 
 	// 7g1. Minimum role: `todo grupo precisa ter pelo menos um owner`.
 	for _, m := range in.MinRoles {

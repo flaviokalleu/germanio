@@ -482,6 +482,7 @@ Equivale a: developer pode enviar código para projetos
 | `todo grupo precisa ter pelo menos um owner` | ninguém remove nem rebaixa o último membro com esse papel (ou superior) |
 | `repositório do projeto pode começar com "README.md" contendo "# {nome}"` | ao criar com `iniciar_repositorio` (nome externo pelo vocabulário), o repositório nasce com esse arquivo; `{campo}` vira o valor do registro |
 | `projeto tem repositório` | cada registro tem um repositório Git criado e removido com ele e servido em `/<campo único>.git`; branches, tags, commits, árvore, arquivos e comparação seguem as regras de baixar e enviar código |
+| `origem: branch` e `destino: branch` (linhas de `X tem`, num dado que pertence a algo com repositório) | X propõe mudanças: as branches precisam existir e ser diferentes; X mostra mudanças, commits e conflitos; `mesclar` junta a origem no destino (rascunho não mescla; mesclar no destino segue as regras de enviar código). Em teste na [GEP 0027](gep/0027-formas-de-mesclar.md), sem frase nova: `forma_de_mesclar` do dono do repositório (`mesclagem`, `semi_linear`, `linear`), `juntar_commits` de X e, quando o dono `executa` algo, `mesclar_quando_passar` (espera a última execução da origem e mescla como quem pediu, verificando tudo de novo) |
 
 **Tipo pelo nome** (quando não há tipo): `email`→email · `senha`/`password`→senha protegida ·
 `telefone`→telefone · `foto`/`avatar`/`imagem`→imagem · `descricao`/`description`→texto longo ·

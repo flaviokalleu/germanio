@@ -137,6 +137,13 @@ func Entidade(prog *ast.Program, nome string) (string, error) {
 			w("Branches protegidas: as que cada %s nomeia em %s (nome; * vale qualquer texto) só mudam com %s ou superior\n", d.Label, d.Plural, pb.Role)
 		}
 	}
+	if rv := e.Review; rv != nil && rv.Target != "" {
+		owner := app.Entities[e.Parents[rv.RepoVia]]
+		w("Mesclagem (GEP 0027, em teste): mesclar junta %s em %s como %s escolhe em forma_de_mesclar (mesclagem: commit de mescla; semi_linear: commit de mescla depois de pôr %s em dia; linear: sem commit de mescla, %s só avança); juntar_commits escreve tudo num commit só\n", rv.Source, rv.Target, owner.Singular, rv.Source, rv.Target)
+		if rv.Runs != "" {
+			w("  mesclar_quando_passar: a mesclagem espera a última execução (%s) de %s e acontece como quem pediu, com as regras verificadas de novo; falha ou cancelamento param a espera (cancelar_mesclagem também)\n", app.Entities[rv.Runs].Plural, rv.Source)
+		}
+	}
 	var approvalVerbs []string
 	for v := range e.ApprovalsNeeded {
 		approvalVerbs = append(approvalVerbs, v)
