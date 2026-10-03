@@ -14,9 +14,9 @@ Escopo núcleo v1 = features marcadas **[N]** (fluxos 1–5 da missão + testes 
 | ID-03 [N] | Personal Access Token | token com escopos, digest armazenado, expiração, revogação | perfil | `POST /api/v4/user/personal_access_tokens`, header `PRIVATE-TOKEN` | personal_access_tokens | dono | cripto | G10 | PASS | TestFluxo2, TestEscoposDeToken |
 | ID-04 | Usuário atual | `GET /api/v4/user` | — | API | users | autenticado | | | PASS | TestFluxo1 |
 | ID-05 | Admin: bloquear usuário | `state=blocked` impede login e API | admin | `POST /users/:id/block` | users | admin | | | PASS | TestBloquearUsuario |
-| ID-06 | Recuperação de senha / confirmação de e-mail | tokens por e-mail | forms | Devise | users | anônimo | email | SUPPORTED (GEP 0008) | ADIADO → FASE 5 (amplitude; recuperação de senha já PASS) | TestRecuperacaoDeSenha |
-| ID-07 | 2FA, OAuth, LDAP, SAML, WebAuthn | | | | | | | MISSING | BLOCKED (fora do núcleo) | |
-| ID-08 | Chaves SSH | cadastro de chave pública | perfil | `/user/keys` | keys | dono | SSH | MISSING | BLOCKED (sem transporte SSH) | |
+| ID-06 | Recuperação de senha / confirmação de e-mail | tokens por e-mail | forms | Devise | users | anônimo | email | SUPPORTED (GEP 0008, 0031) | PASS (confirmação de e-mail: capability `tenha confirmação de e-mail`, GEP 0031 em teste) | TestRecuperacaoDeSenha, TestConfirmacaoDeEmail |
+| ID-07 | 2FA, OAuth, LDAP, SAML, WebAuthn | TOTP, códigos de recuperação | perfil, login | Devise two-factor | users | dono | — | PARTIAL (GEP 0032) | PARTIAL (2FA TOTP feito; OAuth/OIDC em andamento; LDAP/SAML/WebAuthn fora) | TestDoisFatores, TestDoisFatoresGitLab |
+| ID-08 | Chaves SSH | cadastro de chave pública | perfil | `/user/keys` | keys | dono | SSH | SUPPORTED (GEP 0032, `chave pública`) | PASS (cadastro, impressão digital; transporte SSH em RP-10) | TestChavesSSH |
 
 ## Grupos e namespaces
 
@@ -51,7 +51,7 @@ Escopo núcleo v1 = features marcadas **[N]** (fluxos 1–5 da missão + testes 
 | RP-07 | Tags | criar, listar, remover | `/-/tags` | `/repository/tags` | refs | Developer+ para criar | git | SUPPORTED | PASS (tags leves por git push e pela API, com as regras de enviar código; tags anotadas e protegidas ainda não) | TestTags |
 | RP-08 | Editar arquivo pela web | commit direto | editor | `POST /repository/commits` | repo | Developer+ | git | G13 | PASS (FASE 3: editar pela API e pela página do arquivo; commit da pessoa com as regras de enviar código e branches protegidas; as execuções começam como num push) | TestEditarArquivoPelaWeb |
 | RP-09 | Compare | diff entre refs | compare | `/repository/compare` | repo | leitura | git | | PASS (API) | — |
-| RP-10 | SSH, LFS, mirrors, archive download | | | | | | | MISSING | BLOCKED (fora do núcleo) | |
+| RP-10 | SSH, LFS, mirrors, archive download | download do código | repositório | `repository/archive` | — | baixar_codigo | git | PARTIAL | PARTIAL (archive feito; SSH, LFS e mirrors em andamento) | TestArchive, TestBaixarCodigo, TestBaixarCodigoComoArquivo |
 
 ## Issues
 

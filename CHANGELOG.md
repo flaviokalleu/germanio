@@ -10,7 +10,14 @@ published under that name.
 
 ## [Unreleased]
 
-Nothing yet.
+### GitLab and identity
+
+- E-mail confirmation (`tenha confirmação de e-mail`, GEP 0031, em teste): no sign-in until the
+  address is confirmed; single-use tokens.
+- Two-factor authentication (`tenha autenticação em dois fatores`, GEP 0032, em teste): TOTP with
+  the secret sealed by AES-GCM under `GERMANIO_SEGREDO`, hashed single-use recovery codes.
+- Public keys (`chave pública` field type, GEP 0032) with fingerprint; GitLab `/user/keys`.
+- Repository archive download (`repository/archive`), under `baixar_codigo`.
 
 ## [0.7.0] — 2026-09-29
 
