@@ -131,8 +131,7 @@ Provado no navegador: abre, edita o título (o quadro mostra o novo) e Esc fecha
 
 Responsividade: num celular (375 px) a página não rola para o lado, e o quadro rola dentro dele.
 
-Ainda na fase (itens adiados para cá): edição de arquivo pela web (RP-08) e uploads dentro do
-Markdown (UP-01).
+Ainda na fase (itens adiados para cá): uploads dentro do Markdown (UP-01).
 
 ### Passo 8 — "digitando…" (2026-10-02)
 
@@ -140,3 +139,13 @@ Parte da presença (GEP 0021): quem digita num formulário da página aparece co
 digitando…" para as outras pessoas que olham a mesma página. O aviso é efêmero e passa por sessão
 e CSRF. Provado no servidor (`TestDigitando`: a mesma página sim, a própria pessoa e outra página
 não, recusa sem sessão ou CSRF) e no navegador (Ana digita no quadro, Bia vê).
+
+### Passo 9 — editar arquivo pela web (RP-08, 2026-10-02)
+
+Sem sintaxe nova, como parte da capability de repositório:
+- a página de um arquivo mostra um formulário de edição a quem pode enviar código;
+- salvar é um commit da pessoa, com a mensagem dela;
+- vale a mesma checagem de um `git push`, branches protegidas incluídas, e as execuções começam
+  como depois de um push.
+
+Provado pelo GitLab, na API (`PUT …/repository/files/…`) e na página (`TestEditarArquivoPelaWeb`).

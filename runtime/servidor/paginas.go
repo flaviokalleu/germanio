@@ -1115,6 +1115,10 @@ func (ps *pageSite) post(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r) // a dashboard has nothing to change
 		return
 	}
+	if len(parts) >= 3 && parts[len(parts)-2] == "codigo" && parts[len(parts)-1] == "salvar" {
+		ps.saveFileFromPage(w, r, pg, parts)
+		return
+	}
 	if len(parts) >= 3 && parts[len(parts)-2] == "arquivo" && strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data") {
 		ps.uploadFromPage(w, r, pg, parts)
 		return
@@ -1335,6 +1339,14 @@ func (ps *pageSite) repositoryView(w http.ResponseWriter, r *http.Request, v *vi
 			lines = append(lines, map[string]any{"N": i + 1, "Text": l})
 		}
 		body.WriteString(string(htmlOf(codeTpl, map[string]any{"Lines": lines, "Binary": m["binary"] == true})))
+		// editing on the web: for whoever may push code here (RP-08)
+		last := chain[len(chain)-1]
+		ctx := &interp.Context{Request: r}
+		if atual, _ := ps.a.s.identify(ctx, r); atual != nil && m["binary"] != true {
+			if row := ps.a.find(ctx, last.e, last.ref, nil); row != nil && ps.a.in.Can(ctx, atual, last.e, "enviar_codigo", row) {
+				body.WriteString(string(htmlOf(editFileTpl, map[string]any{"Action": base + "/codigo/salvar?caminho=" + url.QueryEscape(path), "CSRF": v.CSRF, "Content": toStr(m["content"]), "Path": path})))
+			}
+		}
 	case "commit":
 		if len(parts) < 2 {
 			ps.notFound(w, v, "Commit não encontrado")
@@ -1499,6 +1511,8 @@ var formTpl = tpl(`<form class="{{if .Title}}caixa{{end}}" method="post" action=
 {{else if eq .Type "select"}}<label>{{.Label}}<select name="{{.Name}}" {{if .Multiple}}multiple{{end}} {{if .Required}}required{{end}}>{{range .Options}}<option value="{{.Value}}" {{if .Selected}}selected{{end}}>{{.Text}}</option>{{end}}</select></label>
 {{else}}<label>{{.Label}}<input type="{{.Type}}" name="{{.Name}}" value="{{.Value}}" {{if .Required}}required{{end}}></label>{{end}}{{end}}
 <button {{if .Danger}}class="perigo"{{end}}>{{.Submit}}</button></form>`)
+var editFileTpl = tpl(`<form class="caixa" method="post" action="{{.Action}}"><h3>Editar {{.Path}}</h3><input type="hidden" name="_csrf" value="{{.CSRF}}"><label>Conteúdo<textarea name="conteudo" rows="16" spellcheck="false">{{.Content}}</textarea></label><label>Mensagem do commit<input name="mensagem" placeholder="Atualiza {{.Path}}"></label><button>Salvar</button></form>`)
+
 var detailTpl = tpl(`<dl data-vivo="detalhes">{{range .}}<dt>{{.Label}}</dt><dd>{{if .HTML}}<div class="texto">{{.HTML}}</div>{{else}}{{.Value}}{{end}}</dd>{{end}}</dl>`)
 var searchTpl = tpl(`<form class="busca" method="get" role="search">{{if .Search}}<label><span class="sr">Pesquisar</span><input type="search" name="q" value="{{.Q}}" placeholder="Pesquisar"></label>{{end}}
 {{range .Filters}}<label><span class="sr">{{label .}}</span><input name="{{.}}" value="{{getv $.Values .}}" placeholder="{{label .}}"></label>{{end}}<button>Filtrar</button></form>`)
@@ -1526,4 +1540,31 @@ func (ps *pageSite) nameOf(ctx *interp.Context, entity string, id any) string {
 		return display(id)
 	}
 	return titleOf(e, row)
+}
+
+// saveFileFromPage: the edit form of a file commits it through the same
+// operation as the API (and the same rules).
+func (ps *pageSite) saveFileFromPage(w http.ResponseWriter, r *http.Request, pg *ast.PageDecl, parts []string) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "formulário inválido", http.StatusBadRequest)
+		return
+	}
+	sess := interp.SessaoDaRequisicao(r)
+	if sess == nil {
+		http.Redirect(w, r, "/entrar", http.StatusSeeOther)
+		return
+	}
+	if r.PostForm.Get("_csrf") != fmt.Sprint(sess["csrf"]) {
+		http.Error(w, "token CSRF ausente ou inválido", http.StatusForbidden)
+		return
+	}
+	path := strings.Trim(r.URL.Query().Get("caminho"), "/")
+	_, api, _, _ := ps.resolve(pg, parts[:len(parts)-2])
+	back := "/" + slug(pg.Name) + "/" + strings.Join(escapeAll(parts[:len(parts)-1]), "/") + "?caminho=" + url.QueryEscape(path)
+	code, out, _ := ps.call(r, "PUT", api+"/repositorio/arquivos/"+path, map[string]any{"conteudo": r.PostForm.Get("conteudo"), "mensagem": r.PostForm.Get("mensagem")})
+	if code >= 300 {
+		http.Redirect(w, r, back+"&erro="+url.QueryEscape(message(out)), http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, back+"&ok="+url.QueryEscape("Arquivo salvo"), http.StatusSeeOther)
 }

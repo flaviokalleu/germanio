@@ -182,20 +182,6 @@ func (a *intentAPI) serveGit(w http.ResponseWriter, r *http.Request, entities []
 		return
 	}
 	repo, _ := row["repositorio"].(string)
-	updatesToMaps := func(list []git.RefUpdate) []any {
-		out := make([]any, 0, len(list))
-		for _, u := range list {
-			m := map[string]any{"ref": u.Ref, "antes": u.Old, "depois": u.New, "tipo": u.Kind()}
-			if strings.HasPrefix(u.Ref, "refs/heads/") {
-				m["branch"] = strings.TrimPrefix(u.Ref, "refs/heads/")
-			}
-			if strings.HasPrefix(u.Ref, "refs/tags/") {
-				m["tag"] = strings.TrimPrefix(u.Ref, "refs/tags/")
-			}
-			out = append(out, m)
-		}
-		return out
-	}
 	vars := func(list []git.RefUpdate) map[string]any {
 		return map[string]any{"atual": nilIfEmpty(atual), "registro": row, e.Singular: row, "atualizacoes": updatesToMaps(list)}
 	}
@@ -462,6 +448,47 @@ func (a *intentAPI) mountRepository(mux *routeMux, base string, e *ast.Entity) {
 		}
 		a.json(w, 200, map[string]any{"file_path": b.Path, "file_name": b.Path[strings.LastIndex(b.Path, "/")+1:], "size": b.Size, "blob_id": b.ID, "encoding": "text", "content": string(b.Content), "binary": b.Binary}, nil)
 	}, false))
+	// editing a file on the web is a commit by the person, under the same
+	// rules as pushing (protected branches included); executions start as
+	// after a push
+	mux.HandleFunc("PUT "+root+"/"+names["files"]+"/{path...}", h(func(w http.ResponseWriter, r *http.Request, ctx *interp.Context, atual, row map[string]any, repo string) {
+		body, err := readBody(r)
+		if err != nil {
+			a.failErr(w, r, err)
+			return
+		}
+		path := strings.Trim(r.PathValue("path"), "/")
+		branch := first(toStr(body["branch"]), defaultBranch(row))
+		content := first(toStr(body["conteudo"]), toStr(body["content"]))
+		message := first(toStr(body["mensagem"]), toStr(body["commit_message"]), "Atualiza "+path)
+		if atual == nil {
+			a.fail(w, 401, a.msg("401", e))
+			return
+		}
+		old, _ := a.s.Git.Resolve(repo, "refs/heads/"+branch)
+		if old == "" {
+			old = git.ZeroID
+		}
+		update := git.RefUpdate{Old: old, New: "(novo)", Ref: "refs/heads/" + branch}
+		if err := a.pushCheck(ctx, atual, e, row, []git.RefUpdate{update}); err != nil {
+			a.failErr(w, r, err)
+			return
+		}
+		kind := "update"
+		if _, err := a.s.Git.ReadFile(repo, "refs/heads/"+branch, path, 1); err != nil {
+			kind = "create"
+		}
+		name := first(toStr(atual["nome"]), toStr(atual["name"]), toStr(atual["username"]), "Germanio")
+		email := first(toStr(atual["email"]), "sem-email@germanio.local")
+		id, err := a.s.Git.CommitFiles(repo, branch, "", message, git.Signature{Name: name, Email: email, When: time.Now()}, []git.Action{{Kind: kind, Path: path, Content: []byte(content)}})
+		if err != nil {
+			gitErr(w, err)
+			return
+		}
+		update.New = id
+		a.startRuns(ctx, atual, e, row, updatesToMaps([]git.RefUpdate{update}))
+		a.json(w, 200, map[string]any{"file_path": path, "branch": branch, "commit_id": id}, nil)
+	}, true))
 	mux.HandleFunc("GET "+root+"/"+names["compare"], h(func(w http.ResponseWriter, r *http.Request, ctx *interp.Context, atual, row map[string]any, repo string) {
 		q := r.URL.Query()
 		base, err := a.s.Git.MergeBase(repo, q.Get("from"), q.Get("to"))
@@ -792,4 +819,20 @@ func globMatch(pattern, s string) bool {
 		s = s[k+len(p):]
 	}
 	return true
+}
+
+// updatesToMaps describes ref updates the way hooks and executions read them.
+func updatesToMaps(list []git.RefUpdate) []any {
+	out := make([]any, 0, len(list))
+	for _, u := range list {
+		m := map[string]any{"ref": u.Ref, "antes": u.Old, "depois": u.New, "tipo": u.Kind()}
+		if strings.HasPrefix(u.Ref, "refs/heads/") {
+			m["branch"] = strings.TrimPrefix(u.Ref, "refs/heads/")
+		}
+		if strings.HasPrefix(u.Ref, "refs/tags/") {
+			m["tag"] = strings.TrimPrefix(u.Ref, "refs/tags/")
+		}
+		out = append(out, m)
+	}
+	return out
 }
