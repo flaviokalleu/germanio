@@ -1327,6 +1327,7 @@ func (a *intentAPI) cascade(ctx *interp.Context, e *ast.Entity, row map[string]a
 	if depth > 16 {
 		return fmt.Errorf("exclusão aninhada demais")
 	}
+	interp.MarcarRemovendo(ctx, e.Singular, row["id"]) // its sums go with it (GEP 0050)
 	for _, c := range a.childrenOf(e) {
 		// what belongs to the record through any of its fields goes with it
 		// (a link that names this issue as its issue or as the related one)

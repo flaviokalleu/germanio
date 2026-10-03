@@ -164,7 +164,11 @@ type Aggregate struct {
 	// Reset: `pode zerar <nome>` — the action zerar_<nome> records, in one
 	// change, the entry that brings the sum back to zero.
 	Reset bool
-	Pos   diagnostics.Position
+	// NonNegative: `não pode ficar com <nome> negativo` (GEP 0050, em
+	// teste) — no change of a record of Of may leave the whole sum below
+	// zero; checked in the change's transaction with the record locked.
+	NonNegative bool
+	Pos         diagnostics.Position
 }
 
 // Pair: Owner and Other are the two fields of the record pointing at Of.

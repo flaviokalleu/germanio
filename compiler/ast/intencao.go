@@ -81,6 +81,17 @@ type Intent struct {
 	Aggregates []*AggregateDecl
 	// Pairs: `ligacao é única por par de issues` (GEP 0048, em teste).
 	Pairs []*PairDecl
+	// Floors: `issue não pode ficar com tempo gasto negativo` (GEP 0050,
+	// em teste).
+	Floors []*FloorDecl
+}
+
+// FloorDecl: a sum Entity shows (Name, words as written) never goes below
+// zero.
+type FloorDecl struct {
+	Entity string
+	Name   string
+	Pos    diagnostics.Position
 }
 
 // AggregateDecl: a line of a data block's `indicadores` (or `X mostra …`):
@@ -334,6 +345,7 @@ func MergeIntent(a, b *Intent) *Intent {
 	a.Discards = append(a.Discards, b.Discards...)
 	a.Aggregates = append(a.Aggregates, b.Aggregates...)
 	a.Pairs = append(a.Pairs, b.Pairs...)
+	a.Floors = append(a.Floors, b.Floors...)
 	a.InitialFiles = append(a.InitialFiles, b.InitialFiles...)
 	a.ReservedAddresses = append(a.ReservedAddresses, b.ReservedAddresses...)
 	a.ReadOnly = append(a.ReadOnly, b.ReadOnly...)

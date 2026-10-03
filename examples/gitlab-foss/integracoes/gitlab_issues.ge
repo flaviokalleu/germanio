@@ -97,13 +97,17 @@ rotas
         exigir(superficie.pedir("PUT", issue_em(requisicao), {time_estimate: 0}))
         responder(200, estatisticas_de_tempo(issue_em(requisicao)))
 
+    # Descontar mais do que foi gasto é recusado pelo domínio (issue não pode
+    # ficar com tempo gasto negativo; GEP 0050), na mesma mudança que grava o
+    # tempo: aqui só se traduz a recusa para a mensagem do GitLab.
     rota POST "/api/v4/projects/:id/issues/:iid/add_spent_time"
         definir s = duracao_pedida(requisicao)
         definir caminho = issue_em(requisicao)
-        se s < 0 e obter(exigir(superficie.pedir("GET", caminho)).corpo, "total_time_spent", 0) + s < 0
-            responder(400, {message: {time_spent: ["Time to subtract exceeds the total time spent"]}})
         definir resumo = obter(requisicao.consulta, "summary", obter(requisicao.corpo, "summary", nulo))
-        exigir(superficie.pedir("POST", adicionar(caminho, "tempos_gastos"), {duration: s, description: resumo}))
+        definir r = superficie.pedir("POST", adicionar(caminho, "tempos_gastos"), {duration: s, description: resumo})
+        se r.estado == 400 e s < 0 e tem(obter(r.corpo, "message", {}), "duration")
+            responder(400, {message: {time_spent: ["Time to subtract exceeds the total time spent"]}})
+        exigir(r)
         responder(201, estatisticas_de_tempo(caminho))
 
     # Como no GitLab: zerar o tempo gasto registra o tempo que desconta tudo,

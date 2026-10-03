@@ -785,6 +785,9 @@ func ResolveIntent(prog *ast.Program) error {
 	if err := r.pairs(in); err != nil {
 		return err
 	}
+	if err := r.floors(in); err != nil {
+		return err
+	}
 
 	// 7d2. Read-only while a condition holds: `projeto arquivado é somente leitura`.
 	for _, ro := range in.ReadOnly {

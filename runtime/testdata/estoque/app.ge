@@ -1,0 +1,41 @@
+crie sistema Estoque
+
+usuarios
+    tem
+        nome
+        email obrigatório e único
+        senha min 8
+
+tenha login
+tenha cadastro
+
+tenha papeis
+    estoquista 30
+
+# O estoque de um produto é a soma dos movimentos (entradas positivas,
+# saídas negativas), e nunca fica negativo: não se tira o que não existe.
+produtos
+    tem
+        nome obrigatório
+        membros com papel
+        movimentos
+    indicadores
+        soma da quantidade dos movimentos como estoque
+    regras
+        quem cria vira estoquista
+        não pode ficar com estoque negativo
+    acesso
+        usuario
+            criar
+        estoquista
+            administrar
+
+movimentos
+    tem
+        quantidade inteiro obrigatório
+        motivo
+    acesso
+        estoquista
+            criar
+            editar
+            excluir
