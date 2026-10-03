@@ -89,6 +89,8 @@ Rules:
 | [0036](0036-espelhos.md) | Mirrors of a repository (`espelham o repositório do projeto`) | Em teste |
 | [0037](0037-git-por-ssh.md) | Git over SSH (no syntax; `GERMANIO_SSH_ENDERECO`) | Em teste |
 | [0039](0039-login-com-conta-externa.md) | Sign-in with an external account, OpenID Connect (`tenha login com conta externa`) | Em teste |
+| [0043](0043-varios-valores-num-filtro.md) | Several values in a filter: any of them, or all the items of a list (no syntax) | Em teste |
+| [0044](0044-lugar-pelo-endereco.md) | The place of a new record, named by its address (no syntax) | Em teste |
 
 Revisão final das GEPs em teste 0010–0017, com recomendação por GEP e sem mudança de status:
 [REVISAO_0010_0017.md](REVISAO_0010_0017.md).

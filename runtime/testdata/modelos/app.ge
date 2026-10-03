@@ -1,0 +1,68 @@
+crie sistema Modelos
+
+# Um domínio sem GitLab: contratos-modelo em pastas, copiados por quem os
+# vê (GEP 0029), filtrados por vários valores (GEP 0043) e criados num lugar dado pelo
+# endereço (GEP 0044).
+
+tenha papeis
+    leitor 10
+    editor 40
+
+usuarios
+    tem
+        nome obrigatório e único
+        email obrigatório e único
+        senha min 8
+    acesso
+        usuario
+            ver
+
+tenha login
+tenha cadastro
+login usa nome e email
+
+pastas
+    tem
+        nome obrigatório
+        caminho obrigatório
+        endereço dentro do criador
+        visibilidade
+        criador
+        membros com papel
+        contratos
+    regras
+        quem cria vira editor
+    acesso
+        usuario
+            criar
+        leitor
+            ver
+        editor
+            administrar
+
+contratos
+    tem
+        titulo obrigatório
+        caminho obrigatório
+        endereço dentro da pasta ou do criador
+        tipo
+        etiquetas lista de texto
+        visibilidade
+        criador
+        membros com papel
+    pertence a
+        pasta opcional
+    regras
+        herda membros da pasta
+        não pode ser mais visível que a pasta
+        quem cria vira editor
+    acesso
+        usuario
+            criar seus
+            copiar
+        leitor
+            ver
+        editor
+            administrar
+    permita
+        filtrar por tipo e etiqueta

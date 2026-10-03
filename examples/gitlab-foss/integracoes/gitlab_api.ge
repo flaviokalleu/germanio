@@ -1,8 +1,10 @@
 # NÍVEL AVANÇADO / ADAPTADOR DE COMPATIBILIDADE
 #
 # Partes da API v4 do GitLab que têm outro formato que a superfície gerada:
-# o feed de eventos (nomes de ação do GitLab), as preferências de notificação
-# e as estatísticas do administrador. Cada rota só traduz e pede à própria
+# o feed de eventos (nomes de ação do GitLab, também como filtro), as
+# preferências de notificação, as estatísticas do administrador, os forks de
+# um projeto, os projetos marcados por uma pessoa, o merge por PUT e o resumo
+# das aprovações de um merge request. Cada rota só traduz e pede à própria
 # aplicação (GEP 0033), como a pessoa que chamou: quem pode ver o quê está em
 # backend/.
 
@@ -50,15 +52,49 @@ logica
             ev.project_id = a.dentro_id
         retornar ev
 
+    # O filtro action do GitLab, nos verbos que o histórico guarda (uma lista:
+    # qualquer um deles). Comentários não guardam histórico nesta aplicação,
+    # então "created" são as criações de issues e merge requests; "commented"
+    # seria a criação de um comentário. joined, left e expired não acontecem
+    # aqui: a lista fica vazia.
+    definir ACOES_DO_FILTRO = {created: ["criar"], updated: ["editar", "mudar"], closed: ["fechar"], reopened: ["reabrir"], pushed: ["enviar_codigo"], commented: ["criar"], merged: ["mesclar"], approved: ["aprovar"], destroyed: ["excluir"], joined: [], left: [], expired: []}
+
+    funcao vazio_paginado(requisicao)
+        responder(200, [], {"X-Total": "0", "X-Total-Pages": "0", "X-Page": texto(obter(requisicao.consulta, "page", "1")), "X-Per-Page": texto(obter(requisicao.consulta, "per_page", "20"))})
+
     funcao listar_eventos(consulta, requisicao)
         consulta.page = obter(requisicao.consulta, "page", nulo)
         consulta.per_page = obter(requisicao.consulta, "per_page", nulo)
         consulta.target_type = tipo_germanio(obter(requisicao.consulta, "target_type", nulo))
+        definir acao = obter(requisicao.consulta, "action", nulo)
+        se acao != nulo
+            se nao tem(ACOES_DO_FILTRO, acao)
+                responder(400, {message: {action: ["does not have a valid value"]}})
+            definir verbos = ACOES_DO_FILTRO[acao]
+            se tamanho(verbos) == 0
+                vazio_paginado(requisicao)
+            consulta.action_name = verbos
+            se acao == "commented"
+                se consulta.target_type != nulo e consulta.target_type != "comentario"
+                    vazio_paginado(requisicao)
+                consulta.target_type = "comentario"
         definir r = exigir(superficie.pedir("GET", "historico", nulo, consulta))
         definir lista = []
         para cada at em r.corpo
             lista = adicionar(lista, evento_gitlab(at))
         responder(200, lista, pagina_de(r))
+
+    # Quem aprovou, como o GitLab mostra: só as pessoas que quem pergunta vê.
+    funcao aprovadores(ids)
+        definir lista = []
+        para cada pessoa_id em ids
+            definir u = superficie.pedir("GET", ["users", pessoa_id])
+            se u.estado == 200
+                lista = adicionar(lista, {user: {id: u.corpo.id, username: u.corpo.username, name: obter(u.corpo, "name", nulo), state: obter(u.corpo, "state", nulo), avatar_url: obter(u.corpo, "avatar_url", nulo)}})
+        retornar lista
+
+    funcao merge_request_em(requisicao)
+        retornar ["projects", requisicao.parametros.id, "merge_requests", requisicao.parametros.iid]
 
     funcao nivel(pessoa)
         se obter(pessoa, "avisos_por_email", verdadeiro) == falso
@@ -95,3 +131,38 @@ rotas
         se nao acesso.administrador()
             responder(403, {message: "403 Forbidden"})
         responder(200, {users: texto(superficie.contar("usuarios")), active_users: texto(superficie.contar("usuarios", "ativo")), projects: texto(superficie.contar("projetos")), groups: texto(superficie.contar("grupos")), issues: texto(superficie.contar("issues")), merge_requests: texto(superficie.contar("merge_requests")), notes: texto(superficie.contar("comentarios")), milestones: texto(superficie.contar("milestones")), forks: "0", snippets: "0", ssh_keys: "0"})
+
+    # Os forks de um projeto: as cópias dele (GEP 0029) que a pessoa vê, de um
+    # projeto que ela vê; com a mesma pesquisa e as mesmas páginas da lista.
+    rota GET "/api/v4/projects/:id/forks"
+        definir p = exigir(superficie.pedir("GET", ["projects", requisicao.parametros.id]))
+        definir consulta = copiar(requisicao.consulta)
+        consulta.forked_from_project_id = p.corpo.id
+        definir r = exigir(superficie.pedir("GET", "projects", nulo, consulta))
+        responder(200, r.corpo, pagina_de(r))
+
+    # Os projetos que uma pessoa marcou. Quem marcou o quê não aparece para
+    # mais ninguém (GEP 0030): só a própria pessoa pede os seus. O GitLab mostra
+    # os de qualquer pessoa; aqui, os de outra pessoa são recusados (403).
+    rota GET "/api/v4/users/:id/starred_projects"
+        definir eu = exigir(superficie.pedir("GET", "user"))
+        definir quem = texto(requisicao.parametros.id)
+        se texto(eu.corpo.id) != quem e minusculo(texto(eu.corpo.username)) != minusculo(quem)
+            exigir(superficie.pedir("GET", ["users", quem]))
+            responder(403, {message: "403 Forbidden - the projects a person starred are private"})
+        definir consulta = copiar(requisicao.consulta)
+        consulta.starred = "true"
+        definir r = exigir(superficie.pedir("GET", "projects", nulo, consulta))
+        responder(200, r.corpo, pagina_de(r))
+
+    # Merge por PUT, como o GitLab documenta: a mesma ação mesclar (POST).
+    rota PUT "/api/v4/projects/:id/merge_requests/:iid/merge"
+        definir r = superficie.pedir("POST", adicionar(merge_request_em(requisicao), "merge"), mesclar(requisicao.consulta, requisicao.corpo))
+        responder(r.estado, r.corpo)
+
+    # O resumo das aprovações (GEP 0026): quantas são necessárias, quantas
+    # faltam e quem aprovou.
+    rota GET "/api/v4/projects/:id/merge_requests/:iid/approvals"
+        definir mr = exigir(superficie.pedir("GET", merge_request_em(requisicao))).corpo
+        definir faltando = obter(mr, "approvals_left", 0)
+        responder(200, {id: mr.id, iid: mr.iid, project_id: obter(mr, "project_id", nulo), title: mr.title, description: obter(mr, "description", nulo), state: mr.state, created_at: obter(mr, "created_at", nulo), updated_at: obter(mr, "updated_at", nulo), approvals_required: obter(mr, "approvals_required", 0), approvals_left: faltando, approved: faltando == 0, approved_by: aprovadores(obter(mr, "approved_by_ids", []))})

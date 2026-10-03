@@ -134,8 +134,17 @@ func (s *Servidor) registerSurfaceModule(a *intentAPI) {
 				}
 				sort.Strings(keys)
 				for _, k := range keys {
-					if m[k] != nil {
-						q.Set(k, toStr(m[k]))
+					switch v := m[k].(type) {
+					case nil:
+					case []any:
+						// a list repeats the parameter: any of the values (GEP 0043)
+						for _, it := range v {
+							if it != nil {
+								q.Add(k, toStr(it))
+							}
+						}
+					default:
+						q.Set(k, toStr(v))
 					}
 				}
 				if len(q) > 0 {
