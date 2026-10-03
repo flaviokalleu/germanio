@@ -1,0 +1,12 @@
+crie sistema Arquivo
+
+usuarios
+    tem
+        nome obrigatório
+        email obrigatório e único
+        senha min 8
+        admin começa com falso
+
+tenha login com conta externa
+tenha administrador inicial "root@x.com"
+login usa email

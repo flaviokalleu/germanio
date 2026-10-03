@@ -1,0 +1,18 @@
+crie sistema Oficina
+
+usuarios
+    tem
+        username obrigatório e único
+        nome obrigatório
+        email obrigatório e único
+        senha min 8
+    acesso
+        usuario
+            editar seu perfil
+
+tenha login
+tenha cadastro
+tenha confirmação de e-mail
+tenha autenticação em dois fatores
+tenha login com conta externa
+login usa username e email

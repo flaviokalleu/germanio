@@ -301,6 +301,9 @@ func (a *intentAPI) mountIdentity(mux *routeMux) {
 	if app.Login.TwoFactor {
 		a.mountSecondFactor(mux)
 	}
+	if app.Login.External {
+		a.mountExternal()
+	}
 	if app.EmailNotices {
 		if _, why := mailerFromEnv(); why != "" {
 			fmt.Printf("[germanio] avisos por e-mail indisponíveis: %s\n", why)

@@ -165,24 +165,38 @@ func (a *intentAPI) mountSecondFactor(mux *routeMux) {
 // askSecondFactor answers a right password of someone with the second
 // factor on: a one-use challenge, kept on the server for 5 minutes.
 func (a *intentAPI) askSecondFactor(ctx *interp.Context, w http.ResponseWriter, r *http.Request, user map[string]any) {
-	token, err := newToken()
+	token, err := a.newChallenge(user)
 	if err != nil {
 		a.failErr(w, r, err)
 		return
 	}
-	now := time.Now().UTC()
-	a.s.DB.Executar(fmt.Sprintf(`DELETE FROM %s WHERE expira_em < %s`, factorPending, a.s.ph(1)), now.Format(time.RFC3339))
-	if _, err := a.s.DB.Executar(fmt.Sprintf(`INSERT INTO %s (pessoa_id, hash, expira_em) VALUES (%s, %s, %s)`, factorPending, a.s.ph(1), a.s.ph(2), a.s.ph(3)), user["id"], hashToken(token), now.Add(challengeTTL).Format(time.RFC3339)); err != nil {
-		a.failErr(w, r, err)
-		return
-	}
 	if strings.HasPrefix(r.Header.Get("Content-Type"), "application/x-www-form-urlencoded") {
-		http.SetCookie(w, &http.Cookie{Name: challengeCookie, Value: token, Path: "/entrar", HttpOnly: true, SameSite: http.SameSiteStrictMode, MaxAge: int(challengeTTL.Seconds()), Secure: r.TLS != nil})
+		setChallengeCookie(w, r, token)
 		http.Redirect(w, r, "/entrar/codigo", http.StatusSeeOther)
 		return
 	}
 	a.json(w, http.StatusAccepted, map[string]any{"dois_fatores": true, "desafio": token,
 		"message": "Senha certa. Agora envie o código do aplicativo autenticador (ou um código de recuperação) com este desafio para /entrar/codigo."}, nil)
+}
+
+// newChallenge saves a one-use challenge for user (5 minutes) and returns it.
+func (a *intentAPI) newChallenge(user map[string]any) (string, error) {
+	token, err := newToken()
+	if err != nil {
+		return "", err
+	}
+	now := time.Now().UTC()
+	a.s.DB.Executar(fmt.Sprintf(`DELETE FROM %s WHERE expira_em < %s`, factorPending, a.s.ph(1)), now.Format(time.RFC3339))
+	if _, err := a.s.DB.Executar(fmt.Sprintf(`INSERT INTO %s (pessoa_id, hash, expira_em) VALUES (%s, %s, %s)`, factorPending, a.s.ph(1), a.s.ph(2), a.s.ph(3)), user["id"], hashToken(token), now.Add(challengeTTL).Format(time.RFC3339)); err != nil {
+		return "", err
+	}
+	return token, nil
+}
+
+// setChallengeCookie keeps the challenge of a browser sign-in (never in the
+// address).
+func setChallengeCookie(w http.ResponseWriter, r *http.Request, token string) {
+	http.SetCookie(w, &http.Cookie{Name: challengeCookie, Value: token, Path: "/entrar", HttpOnly: true, SameSite: http.SameSiteStrictMode, MaxAge: int(challengeTTL.Seconds()), Secure: r.TLS != nil})
 }
 
 // checkFactor tells whether code (an app code or a recovery code) is right
@@ -507,7 +521,7 @@ func (ps *pageSite) sessionPerson(w http.ResponseWriter, r *http.Request, write 
 		if !write && !header {
 			http.Redirect(w, r, "/entrar", http.StatusSeeOther)
 		} else {
-			ps.a.fail(w, http.StatusUnauthorized, "Entre pela página de login para mudar os dois fatores.")
+			ps.a.fail(w, http.StatusUnauthorized, "Entre pela página de login para fazer esta mudança.")
 		}
 		return nil, nil, false
 	}

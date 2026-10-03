@@ -138,6 +138,9 @@ func Entidade(prog *ast.Program, nome string) (string, error) {
 		if app.Login.Confirmation {
 			w("  confirmação de e-mail (GEP 0031, em teste): quem se cadastra recebe um link de uso único, válido por 24 horas, e só entra depois de confirmar; mudar o e-mail pede nova confirmação; pessoas criadas por administradores já nascem confirmadas (email_confirmado)\n")
 		}
+		if app.Login.External {
+			w("  login com conta externa (GEP 0039, em teste): botão \"Entrar com …\" para um provedor OpenID Connect configurado no servidor (GERMANIO_OIDC_EMISSOR, _CLIENTE, _SEGREDO, _NOME); código com PKCE, state e nonce; id_token conferido pela assinatura (RS256/ES256) e por iss, aud, exp e nonce; a conta externa é reconhecida pelo emissor e pelo sujeito; um e-mail só encontra uma conta existente se o provedor o verificou e este sistema também o confirmou; dois fatores continuam valendo; /conta-externa liga e desliga\n")
+		}
 		if app.Login.TwoFactor {
 			w("  dois fatores (GEP 0032, em teste): cada pessoa pode ligar um código de aplicativo autenticador (TOTP, RFC 6238); ligado, entrar pede o código depois da senha, cada código vale uma vez, erros contam no bloqueio; senha sozinha não serve para git nem oauth (use um token de acesso); 10 códigos de recuperação de uso único; o segredo fica cifrado e nunca é mostrado de novo\n")
 		}

@@ -34,6 +34,9 @@ type intentAPI struct {
 	recoveryAvailable bool
 	// confirmAvailable: e-mail confirmation is declared and can send links.
 	confirmAvailable bool
+	// external is sign-in with an external account, when declared and
+	// configured (GEP 0039); nil otherwise.
+	external *externalLogin
 	// live announces changes to open pages (GEP 0020).
 	live *liveHub
 	// archives bounds how many downloads of code run at the same time.

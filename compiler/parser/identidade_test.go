@@ -56,3 +56,31 @@ func TestFrasesDeIdentidade(t *testing.T) {
 		t.Fatalf("frase diferente: %v", err)
 	}
 }
+
+// tenha login com conta externa (GEP 0039): implies the login, needs an
+// e-mail field; naming a provider in the program is an error that says the
+// provider is server configuration; "tenha login com email" keeps its
+// own lesson (G84).
+func TestLoginComContaExterna(t *testing.T) {
+	base := "crie sistema X\n\nusuarios\n    tem\n        nome\n        email obrigatório e único\n        senha min 8\n\n"
+	app := resolved(t, base+"tenha login com conta externa\n")
+	if app.Login == nil || !app.Login.External {
+		t.Fatalf("login: %+v", app.Login)
+	}
+	noMail := "crie sistema X\n\nusuarios\n    tem\n        nome\n        senha min 8\n\ntenha login com conta externa\n"
+	if err := resolveErr(noMail); err == nil || !strings.Contains(err.Error(), "campo de e-mail") {
+		t.Fatalf("sem campo de e-mail: %v", err)
+	}
+	for _, line := range []string{"tenha login com google", "tenha login com provedor externo", "tenha login com conta do keycloak"} {
+		err := resolveErr(base + line + "\n")
+		if err == nil || !strings.Contains(err.Error(), "tenha login com conta externa") || !strings.Contains(err.Error(), "GERMANIO_OIDC_EMISSOR") {
+			t.Fatalf("%s: %v", line, err)
+		}
+	}
+	if err := resolveErr(base + "tenha login com email e senha\n"); err == nil || !strings.Contains(err.Error(), "login usa email") {
+		t.Fatalf("G84: %v", err)
+	}
+	if err := resolveErr(base + "tenha login com conta externa\n    google\n"); err == nil || !strings.Contains(err.Error(), "frase completa") {
+		t.Fatalf("nada abaixo: %v", err)
+	}
+}

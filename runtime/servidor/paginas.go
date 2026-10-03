@@ -1393,8 +1393,7 @@ func (ps *pageSite) identityPages(mux *routeMux) {
 		if r.URL.Query().Get("confirmado") == "1" {
 			v.Flash = "E-mail confirmado. Agora você já pode entrar."
 		}
-		v.Body = htmlOf(loginTpl, map[string]any{"Signup": v.Signup, "Label": strings.Join(app.Login.Fields, " ou "), "Recovery": app.Login.Recovery})
-		ps.render(w, v, http.StatusOK)
+		ps.loginPage(w, r, http.StatusOK, v.Error, v.Flash)
 	})
 	if app.Login.Recovery {
 		mux.HandleFunc("GET /esqueci", func(w http.ResponseWriter, r *http.Request) {
@@ -1439,6 +1438,9 @@ func (ps *pageSite) identityPages(mux *routeMux) {
 	}
 	if app.Login.TwoFactor {
 		ps.secondFactorPages(mux)
+	}
+	if app.Login.External {
+		ps.externalPages(mux)
 	}
 	if app.Login.Signup {
 		mux.HandleFunc("GET /cadastro", func(w http.ResponseWriter, r *http.Request) {
@@ -1557,7 +1559,8 @@ var codeTpl = tpl(`{{if .Binary}}<div class="vazio">Arquivo binário.</div>{{els
 var diffTpl = tpl(`{{range .}}<h3>{{.Path}}</h3><pre class="diff">{{range .Lines}}<div class="{{.Class}}">{{.Text}}</div>{{end}}</pre>{{else}}<div class="vazio">Sem mudanças.</div>{{end}}`)
 var logTpl = tpl(`{{if .}}<pre>{{.}}</pre>{{else}}<div class="vazio">Sem saída ainda.</div>{{end}}`)
 var loginTpl = tpl(`<form class="caixa" method="post" action="/entrar"><h3>Entrar</h3><label>{{.Label}}<input name="login" required autofocus></label>
-<label>Senha<input type="password" name="senha" required></label><button>Entrar</button>{{if .Signup}}<a href="/cadastro">Criar conta</a>{{end}}{{if .Recovery}}<a href="/esqueci">Esqueci minha senha</a>{{end}}</form>`)
+<label>Senha<input type="password" name="senha" required></label><button>Entrar</button>{{if .Signup}}<a href="/cadastro">Criar conta</a>{{end}}{{if .Recovery}}<a href="/esqueci">Esqueci minha senha</a>{{end}}</form>
+{{with .External}}<form class="caixa" method="post" action="/entrar/externo"><button>Entrar com {{.}}</button></form>{{end}}`)
 var forgotTpl = tpl(`<form class="caixa" method="post" action="/esqueci"><h3>Esqueci minha senha</h3><label>{{.Label}}<input name="login" required autofocus></label><button>Enviar link</button><a href="/entrar">Voltar</a></form>`)
 var confirmTpl = tpl(`<form class="caixa" method="post" action="/confirmar-email"><h3>Confirmar e-mail</h3><input type="hidden" name="token" value="{{.Token}}"><p>Confirme que este e-mail é seu.</p><button>Confirmar e-mail</button><a href="/reenviar-confirmacao">Pedir outro link</a></form>`)
 var resendTpl = tpl(`<form class="caixa" method="post" action="/reenviar-confirmacao"><h3>Reenviar confirmação</h3><label>{{.Label}}<input name="login" required autofocus></label><button>Enviar link</button><a href="/entrar">Voltar</a></form>`)

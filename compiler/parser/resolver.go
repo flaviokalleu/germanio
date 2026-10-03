@@ -541,6 +541,11 @@ func ResolveIntent(prog *ast.Program) error {
 			}
 			le.Model.Fields = append(le.Model.Fields, &ast.Field{Name: "email_confirmado", Label: "e-mail confirmado", Type: ast.FieldBooleano, HasDefault: true, DefaultValue: true, System: true, Private: true, Pos: in.Login.Pos})
 		}
+		if in.Login.External && !hasEmail {
+			// GEP 0039: an external account is matched to a person by a
+			// verified e-mail, and new people are created with it
+			return r.errAt(in.Login.Pos, "tenha login com conta externa reconhece as pessoas pelo e-mail que o outro serviço confirmou, mas %s não tem um campo de e-mail\nComo corrigir: acrescente em %s › tem a linha: email obrigatório e único", le.Plural, le.Plural)
+		}
 		if in.Login.TwoFactor {
 			// GEP 0032: opt-in per person; the secret lives outside the record
 			le.Model.Fields = append(le.Model.Fields, &ast.Field{Name: "dois_fatores", Label: "dois fatores", Type: ast.FieldBooleano, HasDefault: true, DefaultValue: false, System: true, Private: true, Pos: in.Login.Pos})

@@ -725,6 +725,27 @@ func (p *Parser) parseTenha(head dline, body []dline) error {
 			return p.teach(head.toks[0], "não entendi \""+lineText(head)+"\"", "as frases de identidade são fixas", "escreva tenha confirmação de e-mail ou tenha autenticação em dois fatores", "")
 		}
 	}
+	// tenha login com conta externa (GEP 0039, em teste): read whole, before
+	// "tenha login" refuses extra words. Which provider is configuration of
+	// the server (GERMANIO_OIDC_*), never part of the program.
+	if w := wordsOf(head.toks); len(w) >= 3 && w[1] == "login" && w[2] == "com" {
+		rest := strings.Join(w[3:], " ")
+		if rest == "conta externa" {
+			if len(body) > 0 {
+				return p.errorf(body[0].toks[0], "%q é uma frase completa e não tem nada abaixo dela", lineText(head))
+			}
+			if in.Login == nil {
+				in.Login = &ast.LoginDecl{Pos: p.at(head.toks[0])}
+			}
+			in.Login.External = true
+			return nil
+		}
+		if !strings.Contains(rest, "email") && !strings.Contains(rest, "senha") && !strings.Contains(rest, "username") {
+			return p.teach(head.toks[0], "não entendi \""+lineText(head)+"\"",
+				"entrar com a conta de outro serviço é uma frase fixa; qual serviço (Google, Microsoft, Keycloak…) é configuração do servidor (GERMANIO_OIDC_EMISSOR, GERMANIO_OIDC_CLIENTE, GERMANIO_OIDC_SEGREDO, GERMANIO_OIDC_NOME), nunca do programa",
+				"escreva tenha login com conta externa", "")
+		}
+	}
 	items := splitItems(head.toks[1:])
 	// tenha papeis + indented list of roles
 	if len(items) == 1 && len(items[0]) == 1 && (items[0][0] == "papeis" || items[0][0] == "papel") && len(body) > 0 {

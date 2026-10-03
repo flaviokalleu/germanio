@@ -245,6 +245,8 @@ var credentialPaths = map[string]string{
 	"/dois-fatores/confirmar": "falhas e 400",
 	"/dois-fatores/desativar": "falhas e 400",
 	"/dois-fatores/codigos":   "falhas e 400",
+	externalStart:             "todas",
+	externalReturn:            "falhas e 400", // the provider's return (a GET)
 }
 
 func (s *Servidor) middleware(next http.Handler) http.Handler {
@@ -280,7 +282,7 @@ func (s *Servidor) middleware(next http.Handler) http.Handler {
 
 		// Rate limiting inteligente por IP real
 		loginPath := r.URL.Path == "/api/login" || r.URL.Path == "/api/auth/login"
-		if credentialPaths[r.URL.Path] != "" && r.Method == http.MethodPost {
+		if credentialPaths[r.URL.Path] != "" && (r.Method == http.MethodPost || r.URL.Path == externalReturn) {
 			// Password spraying across many accounts: count the failed logins
 			// of an address; the per-account lock handles a single account.
 			ip := getRealIP(r)
@@ -1545,7 +1547,7 @@ func (s *Servidor) reserveAddresses() {
 		return
 	}
 	names := map[string]bool{"_ge": true, "api": true, "entrar": true, "sair": true, "cadastro": true, "oauth": true, "uploads": true,
-		"esqueci": true, "redefinir": true, "confirmar-email": true, "reenviar-confirmacao": true, "dois-fatores": true}
+		"esqueci": true, "redefinir": true, "confirmar-email": true, "reenviar-confirmacao": true, "dois-fatores": true, "conta-externa": true}
 	app := s.Program.App
 	first := func(path string) string {
 		parts := strings.Split(strings.Trim(path, "/"), "/")
