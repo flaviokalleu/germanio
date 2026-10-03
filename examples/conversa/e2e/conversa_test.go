@@ -94,3 +94,52 @@ func TestConversaHoje(t *testing.T) {
 }
 
 func jsonID(v any) string { b, _ := json.Marshal(v); return string(b) }
+
+// Critério 3 da FASE 2: muitas pessoas escrevendo ao mesmo tempo no mesmo
+// canal produzem uma sequência sem buracos nem repetições.
+func TestOrdemSobConcorrencia(t *testing.T) {
+	t.Setenv("GERMANIO_SQLITE", filepath.Join(t.TempDir(), "c.db"))
+	t.Setenv("GERMANIO_BCRYPT_RAPIDO", "1")
+	app, err := germanio.Carregar("../app.ge", "0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv := httptest.NewServer(app.Handler)
+	defer func() { srv.Close(); app.Fechar() }()
+	dono := entra(t, srv.URL, "dono")
+	e := jsonID(dono.do("POST", "/_ge/api/espacos", map[string]any{"nome": "Equipe"}, 201)["id"])
+	dono.do("POST", "/_ge/api/espacos/"+e+"/canais", map[string]any{"nome": "geral"}, 201)
+	var pessoas []*pessoa
+	for i := 0; i < 8; i++ {
+		p := entra(t, srv.URL, "p"+string(rune('a'+i)))
+		pid := p.do("GET", "/_ge/eu", nil, 200)["id"]
+		dono.do("POST", "/_ge/api/espacos/"+e+"/membros", map[string]any{"pessoa_id": pid, "papel": "membro"}, 201)
+		pessoas = append(pessoas, p)
+	}
+	const cada = 10
+	done := make(chan []float64)
+	for _, p := range pessoas {
+		go func(p *pessoa) {
+			var nums []float64
+			for i := 0; i < cada; i++ {
+				m := p.do("POST", "/_ge/api/espacos/"+e+"/canais/1/mensagens", map[string]any{"texto": "oi"}, 201)
+				nums = append(nums, m["numero"].(float64))
+			}
+			done <- nums
+		}(p)
+	}
+	seen := map[float64]bool{}
+	for range pessoas {
+		for _, n := range <-done {
+			if seen[n] {
+				t.Fatalf("número repetido no canal: %v", n)
+			}
+			seen[n] = true
+		}
+	}
+	for i := 1; i <= len(pessoas)*cada; i++ {
+		if !seen[float64(i)] {
+			t.Fatalf("buraco na sequência do canal: falta %d", i)
+		}
+	}
+}

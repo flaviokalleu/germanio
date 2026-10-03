@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/flaviokalleu/germanio/compiler/ast"
 	"github.com/flaviokalleu/germanio/runtime/banco"
@@ -112,5 +113,34 @@ func TestGlobMatch(t *testing.T) {
 		if globMatch(c.p, c.s) != c.ok {
 			t.Errorf("globMatch(%q, %q) != %v", c.p, c.s, c.ok)
 		}
+	}
+}
+
+// Backpressure (GEP 0020): a viewer that never reads does not block the
+// announcement nor grow memory — its one-slot signal is just full.
+func TestAvisoNaoBloqueiaComClienteParado(t *testing.T) {
+	h := &liveHub{a: &intentAPI{app: &ast.App{Entities: map[string]*ast.Entity{}}}, watchers: map[*watcher]bool{}}
+	stalled := &watcher{depends: map[string]bool{"x": true}, signal: make(chan struct{}, 1)}
+	active := &watcher{depends: map[string]bool{"x": true}, signal: make(chan struct{}, 1)}
+	h.add(stalled)
+	h.add(active)
+	done := make(chan struct{})
+	go func() {
+		for i := 0; i < 10000; i++ {
+			h.publish(change{model: "x"})
+			select { // the active viewer keeps reading
+			case <-active.signal:
+			default:
+			}
+		}
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("um cliente parado bloqueou os avisos")
+	}
+	if len(stalled.signal) != 1 {
+		t.Fatalf("o cliente parado acumulou avisos: %d", len(stalled.signal))
 	}
 }

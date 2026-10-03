@@ -183,3 +183,25 @@ GEP 0022 (`guarda leitura`, irmã de `guarda histórico`): abrir a página do co
 que há nele para a pessoa. O contêiner mostra `nao_lidas` a cada um, sem contar o que a própria
 pessoa escreveu, e as listas exibem a contagem. Mensagens novas e leituras atualizam as páginas
 que mostram os contêineres. As marcas são estado por pessoa e saem junto com ela.
+
+### Passo 6 — critérios (2026-10-02)
+
+| # | Critério | Situação | Evidência |
+| --- | --- | --- | --- |
+| 1 | 10 000 conexões sem erro | **cumprido** | 10 000 assinaturas, 0 falhas, 50 000 de 50 000 avisos; memória de pico 940 MB (Go: 428 MB) — [`2026-10-02-tempo-real-10k.txt`](../bench/resultados/2026-10-02-tempo-real-10k.txt) |
+| 2 | p99 ≤ 2× o Go | **não cumprido — melhoria pendente** (decisão do mantenedor: missão primeiro) | 5,2× a 500, 15× a 2 000 e 16,5× a 10 000 conexões; causa medida: nova busca completa por assinante |
+| 3 | ordem por canal | **cumprido** | `TestOrdemSobConcorrencia`: 8 pessoas × 10 mensagens simultâneas, sequência 1–80 sem buracos nem repetições |
+| 4 | retomada após queda | **cumprido no desenho; teste de navegador pendente** | a página reconecta (SSE, `retry` 2 s) e busca de novo uma vez; os dados são duráveis no banco |
+| 5 | autorização em tempo real | **cumprido** | `TestPaginasVivas` com mutação: aviso a quem não vê e aviso antes do commit são pegos |
+| 6 | contrapressão | **cumprido** | `TestAvisoNaoBloqueiaComClienteParado`: 10 000 avisos com um cliente parado, sem bloquear e sem acumular |
+| 7 | presença | **cumprido** | `TestPresenca` (tolerância, volta dentro da tolerância) |
+| 8 | intenção pura | **cumprido** | varredura do `.ge` da Conversa: nenhuma palavra de transporte, HTTP, JSON, fila, lógica ou rota |
+| 9 | regressão | a medir no encerramento | suíte `scripts/bench.sh` |
+
+Capabilities criadas na fase até aqui:
+- páginas vivas (GEP 0020, sem sintaxe);
+- presença (GEP 0021);
+- leitura e contagem de não lidas (GEP 0022).
+
+O que falta para encerrar a fase: o critério 2 (melhoria de latência, já desenhada no passo 3),
+o critério 9 e a auditoria final.

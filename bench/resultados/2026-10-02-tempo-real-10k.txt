@@ -1,0 +1,13 @@
+# Tempo real — 10 000 conexões (critério 1 da FASE 2)
+data: 2026-10-02T21:28:08-03:00 · commit: 2329a8a · go1.27.1 · 12 núcleos
+carga: 5 mensagens a 1/s
+
+alvo=go-chat conexoes=10000 falhas_conexao=0 remetentes=1 enviadas=5 falhas_envio=0 duracao_envio=5.048s
+entregas=50000 esperadas=50000 faltando=0 fora_de_ordem=0 repetidas=0 ressincronizacoes=0
+latencia_entrega p50=38.101072ms p90=57.845768ms p99=77.440026ms max=80.89137ms
+memoria_servidor rss_antes=10880KB rss_pico=427980KB
+
+alvo=germanio-vivo modo=sse conexoes=10000 falhas_conexao=0 enviadas=5 falhas_envio=0 duracao_envio=5.665s
+avisos=50000 maximo_possivel=50000 (avisos fundidos contam uma vez)
+latencia_ate_ver p50=340.062632ms p90=1.159179324s p99=1.277930108s max=1.407902944s
+memoria_servidor rss_antes=35432KB rss_pico=939920KB
