@@ -433,16 +433,72 @@ const liveScript = `(function () {
     var col = e.target.closest && e.target.closest('.coluna');
     if (col) col.classList.remove('alvo');
   });
+  // one move = one transition, through the card's own button; remembered so
+  // it can be undone by the move back (which the server checks again)
+  var done = [];
+  function say(text) {
+    var live = document.querySelector('[data-quadro-aviso]');
+    if (live) live.textContent = text;
+  }
+  function columnName(state) {
+    var col = document.querySelector('.coluna[data-estado="' + state + '"]');
+    return col ? col.getAttribute('aria-label') : state;
+  }
+  function move(card, form, remember) {
+    var from = card.closest('.coluna').getAttribute('data-estado');
+    var to = form.getAttribute('data-alvo');
+    var col = document.querySelector('.coluna[data-estado="' + to + '"]');
+    if (col) col.querySelector('ul').appendChild(card);
+    card.focus();
+    fetch(form.action, {method: 'POST', body: new URLSearchParams(new FormData(form)), credentials: 'same-origin'})
+      .then(function (r) {
+        if (!r.ok) { say('Não foi possível mover.'); location.reload(); return; }
+        if (remember) { done.push({id: card.getAttribute('data-id'), state: from}); showUndo(); }
+        say((card.querySelector('a') || card).textContent + ' movido para ' + columnName(to) + '.');
+      });
+  }
+  function undo() {
+    var last = done.pop();
+    showUndo();
+    if (!last) return;
+    var card = document.querySelector('.cartao[data-id="' + last.id + '"]');
+    var form = card && card.querySelector('form[data-alvo="' + last.state + '"]');
+    if (!form) { say('Não é possível desfazer este movimento.'); return; }
+    move(card, form, false);
+  }
+  function showUndo() {
+    var board = document.querySelector('.quadro');
+    if (!board) return;
+    var btn = document.querySelector('[data-desfazer]');
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = 'Desfazer';
+      btn.setAttribute('data-desfazer', '');
+      btn.setAttribute('aria-keyshortcuts', 'Control+Z');
+      btn.addEventListener('click', undo);
+      board.parentNode.insertBefore(btn, board);
+    }
+    btn.hidden = done.length === 0;
+  }
   document.addEventListener('drop', function (e) {
     var col = e.target.closest && e.target.closest('.coluna');
     var form = moveFor(col);
     if (!form) return;
     e.preventDefault();
     col.classList.remove('alvo');
-    var card = dragged;
-    col.querySelector('ul').appendChild(card);
-    fetch(form.action, {method: 'POST', body: new URLSearchParams(new FormData(form)), credentials: 'same-origin'})
-      .then(function (r) { if (!r.ok) location.reload(); });
+    move(dragged, form, true);
+  });
+  document.addEventListener('keydown', function (e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && done.length && !(e.target.form)) { e.preventDefault(); undo(); return; }
+    var card = e.target.closest && e.target.closest('.cartao');
+    if (!card || (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft')) return;
+    var col = card.closest('.coluna');
+    var next = e.key === 'ArrowRight' ? col.nextElementSibling : col.previousElementSibling;
+    var form = next && card.querySelector('form[data-alvo="' + next.getAttribute('data-estado') + '"]');
+    if (!form) { say('Este cartão não pode ir para ' + (next ? next.getAttribute('aria-label') : 'lá') + '.'); return; }
+    e.preventDefault();
+    move(card, form, true);
   });
   document.addEventListener('dragend', function () { dragged = null; });
 

@@ -34,6 +34,10 @@ already sits: it says how the page shows a data, nothing else.
   state, are offered. The server checks again, as for any action; the board adds no way to grant.
 - **Works without a mouse:** every card lists its possible moves as ordinary buttons (keyboard,
   screen readers, no JavaScript). Dragging is an enhancement over the same buttons.
+- **Keyboard and undo:** a focused card moves to the next or previous column with the arrow
+  keys (when that move is one of its buttons); every move is announced to screen readers; Ctrl+Z
+  or the "Desfazer" button undoes the last move by making the move back, which the server checks
+  like any other (an undo the person may not make is refused and said so).
 - **Live:** moves made by others arrive through the live pages (GEP 0020).
 - A data without states is an error that says so.
 

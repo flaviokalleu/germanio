@@ -60,7 +60,7 @@ Obstáculos:
 | 1 | um estado não pode ter duas palavras (`a fazer`) | limite da linguagem | registrado; contornado com `pendente` |
 | 2 | não há como mostrar um dado em colunas por estado nem mover por arraste | capability faltante (a central da fase) | GEP 0023, em teste: feita (`TestPorEstado`) |
 | 3 | os títulos das seções eram o singular mais "s" ("Cartaos") | bug de interface | corrigido: o plural do dado como o autor escreveu |
-| 4 | edição no próprio cartão, painel sem sair do quadro, seleção, desfazer, atalhos | capabilities faltantes | próximos passos |
+| 4 | edição no próprio cartão, painel sem sair do quadro, seleção, desfazer, atalhos | capabilities faltantes | desfazer e atalhos de movimento: feitos (passo 4); painel, edição no cartão e seleção: próximos |
 
 ### Passo 2 — por estado (2026-10-02)
 
@@ -89,3 +89,15 @@ Agora ela é tentada de novo, e voltar a ficar online dispara uma atualização.
 GERMANIO_NAVEGADOR=<chromium headless> GERMANIO_NAVEGADOR_MODULOS=<node_modules com playwright-core> \
   go test -run TestNavegador ./runtime/
 ```
+
+### Passo 4 — teclado e desfazer (2026-10-02)
+
+Sem sintaxe nova, como parte da GEP 0023:
+- as setas movem o cartão em foco para a coluna vizinha, se aquele movimento é um dos botões
+  dele;
+- todo movimento é anunciado numa região `aria-live`;
+- Ctrl+Z, ou o botão "Desfazer", faz o movimento de volta, e o servidor confere como qualquer
+  outro movimento.
+
+Provado no navegador (`TestNavegador`): a seta move, o anúncio sai, o botão aparece e Ctrl+Z
+devolve o cartão, com a outra aba vendo cada passo.
