@@ -49,6 +49,11 @@ published under that name.
   `namespace_path`, events `action` filter, `PUT …/merge`, `GET …/approvals`, mirror `sync`
   (generic `atualizar_agora`), `?topic=a,b`. Several values in one filter (GEP 0043) and a
   place given by its address (GEP 0044), both em teste. `/starrers` stays refused (GEP 0030).
+- Totals and sums of a record's children (`indicadores` › `soma do peso das issues`, GEP 0047, em
+  teste): one grouped query, only what the viewer may see, live on pages; `zerar <nome>` resets a
+  sum atomically.
+- Unique pairs (`única por par de issues`, GEP 0048, em teste): no self-link, no repeated pair in
+  either order, also enforced by a unique index.
 - Per-person choice of notification e-mail (`avisos_por_email`, amendment to GEP 0013).
 
 ### Tests

@@ -65,7 +65,7 @@ Escopo núcleo v1 = features marcadas **[N]** (fluxos 1–5 da missão + testes 
 | IS-06 | Milestones | | milestones | `/milestones` | milestones | Reporter+ | | | PASS | TestMilestones |
 | IS-07 [N] | Filtros e busca | state, labels, assignee, author, search | lista | `GET /issues?state&labels&search` | issues | leitura | | | PASS | TestFluxo3 |
 | IS-08 [N] | Confidencial | visível só a Reporter+, autor, assignees | | `confidential` | issues | | | | PASS | TestFluxo3, TestIssuesPrivadasNaoVazam |
-| IS-09 | Boards, weights, time tracking, links, moves | colunas por estado, peso, estimativa e tempo gasto, ligações, mover | quadro, API | `weight`, `time_stats`, `links`, `move` | issues | developer | — | SUPPORTED (GEP 0023, 0033, 0034) | PASS (soma de pesos por milestone fica para uma GEP de agregados; só `relates_to`; mover, tempo e ligações também nas páginas) | TestPorEstado, TestPesosDasIssues, TestControleDeTempo, TestLigacoesEntreIssues, TestMoverIssue, TestMudarDeLugar |
+| IS-09 | Boards, weights, time tracking, links, moves | colunas por estado, peso, estimativa e tempo gasto, ligações, mover | quadro, API | `weight`, `time_stats`, `links`, `move` | issues | developer | — | SUPPORTED (GEP 0023, 0033, 0034) | PASS (peso total da milestone e tempo gasto total pela GEP 0047; ligações sem auto-ligação nem par repetido, GEP 0048; só `relates_to`; mover, tempo e ligações também nas páginas) | TestPorEstado, TestPesoTotalDaMilestone, TestTempoGastoTotal, TestLigacoesUnicas, TestPesosDasIssues, TestControleDeTempo, TestLigacoesEntreIssues, TestMoverIssue, TestMudarDeLugar |
 
 ## Merge Requests
 
