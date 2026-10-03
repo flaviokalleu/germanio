@@ -34,6 +34,9 @@ published under that name.
   project (`pode mudar de projeto`, GEP 0034, em teste).
 - Adapters may ask the application itself as the caller (`superficie.pedir`, `superficie.contar`,
   GEP 0033, em teste): GitLab events, `/application/statistics`, time tracking.
+- Git over SSH (GEP 0037, em teste, no syntax; `GERMANIO_SSH_ENDERECO`): public-key only, the
+  person found by the key's fingerprint, only `git-upload-pack`/`git-receive-pack`, the same
+  authorization and after-push path as smart HTTP, connection limits and timeouts.
 - Sign-in with an external account (`tenha login com conta externa`, GEP 0039, em teste):
   OpenID Connect code flow with PKCE, state and nonce, ID token verified by JWKS (RS256/ES256)
   with the standard library only; linking needs the e-mail verified on both sides; two factors

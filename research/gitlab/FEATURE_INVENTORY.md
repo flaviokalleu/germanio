@@ -16,7 +16,7 @@ Escopo núcleo v1 = features marcadas **[N]** (fluxos 1–5 da missão + testes 
 | ID-05 | Admin: bloquear usuário | `state=blocked` impede login e API | admin | `POST /users/:id/block` | users | admin | | | PASS | TestBloquearUsuario |
 | ID-06 | Recuperação de senha / confirmação de e-mail | tokens por e-mail | forms | Devise | users | anônimo | email | SUPPORTED (GEP 0008, 0031) | PASS (confirmação de e-mail: capability `tenha confirmação de e-mail`, GEP 0031 em teste) | TestRecuperacaoDeSenha, TestConfirmacaoDeEmail |
 | ID-07 | 2FA, OAuth, LDAP, SAML, WebAuthn | TOTP, códigos de recuperação, entrar com conta externa | perfil, login | Devise two-factor, OmniAuth | users | dono | OIDC | SUPPORTED (GEP 0032, 0039) | PASS (2FA TOTP e OpenID Connect com PKCE; LDAP, SAML e WebAuthn fora do núcleo: ver GEP 0039) | TestDoisFatores, TestDoisFatoresGitLab, TestContaExterna, TestContaExternaGitLab |
-| ID-08 | Chaves SSH | cadastro de chave pública | perfil | `/user/keys` | keys | dono | SSH | SUPPORTED (GEP 0032, `chave pública`) | PASS (cadastro, impressão digital; transporte SSH em RP-10) | TestChavesSSH |
+| ID-08 | Chaves SSH | cadastro de chave pública | perfil | `/user/keys` | keys | dono | SSH | SUPPORTED (GEP 0032, `chave pública`) | PASS (cadastro, impressão digital; clone e push por SSH com a chave, GEP 0037) | TestChavesSSH |
 
 ## Grupos e namespaces
 
@@ -51,7 +51,7 @@ Escopo núcleo v1 = features marcadas **[N]** (fluxos 1–5 da missão + testes 
 | RP-07 | Tags | criar, listar, remover | `/-/tags` | `/repository/tags` | refs | Developer+ para criar | git | SUPPORTED | PASS (tags leves por git push e pela API, com as regras de enviar código; tags anotadas e protegidas ainda não) | TestTags |
 | RP-08 | Editar arquivo pela web | commit direto | editor | `POST /repository/commits` | repo | Developer+ | git | G13 | PASS (FASE 3: editar pela API e pela página do arquivo; commit da pessoa com as regras de enviar código e branches protegidas; as execuções começam como num push) | TestEditarArquivoPelaWeb |
 | RP-09 | Compare | diff entre refs | compare | `/repository/compare` | repo | leitura | git | | PASS (API) | — |
-| RP-10 | SSH, LFS, mirrors, archive download | download do código, arquivos grandes, espelhos | repositório | `repository/archive`, `info/lfs`, `remote_mirrors` | remote_mirrors | baixar/enviar código, maintainer | git | PARTIAL (GEP 0035, 0036) | PARTIAL (archive, LFS e espelhos feitos; transporte SSH em andamento) | TestArchive, TestBaixarCodigo, TestGitLFS, TestGitLFSNoProjeto, TestEspelhos, TestEspelhosRemotos |
+| RP-10 | SSH, LFS, mirrors, archive download | git por SSH, download do código, arquivos grandes, espelhos | repositório | `ssh://`, `repository/archive`, `info/lfs`, `remote_mirrors` | remote_mirrors | baixar/enviar código, maintainer | git, SSH | SUPPORTED (GEP 0035, 0036, 0037) | PASS (SSH só por chave, mesmas regras do HTTP; sem LFS por SSH nem protocolo v2 por SSH; espelhos só http(s)) | TestGitPorSSH, TestGitPorSSHGitLab, TestArchive, TestBaixarCodigo, TestGitLFS, TestGitLFSNoProjeto, TestEspelhos, TestEspelhosRemotos |
 
 ## Issues
 
