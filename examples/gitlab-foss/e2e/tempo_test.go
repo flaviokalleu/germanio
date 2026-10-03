@@ -1,6 +1,11 @@
 package e2e
 
-import "testing"
+import (
+	"net/http"
+	"strings"
+	"sync"
+	"testing"
+)
 
 // IS-09 (controle de tempo): a estimativa é um campo da issue e cada tempo
 // gasto é um registro da issue; as rotas do GitLab (time_estimate,
@@ -29,7 +34,9 @@ func TestControleDeTempo(t *testing.T) {
 	stats(ada.must("POST", issue+"/add_spent_time?duration=1h", nil, 201), 201600, 3600, "1w 2d", "1h")
 	stats(ada.must("POST", issue+"/add_spent_time", map[string]any{"duration": "45m", "summary": "revisão"}, 201), 201600, 6300, "1w 2d", "1h 45m")
 	stats(ada.must("POST", issue+"/add_spent_time?duration=-15m", nil, 201), 201600, 5400, "1w 2d", "1h 30m")
-	ada.must("POST", issue+"/add_spent_time?duration=-9h", nil, 400)
+	if m := ada.must("POST", issue+"/add_spent_time?duration=-9h", nil, 400); !strings.Contains(jsonNum(m), "Time to subtract exceeds the total time spent") {
+		t.Fatalf("descontar mais do que o gasto: %v", m)
+	}
 	ada.must("POST", issue+"/add_spent_time?duration=muito", nil, 400)
 	ada.must("POST", issue+"/time_estimate?duration=-1h", nil, 400)
 
@@ -55,5 +62,50 @@ func TestControleDeTempo(t *testing.T) {
 	}
 	if len(all) != 4 {
 		t.Fatalf("os tempos da issue pública aparecem: %v", all)
+	}
+}
+
+// Descontar tempo ao mesmo tempo (FASE 4, obstáculo 7; GEP 0050): a regra
+// "não pode ficar com tempo gasto negativo" é conferida pelo domínio na
+// mesma mudança que grava o tempo, com a issue travada; antes, o adaptador
+// lia o total e depois gravava, e descontos simultâneos passavam todos.
+func TestDescontarTempoAoMesmoTempo(t *testing.T) {
+	base := gitlab(t)
+	ada := signup(t, base, "ada")
+	pid := id(ada.must("POST", "/api/v4/projects", map[string]any{"name": "Relogio", "path": "relogio"}, 201))
+	ada.must("POST", "/api/v4/projects/"+pid+"/issues", map[string]any{"title": "Medir"}, 201)
+	issue := "/api/v4/projects/" + pid + "/issues/1"
+	ada.must("POST", issue+"/add_spent_time?duration=1h", nil, 201)
+
+	// oito descontos de 30 minutos ao mesmo tempo com 1 hora gasta: dois passam
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	statuses := map[int]int{}
+	start := make(chan struct{})
+	for i := 0; i < 8; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			req, _ := http.NewRequest("POST", base+issue+"/add_spent_time?duration=-30m", nil)
+			req.Header.Set("Authorization", "Bearer "+ada.token)
+			resp, err := http.DefaultClient.Do(req)
+			mu.Lock()
+			defer mu.Unlock()
+			if err != nil {
+				statuses[-1]++
+				return
+			}
+			resp.Body.Close()
+			statuses[resp.StatusCode]++
+		}()
+	}
+	close(start)
+	wg.Wait()
+	if statuses[201] != 2 || statuses[400] != 6 {
+		t.Fatalf("descontos ao mesmo tempo: %v (esperado 2×201 e 6×400)", statuses)
+	}
+	if m := ada.must("GET", issue+"/time_stats", nil, 200); m["total_time_spent"] != float64(0) {
+		t.Fatalf("o tempo gasto ficou %v", m["total_time_spent"])
 	}
 }

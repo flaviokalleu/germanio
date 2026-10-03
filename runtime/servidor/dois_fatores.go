@@ -3,9 +3,7 @@ package servidor
 import (
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/hkdf"
 	"crypto/rand"
-	"crypto/sha256"
 	"encoding/base32"
 	"encoding/base64"
 	"errors"
@@ -18,6 +16,7 @@ import (
 	"time"
 
 	"github.com/flaviokalleu/germanio/runtime/banco"
+	"github.com/flaviokalleu/germanio/runtime/cofre"
 	interp "github.com/flaviokalleu/germanio/runtime/interpreter"
 	"github.com/flaviokalleu/germanio/runtime/totp"
 )
@@ -70,46 +69,100 @@ func pid(v any) int64 {
 // now would be unreadable after a restart, so turning the factor on waits.
 func factorKeyReady() bool { return len(os.Getenv("GERMANIO_SEGREDO")) >= 32 }
 
-func factorAEAD() (cipher.AEAD, error) {
-	key, err := hkdf.Key(sha256.New, interp.Segredo(), nil, "germanio/dois-fatores/v1", 32)
-	if err != nil {
-		return nil, err
-	}
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return nil, err
-	}
-	return cipher.NewGCM(block)
+// factorPurpose binds a sealed secret to its person: a row copied to
+// someone else does not open.
+func factorPurpose(person int64) string {
+	return factorTable + "." + strconv.FormatInt(person, 10)
 }
 
-// sealSecret encrypts secret for person (the person's id is authenticated
-// data: a row copied to someone else does not open).
-func sealSecret(person int64, secret []byte) (string, error) {
-	aead, err := factorAEAD()
-	if err != nil {
-		return "", err
+// legacyFactorLabel: the key label of the first format ("v1:", before the
+// secrets at rest of GEP 0049), still read and sealed again at start.
+const legacyFactorLabel = "germanio/dois-fatores/v1"
+
+// sealSecret encrypts secret for person with the server's vault (GEP 0049).
+func (a *intentAPI) sealSecret(person int64, secret []byte) (string, error) {
+	if a.s.DB.Cofre == nil {
+		return "", errors.New(msgNeedSecretKey)
 	}
-	nonce := make([]byte, aead.NonceSize())
-	if _, err := rand.Read(nonce); err != nil {
-		return "", err
-	}
-	out := aead.Seal(nonce, nonce, secret, []byte(strconv.FormatInt(person, 10)))
-	return "v1:" + base64.RawStdEncoding.EncodeToString(out), nil
+	return a.s.DB.Cofre.Selar(factorPurpose(person), string(secret))
 }
 
-func openSecret(person int64, sealed string) ([]byte, error) {
+// openSecret opens a secret sealed for person: the current format with the
+// current or a previous key, or the first format ("v1:") with any of them.
+func (a *intentAPI) openSecret(person int64, sealed string) ([]byte, error) {
+	vault := a.s.DB.Cofre
+	if vault != nil && cofre.Selado(sealed) {
+		plain, err := vault.Abrir(factorPurpose(person), sealed)
+		return []byte(plain), err
+	}
 	raw, err := base64.RawStdEncoding.DecodeString(strings.TrimPrefix(sealed, "v1:"))
-	if err != nil || !strings.HasPrefix(sealed, "v1:") {
+	if err != nil || !strings.HasPrefix(sealed, "v1:") || vault == nil {
 		return nil, errors.New("segredo ilegível")
 	}
-	aead, err := factorAEAD()
+	for _, key := range vault.ChavesLegadas(legacyFactorLabel) {
+		block, err := aes.NewCipher(key)
+		if err != nil {
+			return nil, err
+		}
+		aead, err := cipher.NewGCM(block)
+		if err != nil {
+			return nil, err
+		}
+		if len(raw) < aead.NonceSize() {
+			break
+		}
+		if plain, err := aead.Open(nil, raw[:aead.NonceSize()], raw[aead.NonceSize():], []byte(strconv.FormatInt(person, 10))); err == nil {
+			return plain, nil
+		}
+	}
+	return nil, errors.New("segredo ilegível")
+}
+
+// resealFactors brings every second-factor secret to the current key at
+// start (the first format, or a previous key during a rotation), each row
+// rewritten only if it still holds what was read.
+func (a *intentAPI) resealFactors() {
+	vault := a.s.DB.Cofre
+	if vault == nil {
+		return
+	}
+	rows, err := a.s.DB.DB.Query(fmt.Sprintf(`SELECT pessoa_id, segredo FROM %s WHERE segredo NOT LIKE %s`, factorTable, a.s.ph(1)), vault.PrefixoAtual()+"%")
 	if err != nil {
-		return nil, err
+		return
 	}
-	if len(raw) < aead.NonceSize() {
-		return nil, errors.New("segredo ilegível")
+	type item struct {
+		person int64
+		old    string
 	}
-	return aead.Open(nil, raw[:aead.NonceSize()], raw[aead.NonceSize():], []byte(strconv.FormatInt(person, 10)))
+	var todo []item
+	for rows.Next() {
+		var it item
+		if rows.Scan(&it.person, &it.old) == nil {
+			todo = append(todo, it)
+		}
+	}
+	rows.Close()
+	done, lost := 0, 0
+	for _, it := range todo {
+		secret, err := a.openSecret(it.person, it.old)
+		if err != nil {
+			lost++
+			continue
+		}
+		sealed, err := a.sealSecret(it.person, secret)
+		if err != nil {
+			continue
+		}
+		if _, err := a.s.DB.DB.Exec(fmt.Sprintf(`UPDATE %s SET segredo = %s WHERE pessoa_id = %s AND segredo = %s`, factorTable, a.s.ph(1), a.s.ph(2), a.s.ph(3)), sealed, it.person, it.old); err == nil {
+			done++
+		}
+	}
+	if done > 0 {
+		fmt.Printf("[germanio] dois fatores: %d segredo(s) cifrado(s) de novo com a chave atual\n", done)
+	}
+	if lost > 0 {
+		fmt.Printf("[germanio] dois fatores: %d segredo(s) não abrem com GERMANIO_SEGREDO nem GERMANIO_SEGREDO_ANTERIOR; essas pessoas entram com um código de recuperação\n", lost)
+	}
 }
 
 // newRecoveryCodes: recoveryCount codes of 80 random bits each, written
@@ -157,6 +210,7 @@ func (a *intentAPI) mountSecondFactor(mux *routeMux) {
 	a.s.DB.DB.Exec(`CREATE TABLE IF NOT EXISTS ` + factorTable + ` (pessoa_id INTEGER PRIMARY KEY, segredo TEXT NOT NULL, ativo INTEGER NOT NULL DEFAULT 0, ultimo_passo INTEGER NOT NULL DEFAULT 0)`)
 	a.s.DB.DB.Exec(`CREATE TABLE IF NOT EXISTS ` + factorCodes + ` (id ` + a.idColumn() + `, pessoa_id INTEGER NOT NULL, hash TEXT NOT NULL UNIQUE)`)
 	a.s.DB.DB.Exec(`CREATE TABLE IF NOT EXISTS ` + factorPending + ` (id ` + a.idColumn() + `, pessoa_id INTEGER NOT NULL, hash TEXT NOT NULL UNIQUE, expira_em TEXT NOT NULL)`)
+	a.resealFactors()
 	if !factorKeyReady() {
 		fmt.Println("[germanio] dois fatores: defina GERMANIO_SEGREDO (≥ 32 caracteres) para que as pessoas possam ligá-los; sem ela, ligar fica recusado")
 	}
@@ -210,7 +264,7 @@ func (a *intentAPI) checkFactor(db *banco.Banco, person int64, code string) (boo
 		return false, nil
 	}
 	if isTOTPShape(code) {
-		secret, err := openSecret(person, sealed)
+		secret, err := a.openSecret(person, sealed)
 		if err != nil {
 			fmt.Printf("[germanio] dois fatores: o segredo de uma pessoa não abre (GERMANIO_SEGREDO mudou?); ela entra com um código de recuperação\n")
 			return false, nil
@@ -327,7 +381,7 @@ func (a *intentAPI) factorEnable(ctx *interp.Context, user map[string]any, passw
 	if _, err := rand.Read(secret); err != nil {
 		return nil, http.StatusInternalServerError, err.Error()
 	}
-	sealed, err := sealSecret(person, secret)
+	sealed, err := a.sealSecret(person, secret)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err.Error()
 	}
@@ -362,7 +416,7 @@ func (a *intentAPI) pendingSetup(user map[string]any) map[string]any {
 	if st != "pendente" {
 		return nil
 	}
-	secret, err := openSecret(person, sealed)
+	secret, err := a.openSecret(person, sealed)
 	if err != nil {
 		return nil
 	}
@@ -397,7 +451,7 @@ func (a *intentAPI) factorConfirm(ctx *interp.Context, user map[string]any, code
 	case "":
 		return nil, http.StatusBadRequest, "Comece ligando os dois fatores: peça um segredo novo."
 	}
-	secret, err := openSecret(person, sealed)
+	secret, err := a.openSecret(person, sealed)
 	if err != nil {
 		return nil, http.StatusBadRequest, "O segredo em preparo não vale mais. Peça um segredo novo."
 	}

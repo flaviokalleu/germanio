@@ -55,7 +55,7 @@ func (r *resolver) mirrors(in *ast.Intent) error {
 		}
 		add(&ast.Field{Name: "sentido", Type: ast.FieldEnum, EnumValues: []string{"enviar", "receber"}, HasDefault: true, DefaultValue: "enviar"})
 		add(&ast.Field{Name: "habilitado", Type: ast.FieldBooleano, HasDefault: true, DefaultValue: true})
-		add(&ast.Field{Name: "credencial", Type: ast.FieldTexto, System: true, Hidden: true})
+		add(&ast.Field{Name: "credencial", Type: ast.FieldTexto, System: true, Hidden: true, Sealed: true})
 		add(&ast.Field{Name: "situacao", Type: ast.FieldEnum, EnumValues: []string{"nova", "agendada", "atualizando", "atualizada", "falhou"}, System: true, HasDefault: true, DefaultValue: "nova"})
 		add(&ast.Field{Name: "ultima_atualizacao", Type: ast.FieldTexto, System: true})
 		add(&ast.Field{Name: "ultimo_sucesso", Type: ast.FieldTexto, System: true})

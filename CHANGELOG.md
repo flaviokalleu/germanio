@@ -56,6 +56,15 @@ published under that name.
   either order, also enforced by a unique index.
 - Per-person choice of notification e-mail (`avisos_por_email`, amendment to GEP 0013).
 
+### Security
+
+- Secrets kept encrypted at rest (GEP 0049, em teste, no syntax: a hidden text field): mirror
+  credentials, webhook tokens, CI secret variables and the two-factor secret, with AES-256-GCM,
+  keys derived from `GERMANIO_SEGREDO`, rotation through `GERMANIO_SEGREDO_ANTERIOR`, migration of
+  old plain rows at startup; production refuses to start without a key.
+- A sum that never goes below zero (`não pode ficar com tempo gasto negativo`, GEP 0050, em
+  teste), checked in the same transaction with the parent locked.
+
 ### Pages
 
 - Presentation pages in Portuguese (GEP 0059, em teste): `página "/"`, `navegação`, `capa`,

@@ -101,7 +101,7 @@ func (b *Banco) where(modelo string, c Consulta) (string, []any, error) {
 		fields := c.BuscaCampos
 		if len(fields) == 0 {
 			for _, f := range model.Fields {
-				if f.Type.SQLType() == "TEXT" {
+				if f.Type.SQLType() == "TEXT" && !f.Sealed {
 					fields = append(fields, strings.ToLower(f.Name))
 				}
 			}
@@ -111,6 +111,9 @@ func (b *Banco) where(modelo string, c Consulta) (string, []any, error) {
 			f = strings.ToLower(f)
 			if !cols[f] {
 				return "", nil, &ErrCampo{modelo, f}
+			}
+			if b.sealedOf(modelo)[f] {
+				return "", nil, &ErrSegredo{modelo, f, "pesquisar"}
 			}
 			conds = append(conds, "LOWER("+q(f)+") LIKE "+b.ph(n)+" ESCAPE '\\'")
 			args = append(args, "%"+escapeLike(strings.ToLower(c.Busca))+"%")
@@ -145,6 +148,9 @@ func (b *Banco) filterSQL(modelo string, cols map[string]bool, filtros map[strin
 		field = strings.ToLower(field)
 		if !cols[field] {
 			return nil, nil, &ErrCampo{modelo, field}
+		}
+		if b.sealedOf(modelo)[field] && !(val == nil && (op == "igual" || op == "diferente")) {
+			return nil, nil, &ErrSegredo{modelo, field, "filtrar"}
 		}
 		col := q(field)
 		switch op {
@@ -262,6 +268,9 @@ func (b *Banco) Filtrar(modelo string, c Consulta) ([]map[string]any, int64, err
 		if !cols[order] {
 			return nil, 0, &ErrCampo{modelo, order}
 		}
+		if b.sealedOf(modelo)[order] {
+			return nil, 0, &ErrSegredo{modelo, order, "ordenar"}
+		}
 	}
 	query := fmt.Sprintf("SELECT * FROM %s%s ORDER BY %s %s", q(modelo), whereSQL, q(order), dir)
 	if order != "id" {
@@ -282,6 +291,7 @@ func (b *Banco) Filtrar(modelo string, c Consulta) ([]map[string]any, int64, err
 	list, err := scanRowsRaw(rows)
 	if err == nil {
 		b.tipar(modelo, list)
+		b.openRows(modelo, list)
 	}
 	return list, total, err
 }
@@ -373,12 +383,18 @@ func (b *Banco) Agregar(modelo string, c Consulta, por []string, soma string) ([
 		if !cols[col] {
 			return nil, &ErrCampo{Modelo: modelo, Campo: col}
 		}
+		if b.sealedOf(modelo)[col] {
+			return nil, &ErrSegredo{modelo, col, "agrupar"}
+		}
 		group = append(group, q(col))
 	}
 	value := "COUNT(*)"
 	if soma != "" {
 		if !cols[soma] {
 			return nil, &ErrCampo{Modelo: modelo, Campo: soma}
+		}
+		if b.sealedOf(modelo)[soma] {
+			return nil, &ErrSegredo{modelo, soma, "somar"}
 		}
 		value = fmt.Sprintf("COALESCE(SUM(%s), 0)", q(soma))
 	}
@@ -455,7 +471,9 @@ func (b *Banco) CriarMapa(modelo string, dados map[string]any) (map[string]any, 
 	for i, k := range keys {
 		cols[i] = q(strings.ToLower(k))
 		phs[i] = b.ph(i + 1)
-		vals[i] = normalizeArg(dados[k])
+		if vals[i], err = b.sealArg(modelo, k, dados[k]); err != nil {
+			return nil, err
+		}
 	}
 	var query string
 	if len(cols) == 0 {
@@ -497,8 +515,12 @@ func (b *Banco) AtualizarMapa(modelo string, id int64, dados map[string]any) (ma
 	sets := make([]string, 0, len(keys)+1)
 	vals := make([]any, 0, len(keys)+1)
 	for i, k := range keys {
+		v, err := b.sealArg(modelo, k, dados[k])
+		if err != nil {
+			return nil, err
+		}
 		sets = append(sets, q(strings.ToLower(k))+" = "+b.ph(i+1))
-		vals = append(vals, normalizeArg(dados[k]))
+		vals = append(vals, v)
 	}
 	sets = append(sets, q("atualizado_em")+" = CURRENT_TIMESTAMP")
 	vals = append(vals, id)
@@ -733,8 +755,12 @@ func (b *Banco) AtualizarOnde(modelo string, c Consulta, dados map[string]any) (
 	vals := make([]any, 0, len(keys)+len(args))
 	n := len(args) + 1
 	for _, k := range keys {
+		v, err := b.sealArg(modelo, k, dados[k])
+		if err != nil {
+			return 0, err
+		}
 		sets = append(sets, q(strings.ToLower(k))+" = "+b.ph(n))
-		vals = append(vals, normalizeArg(dados[k]))
+		vals = append(vals, v)
 		n++
 	}
 	sets = append(sets, q("atualizado_em")+" = CURRENT_TIMESTAMP")
@@ -763,6 +789,9 @@ func (b *Banco) AnexarTexto(modelo string, id int64, campo, texto string, tamanh
 	}
 	if !cols[campo] {
 		return false, &ErrCampo{modelo, campo}
+	}
+	if b.sealedOf(modelo)[campo] {
+		return false, &ErrSegredo{modelo, campo, "anexar texto"}
 	}
 	concat := "COALESCE(" + q(campo) + ", '') || " + b.ph(1)
 	// the length is in bytes, like the caller's offset (a log's byte range):

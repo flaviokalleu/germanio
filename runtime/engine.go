@@ -14,6 +14,7 @@ import (
 	"github.com/flaviokalleu/germanio/compiler/parser"
 	authpkg "github.com/flaviokalleu/germanio/runtime/auth"
 	"github.com/flaviokalleu/germanio/runtime/banco"
+	"github.com/flaviokalleu/germanio/runtime/cofre"
 	cronpkg "github.com/flaviokalleu/germanio/runtime/cron"
 	emailpkg "github.com/flaviokalleu/germanio/runtime/email"
 	"github.com/flaviokalleu/germanio/runtime/httpclient"
@@ -344,11 +345,38 @@ func Carregar(arquivo string, porta string) (*App, error) {
 	fmt.Printf("[germanio] Modelos: %d | Telas: %d | Rotas: %d | Funções: %d\n",
 		len(program.Models), len(program.Screens), len(program.Routes), len(program.Functions))
 
+	// Secrets at rest (GEP 0049): the key comes from the environment; a
+	// production server with sealed fields never starts without it.
+	vault, err := cofre.DoAmbiente()
+	if err != nil {
+		return nil, err
+	}
+	sealed := banco.TemSegredos(program.Models)
+	if vault == nil && sealed && os.Getenv("GERMANIO_PRODUCAO") == "1" {
+		return nil, fmt.Errorf("este programa guarda segredos (%s), e em produção eles ficam cifrados no banco com GERMANIO_SEGREDO, que não está definida.\nPor quê: sem uma chave que dure, os segredos ficariam em texto puro no banco (ou ilegíveis depois de reiniciar).\nComo corrigir: defina GERMANIO_SEGREDO com pelo menos 32 caracteres (por exemplo, a saída de openssl rand -base64 48) e guarde-a com o mesmo cuidado que o banco", strings.Join(sealedFields(program.Models), ", "))
+	}
+
 	db, err := banco.Abrir(program.Database, program.System.Name, program.Models)
 	if err != nil {
 		return nil, fmt.Errorf("erro no banco: %w", err)
 	}
 	db.Rules = program.Rules
+	db.UsarCofre(vault)
+	if sealed {
+		rel, err := db.SelarLegados()
+		if err != nil {
+			db.Fechar()
+			return nil, err
+		}
+		switch {
+		case vault == nil && rel.EmClaro > 0:
+			fmt.Printf("[germanio] AVISO: %d segredo(s) guardado(s) sem cifra, porque falta GERMANIO_SEGREDO (só aceitável em desenvolvimento); com ela, a próxima partida os cifra\n", rel.EmClaro)
+		case vault == nil:
+			fmt.Println("[germanio] AVISO: sem GERMANIO_SEGREDO, os segredos (campos ocultos, credenciais) ficam sem cifra no banco; em produção a partida é recusada")
+		case rel.Cifrados > 0 || rel.Recifrados > 0:
+			fmt.Printf("[germanio] segredos: %d cifrado(s) agora, %d cifrado(s) de novo com a chave atual\n", rel.Cifrados, rel.Recifrados)
+		}
+	}
 	for _, aviso := range db.Avisos {
 		fmt.Printf("[germanio] aviso: %s\n", aviso)
 	}
@@ -637,4 +665,17 @@ func toFloat(v any) float64 {
 func dirExists(p string) bool {
 	st, err := os.Stat(p)
 	return err == nil && st.IsDir()
+}
+
+// sealedFields names the sealed fields (data.field) for messages.
+func sealedFields(models []*ast.Model) []string {
+	var out []string
+	for _, m := range models {
+		for _, f := range m.Fields {
+			if f.Sealed {
+				out = append(out, strings.ToLower(m.Name)+"."+f.Name)
+			}
+		}
+	}
+	return out
 }

@@ -359,6 +359,12 @@ func (p *Parser) intentFrom(head dline, body []dline) error {
 		in.Finals = append(in.Finals, &ast.StateDecl{Entity: subject, Initial: w[len(w)-3], Pos: pos})
 		return nil
 	}
+	// X não pode ficar com <número> negativo (GEP 0050, em teste)
+	for i := 0; i+4 < len(w); i++ {
+		if w[i] == "nao" && w[i+1] == "pode" && w[i+2] == "ficar" && w[i+3] == "com" {
+			return p.floorLine(head, i)
+		}
+	}
 	// X não pode ser mais visível que [o] Y
 	for i := 0; i+5 < len(w); i++ {
 		if w[i] == "nao" && w[i+1] == "pode" && w[i+2] == "ser" && w[i+3] == "mais" && strings.HasPrefix(w[i+4], "visive") && w[i+5] == "que" {

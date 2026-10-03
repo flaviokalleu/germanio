@@ -464,6 +464,9 @@ func checkSecretFilters(c *Call, m *ast.Model, filtros map[string]any) {
 		if f := fieldByName(m, name); f != nil && f.IsSecret() {
 			panic(c.Fail(0, "%s: o campo '%s' é protegido e não pode ser filtrado; use verificar_senha ou por_segredo", c.Name, f.Name))
 		}
+		if f := fieldByName(m, name); f != nil && f.Sealed && filtros[k] != nil {
+			panic(c.Fail(400, "%s: o campo '%s' é oculto e fica cifrado no banco (GEP 0049), então não pode ser filtrado: o banco não compara valores cifrados, e filtrar revelaria o valor. Filtre por outro campo e leia '%s' do registro encontrado", c.Name, f.Name, f.Name))
+		}
 	}
 }
 

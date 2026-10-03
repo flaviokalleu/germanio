@@ -142,7 +142,8 @@ Computing on read costs one query per number per page; a stored counter would be
 wrong for viewers with less visibility. Pages show the numbers in the record's details; showing
 them as table columns (`colunas`) and sums on dashboards (`indicadores` of a page) are left for
 later. A sum that must never go below zero (GitLab refuses subtracting more time than was spent)
-is still checked by the adapter, outside the change.
+was checked by the adapter, outside the change; it is now a declared rule checked inside the change
+([GEP 0050](0050-soma-nunca-negativa.md)).
 
 ## Tests
 

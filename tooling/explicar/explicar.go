@@ -66,6 +66,9 @@ func describeField(f *ast.Field) string {
 	if f.Hidden {
 		parts = append(parts, "oculto")
 	}
+	if f.Sealed {
+		parts = append(parts, "cifrado no banco (GEP 0049, em teste: AES-256-GCM com a chave de GERMANIO_SEGREDO; só o sistema o lê, para falar com outro sistema; nunca pesquisado, filtrado nem ordenado)")
+	}
 	if f.IsSecret() {
 		if f.Type == ast.FieldSegredo {
 			parts = append(parts, "segredo gerado, guardado como hash, mostrado só na criação")
@@ -213,6 +216,9 @@ func Entidade(prog *ast.Program, nome string) (string, error) {
 			w("  %-22s %s que apontam para o registro por %s (%s)\n", ag.Name, what, ag.Via, where(ag.Pos))
 			if ag.Reset {
 				w("  %-22s zerar_%s registra, numa mudança só, um %s com %s que desconta a soma; pode quem pode criar %s no registro e vê todos eles\n", "", ag.Name, of.Singular, ag.Field, of.Plural)
+			}
+			if ag.NonNegative {
+				w("  %-22s nunca fica negativa (GEP 0050, em teste): criar, editar ou excluir um %s que deixaria a soma de todos abaixo de zero é recusado (400 em %s), na mesma transação e com o registro travado; excluir o próprio registro não é recusado\n", "", of.Singular, ag.Field)
 			}
 		}
 	}

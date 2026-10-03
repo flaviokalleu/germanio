@@ -43,7 +43,8 @@ name (`copias espelham o repositório do livro`).
   every mirror needs, shown by `ge explain`:
   - `sentido`, chosen by the people: `enviar` (default) or `receber`;
   - `habilitado` (default true);
-  - `credencial`, hidden: never returned by any listing, page or integration;
+  - `credencial`, hidden: never returned by any listing, page or integration, and kept encrypted
+    in the database ([GEP 0049](0049-segredos-guardados.md));
   - `situacao` (`nova`, `agendada`, `atualizando`, `atualizada`, `falhou`), `ultima_atualizacao`,
     `ultimo_sucesso`, `ultimo_erro`, maintained by the runtime.
 - **enviar:** after every change of the code — git push, a file edited on the web, a merge, or a

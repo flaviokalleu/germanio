@@ -93,6 +93,8 @@ Rules:
 | [0044](0044-lugar-pelo-endereco.md) | The place of a new record, named by its address (no syntax) | Em teste |
 | [0047](0047-agregados.md) | Numbers of a record: counts and sums of what belongs to it, and zeroing a sum (`indicadores` › `soma do peso das issues`, `pode zerar tempo gasto`) | Em teste |
 | [0048](0048-pares.md) | A link is unique per pair, never to itself (`única por par de issues`) | Em teste |
+| [0049](0049-segredos-guardados.md) | Secrets kept encrypted at rest, with key rotation (no syntax: `oculto`) | Em teste |
+| [0050](0050-soma-nunca-negativa.md) | A sum that never goes below zero (`não pode ficar com tempo gasto negativo`) | Em teste |
 | [0059](0059-pagina-de-apresentacao.md) | Presentation pages in Portuguese (`página "/"`, `capa`, `seção`, `cartão`, `fundo`, `imagem`) | Em teste |
 
 Revisão final das GEPs em teste 0010–0017, com recomendação por GEP e sem mudança de status:

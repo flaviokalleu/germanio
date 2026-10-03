@@ -22,7 +22,8 @@ issues
     começa aberta
 
     # O tempo gasto é a soma dos tempos registrados (os que a pessoa vê);
-    # zerar registra o tempo que desconta tudo, numa mudança só.
+    # zerar registra o tempo que desconta tudo, numa mudança só; descontar
+    # mais do que foi gasto é recusado.
     indicadores
         soma da duracao dos tempos gastos como tempo gasto
 
@@ -40,6 +41,7 @@ issues
     guarda histórico
 
     regras
+        não pode ficar com tempo gasto negativo
         confidencial pode ser vista por
             autor
             responsaveis

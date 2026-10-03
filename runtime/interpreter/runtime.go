@@ -540,7 +540,9 @@ func (interp *Interpreter) dbCall(c *Call, model, method string, args []any) any
 		return n > 0
 	case "criar", "create":
 		data, reveal := interp.prepareWrite(c, m, c.Map(args, 0, "dados"), true, 0)
-		row, err := db.CriarMapa(model, data)
+		row, err := interp.guardFloors(c, db, model, nil, data, func(db *banco.Banco) (map[string]any, error) {
+			return db.CriarMapa(model, data)
+		})
 		if err != nil {
 			fail(err)
 		}
@@ -554,7 +556,9 @@ func (interp *Interpreter) dbCall(c *Call, model, method string, args []any) any
 		id := c.Num(args, 0, "id")
 		before, _ := db.BuscarRegistro(model, int64(id))
 		data, _ := interp.prepareWrite(c, m, c.Map(args, 1, "dados"), false, int64(id))
-		row, err := db.AtualizarMapa(model, int64(id), data)
+		row, err := interp.guardFloors(c, db, model, before, data, func(db *banco.Banco) (map[string]any, error) {
+			return db.AtualizarMapa(model, int64(id), data)
+		})
 		if err != nil {
 			fail(err)
 		}
@@ -640,11 +644,19 @@ func (interp *Interpreter) dbCall(c *Call, model, method string, args []any) any
 		if interp.OnChange != nil {
 			before, _ = db.BuscarRegistro(model, int64(id))
 		}
-		n, err := db.DeletarFiltro(model, banco.Consulta{Filtros: map[string]any{"id": id}})
+		if before == nil && len(interp.floorsOf(model)) > 0 {
+			before, _ = db.BuscarRegistro(model, int64(id))
+		}
+		var n int64
+		_, err := interp.guardFloors(c, db, model, before, nil, func(db *banco.Banco) (map[string]any, error) {
+			var err error
+			n, err = db.DeletarFiltro(model, banco.Consulta{Filtros: map[string]any{"id": id}})
+			return nil, err
+		})
 		if err != nil {
 			fail(err)
 		}
-		if n > 0 && before != nil {
+		if n > 0 && before != nil && interp.OnChange != nil {
 			interp.changed(c, model, before, nil)
 		}
 		return n > 0
