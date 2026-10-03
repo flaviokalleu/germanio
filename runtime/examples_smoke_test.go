@@ -19,7 +19,14 @@ func TestExamplesLoadAndServe(t *testing.T) {
 	for _, ex := range examples {
 		t.Run(filepath.Base(filepath.Dir(ex))+"/"+filepath.Base(ex), func(t *testing.T) {
 			t.Setenv("GERMANIO_SQLITE", filepath.Join(t.TempDir(), "x.db"))
-			app, err := Carregar(ex, "0")
+			abs, err := filepath.Abs(ex)
+			if err != nil {
+				t.Fatal(err)
+			}
+			// files an example writes next to the working directory (the
+			// WhatsApp session store) stay out of the repository
+			t.Chdir(t.TempDir())
+			app, err := Carregar(abs, "0")
 			if err != nil {
 				t.Fatalf("Carregar: %v", err)
 			}

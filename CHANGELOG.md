@@ -42,7 +42,15 @@ published under that name.
   OpenID Connect code flow with PKCE, state and nonce, ID token verified by JWKS (RS256/ES256)
   with the standard library only; linking needs the e-mail verified on both sides; two factors
   still asked.
+- Pages offer what the API already did: merge with squash or when the executions pass, cancel a
+  scheduled merge, move a record to another parent, copy with a new name and path, and the
+  approvals still missing; a reference to the same kind never offers the record itself.
 - Per-person choice of notification e-mail (`avisos_por_email`, amendment to GEP 0013).
+
+### Tests
+
+- The examples smoke test runs from a temporary directory, so the legacy WhatsApp example no longer
+  leaves `whatsapp.db` inside the repository.
 
 ## [0.7.0] — 2026-09-29
 
