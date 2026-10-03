@@ -71,6 +71,8 @@ vocabulário da integração
     confidencial é "confidential"
     peso é "weight"
     estimativa é "time_estimate"
+    tempo_gasto é "total_time_spent"
+    peso_total é "total_weight"
     responsaveis é "assignee_ids"
     fechar é "close"
     reabrir é "reopen"

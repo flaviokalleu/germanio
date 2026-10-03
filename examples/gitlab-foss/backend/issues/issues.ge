@@ -21,11 +21,17 @@ issues
 
     começa aberta
 
+    # O tempo gasto é a soma dos tempos registrados (os que a pessoa vê);
+    # zerar registra o tempo que desconta tudo, numa mudança só.
+    indicadores
+        soma da duracao dos tempos gastos como tempo gasto
+
     pode
         fechar
         reabrir
         ser confidencial
         mudar de projeto
+        zerar tempo gasto
 
     pendência para
         responsaveis
@@ -79,6 +85,11 @@ ligacoes
 
     pertence a
         issue como relacionada
+
+    # Uma issue não se liga a ela mesma, e duas issues se ligam uma vez só,
+    # em qualquer ordem (a ligação aparece dos dois lados).
+    regras
+        única por par de issues
 
     acesso
         guest

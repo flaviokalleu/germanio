@@ -13,6 +13,10 @@ milestones
 
     começa ativo
 
+    # O peso total: a soma do peso das issues da milestone que a pessoa vê.
+    indicadores
+        soma do peso das issues como peso total
+
     pode
         fechar
         reabrir

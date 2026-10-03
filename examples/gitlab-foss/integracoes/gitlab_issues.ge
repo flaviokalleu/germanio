@@ -59,23 +59,12 @@ logica
     funcao issue_em(requisicao)
         retornar ["projects", requisicao.parametros.id, "issues", requisicao.parametros.iid]
 
-    # Todo o tempo gasto numa issue: os registros de tempo, de página em página.
-    funcao tempo_gasto(caminho)
-        definir total = 0
-        definir pagina = 1
-        definir paginas = 1
-        enquanto pagina <= paginas
-            definir r = exigir(superficie.pedir("GET", adicionar(caminho, "tempos_gastos"), nulo, {per_page: 100, page: pagina}))
-            para cada registro em r.corpo
-                total = total + obter(registro, "duration", 0)
-            paginas = numero(obter(r.cabecalhos, "X-Total-Pages", "1"))
-            pagina = pagina + 1
-        retornar total
-
+    # O tempo gasto é um indicador da issue (GEP 0047): a soma dos tempos
+    # registrados, feita pelo banco, só dos que a pessoa vê.
     funcao estatisticas_de_tempo(caminho)
         definir issue = exigir(superficie.pedir("GET", caminho))
         definir estimativa = obter(issue.corpo, "time_estimate", 0)
-        definir gasto = tempo_gasto(caminho)
+        definir gasto = obter(issue.corpo, "total_time_spent", 0)
         retornar {time_estimate: estimativa, total_time_spent: gasto, human_time_estimate: duracao_humana(estimativa), human_total_time_spent: duracao_humana(gasto)}
 
     # Uma issue ligada, como o GitLab a mostra: a outra issue e a ligação. Uma
@@ -111,18 +100,17 @@ rotas
     rota POST "/api/v4/projects/:id/issues/:iid/add_spent_time"
         definir s = duracao_pedida(requisicao)
         definir caminho = issue_em(requisicao)
-        se s < 0 e tempo_gasto(caminho) + s < 0
+        se s < 0 e obter(exigir(superficie.pedir("GET", caminho)).corpo, "total_time_spent", 0) + s < 0
             responder(400, {message: {time_spent: ["Time to subtract exceeds the total time spent"]}})
         definir resumo = obter(requisicao.consulta, "summary", obter(requisicao.corpo, "summary", nulo))
         exigir(superficie.pedir("POST", adicionar(caminho, "tempos_gastos"), {duration: s, description: resumo}))
         responder(201, estatisticas_de_tempo(caminho))
 
-    # Como no GitLab: zerar o tempo gasto registra o tempo que desconta tudo.
+    # Como no GitLab: zerar o tempo gasto registra o tempo que desconta tudo,
+    # numa mudança só (issue pode zerar tempo gasto; GEP 0047).
     rota POST "/api/v4/projects/:id/issues/:iid/reset_spent_time"
         definir caminho = issue_em(requisicao)
-        definir gasto = tempo_gasto(caminho)
-        se gasto != 0
-            exigir(superficie.pedir("POST", adicionar(caminho, "tempos_gastos"), {duration: 0 - gasto, description: "reset"}))
+        exigir(superficie.pedir("POST", adicionar(caminho, "zerar_tempo_gasto")))
         responder(200, estatisticas_de_tempo(caminho))
 
     # Ligações: as que esta issue fez e as que outras fizeram com ela.
@@ -149,7 +137,11 @@ rotas
         definir caminho = issue_em(requisicao)
         definir origem = exigir(superficie.pedir("GET", caminho))
         definir alvo = exigir(superficie.pedir("GET", ["projects", projeto_alvo, "issues", numero_alvo]))
-        exigir(superficie.pedir("POST", adicionar(caminho, "ligacoes"), {relacionada_id: alvo.corpo.id}))
+        # duas issues se ligam uma vez só, em qualquer ordem (GEP 0048)
+        definir r = superficie.pedir("POST", adicionar(caminho, "ligacoes"), {relacionada_id: alvo.corpo.id})
+        se r.estado == 409
+            responder(409, {message: "Issue(s) already assigned"})
+        exigir(r)
         responder(201, {source_issue: origem.corpo, target_issue: alvo.corpo, link_type: tipo})
 
     rota DELETE "/api/v4/projects/:id/issues/:iid/links/:ligacao"
