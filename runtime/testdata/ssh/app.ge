@@ -1,0 +1,69 @@
+crie sistema Partituras
+
+# Um acervo de partituras guardadas em Git, sem GitLab: cada pessoa cadastra
+# a chave pública do seu computador e baixa ou envia partituras por SSH,
+# com as mesmas regras do HTTP.
+
+tenha papeis
+    leitor 10
+    musico 30
+    regente 40
+    dono 50
+
+usuarios
+    tem
+        username obrigatório e único
+        nome obrigatório
+        email obrigatório e único
+        senha min 8
+        admin começa com falso
+    começa ativo
+    pode
+        bloquear
+        desbloquear
+    acesso
+        usuario
+            ver
+        somente administrador
+            bloquear
+            desbloquear
+
+tenha login
+tenha cadastro
+tenha administrador inicial "root"
+login usa username e email
+login exige estado "ativo"
+
+chaves
+    tem
+        titulo obrigatório
+        conteudo chave pública obrigatório e único
+    pertence a
+        usuario
+    acesso
+        usuario
+            criar
+            ver seus
+            excluir seus
+
+acervos
+    tem
+        nome obrigatório e único
+        visibilidade
+        repositório
+        membros com papel
+    regras
+        quem cria vira dono
+    guarda histórico
+    acesso
+        usuario
+            criar
+        leitor
+            ver
+            baixar código
+        musico
+            enviar código
+        somente regente
+            enviar código para a branch padrão
+        dono
+            administrar

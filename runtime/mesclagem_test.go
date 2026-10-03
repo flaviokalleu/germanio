@@ -189,3 +189,33 @@ func TestMesclarQuandoPassar(t *testing.T) {
 		t.Fatalf("compilação já passou: %v", got)
 	}
 }
+
+// GEP 0026 com GEP 0027: agendar a mesclagem segue o mínimo de aprovações
+// como mesclar na hora; com a aprovação de outra pessoa, a revisão é mesclada
+// quando a compilação passa.
+func TestMesclarQuandoPassarComAprovacoes(t *testing.T) {
+	t.Setenv("GERMANIO_EXECUTOR", "local")
+	_, c := loadApp(t, "testdata/intencao/livros_aprovados.ge")
+	c.expect("POST", "/cadastro", map[string]any{"nome": "Ana", "email": "ana@x.com", "senha": "senha-da-ana"}, 201)
+	c.csrf = csrfFromCookie(t, c)
+	_, bia := c.fresh(t)
+	bia.expect("POST", "/cadastro", map[string]any{"nome": "Bia", "email": "bia@x.com", "senha": "senha-da-bia"}, 201)
+	bia.csrf = csrfFromCookie(t, bia)
+	lv := c.expect("POST", "/_ge/api/livros", map[string]any{"nome": "atlas"}, 201)
+	l := &livro{t: t, c: c, base: "/_ge/api/livros/" + itoa(int(lv["id"].(float64)))}
+	l.put("main", "compilar.yml", "estagios: [testar]\netapas:\n  testar:\n    estagio: testar\n    comandos: [\"sleep 1\", \"test -f ok.txt\"]\n")
+	l.branch("boa", "main")
+	l.put("boa", "ok.txt", "ok\n")
+	r := l.review("Boa", "boa", nil)
+
+	// sem aprovação, agendar é recusado como mesclar
+	c.expect("POST", r+"/mesclar", map[string]any{"mesclar_quando_passar": true}, 405)
+	c.expect("POST", r+"/aprovar", nil, 200) // a da autora não conta
+	c.expect("POST", r+"/mesclar", map[string]any{"mesclar_quando_passar": true}, 405)
+	bia.expect("POST", r+"/aprovar", nil, 200)
+	c.expect("POST", r+"/mesclar", map[string]any{"mesclar_quando_passar": true}, 200)
+	done := waitReview(t, c, r, func(m map[string]any) bool { return m["estado"] != "aberta" })
+	if done["estado"] != "mesclada" {
+		t.Fatalf("depois da compilação: %v", done)
+	}
+}

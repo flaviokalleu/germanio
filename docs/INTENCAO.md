@@ -950,6 +950,18 @@ Nada disto aparece no `.ge`; é configuração de quem hospeda a aplicação.
 | `GERMANIO_LFS_MAX_MB` | maior arquivo grande (Git LFS) aceito por objeto, em MB (padrão 100) |
 | `GERMANIO_ESPELHO_MINUTOS` | de quantos em quantos minutos os espelhos que recebem buscam o código (padrão 30) |
 | `GERMANIO_OIDC_EMISSOR` / `_CLIENTE` / `_SEGREDO` / `_NOME` | provedor do `tenha login com conta externa`: emissor exato, cliente, segredo do cliente (só do ambiente, nunca no log) e nome do botão |
+| `GERMANIO_SSH_ENDERECO` | liga o git por SSH nesse endereço (`:2222`); sem ela, nenhum servidor SSH existe ([GEP 0037](gep/0037-git-por-ssh.md), em teste) |
+| `GERMANIO_SSH_CHAVE_HOST` | arquivo da chave do servidor SSH (padrão `<GERMANIO_GIT_RAIZ>/.ssh/chave_host_ed25519`): criada uma vez com permissão 0600, nunca mostrada; legível por outros, a partida para |
+| `GERMANIO_SSH_CONEXOES` | conexões SSH atendidas ao mesmo tempo (padrão 64; 8 por endereço) |
+
+Git por SSH ([GEP 0037](gep/0037-git-por-ssh.md), **em teste**, sem frase no `.ge`): com
+`GERMANIO_SSH_ENDERECO`, quem cadastrou uma chave (`chave pública` num dado que pertence às
+pessoas) clona e envia com `git clone ssh://git@servidor:2222/grupo/projeto.git`, com as mesmas
+regras do HTTP (baixar e enviar código, somente leitura, branches protegidas, `antes de enviar
+código`, e depois do envio os eventos, o histórico, as execuções e os espelhos). Só a chave autentica; só
+`git-upload-pack` e `git-receive-pack` rodam, nunca um shell; pessoa bloqueada ou com e-mail não
+confirmado é recusada com o motivo. Um programa sem repositórios ou sem chaves das pessoas não
+parte com a variável definida, e o erro diz o que declarar.
 
 ## Trabalho remoto e teste de generalização
 
