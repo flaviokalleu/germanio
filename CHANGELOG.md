@@ -45,6 +45,10 @@ published under that name.
 - Pages offer what the API already did: merge with squash or when the executions pass, cancel a
   scheduled merge, move a record to another parent, copy with a new name and path, and the
   approvals still missing; a reference to the same kind never offers the record itself.
+- GitLab API: `/projects/:id/forks`, `/users/:id/starred_projects` (oneself only), fork into a
+  `namespace_path`, events `action` filter, `PUT …/merge`, `GET …/approvals`, mirror `sync`
+  (generic `atualizar_agora`), `?topic=a,b`. Several values in one filter (GEP 0043) and a
+  place given by its address (GEP 0044), both em teste. `/starrers` stays refused (GEP 0030).
 - Per-person choice of notification e-mail (`avisos_por_email`, amendment to GEP 0013).
 
 ### Tests
