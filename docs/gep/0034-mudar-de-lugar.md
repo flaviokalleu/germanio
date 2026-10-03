@@ -104,13 +104,20 @@ Additive. Programs that do not declare `mudar de` behave as before.
 
 Unlike GitLab, the record is not copied: links to the old address (`/projects/1/issues/7`) stop
 working instead of pointing to a closed copy. Keeping a forwarding trace would be a separate
-decision. Pages do not offer the move yet (it needs a choice of destination); the action is on the
-integration and page APIs.
+decision.
+
+**Pages** (no syntax): the record's page shows a short form "Mudar de projeto" to whoever may edit
+the record, with a choice among the parents that person sees and may create such a record in (not
+read-only, not the current one); with no possible destination there is no form. The form posts,
+with CSRF, to the same action as the API, which checks everything again; afterwards the page opens
+the record in its new place. The edit form no longer offers the parent field, which editing
+ignores: the place changes only by moving.
 
 ## Tests
 
 `TestMudarDeLugar` (runtime, a support desk with queues: next number of the destination, labels by
 name, history; refused without the right to edit at the origin, to a destination the person cannot
 see, to the same place, into or out of an archived queue; the number never changes by editing),
+`TestPaginasAcoes` (runtime, the page form: only possible destinations, refused when forged),
 `TestMudarDeLugar` in the parser (block and flat forms; the errors) and the GitLab end-to-end test
-`TestMoverIssue` (`POST /issues/:iid/move`).
+`TestMoverIssue` (`POST /issues/:iid/move`) and `TestPaginasRestantes` (the GitLab issue page).
