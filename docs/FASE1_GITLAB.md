@@ -63,6 +63,44 @@ Registrado no [roadmap](ROADMAP.md) e no inventário com o destino de cada item.
 | isolamento de CI em containers (CI-10) | FASE 4 |
 | 2FA/SSO, SSH, LFS (ID-07, ID-08, RP-10) | fora do núcleo (já marcados) |
 
+## Depois do encerramento: amplitude concluída (2026-10-02)
+
+Os itens adiados acima foram feitos depois do encerramento, cada um como capability genérica,
+com testes num domínio que não é o GitLab e E2E no GitLab. **Inventário: os 61 itens PASS.**
+As GEPs novas estão **em teste**, AGUARDANDO DECISÃO do mantenedor; nenhum status foi mudado.
+
+| Item | Capability | GEP |
+| --- | --- | --- |
+| confirmação de e-mail (ID-06) | `tenha confirmação de e-mail` | 0031 |
+| 2FA (ID-07) | `tenha autenticação em dois fatores` (TOTP, códigos de recuperação) | 0032 |
+| login externo (ID-07) | `tenha login com conta externa` (OpenID Connect, PKCE) | 0039 |
+| chaves SSH (ID-08) | campo `chave pública` | 0032 |
+| git por SSH (RP-10) | configuração `GERMANIO_SSH_ENDERECO`, sem frase | 0037 |
+| LFS (RP-10) | junto com `tem repositório`, sem frase | 0035 |
+| espelhos (RP-10) | `espelhos espelham o repositório do projeto` | 0036 |
+| download do código (RP-10) | junto com `tem repositório` | — |
+| fork (PR-05) | `acesso` › papel › `copiar` | 0029 |
+| estrelas, tópicos, avatar (PR-06) | `recebe estrelas`, filtro por item de lista, `<campo>_endereco` | 0030 |
+| boards (IS-09) | `cartoes por estado` | 0023 |
+| peso, tempo, ligações, mover (IS-09) | dados comuns; `pode mudar de projeto` | 0034 |
+| regras de merge request (MR-07) | `precisa de 2 aprovações para mesclar`; squash, linear, mesclar quando passar | 0026, 0027 |
+| eventos, estatísticas (NT-02, AD-01) | adaptador pede à própria aplicação | 0033 |
+| escolha de e-mail (NT-03) | campo `avisos_por_email` | emenda à 0013 |
+| DAG de CI e artefatos (CI-08, CI-09); containers (CI-10) | `precisa`, `regras`, `expira em`; executor Docker | — |
+
+Fora de propósito, com justificativa na GEP 0039: LDAP (o servidor receberia a senha da pessoa),
+SAML (assinatura XML, superfície que pede implementação dedicada e auditada) e WebAuthn (é uma
+credencial deste sistema, não login com outro). Limites registrados nas próprias linhas do
+inventário (por exemplo: sem LFS por SSH, um tópico por consulta, soma de pesos por milestone).
+
+Decisão de produto pendente: o domínio do GitLab exige 1 aprovação para mesclar, para exercitar
+a GEP 0026. O GitLab FOSS não exige aprovação; para ficar idêntico basta tirar a linha
+`precisa de uma aprovação para mesclar` do domínio de merge requests e ajustar os dois E2E que a
+verificam.
+
+Acoplamento: busca por `gitlab`, `/api/v4`, `merge_request`, `PRIVATE-TOKEN`, `forked_from`,
+`remote_mirror` no core (`compiler/`, `runtime/`, `tooling/`): só comentários de exemplo.
+
 ## Decisões
 
 | Decisão | Estado |
