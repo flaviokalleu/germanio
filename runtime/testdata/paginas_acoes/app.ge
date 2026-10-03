@@ -1,0 +1,116 @@
+crie sistema Editora
+
+usuarios
+    tem
+        nome obrigatório
+        email obrigatório e único
+        senha min 8
+
+tenha login
+tenha cadastro
+
+tenha papeis
+    leitor 10
+    revisor 30
+    editor 40
+
+livros
+    tem
+        nome obrigatório e único
+        repositório
+        membros com papel
+        revisoes
+        compilacoes
+        tarefas
+    executa compilacoes a cada envio de código conforme "compilar.yml"
+    regras
+        quem cria vira editor
+    acesso
+        usuario
+            criar
+        leitor
+            ver
+            baixar código
+            copiar
+        revisor
+            enviar código
+        editor
+            administrar
+
+compilacoes
+    tem
+        etapas
+    acesso
+        leitor
+            ver
+            ver etapas
+
+etapas
+    acesso
+        leitor
+            ver
+
+revisoes
+    tem
+        numero por livro
+        titulo obrigatório
+        autor
+        origem: branch
+        destino: branch
+    começa aberta
+    pode
+        mesclar
+        fechar
+    recebe aprovações
+    regras
+        precisa de uma aprovação para mesclar
+    acesso
+        leitor
+            ver
+        revisor
+            criar
+            aprovar
+            mesclar
+        autor ou editor
+            editar
+            fechar
+
+tarefas
+    tem
+        numero por livro
+        titulo obrigatório
+        autor
+        horas gastas
+        ligacoes
+    pode
+        mudar de livro
+    acesso
+        leitor
+            ver
+        revisor
+            criar
+        autor ou editor
+            editar
+
+horas gastas
+    singular hora gasta
+    tem
+        duracao inteiro obrigatório
+        autor
+    acesso
+        leitor
+            ver
+        revisor
+            criar
+
+ligacoes
+    singular ligacao
+    pertence a
+        tarefa como relacionada
+    acesso
+        leitor
+            criar
+            excluir
+
+página Livros
+    mostre livros

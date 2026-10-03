@@ -230,7 +230,7 @@ func (h *liveHub) publish(c change) {
 			switch {
 			case seesAfter && region.holds(c.after):
 				out := serializeFor(ctx, h.a.in, person, e, c.after, false)
-				ev["id"], ev["html"] = fmt.Sprint(c.after["id"]), rowHTML(e, out, region.base, region.cols)
+				ev["id"], ev["html"] = fmt.Sprint(c.after["id"]), rowHTML(e, out, region.base, region.cols, h.a.namedBy(ctx, person, e, out, region.scope))
 				ev["acao"] = "criar"
 				if c.before != nil {
 					ev["acao"] = "editar"

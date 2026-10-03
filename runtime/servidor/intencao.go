@@ -860,7 +860,7 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 		if tr := e.Transitions[verb]; tr != nil && verb == "mesclar" && review {
 			in := a.inwardBody(e, body)
 			if e.Review.Runs != "" && truthy(in["mesclar_quando_passar"]) {
-				scheduled, err := a.scheduleMerge(ctx, atual, e, row)
+				scheduled, err := a.scheduleMerge(ctx, atual, e, row, in)
 				if err != nil {
 					a.failErr(w, r, err)
 					return
