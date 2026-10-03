@@ -1,0 +1,46 @@
+# Tempo real — páginas vivas com linhas desenhadas (melhoria do critério 2)
+data: 2026-10-02T21:32:53-03:00 · commit: 9ce0c63 + alterações locais · go1.27.1 · 12 núcleos
+Germanio: evento de linha pronto para cada assinante (sem nova busca). Go: mensagem completa por WebSocket.
+
+alvo=go-chat conexoes=500 falhas_conexao=0 remetentes=1 enviadas=50 falhas_envio=0 duracao_envio=5.006s
+latencia_entrega p50=5.829105ms p90=6.492537ms p99=18.485622ms max=19.154622ms
+memoria_servidor rss_antes=10916KB rss_pico=44240KB
+alvo=germanio-vivo modo=sse conexoes=500 falhas_conexao=0 enviadas=50 falhas_envio=0 duracao_envio=5.625s
+avisos=25000 maximo_possivel=25000 (avisos fundidos contam uma vez)
+latencia_ate_ver p50=8.608565ms p90=12.472064ms p99=19.770874ms max=22.908618ms
+memoria_servidor rss_antes=35640KB rss_pico=68852KB
+
+alvo=go-chat conexoes=2000 falhas_conexao=0 remetentes=1 enviadas=50 falhas_envio=0 duracao_envio=5.017s
+latencia_entrega p50=10.069705ms p90=13.676728ms p99=19.493292ms max=29.201767ms
+memoria_servidor rss_antes=10840KB rss_pico=127228KB
+alvo=germanio-vivo modo=sse conexoes=2000 falhas_conexao=0 enviadas=50 falhas_envio=0 duracao_envio=6.621s
+avisos=100000 maximo_possivel=100000 (avisos fundidos contam uma vez)
+latencia_ate_ver p50=19.153413ms p90=29.559857ms p99=36.823364ms max=43.861632ms
+memoria_servidor rss_antes=35488KB rss_pico=159080KB
+
+alvo=go-chat conexoes=10000 falhas_conexao=0 remetentes=1 enviadas=5 falhas_envio=0 duracao_envio=5.052s
+latencia_entrega p50=36.35934ms p90=59.342422ms p99=75.699554ms max=78.778633ms
+memoria_servidor rss_antes=10680KB rss_pico=447268KB
+alvo=germanio-vivo modo=sse conexoes=10000 falhas_conexao=0 enviadas=5 falhas_envio=0 duracao_envio=5.759s
+avisos=50000 maximo_possivel=50000 (avisos fundidos contam uma vez)
+latencia_ate_ver p50=85.356738ms p90=138.362104ms p99=168.317926ms max=174.77653ms
+memoria_servidor rss_antes=35520KB rss_pico=577512KB
+
+
+## com a linha desenhada uma vez por (pessoa, tabela)
+alvo=go-chat conexoes=2000 falhas_conexao=0 remetentes=1 enviadas=50 falhas_envio=0 duracao_envio=5.012s
+latencia_entrega p50=9.954638ms p90=12.814247ms p99=16.889051ms max=20.505704ms
+memoria_servidor rss_antes=10892KB rss_pico=128760KB
+alvo=germanio-vivo modo=sse conexoes=2000 falhas_conexao=0 enviadas=50 falhas_envio=0 duracao_envio=5.56s
+avisos=100000 maximo_possivel=100000 (avisos fundidos contam uma vez)
+latencia_ate_ver p50=8.753476ms p90=11.343548ms p99=17.332197ms max=20.429575ms
+memoria_servidor rss_antes=35608KB rss_pico=159408KB
+
+alvo=go-chat conexoes=10000 falhas_conexao=0 remetentes=1 enviadas=5 falhas_envio=0 duracao_envio=5.059s
+latencia_entrega p50=34.982226ms p90=52.894099ms p99=58.233589ms max=61.249286ms
+memoria_servidor rss_antes=10836KB rss_pico=440320KB
+alvo=germanio-vivo modo=sse conexoes=10000 falhas_conexao=0 enviadas=5 falhas_envio=0 duracao_envio=5.285s
+avisos=50000 maximo_possivel=50000 (avisos fundidos contam uma vez)
+latencia_ate_ver p50=37.321397ms p90=77.280414ms p99=90.535011ms max=90.880265ms
+memoria_servidor rss_antes=35448KB rss_pico=585984KB
+

@@ -228,15 +228,17 @@ func runSSE(base, sub, post, refetch string, conns, total, rate, pid int, label 
 					signalled = true
 					ready.Done()
 				}
-				if line != "event: mudou" {
+				if line != "event: mudou" && line != "event: linha" {
 					continue
 				}
 				notices.Add(1)
 				sent := lastSend.Load()
-				r, err := client.Get(base + refetch)
-				if err == nil {
-					io.Copy(io.Discard, r.Body)
-					r.Body.Close()
+				if line == "event: mudou" { // a row event already carries what the page shows
+					r, err := client.Get(base + refetch)
+					if err == nil {
+						io.Copy(io.Discard, r.Body)
+						r.Body.Close()
+					}
 				}
 				st.mu.Lock()
 				st.lat = append(st.lat, time.Duration(time.Now().UnixNano()-sent))

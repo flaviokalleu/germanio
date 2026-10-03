@@ -5,13 +5,18 @@ import (
 	"context"
 	"net/http"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
 
 // Pages stay up to date (GEP 0020, em teste).
 
-// watch opens the live subscription of a page and reports each "mudou".
+// lastRow keeps the data of the latest row event seen by watch.
+var lastRow atomic.Value
+
+// watch opens the live subscription of a page and reports each "mudou" or
+// "linha".
 func watch(t *testing.T, c *client, page string) (<-chan struct{}, int) {
 	t.Helper()
 	ctx, cancel := context.WithCancel(context.Background())
@@ -35,8 +40,11 @@ func watch(t *testing.T, c *client, page string) (<-chan struct{}, int) {
 			if strings.HasPrefix(line, ": ligado") {
 				close(ready)
 			}
-			if line == "event: mudou" {
+			if line == "event: mudou" || line == "event: linha" {
 				out <- struct{}{}
+			}
+			if strings.HasPrefix(line, "data: {\"") {
+				lastRow.Store(line)
 			}
 		}
 	}()
@@ -87,9 +95,21 @@ func TestPaginasVivas(t *testing.T) {
 	page, _ := watch(t, bia, "/projetos/1")
 	ana.expect("POST", "/_ge/api/projetos/1/issues", map[string]any{"titulo": "Pública"}, 201)
 	expectChange(t, page, true, "issue nova no projeto que Bia vê")
+	// the row comes drawn for Bia: no refetch of the whole list
+	ev, _ := lastRow.Load().(string)
+	if !strings.Contains(ev, `"acao":"criar"`) || !strings.Contains(ev, `"regiao":"filhos-issues"`) || !strings.Contains(ev, "Pública") {
+		t.Fatalf("evento de linha: %s", ev)
+	}
+	// an issue of another project is not on this page
+	ana.expect("POST", "/_ge/api/projetos", map[string]any{"nome": "Outro"}, 201)
+	ana.expect("POST", "/_ge/api/projetos/2/issues", map[string]any{"titulo": "Alheia"}, 201)
+	expectChange(t, page, false, "issue de outro projeto")
 
 	ana.expect("POST", "/_ge/api/projetos/1/issues", map[string]any{"titulo": "Segredo", "confidencial": true}, 201)
 	expectChange(t, page, false, "issue confidencial que Bia não vê")
+	if ev, _ := lastRow.Load().(string); strings.Contains(ev, "Segredo") {
+		t.Fatalf("o título confidencial chegou num evento: %s", ev)
+	}
 
 	ana.expect("POST", "/_ge/api/projetos/1/issues", map[string]any{"titulo": "recusada"}, 400)
 	expectChange(t, page, false, "mudança desfeita")

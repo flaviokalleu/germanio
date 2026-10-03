@@ -189,7 +189,7 @@ que mostram os contêineres. As marcas são estado por pessoa e saem junto com e
 | # | Critério | Situação | Evidência |
 | --- | --- | --- | --- |
 | 1 | 10 000 conexões sem erro | **cumprido** | 10 000 assinaturas, 0 falhas, 50 000 de 50 000 avisos; memória de pico 940 MB (Go: 428 MB) — [`2026-10-02-tempo-real-10k.txt`](../bench/resultados/2026-10-02-tempo-real-10k.txt) |
-| 2 | p99 ≤ 2× o Go | **não cumprido — melhoria pendente** (decisão do mantenedor: missão primeiro) | 5,2× a 500, 15× a 2 000 e 16,5× a 10 000 conexões; causa medida: nova busca completa por assinante |
+| 2 | p99 ≤ 2× o Go | **cumprido** (passo 7) | 1,07× a 500, 1,03× a 2 000 e 1,56× a 10 000 conexões — [`2026-10-02-tempo-real-linhas.txt`](../bench/resultados/2026-10-02-tempo-real-linhas.txt); limite: medido com visitantes anônimos (ver passo 7) |
 | 3 | ordem por canal | **cumprido** | `TestOrdemSobConcorrencia`: 8 pessoas × 10 mensagens simultâneas, sequência 1–80 sem buracos nem repetições |
 | 4 | retomada após queda | **cumprido no desenho; teste de navegador pendente** | a página reconecta (SSE, `retry` 2 s) e busca de novo uma vez; os dados são duráveis no banco |
 | 5 | autorização em tempo real | **cumprido** | `TestPaginasVivas` com mutação: aviso a quem não vê e aviso antes do commit são pegos |
@@ -203,5 +203,27 @@ Capabilities criadas na fase até aqui:
 - presença (GEP 0021);
 - leitura e contagem de não lidas (GEP 0022).
 
-O que falta para encerrar a fase: o critério 2 (melhoria de latência, já desenhada no passo 3),
-o critério 9 e a auditoria final.
+O que falta para encerrar a fase: o critério 9 e a auditoria final.
+
+### Passo 7 — a melhoria de latência (2026-10-02)
+
+Feita depois da missão, como o mantenedor pediu:
+- nas tabelas da página (a lista e as seções de filhos), o aviso leva a linha já desenhada para
+  quem olha: `serializeFor` com as regras de sempre e o mesmo modelo de linha da tabela. A página
+  só insere, troca ou remove aquela linha;
+- a nova busca completa fica para indicadores, detalhes, páginas com pesquisa ou filtros, e para
+  quando a fila de linhas de um assinante enche (32);
+- cada tabela sabe a que registro pai pertence: uma mensagem de outro canal, ou um outro projeto,
+  já não avisa a página (antes causava só uma nova busca inútil; com linhas seria um erro);
+- a linha é desenhada uma vez por (pessoa, tabela) em cada aviso.
+
+| Conexões | Go p99 | Germanio p99 antes | Germanio p99 agora |
+| --- | --- | --- | --- |
+| 500 | 18,5 ms | 43,6 ms | 19,8 ms |
+| 2 000 | 16,9 ms | 294,5 ms | 17,3 ms |
+| 10 000 | 58,2 ms | 1 278 ms | 90,5 ms |
+
+**Limite honesto:** o gerador usa visitantes anônimos, todos a mesma "pessoa", então a linha é
+desenhada uma vez por aviso. Com milhares de pessoas diferentes conectadas, cada uma recebe a
+própria linha e uma leitura da pessoa por aviso. Medir esse caso e guardar em cache a visibilidade
+por registro é trabalho da FASE 4.

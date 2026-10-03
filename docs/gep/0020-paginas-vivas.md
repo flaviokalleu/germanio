@@ -35,8 +35,11 @@ already means: while someone is looking at it, the page follows the changes of w
 - **What is sent:** nothing about the record. The notice only says "what you are looking at
   changed". The page then asks for itself again with the viewer's own session, so all data goes
   through the ordinary rules; even a wrong notice cannot leak data.
-- **Partial refresh:** only the live regions of the page (list, indicators, details, sections of
-  children) are replaced. What the person is typing is not touched: while a form field has focus,
+- **Partial refresh:** in tables (the list, sections of children) the notice carries the row
+  already drawn for the viewer, with the ordinary rules, and the page inserts, replaces or removes
+  only that row. Other live regions (indicators, details), pages with search or filters, and a
+  viewer whose queue of rows is full get a refresh of their live regions. Each table knows the
+  parent record it belongs to, so a change elsewhere does not reach it. What the person is typing is not touched: while a form field has focus,
   the refresh waits.
 - **Bounded:** many changes in a row become one refresh (notices coalesce). A slow viewer never
   holds memory or slows the others; if the connection drops, the page reconnects and refreshes

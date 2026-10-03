@@ -1,6 +1,7 @@
 package servidor
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -8,7 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/flaviokalleu/germanio/compiler/ast"
 	interp "github.com/flaviokalleu/germanio/runtime/interpreter"
 )
 
@@ -28,6 +28,33 @@ type watcher struct {
 	person  any             // the viewer's id (nil: not signed in)
 	depends map[string]bool // models the page shows
 	signal  chan struct{}   // one slot: many changes, one refresh
+	// rows: tables of the page that take a single row (by model); a change
+	// of their data sends the row drawn for this viewer instead of a refresh
+	rows  map[string]*rowRegion
+	queue chan string // ready row events; when full, a refresh is asked
+	// only: records of the page's address (model → id): changes of other
+	// records of those data are not on this page
+	only map[string]string
+}
+
+// rowRegion is a table of a page: its live region, the address its rows
+// link to, its columns, and the parent record it belongs to (scope).
+type rowRegion struct {
+	name, base string
+	cols       []string
+	scope      map[string]any
+}
+
+func (r *rowRegion) holds(row map[string]any) bool {
+	if row == nil {
+		return false
+	}
+	for k, v := range r.scope {
+		if fmt.Sprint(row[k]) != fmt.Sprint(v) {
+			return false
+		}
+	}
+	return true
 }
 
 type liveHub struct {
@@ -166,34 +193,81 @@ func (h *liveHub) publish(c change) {
 	}
 	e := h.a.app.Entities[c.model]
 	ctx := &interp.Context{}
+	// what a viewer receives depends only on who they are and the table:
+	// drawn once per (person, table) in this announcement
+	drawn := map[string]string{}
 	for _, w := range interested {
-		if e != nil && !h.sees(ctx, w, e, c) {
+		if e == nil {
+			w.refresh()
+			continue
+		}
+		if id, ok := w.only[c.model]; ok && !sameID(c.after, id) && !sameID(c.before, id) {
+			continue // another record of a data in the page's address
+		}
+		person, ok := h.viewer(ctx, w)
+		if !ok {
+			continue
+		}
+		region := w.rows[c.model]
+		if region != nil && !region.holds(c.after) && !region.holds(c.before) {
+			continue // a record of another parent: not on this page
+		}
+		seesAfter := c.after != nil && h.a.in.Can(ctx, person, e, "ver", c.after)
+		seesBefore := c.before != nil && h.a.in.Can(ctx, person, e, "ver", c.before)
+		if !seesAfter && !seesBefore {
 			continue // a record this viewer cannot see changes silently for them
 		}
+		if region == nil {
+			w.refresh()
+			continue
+		}
+		key := fmt.Sprint(w.person, "\x00", region.name, "\x00", region.base, "\x00", seesAfter)
+		msg, ok := drawn[key]
+		if !ok {
+			ev := map[string]any{"regiao": region.name}
+			switch {
+			case seesAfter && region.holds(c.after):
+				out := serializeFor(ctx, h.a.in, person, e, c.after, false)
+				ev["id"], ev["html"] = fmt.Sprint(c.after["id"]), rowHTML(e, out, region.base, region.cols)
+				ev["acao"] = "criar"
+				if c.before != nil {
+					ev["acao"] = "editar"
+				}
+			default:
+				ev["id"], ev["acao"] = fmt.Sprint(c.before["id"]), "excluir"
+			}
+			b, _ := json.Marshal(ev)
+			msg = string(b)
+			drawn[key] = msg
+		}
 		select {
-		case w.signal <- struct{}{}:
-		default: // a refresh is already pending
+		case w.queue <- msg:
+		default:
+			w.refresh() // too many pending rows: one refresh instead
 		}
 	}
 }
 
-// sees: the viewer may see the record before or after the change, by the
-// rules as they are now.
-func (h *liveHub) sees(ctx *interp.Context, w *watcher, e *ast.Entity, c change) bool {
-	var person map[string]any
-	if w.person != nil {
-		res, _ := h.a.in.Op(ctx, h.a.app.LoginEntity, "buscar", w.person)
-		person, _ = res.(map[string]any)
-		if person == nil {
-			return false // the person no longer exists
-		}
+func sameID(row map[string]any, id string) bool {
+	return row != nil && fmt.Sprint(row["id"]) == id
+}
+
+func (w *watcher) refresh() {
+	select {
+	case w.signal <- struct{}{}:
+	default: // a refresh is already pending
 	}
-	for _, row := range []map[string]any{c.after, c.before} {
-		if row != nil && h.a.in.Can(ctx, person, e, "ver", row) {
-			return true
-		}
+}
+
+// viewer: the person looking, as they are now (nil when not signed in);
+// ok=false when the person no longer exists.
+func (h *liveHub) viewer(ctx *interp.Context, w *watcher) (map[string]any, bool) {
+	if w.person == nil {
+		return nil, true
 	}
-	return false
+	res, _ := h.a.in.Op(ctx, h.a.app.LoginEntity, "buscar", w.person)
+	person, _ := res.(map[string]any)
+	return person, person != nil
 }
 
 func (h *liveHub) add(w *watcher) {
@@ -211,33 +285,61 @@ func (h *liveHub) remove(w *watcher) {
 // dependencies: the models a page at path shows — its chain, the children
 // shown under its record, the data its indicators count — or nil when path
 // is not one of the pages or the viewer may not load it.
-func (ps *pageSite) dependencies(r *http.Request, path string) map[string]bool {
+func (ps *pageSite) dependencies(r *http.Request, path string) (map[string]bool, map[string]*rowRegion, map[string]string) {
 	req := r.Clone(r.Context())
 	req.URL.Path = path
 	pg, parts := ps.pageOf(req)
 	if pg == nil {
-		return nil
+		return nil, nil, nil
 	}
 	deps := map[string]bool{}
+	rows := map[string]*rowRegion{}
+	only := map[string]string{}
 	for _, ind := range pg.Indicators {
 		deps[ind.Entity] = true
 	}
 	if pg.Show == "" {
-		return deps // a dashboard
+		return deps, rows, only // a dashboard
 	}
 	chain, api, _, _ := ps.resolve(pg, parts)
 	if code, _, _ := ps.call(r, "GET", api, nil); code != http.StatusOK {
-		return nil // the viewer may not see this page
+		return nil, nil, nil // the viewer may not see this page
 	}
 	for _, st := range chain {
 		deps[st.e.Singular] = true
 	}
-	if last := chain[len(chain)-1]; last.ref != "" {
-		for _, c := range ps.a.childrenOf(last.e) {
-			deps[c.Singular] = true
+	// the parent record of each level, as the page resolves it
+	ctx := &interp.Context{Request: r}
+	scope := map[string]any{}
+	var parentRow map[string]any
+	for i, st := range chain {
+		if st.ref == "" {
+			break
+		}
+		row := ps.a.find(ctx, st.e, st.ref, scope)
+		if row == nil {
+			return deps, rows, only
+		}
+		parentRow = row
+		only[st.e.Singular] = fmt.Sprint(row["id"])
+		if i+1 < len(chain) {
+			scope = ps.a.parentScope(st.e, row, chain[i+1].e)
 		}
 	}
-	return deps
+	last := chain[len(chain)-1]
+	if last.ref == "" {
+		var cols []string
+		if len(chain) == 1 {
+			cols = pg.Columns
+		}
+		rows[last.e.Singular] = &rowRegion{name: "lista", base: strings.TrimSuffix(path, "/"), cols: cols, scope: scope}
+		return deps, rows, only
+	}
+	for _, c := range ps.a.childrenOf(last.e) {
+		deps[c.Singular] = true
+		rows[c.Singular] = &rowRegion{name: "filhos-" + c.Plural, base: strings.TrimSuffix(path, "/") + "/" + c.Plural, scope: ps.a.parentScope(last.e, parentRow, c)}
+	}
+	return deps, rows, only
 }
 
 // serveLive is the subscription of an open page: Server-Sent Events, one
@@ -248,14 +350,14 @@ func (ps *pageSite) serveLive(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "página inválida", http.StatusBadRequest)
 		return
 	}
-	deps := ps.dependencies(r, path)
+	deps, rows, only := ps.dependencies(r, path)
 	if deps == nil {
 		http.NotFound(w, r)
 		return
 	}
 	ctx := &interp.Context{Request: r}
 	atual, _ := ps.a.s.identify(ctx, r)
-	wt := &watcher{depends: deps, signal: make(chan struct{}, 1)}
+	wt := &watcher{depends: deps, signal: make(chan struct{}, 1), rows: rows, queue: make(chan string, 32), only: only}
 	if atual != nil {
 		wt.person = atual["id"]
 	}
@@ -293,6 +395,10 @@ func (ps *pageSite) serveLive(w http.ResponseWriter, r *http.Request) {
 			if !write("event: mudou\ndata: {}\n\n") {
 				return
 			}
+		case ev := <-wt.queue:
+			if !write("event: linha\ndata: " + ev + "\n\n") {
+				return
+			}
 		}
 	}
 }
@@ -323,9 +429,25 @@ const liveScript = `(function () {
       .finally(function () { busy = false; if (pending) refresh(); });
   }
   document.addEventListener('focusout', function () { setTimeout(function () { if (pending) refresh(); }, 0); });
+  // a row of a table changed: insert, replace or remove only that row (on
+  // the first page without search or filters; otherwise refresh)
+  function row(e) {
+    var ev = JSON.parse(e.data);
+    var region = document.querySelector('[data-vivo="' + ev.regiao + '"]');
+    var body = region && region.querySelector('tbody');
+    if (!body || location.search) { refresh(); return; }
+    var old = body.querySelector('tr[data-id="' + ev.id + '"]');
+    if (ev.acao === 'excluir') { if (old) old.remove(); return; }
+    var t = document.createElement('tbody');
+    t.innerHTML = ev.html;
+    var fresh = t.firstElementChild;
+    if (!fresh) { refresh(); return; }
+    if (old) old.replaceWith(fresh); else body.insertBefore(fresh, body.firstChild);
+  }
   var opened = false;
   var es = new EventSource('/_ge/atualizacoes?p=' + encodeURIComponent(location.pathname));
   es.addEventListener('mudou', refresh);
+  es.addEventListener('linha', row);
   es.onopen = function () { if (opened) refresh(); opened = true; };
 })();
 `

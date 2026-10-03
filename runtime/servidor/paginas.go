@@ -416,6 +416,7 @@ type cell struct {
 	Badge bool
 }
 type tableRow struct {
+	ID    string
 	Href  string
 	Title string
 	Body  template.HTML // full formatted text of records without a title (comments)
@@ -436,19 +437,50 @@ func (ps *pageSite) table(e *ast.Entity, rows []any, base string) template.HTML 
 
 // tableWith renders rows with the given columns (field names, in order), or
 // the entity's visible fields when names is empty.
-func (ps *pageSite) tableWith(e *ast.Entity, rows []any, base string, names []string) template.HTML {
-	cols := columns(e)
-	if len(names) > 0 {
-		cols = nil
-		for _, n := range names {
-			for _, f := range e.Model.Fields {
-				if strings.EqualFold(f.Name, n) {
-					cols = append(cols, f)
-					break
-				}
+// tableColumns: the columns a table of e shows (the page's own, or the
+// default ones).
+func tableColumns(e *ast.Entity, names []string) []*ast.Field {
+	if len(names) == 0 {
+		return columns(e)
+	}
+	var cols []*ast.Field
+	for _, n := range names {
+		for _, f := range e.Model.Fields {
+			if strings.EqualFold(f.Name, n) {
+				cols = append(cols, f)
+				break
 			}
 		}
 	}
+	return cols
+}
+
+// tableRowOf: one row of a table of e, from a record as the API shows it.
+func tableRowOf(e *ast.Entity, row map[string]any, base string, cols []*ast.Field) tableRow {
+	ref := display(row["id"])
+	if n, ok := row["numero"]; ok && n != nil {
+		ref = display(n)
+	}
+	tr := tableRow{ID: display(row["id"]), Href: base + "/" + url.PathEscape(ref), Title: titleOf(e, row)}
+	if n := int(asNumber(row["nao_lidas"])); n > 0 {
+		tr.Unread = n
+	}
+	if body, ok := formattedBody(e, row); ok {
+		tr.Title, tr.Body = e.Label+" "+display(row["id"]), body
+	}
+	for _, c := range cols {
+		tr.Cells = append(tr.Cells, cell{Text: displayFor(c.Type, row[strings.ToLower(c.Name)]), Badge: strings.ToLower(c.Name) == "estado" || c.Type == ast.FieldVisibilidade})
+	}
+	return tr
+}
+
+// rowHTML: the HTML of one row (a live page inserts or replaces it).
+func rowHTML(e *ast.Entity, row map[string]any, base string, names []string) string {
+	return string(htmlOf(rowTpl, tableRowOf(e, row, base, tableColumns(e, names))))
+}
+
+func (ps *pageSite) tableWith(e *ast.Entity, rows []any, base string, names []string) template.HTML {
+	cols := tableColumns(e, names)
 	td := tableData{Empty: fmt.Sprintf("Nenhum registro de %s ainda.", strings.ToLower(e.Label)), Caption: e.Label + "s"}
 	td.Heads = append(td.Heads, e.Label)
 	for _, c := range cols {
@@ -456,21 +488,7 @@ func (ps *pageSite) tableWith(e *ast.Entity, rows []any, base string, names []st
 	}
 	for _, it := range rows {
 		row, _ := it.(map[string]any)
-		ref := display(row["id"])
-		if n, ok := row["numero"]; ok && n != nil {
-			ref = display(n)
-		}
-		tr := tableRow{Href: base + "/" + url.PathEscape(ref), Title: titleOf(e, row)}
-		if n := int(asNumber(row["nao_lidas"])); n > 0 {
-			tr.Unread = n
-		}
-		if body, ok := formattedBody(e, row); ok {
-			tr.Title, tr.Body = e.Label+" "+display(row["id"]), body
-		}
-		for _, c := range cols {
-			tr.Cells = append(tr.Cells, cell{Text: displayFor(c.Type, row[strings.ToLower(c.Name)]), Badge: strings.ToLower(c.Name) == "estado" || c.Type == ast.FieldVisibilidade})
-		}
-		td.Rows = append(td.Rows, tr)
+		td.Rows = append(td.Rows, tableRowOf(e, row, base, cols))
 	}
 	return htmlOf(tableTpl, td)
 }
@@ -1451,8 +1469,13 @@ var emptyTpl = tpl(`<div class="vazio">{{.}}</div>`)
 var introTpl = tpl(`<p class="intro">{{.}}</p>`)
 var actionLinkTpl = tpl(`<p class="acoes"><a class="botao" href="{{.Href}}">{{.Label}}</a></p>`)
 var emptyStateTpl = tpl(`<div class="vazio" role="status">{{if .Title}}<h2>{{.Title}}</h2>{{end}}{{if .Text}}<p>{{.Text}}</p>{{end}}{{with .Action}}<p><a class="botao" href="{{.Href}}">{{.Label}}</a></p>{{end}}</div>`)
-var tableTpl = tpl(`{{if .Rows}}<div class="tabela"><table>{{if .Caption}}<caption class="sr">{{.Caption}}</caption>{{end}}<thead><tr>{{range .Heads}}<th scope="col">{{.}}</th>{{end}}</tr></thead><tbody>
-{{range .Rows}}<tr><td><a href="{{.Href}}">{{.Title}}</a>{{if .Unread}} <span class="selo nao-lidas">{{.Unread}} não lidas</span>{{end}}{{if .Body}}<div class="texto">{{.Body}}</div>{{end}}</td>{{range .Cells}}<td>{{if .Badge}}<span class="selo">{{.Text}}</span>{{else}}{{.Text}}{{end}}</td>{{end}}</tr>{{end}}
+
+const rowMarkup = `<tr data-id="{{.ID}}"><td><a href="{{.Href}}">{{.Title}}</a>{{if .Unread}} <span class="selo nao-lidas">{{.Unread}} não lidas</span>{{end}}{{if .Body}}<div class="texto">{{.Body}}</div>{{end}}</td>{{range .Cells}}<td>{{if .Badge}}<span class="selo">{{.Text}}</span>{{else}}{{.Text}}{{end}}</td>{{end}}</tr>`
+
+var rowTpl = tpl(rowMarkup)
+
+var tableTpl = tpl(`{{define "linha"}}` + rowMarkup + `{{end}}{{if .Rows}}<div class="tabela"><table>{{if .Caption}}<caption class="sr">{{.Caption}}</caption>{{end}}<thead><tr>{{range .Heads}}<th scope="col">{{.}}</th>{{end}}</tr></thead><tbody>
+{{range .Rows}}{{template "linha" .}}{{end}}
 </tbody></table></div>{{else}}<div class="vazio">{{.Empty}}</div>{{end}}`)
 var formTpl = tpl(`<form class="{{if .Title}}caixa{{end}}" method="post" action="{{.Action}}">{{if .Title}}<h3>{{.Title}}</h3>{{end}}
 <input type="hidden" name="_csrf" value="{{.CSRF}}"><input type="hidden" name="_campos" value="1">
