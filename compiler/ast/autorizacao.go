@@ -113,6 +113,15 @@ type Entity struct {
 	Repository bool // X tem repositório
 	// InitialFile: `repositório do projeto pode começar com "README.md" contendo "# {nome}"`.
 	InitialFile *RepoFile
+	// Copies: someone may copy a record (an access rule for `copiar`, GEP
+	// 0029); the copy records its origin in copiado_de_id.
+	Copies bool
+	// Marks: people mark records once each (`projetos recebe estrelas`,
+	// GEP 0030); the name of the marks is also the field with their count.
+	Marks string
+	// ItemFilters: a filter named after one item of a list field (topico →
+	// topicos, GEP 0030).
+	ItemFilters map[string]string
 	RepoKey     string   // field whose value addresses the repository (<valor>.git)
 	Search      []string // fields searched by pesquisar
 	Filters     []string // fields accepted by filtrar

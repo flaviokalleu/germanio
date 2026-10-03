@@ -1,6 +1,7 @@
 package servidor
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -51,6 +52,7 @@ func (s *Servidor) registerIntent(mux *routeMux) error {
 	s.intent = a
 	a.live = newLiveHub(a)
 	a.setupReading()
+	a.setupMarks()
 	a.setupTextImages()
 	s.registerTaskModule()
 	s.tasks().handle("entrega", a.deliver)
@@ -82,8 +84,12 @@ func (a *intentAPI) mount(mux *routeMux, base string, e *ast.Entity, integration
 func (a *intentAPI) mountLevel(mux *routeMux, base string, chain []*ast.Entity, integration bool) {
 	e := chain[len(chain)-1]
 	item := base + "/{r" + strconv.Itoa(len(chain)-1) + "}"
+	addr := a.fileAddressing(base, e, integration)
 	h := func(op, verb string) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
+			if addr != nil {
+				r = r.WithContext(context.WithValue(r.Context(), fileAddressKey{}, addr))
+			}
 			if !unsafeMethods[r.Method] {
 				a.serve(w, r, chain, op, verb)
 				return
@@ -108,6 +114,9 @@ func (a *intentAPI) mountLevel(mux *routeMux, base string, chain []*ast.Entity, 
 	}
 	if e.Approvals {
 		actions["aprovar"], actions["desaprovar"] = true, true
+	}
+	if e.Marks != "" {
+		actions["marcar"], actions["desmarcar"] = true, true
 	}
 	if e.Execution != nil {
 		actions["cancelar"] = true
@@ -317,6 +326,7 @@ func serializeFor(ctx *interp.Context, in *interp.Interpreter, atual map[string]
 	defer func() {
 		if in != nil && ctx != nil {
 			namesOut(ctx, in, e, out)
+			originOut(ctx, in, atual, e, row, out)
 		}
 	}()
 	files := map[string]bool{}
@@ -333,6 +343,11 @@ func serializeFor(ctx *interp.Context, in *interp.Interpreter, atual map[string]
 		switch {
 		case files[k]:
 			out[k] = publicMeta(v)
+			if out[k] != nil {
+				if href := fileAddress(ctx, e, row, k); href != "" {
+					out[k+"_endereco"] = href
+				}
+			}
 		case hidden[k]:
 		case k == "criado_em":
 			out["created_at"] = v
@@ -565,7 +580,7 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 			a.failErr(w, r, err)
 			return
 		}
-		a.create(w, r, ctx, atual, e, data, body)
+		a.create(w, r, ctx, atual, e, data, body, nil)
 	case "editar":
 		row := a.find(ctx, e, ref, scope)
 		if row == nil || !a.in.Can(ctx, atual, e, "ver", row) {
@@ -687,6 +702,16 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 		}
 		if verb == "sair" {
 			a.leave(w, r, ctx, atual, e, row)
+			return
+		}
+		// Copying reads the record; an archived one may be copied (GEP 0029).
+		if verb == "copiar" && e.Copies {
+			a.copyRecord(w, r, ctx, atual, e, row, body, deny)
+			return
+		}
+		// A mark is the person's, not a change of the record (GEP 0030).
+		if e.Marks != "" && (verb == "marcar" || verb == "desmarcar") {
+			a.markAction(w, r, ctx, atual, e, row, verb)
 			return
 		}
 		if err := a.frozenFor(ctx, "acao", e, row, nil); err != nil {
@@ -848,7 +873,8 @@ func (a *intentAPI) memberedParentLevel(ctx *interp.Context, atual map[string]an
 	return level, membered
 }
 
-func (a *intentAPI) create(w http.ResponseWriter, r *http.Request, ctx *interp.Context, atual map[string]any, e *ast.Entity, data, body map[string]any) {
+// create saves a new record; origin is the record it copies (GEP 0029), or nil.
+func (a *intentAPI) create(w http.ResponseWriter, r *http.Request, ctx *interp.Context, atual map[string]any, e *ast.Entity, data, body, origin map[string]any) {
 	if h := e.Hooks["antes_criar"]; h != nil {
 		// dados is the record about to be created; the hook may adjust it.
 		if _, _, err := a.in.RunHook(ctx, h, map[string]any{"atual": nilIfEmpty(atual), "dados": data, "entrada": body}); err != nil {
@@ -874,13 +900,15 @@ func (a *intentAPI) create(w http.ResponseWriter, r *http.Request, ctx *interp.C
 			return
 		}
 	}
-	if err := a.createRepository(ctx, e, row); err != nil {
+	if err := a.createRepository(ctx, e, row, origin); err != nil {
 		a.failErr(w, r, err)
 		return
 	}
-	if err := a.initialFile(atual, e, row, body); err != nil {
-		a.failErr(w, r, err)
-		return
+	if origin == nil {
+		if err := a.initialFile(atual, e, row, body); err != nil {
+			a.failErr(w, r, err)
+			return
+		}
 	}
 	out := serializeFor(ctx, a.in, atual, e, row, false)
 	for _, f := range e.Model.Fields {
@@ -1101,6 +1129,9 @@ func (a *intentAPI) remove(ctx *interp.Context, atual map[string]any, e *ast.Ent
 				return err
 			}
 		}
+		if err := a.personMarks(ctx, row); err != nil {
+			return err
+		}
 		if err := a.personReferences(ctx, row); err != nil {
 			return err
 		}
@@ -1147,6 +1178,12 @@ func (a *intentAPI) cascade(ctx *interp.Context, e *ast.Entity, row map[string]a
 		}
 	}
 	if err := a.dropPending(ctx, e, row["id"], nil); err != nil {
+		return err
+	}
+	if err := a.forgetOrigin(ctx, e, row["id"]); err != nil {
+		return err
+	}
+	if err := a.dropMarks(ctx, e, row["id"]); err != nil {
 		return err
 	}
 	if _, err := a.in.Op(ctx, e.Singular, "deletar", row["id"]); err != nil {
@@ -1202,6 +1239,11 @@ func (a *intentAPI) list(w http.ResponseWriter, r *http.Request, ctx *interp.Con
 		if v == "" {
 			continue
 		}
+		if list := e.ItemFilters[f]; list != "" {
+			// one item of a list (?topico=go → topicos has "go"), GEP 0030
+			filters[list+"__contem"] = `"` + strings.ReplaceAll(v, `"`, "") + `"`
+			continue
+		}
 		if fd := fieldOf(e, f); fd != nil && fd.Type == ast.FieldLista {
 			if fd.ByName != "" {
 				ids, _ := a.nameFilter(ctx, e, fd, v, filters)
@@ -1212,6 +1254,14 @@ func (a *intentAPI) list(w http.ResponseWriter, r *http.Request, ctx *interp.Con
 			continue
 		}
 		filters[f] = v
+	}
+	marked := "marcados"
+	if a.extern {
+		marked = a.ext(marked)
+	}
+	if e.Marks != "" && truthy(q.Get(marked)) {
+		// only what the person marked (GEP 0030)
+		filters["id__em"] = a.markedBy(atual, e)
 	}
 	opts := map[string]any{"ordenar": "-id"}
 	if s := first(q.Get("search"), q.Get("q"), q.Get("pesquisa")); s != "" && len(e.Search) > 0 {
@@ -1528,6 +1578,9 @@ func (a *intentAPI) inwardBody(e *ast.Entity, body map[string]any) map[string]an
 //   - nobody grants a role above their own (memberships).
 func (a *intentAPI) guards(ctx *interp.Context, atual map[string]any, e *ast.Entity, data, before map[string]any) error {
 	if err := a.checkBranches(ctx, e, data); err != nil {
+		return err
+	}
+	if err := a.copyCeiling(ctx, e, data); err != nil {
 		return err
 	}
 	if l := a.app.Login; l != nil && e.Singular == l.TokenEntity && len(l.Scopes) > 0 && data["escopos"] != nil {

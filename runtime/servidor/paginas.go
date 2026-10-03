@@ -962,6 +962,9 @@ func (ps *pageSite) actions(ctx *interp.Context, atual map[string]any, e *ast.En
 	if e.Approvals {
 		verbs["aprovar"], verbs["desaprovar"] = true, true
 	}
+	if e.Marks != "" {
+		verbs["marcar"], verbs["desmarcar"] = true, true
+	}
 	if e.Execution != nil {
 		verbs["cancelar"] = true
 		verbs["repetir"] = true
@@ -1024,6 +1027,9 @@ func (ps *pageSite) available(ctx *interp.Context, atual map[string]any, e *ast.
 	if verb == "sair" {
 		res, _ := ps.a.in.Op(ctx, ps.a.app.MemberModel, "encontrar", map[string]any{"recurso": e.Singular, "recurso_id": record["id"], "pessoa_id": atual["id"]})
 		return res != nil
+	}
+	if e.Marks != "" && (verb == "marcar" || verb == "desmarcar") {
+		return (verb == "marcar") != ps.a.isMarked(atual, e, record["id"])
 	}
 	if verb == "aprovar" || verb == "desaprovar" {
 		approved := false
@@ -1144,6 +1150,12 @@ func (ps *pageSite) post(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	if len(parts) >= 3 && parts[len(parts)-2] == "arquivo" {
+		// the file form sent without a file (no multipart body)
+		back := "/" + slug(pg.Name) + "/" + strings.Join(escapeAll(parts[:len(parts)-2]), "/")
+		http.Redirect(w, r, back+"?erro="+urlQuery("escolha um arquivo"), http.StatusSeeOther)
+		return
+	}
 	// The last part is the operation: novo, editar, excluir or acao/<verbo>.
 	op := parts[len(parts)-1]
 	verb := ""
@@ -1186,6 +1198,14 @@ func (ps *pageSite) post(w http.ResponseWriter, r *http.Request) {
 	if code >= 400 {
 		http.Redirect(w, r, back+"?erro="+url.QueryEscape(message(out)), http.StatusSeeOther)
 		return
+	}
+	if op == "acao" && verb == "copiar" && last.e.Copies {
+		// the copy is a new record: open it (GEP 0029)
+		if row, ok := out.(map[string]any); ok && row["id"] != nil {
+			if i := strings.LastIndex(back, "/"); i > 0 {
+				target = back[:i] + "/" + url.PathEscape(display(row["id"]))
+			}
+		}
 	}
 	if op == "novo" {
 		if row, ok := out.(map[string]any); ok {

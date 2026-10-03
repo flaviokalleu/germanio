@@ -485,11 +485,18 @@ func (p *Parser) intentFrom(head dline, body []dline) error {
 				return nil
 			}
 			// merge request recebe aprovações
-			if i != len(w)-2 || !strings.HasPrefix(w[i+1], "aprovac") {
-				return p.errorf(head.toks[0], "use: <dado> recebe aprovações")
+			if i == len(w)-2 && strings.HasPrefix(w[i+1], "aprovac") {
+				in.Approvals = append(in.Approvals, subject)
+				return nil
 			}
-			in.Approvals = append(in.Approvals, subject)
-			return nil
+			// projeto recebe estrelas: people mark the record (GEP 0030)
+			if i == len(w)-2 && len(body) == 0 && strings.HasSuffix(w[i+1], "s") && len(w[i+1]) > 2 {
+				in.Marks = append(in.Marks, &ast.MarksDecl{Entity: subject, Name: w[i+1], Pos: pos})
+				return nil
+			}
+			return p.teach(head.toks[0], "\""+lineText(head)+"\" não diz o que o dado recebe",
+				"um dado recebe aprovações, eventos de outro dado ou marcas das pessoas, com o nome delas no plural",
+				"escreva: <dado> recebe aprovações, ou <dado> recebe estrelas", "")
 		case "comeca":
 			// issue começa aberta
 			if i == 0 || i != len(w)-2 {

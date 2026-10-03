@@ -77,6 +77,8 @@ Rules:
 | [0021](0021-presenca.md) | Presence (`tenha presença`) | Em teste |
 | [0022](0022-leitura.md) | Reading and unread counts (`guarda leitura`) | Em teste |
 | [0023](0023-por-estado.md) | Showing data by state, boards (`cartoes por estado`) | Em teste |
+| [0029](0029-copias.md) | Copies of a record (`acesso` › `copiar`) | Em teste |
+| [0030](0030-estrelas-topicos-avatar.md) | Marks by people (`recebe estrelas`), one item of a list as a filter, the address of a file | Em teste |
 
 Revisão final das GEPs em teste 0010–0017, com recomendação por GEP e sem mudança de status:
 [REVISAO_0010_0017.md](REVISAO_0010_0017.md).

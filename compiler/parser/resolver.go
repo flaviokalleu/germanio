@@ -806,6 +806,28 @@ func ResolveIntent(prog *ast.Program) error {
 		e.Approvals = true
 		e.Model.Fields = append(e.Model.Fields, &ast.Field{Name: "aprovacoes", Type: ast.FieldLista, ListOf: app.LoginEntity, System: true})
 	}
+	// X recebe estrelas (GEP 0030): each person marks a record once; the
+	// record keeps how many marks it has under the name of the marks.
+	for _, md := range in.Marks {
+		e, err := r.entity(md.Entity, md.Pos)
+		if err != nil {
+			return err
+		}
+		if e.Marks == md.Name {
+			continue // the same fact again
+		}
+		if app.LoginEntity == "" {
+			return r.errAt(md.Pos, "%s recebe %s: marcas são das pessoas\nPor quê: cada pessoa marca um registro uma vez, e só há pessoas com login\nComo corrigir: declare tenha login", e.Plural, md.Name)
+		}
+		if e.Marks != "" {
+			return r.errAt(md.Pos, "%s já recebe %s; não pode receber também %s\nPor quê: as ações marcar e desmarcar seriam ambíguas com duas marcas no mesmo dado\nComo corrigir: mantenha um só: %s recebe %s", e.Plural, e.Marks, md.Name, e.Plural, e.Marks)
+		}
+		if fieldByNameAST(e.Model, md.Name) != nil || app.Entities[md.Name] != nil {
+			return r.errAt(md.Pos, "%s recebe %s: %s já é um campo ou um dado\nPor quê: o nome das marcas também é o campo com a contagem delas\nComo corrigir: use outro nome para as marcas ou para o campo", e.Plural, md.Name, md.Name)
+		}
+		e.Marks = md.Name
+		e.Model.Fields = append(e.Model.Fields, &ast.Field{Name: md.Name, Type: ast.FieldInteiro, HasDefault: true, DefaultValue: 0.0, System: true, Pos: md.Pos})
+	}
 
 	for _, f := range in.Finals {
 		e, err := r.entity(f.Entity, f.Pos)
@@ -1026,6 +1048,15 @@ func ResolveIntent(prog *ast.Program) error {
 					pm.By[i] = f
 				}
 				if fieldByNameAST(e.Model, f) == nil {
+					// one item of a list: filtrar por topico (topicos lista de texto), GEP 0030
+					if list := itemList(e.Model, f); list != "" {
+						if e.ItemFilters == nil {
+							e.ItemFilters = map[string]string{}
+						}
+						e.ItemFilters[f] = list
+						e.Filters = appendUnique(e.Filters, f)
+						continue
+					}
 					return r.errAt(pm.Pos, "permita filtrar %s por %s: %s não tem esse campo", pm.Target, f, e.Singular)
 				}
 				e.Filters = appendUnique(e.Filters, f)
@@ -1333,13 +1364,28 @@ func ResolveIntent(prog *ast.Program) error {
 			if !standardVerb(verb) {
 				builtin := (verb == "sair" && (e.HasMembers || e.InheritVia != "")) || (verb == "revogar" && e.Model.Revocable) || e.Transitions[verb] != nil ||
 					((verb == "aprovar" || verb == "desaprovar") && e.Approvals) ||
-					(e.Execution != nil && (verb == "cancelar" || verb == "repetir" || verb == "executar"))
+					(e.Execution != nil && (verb == "cancelar" || verb == "repetir" || verb == "executar")) ||
+					(verb == "copiar" && e.Hooks[verb] == nil && e.Transitions[verb] == nil)
 				if _, ok := e.Hooks[verb]; !ok && !builtin {
 					return fmt.Errorf("a ação %q sobre %s não tem definição. Escreva:\n\nquando %s %s\n    ...", verb, e.Plural, verb, e.Singular)
 				}
 				for _, rl := range rules {
 					rl.Custom = true
 				}
+			}
+		}
+		if e.Marks != "" {
+			for _, verb := range []string{"marcar", "desmarcar"} {
+				if e.Transitions[verb] != nil || e.Hooks[verb] != nil || len(e.Rules[verb]) > 0 {
+					return fmt.Errorf("%s recebe %s: a ação %q já pertence às marcas\nPor quê: quem vê o registro o marca e desmarca; nenhuma outra ação pode ter esse nome\nComo corrigir: dê outro nome à sua ação", e.Plural, e.Marks, verb)
+				}
+			}
+		}
+		// `copiar` (GEP 0029): a copy of a record remembers which one it came from.
+		if len(e.Rules["copiar"]) > 0 && e.Hooks["copiar"] == nil && e.Transitions["copiar"] == nil {
+			e.Copies = true
+			if fieldByNameAST(e.Model, "copiado_de_id") == nil {
+				e.Model.Fields = append(e.Model.Fields, &ast.Field{Name: "copiado_de_id", Label: "copiado de", Type: ast.FieldInteiro, Reference: e.Singular, Index: true, System: true})
 			}
 		}
 		prog.Models = append(prog.Models, e.Model)
@@ -1462,6 +1508,21 @@ func appendUnique(list []string, v string) []string {
 		}
 	}
 	return append(list, v)
+}
+
+// itemList: the list field (of texts or numbers) whose items are named by
+// the singular item ("topico" → "topicos"), or "".
+func itemList(m *ast.Model, item string) string {
+	for _, f := range m.Fields {
+		if f.Type != ast.FieldLista || f.System || (f.ListOf != "texto" && f.ListOf != "numero") {
+			continue
+		}
+		name := strings.ToLower(f.Name)
+		if Singular(name) == item || altSingular(name) == item {
+			return name
+		}
+	}
+	return ""
 }
 
 func fieldByNameAST(m *ast.Model, name string) *ast.Field {

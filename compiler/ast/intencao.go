@@ -34,10 +34,12 @@ type Intent struct {
 	VocabularyPos map[string]diagnostics.Position
 	// Conflicts: the same fact declared with different values in two files
 	// (found while merging; the resolver reports them with both origins).
-	Conflicts  []string
-	Ceilings   []*VisibilityCeiling
-	Creators   []*CreatorRole
-	Approvals  []string     // X recebe aprovações
+	Conflicts []string
+	Ceilings  []*VisibilityCeiling
+	Creators  []*CreatorRole
+	Approvals []string // X recebe aprovações
+	// Marks: `X recebe estrelas` (GEP 0030).
+	Marks      []*MarksDecl
 	Finals     []*StateDecl // X <estado> é final
 	Executions []*ExecutionDecl
 	// RunVariables: `pipelines usam as variaveis do projeto` (GEP 0015).
@@ -271,6 +273,7 @@ func MergeIntent(a, b *Intent) *Intent {
 	a.Ceilings = append(a.Ceilings, b.Ceilings...)
 	a.Creators = append(a.Creators, b.Creators...)
 	a.Approvals = append(a.Approvals, b.Approvals...)
+	a.Marks = append(a.Marks, b.Marks...)
 	a.Finals = append(a.Finals, b.Finals...)
 	a.Executions = append(a.Executions, b.Executions...)
 	a.RunVariables = append(a.RunVariables, b.RunVariables...)
@@ -451,4 +454,11 @@ func where(p diagnostics.Position) string {
 		return fmt.Sprintf("linha %d", p.Line)
 	}
 	return fmt.Sprintf("%s:%d", p.File, p.Line)
+}
+
+// MarksDecl: people mark records of Entity once each; Name is the marks
+// (`projetos recebe estrelas`, GEP 0030).
+type MarksDecl struct {
+	Entity, Name string
+	Pos          diagnostics.Position
 }

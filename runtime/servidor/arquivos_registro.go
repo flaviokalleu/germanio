@@ -12,6 +12,7 @@ import (
 	"mime"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -315,6 +316,63 @@ func publicMeta(v any) any {
 		return nil
 	}
 	return map[string]any{"nome": m.Nome, "tamanho": m.Tamanho, "tipo": m.Tipo}
+}
+
+// fileAddressKey carries, on a request of a collection, how to address the
+// files of its records (GEP 0030: the record shows `<campo>_endereco`).
+type fileAddressKey struct{}
+
+type fileAddressing struct {
+	base   string            // the collection, with {rN} for its ancestors
+	entity *ast.Entity       // the data of the collection
+	paths  map[string]string // field -> path segment on this surface
+}
+
+func (a *intentAPI) fileAddressing(base string, e *ast.Entity, integration bool) *fileAddressing {
+	fields := fileFields(e)
+	if len(fields) == 0 {
+		return nil
+	}
+	fa := &fileAddressing{base: base, entity: e, paths: map[string]string{}}
+	for _, f := range fields {
+		key := strings.ToLower(f.Name)
+		fa.paths[key] = key
+		if integration {
+			fa.paths[key] = a.ext(key)
+		}
+	}
+	return fa
+}
+
+// fileAddress: where the file of field k of row is downloaded, on the
+// surface of the request ("" when the request does not address row's data).
+func fileAddress(ctx *interp.Context, e *ast.Entity, row map[string]any, k string) string {
+	if ctx == nil || ctx.Request == nil {
+		return ""
+	}
+	fa, _ := ctx.Request.Context().Value(fileAddressKey{}).(*fileAddressing)
+	if fa == nil || fa.entity != e || fa.paths[k] == "" || row["id"] == nil {
+		return ""
+	}
+	path := fa.base
+	nested := strings.Contains(path, "{r")
+	for i := 0; strings.Contains(path, "{r") && i < 8; i++ {
+		path = strings.Replace(path, "{r"+strconv.Itoa(i)+"}", url.PathEscape(ctx.Request.PathValue("r"+strconv.Itoa(i))), 1)
+	}
+	ref := display(row["id"])
+	if nested {
+		// inside a parent, numbered records are addressed by their number
+		for _, f := range e.Model.Fields {
+			if f.NumberedBy != "" && row[strings.ToLower(f.Name)] != nil {
+				ref = display(row[strings.ToLower(f.Name)])
+			}
+		}
+	}
+	href := path + "/" + url.PathEscape(ref) + "/" + fa.paths[k]
+	if public := strings.TrimSuffix(os.Getenv("GERMANIO_URL_PUBLICA"), "/"); public != "" {
+		href = public + href
+	}
+	return href
 }
 
 // ---------- pages ----------

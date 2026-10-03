@@ -146,6 +146,16 @@ func Entidade(prog *ast.Program, nome string) (string, error) {
 	if len(e.PendingFields) > 0 {
 		w("Pendências: quem passa a estar em %s recebe uma pendência (dado %s); quem sai perde as abertas; excluir o registro exclui as pendências\n", strings.Join(e.PendingFields, ", "), app.PendingEntity)
 	}
+	if e.Copies {
+		repo := ""
+		if e.Repository {
+			repo = "; exige baixar código e leva uma cópia do repositório (branches, tags, branch padrão)"
+		}
+		w("Cópias (GEP 0029, em teste): quem pode copiar faz uma cópia de um registro que vê, criada em nome de quem copia com as regras de criar; leva os valores simples (não os pais, arquivos, segredos nem referências); lembra o original em copiado_de_id, mostrado só a quem vê o original; nunca é mais visível que o original%s\n", repo)
+	}
+	if e.Marks != "" {
+		w("Marcas (GEP 0030, em teste): cada pessoa que vê um registro o marca uma vez (marcar) e desmarca (desmarcar); %s conta as marcas, na mesma transação; ?marcados=sim lista o que a pessoa marcou; ninguém vê quem marcou; as marcas saem com o registro e com a pessoa\n", e.Marks)
+	}
 	w("\nCampos:\n")
 	for _, f := range e.Model.Fields {
 		w("  %-22s %s\n", f.Name, describeField(f))
@@ -240,7 +250,14 @@ func Entidade(prog *ast.Program, nome string) (string, error) {
 		w("  quem cria vira %s\n", e.CreatorRole)
 	}
 	if len(e.Search) > 0 || len(e.Filters) > 0 {
-		w("\nPesquisa: %s\nFiltros: %s\n", strings.Join(e.Search, ", "), strings.Join(e.Filters, ", "))
+		filters := make([]string, len(e.Filters))
+		for i, f := range e.Filters {
+			filters[i] = f
+			if list := e.ItemFilters[f]; list != "" {
+				filters[i] = fmt.Sprintf("%s (um item de %s, GEP 0030)", f, list)
+			}
+		}
+		w("\nPesquisa: %s\nFiltros: %s\n", strings.Join(e.Search, ", "), strings.Join(filters, ", "))
 	}
 	if len(e.Hooks) > 0 {
 		w("\nRegras explícitas:\n")
