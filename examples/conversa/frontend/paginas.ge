@@ -1,0 +1,12 @@
+# O que aparece para as pessoas.
+
+importar espacos do backend
+
+página Espaços
+    mostre espacos
+    permita
+        pesquisar
+        criar
+
+página Pendências
+    mostre pendências

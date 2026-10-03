@@ -18,11 +18,10 @@
 6. GEPs 0002, 0008, 0009: ACEITAS. Em teste, AGUARDANDO DECISÃO: 0010–0017 (revisão com
    recomendações em `docs/gep/REVISAO_0010_0017.md`). Rascunhos: 0003–0007, 0018 (identidade de
    esquema, G112), 0019 (fronteira dos adaptadores, G114).
-7. FASE 1 (GitLab): escopo encerrado e auditado; escopo adiado aprovado e registrado no roadmap;
-   encerramento formal AGUARDANDO DECISÃO das GEPs — `docs/FASE1_GITLAB.md`.
-8. FASE 2 (tempo real): preparada, não iniciada — `docs/FASE2_TEMPO_REAL.md` (aplicação de
-   referência "Conversa", auditoria do tempo real atual, critérios mensuráveis). Não começa antes
-   do encerramento formal da FASE 1.
+7. FASE 1 (GitLab): ENCERRADA em 2026-10-02 — `docs/FASE1_GITLAB.md`. GEPs da fase seguem em
+   teste/rascunho, AGUARDANDO DECISÃO do mantenedor (independente do encerramento).
+8. FASE 2 (tempo real): INICIADA — `docs/FASE2_TEMPO_REAL.md` (diário), referência
+   `examples/conversa/`. Próximo: GEP 0020 (páginas que permanecem atualizadas).
 
 ## CURRENT_GOAL
 Continuar o GitLab por intenção: issues → merge requests → CI/CD → páginas (UI),

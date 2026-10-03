@@ -1,0 +1,9 @@
+# Conversa: chat de equipes — aplicação de referência da FASE 2 (tempo real).
+#
+#   backend/   o que existe, quem pode fazer o quê
+#   frontend/  o que aparece para as pessoas
+
+crie sistema Conversa
+
+importar "backend"
+importar "frontend"

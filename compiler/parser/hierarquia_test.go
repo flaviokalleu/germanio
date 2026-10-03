@@ -151,6 +151,8 @@ func TestHierarquiaDemaisSecoes(t *testing.T) {
 			"projetos\n    tem\n        caminho único\n        pipelines\n    tem repositório\n    executa pipelines a cada envio de código conforme \"ci.yml\"\n\npipelines\n    tem\n        jobs\n    usam variaveis do projeto\n\njobs\n    tem\n        nome\n\nvariaveis\n    tem\n        chave\n        valor texto oculto\n    pertence a projeto\n"},
 		{"branches protegidas", "projetos\n    tem\n        caminho único\n        membros com papel\n    tem repositório\n\nbranches protegidas\n    singular branch protegida\n    tem\n        nome\n    pertence a projeto\n\nsomente maintainer pode enviar código para as branches protegidas dos projetos\n",
 			"projetos\n    tem\n        caminho único\n        membros com papel\n    tem repositório\n    acesso\n        somente maintainer\n            enviar código para as branches protegidas\n\nbranches protegidas\n    singular branch protegida\n    tem\n        nome\n    pertence a projeto\n"},
+		{"dado chamado mensagens", "tenha mensagens\n\ncada mensagem tem\n    texto\n",
+			"mensagens\n    tem\n        texto\n"},
 		{"renomeie e descarte", "tenha clientes\n\ncada cliente tem\n    nome_completo\n\nrenomeie nome de clientes para nome_completo\ndescarte fax de clientes\n",
 			"clientes\n    tem\n        nome_completo\n    renomeie nome para nome_completo\n    descarte fax\n"},
 		{"singular", "tenha tokens de acesso\n\ncada token de acesso tem\n    nome\n",

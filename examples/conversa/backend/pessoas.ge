@@ -1,0 +1,12 @@
+# Quem conversa.
+
+usuarios
+    tem
+        nome obrigatório
+        username obrigatório e único
+        email obrigatório e único
+        senha min 8
+
+tenha login
+tenha cadastro
+login usa username e email

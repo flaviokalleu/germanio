@@ -21,8 +21,8 @@ não todo o full-stack. Não há data de lançamento anunciada.
 
 | Fase | Pergunta | Estado |
 | --- | --- | --- |
-| 1 — GitLab FOSS | Germanio constrói software empresarial profundo? | pronta para encerramento, aguardando decisões — [FASE1_GITLAB.md](FASE1_GITLAB.md) |
-| 2 — tempo real pesado | lida com sistemas vivos e concorrentes? | preparada, não iniciada — [FASE2_TEMPO_REAL.md](FASE2_TEMPO_REAL.md) |
+| 1 — GitLab FOSS | Germanio constrói software empresarial profundo? | **encerrada** em 2026-10-02 (GEPs da fase aguardando decisão) — [FASE1_GITLAB.md](FASE1_GITLAB.md) |
+| 2 — tempo real pesado | lida com sistemas vivos e concorrentes? | **em andamento** — [FASE2_TEMPO_REAL.md](FASE2_TEMPO_REAL.md) |
 | 3 — UI altamente interativa | constrói experiências de interface complexas? | não iniciada |
 | 4 — escala | continua funcionando quando a carga deixa de ser confortável? | não iniciada |
 | 5 — amplitude | é realmente geral? | não iniciada |

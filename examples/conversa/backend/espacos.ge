@@ -1,0 +1,62 @@
+# Espaços (equipes), canais e mensagens.
+
+tenha papeis
+    membro 10
+    moderador 30
+    dono 50
+
+espacos
+    singular espaco
+    tem
+        nome obrigatório
+        visibilidade
+        canais
+        membros com papel
+    regras
+        quem cria vira dono
+        precisa de pelo menos um dono
+    acesso
+        usuario
+            criar
+        membro
+            ver
+            ver membros
+            sair
+        moderador
+            adicionar membros
+        dono
+            administrar
+
+canais
+    tem
+        nome obrigatório
+        descrição
+        mensagens
+    pertence a espaco
+    acesso
+        membro
+            ver
+        moderador
+            criar
+            editar
+            excluir
+
+mensagens
+    tem
+        numero por canal
+        texto obrigatório e formatado
+        autor
+        anexo arquivo
+    pertence a canal
+    pendência para
+        mencionados
+    guarda histórico
+    acesso
+        membro
+            ver
+            criar
+        autor
+            editar
+            excluir
+        moderador
+            excluir

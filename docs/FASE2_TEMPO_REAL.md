@@ -1,8 +1,7 @@
 # FASE 2 — Tempo real pesado: preparação
 
-> **Estado: preparada, NÃO iniciada.** Pela ordem obrigatória, nada disto é implementado antes
-> do encerramento formal da FASE 1 ([FASE1_GITLAB.md](FASE1_GITLAB.md)). Este documento deixa
-> a fase pronta para começar.
+> **Estado: INICIADA em 2026-10-02**, depois do encerramento formal da FASE 1. Aplicação de
+> referência: [`examples/conversa/`](../examples/conversa/).
 
 **Pergunta da fase:** Germanio consegue construir aplicações de tempo real complexas sem que
 o autor `.ge` programe infraestrutura de tempo real?
@@ -104,3 +103,24 @@ suíte, e nunca a números inventados.
    autorização.
 4. Os benchmarks da tabela, contra o baseline em Go.
 5. Auditoria e registro do encerramento, como na FASE 1.
+
+## Diário da fase
+
+### Passo 1 — a Conversa com o que existe (2026-10-02)
+
+O domínio inteiro coube na linguagem atual, sem lógica nem rotas:
+- espaços com membros, papéis e visibilidade;
+- canais e mensagens numeradas por canal (`numero por canal`, a ordem total por conversa);
+- menções (GEP 0017), histórico (GEP 0011) e anexos (GEP 0014).
+
+`TestConversaHoje` prova a ordem, a privacidade (404 para quem é de fora) e a autoria.
+
+Obstáculos encontrados:
+
+| # | Obstáculo | Tipo | Encaminhamento |
+| --- | --- | --- | --- |
+| 1 | um dado chamado `mensagens` derrubava o compilador (pânico: colisão com a frase `mensagens em inglês`) | bug do core | corrigido, com teste de equivalência |
+| 2 | nenhuma página se atualiza sozinha quando o que ela mostra muda | capability faltante (a central da fase) | GEP 0020 |
+| 3 | presença (online/offline) e "digitando" não existem | capability faltante | depois da 0020 |
+| 4 | lido/não lido e contadores por pessoa não existem | capability faltante | depois da 0020 |
+| 5 | o hub de tempo real atual manda tudo a todos e descarta em silêncio (G66) | dívida do core | substituído pelo mecanismo da 0020 |

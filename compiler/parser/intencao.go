@@ -290,6 +290,9 @@ func (p *Parser) intentFrom(head dline, body []dline) error {
 		}
 		return nil
 	case "mensagens":
+		if len(w) != 3 || w[1] != "em" {
+			break // a data called mensagens (mensagens tem …), not the language of messages
+		}
 		switch w[2] {
 		case "ingles", "english":
 			in.Messages = "en"

@@ -1,9 +1,11 @@
 # FASE 1 — GitLab FOSS (profundidade): auditoria de encerramento
 
-> **Estado (2026-09-28): escopo encerrado e auditado; encerramento formal AGUARDANDO DECISÃO
-> das GEPs** (lista no fim). O escopo adiado foi aprovado pelo mantenedor. A FASE 2 (tempo real
-> pesado) está preparada ([FASE2_TEMPO_REAL.md](FASE2_TEMPO_REAL.md)) e não começa antes do
-> registro final.
+> **Estado: ENCERRADA em 2026-10-02.** O mantenedor aprovou o encerramento formal sem aprovar
+> mudanças normativas no escuro: as GEPs 0010–0017 continuam **em teste** (implementadas, não
+> normativas) e as GEPs 0018/0019 continuam **rascunho**, todas AGUARDANDO DECISÃO. O status
+> delas é independente do encerramento da fase. Evidência final, no commit do encerramento:
+> `go test ./...` e `go vet ./...` verdes; E2E do GitLab com o `gitlab-runner` oficial 19.4.1,
+> 25 testes aprovados.
 
 Data: 2026-09-28. Referência: `examples/gitlab-foss/`, inventório em
 [`research/gitlab/FEATURE_INVENTORY.md`](../research/gitlab/FEATURE_INVENTORY.md).
