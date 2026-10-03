@@ -96,7 +96,7 @@ func TestDoisFatores(t *testing.T) {
 	b32 := info["segredo"].(string)
 	var stored string
 	app.DB.DB.QueryRow(`SELECT segredo FROM _germanio_dois_fatores`).Scan(&stored)
-	if !strings.HasPrefix(stored, "v1:") || strings.Contains(stored, b32) {
+	if !strings.HasPrefix(stored, "ge1:") || strings.Contains(stored, b32) { // GEP 0049 format
 		t.Fatalf("segredo guardado sem cifra: %q", stored)
 	}
 	var n int

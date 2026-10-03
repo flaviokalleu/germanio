@@ -1,0 +1,56 @@
+crie sistema Restaurante
+
+usuarios
+    tem
+        nome
+        email obrigatório e único
+        senha min 8
+
+tenha login
+tenha cadastro
+
+tenha papeis
+    garcom 10
+    gerente 30
+
+restaurantes
+    tem
+        nome obrigatório
+        membros com papel
+        pedidos
+        avisos
+    regras
+        quem cria vira gerente
+    acesso
+        usuario
+            criar
+        garcom
+            ver
+
+pedidos
+    tem
+        prato obrigatório
+    acesso
+        garcom
+            ver
+            criar
+
+# Avisos: o parceiro de entregas recebe cada pedido, com a chave que ele deu.
+# A chave (token) é oculta: só o sistema a usa, para falar com o parceiro.
+avisos
+    tem
+        url obrigatório
+        token oculto
+        nota
+    recebe eventos do restaurante
+        pedidos
+    guarda histórico
+    acesso
+        gerente
+            administrar
+
+página Avisos
+    mostre avisos
+    permita
+        criar
+        editar

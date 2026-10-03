@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/flaviokalleu/germanio/compiler/ast"
+	"github.com/flaviokalleu/germanio/runtime/cofre"
 
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
@@ -26,6 +27,9 @@ type Banco struct {
 	// Avisos are what the migration noticed and a person must know (data
 	// left in a column that is no longer declared, for example).
 	Avisos []string
+	// Cofre seals the sealed fields (GEP 0049); nil keeps them in clear.
+	Cofre      *cofre.Cofre
+	sealedCols map[string]map[string]bool
 }
 
 // Abrir creates the database and tables from model definitions.
@@ -67,6 +71,7 @@ func Abrir(config *ast.DatabaseConfig, appName string, models []*ast.Model) (*Ba
 		}
 		fmt.Printf("[germanio] Tabela: %s (%d campos)\n", m.Name, len(m.Fields))
 	}
+	b.indexSealed()
 
 	// Create join tables for many-to-many relationships
 	for _, m := range models {
@@ -474,6 +479,9 @@ func (b *Banco) Listar(modelo string, params *ListarParams) ([]map[string]any, i
 	// Filters
 	for _, f := range model.Fields {
 		fname := strings.ToLower(f.Name)
+		if f.Sealed {
+			continue // a sealed field is never compared (GEP 0049)
+		}
 		if val, ok := params.Filtros[fname]; ok && val != "" {
 			where = append(where, fmt.Sprintf("%s = %s", q(fname), b.ph(n)))
 			args = append(args, val)
@@ -485,7 +493,7 @@ func (b *Banco) Listar(modelo string, params *ListarParams) ([]map[string]any, i
 	if params.Busca != "" {
 		var searchConds []string
 		for _, f := range model.Fields {
-			if f.Type.SQLType() == "TEXT" {
+			if f.Type.SQLType() == "TEXT" && !f.Sealed {
 				searchConds = append(searchConds, fmt.Sprintf("%s LIKE %s", q(strings.ToLower(f.Name)), b.ph(n)))
 				args = append(args, "%"+params.Busca+"%")
 				n++
@@ -518,7 +526,7 @@ func (b *Banco) Listar(modelo string, params *ListarParams) ([]map[string]any, i
 	defer rows.Close()
 
 	results, err := scanRows(rows)
-	return results, total, err
+	return b.dropSealed(modelo, results), total, err
 }
 
 // Buscar returns a single row by ID.
@@ -540,7 +548,7 @@ func (b *Banco) Buscar(modelo string, id int64) (map[string]any, error) {
 	if len(results) == 0 {
 		return nil, fmt.Errorf("registro %d não encontrado", id)
 	}
-	return results[0], nil
+	return b.dropSealed(modelo, results)[0], nil
 }
 
 // Criar inserts a new row.
@@ -570,9 +578,13 @@ func (b *Banco) Criar(modelo string, dados json.RawMessage) (map[string]any, err
 	for _, f := range model.Fields {
 		fname := strings.ToLower(f.Name)
 		if v, exists := input[fname]; exists {
+			sv, err := b.sealArg(modelo, fname, v)
+			if err != nil {
+				return nil, err
+			}
 			cols = append(cols, q(fname))
 			phs = append(phs, b.ph(n))
-			vals = append(vals, v)
+			vals = append(vals, sv)
 			n++
 		}
 	}
@@ -628,8 +640,12 @@ func (b *Banco) Atualizar(modelo string, id int64, dados json.RawMessage) (map[s
 	for _, f := range model.Fields {
 		fname := strings.ToLower(f.Name)
 		if v, exists := input[fname]; exists {
+			sv, err := b.sealArg(modelo, fname, v)
+			if err != nil {
+				return nil, err
+			}
 			sets = append(sets, q(fname)+" = "+b.ph(n))
-			vals = append(vals, v)
+			vals = append(vals, sv)
 			n++
 		}
 	}
@@ -716,7 +732,8 @@ func (b *Banco) BuscarRelacionados(modelo string, id int64, relacao string) ([]m
 					return nil, err
 				}
 				defer rows.Close()
-				return scanRows(rows)
+				list, err := scanRows(rows)
+				return b.dropSealed(relLower, list), err
 			}
 		}
 	}
@@ -735,7 +752,8 @@ func (b *Banco) BuscarRelacionados(modelo string, id int64, relacao string) ([]m
 		return nil, err
 	}
 	defer rows.Close()
-	return scanRows(rows)
+	list, err := scanRows(rows)
+	return b.dropSealed(relLower, list), err
 }
 
 // ContarPorStatus returns counts grouped by the status field for a model.
@@ -822,13 +840,13 @@ func (b *Banco) ListarEmLotes(modelo string, lote int, fn func([]map[string]any)
 		if len(batch) == 0 {
 			return nil
 		}
-		if err := fn(batch); err != nil {
+		last = batch[len(batch)-1]["id"]
+		if err := fn(b.dropSealed(modelo, batch)); err != nil {
 			return err
 		}
 		if len(batch) < lote {
 			return nil
 		}
-		last = batch[len(batch)-1]["id"]
 	}
 }
 
@@ -851,7 +869,8 @@ func (b *Banco) ListarTodos(modelo string) ([]map[string]any, error) {
 	}
 	defer rows.Close()
 
-	return scanRows(rows)
+	list, err := scanRows(rows)
+	return b.dropSealed(modelo, list), err
 }
 
 // Validar checks field constraints.

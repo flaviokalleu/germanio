@@ -66,6 +66,9 @@ func describeField(f *ast.Field) string {
 	if f.Hidden {
 		parts = append(parts, "oculto")
 	}
+	if f.Sealed {
+		parts = append(parts, "cifrado no banco (GEP 0049, em teste: AES-256-GCM com a chave de GERMANIO_SEGREDO; só o sistema o lê, para falar com outro sistema; nunca pesquisado, filtrado nem ordenado)")
+	}
 	if f.IsSecret() {
 		if f.Type == ast.FieldSegredo {
 			parts = append(parts, "segredo gerado, guardado como hash, mostrado só na criação")

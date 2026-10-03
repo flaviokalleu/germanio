@@ -344,6 +344,7 @@ type Field struct {
 	// every create/update, whatever route or function performs it.
 	Protected    bool     // senha protegida: hashed, never readable
 	Hidden       bool     // oculto: never serialized
+	Sealed       bool     // encrypted at rest, never compared: oculto text or a capability's credential (GEP 0049)
 	Private      bool     // privado: shown only to its owner and administrators
 	NumberedBy   string   // numerado por <entidade>: sequence per parent (holds the FK field after resolution)
 	ListOf       string   // lista de <texto|entidade>

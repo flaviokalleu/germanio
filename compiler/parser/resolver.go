@@ -1112,6 +1112,11 @@ func ResolveIntent(prog *ast.Program) error {
 		e.Restrictions = append(e.Restrictions, rs)
 	}
 
+	// 7f. Secrets at rest (GEP 0049, em teste): hidden texts are sealed.
+	if err := r.sealFields(); err != nil {
+		return err
+	}
+
 	// 8. Permits and grants
 	for _, pm := range in.Permits {
 		e, err := r.entity(pm.Target, pm.Pos)
@@ -1140,6 +1145,9 @@ func ResolveIntent(prog *ast.Program) error {
 						continue
 					}
 					return r.errAt(pm.Pos, "permita filtrar %s por %s: %s não tem esse campo", pm.Target, f, e.Singular)
+				}
+				if fd := fieldByNameAST(e.Model, f); fd.Sealed {
+					return r.errAt(pm.Pos, "%s", sealedFilterMsg(e, fd, "permita filtrar "+pm.Target+" por "+f))
 				}
 				e.Filters = appendUnique(e.Filters, f)
 			}
@@ -1786,6 +1794,9 @@ func (r *resolver) pageSections(e *ast.Entity, pg *ast.PageDecl) error {
 		fd := fieldByNameAST(e.Model, f)
 		if fd == nil {
 			return r.errAt(pg.Pos, "a página %s filtra por %s, mas %s não tem esse campo", pg.Name, f, e.Plural)
+		}
+		if fd.Sealed {
+			return r.errAt(pg.Pos, "%s", sealedFilterMsg(e, fd, "a página "+pg.Name+" filtra por "+f))
 		}
 		name := strings.ToLower(fd.Name)
 		known := false
