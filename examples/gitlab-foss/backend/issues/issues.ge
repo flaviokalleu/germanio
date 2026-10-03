@@ -15,6 +15,8 @@ issues
         responsaveis
         comentarios
         peso inteiro min 0
+        estimativa inteiro min 0
+        tempos gastos
 
     começa aberta
 
@@ -53,6 +55,20 @@ issues
         filtrar por estado, autor, labels, responsaveis, milestone e peso
 
     integração
+
+# Controle de tempo: quanto se estima (em segundos) e cada tempo gasto
+# registrado por alguém, que pode ser negativo para descontar.
+tempos gastos
+    singular tempo gasto
+
+    tem
+        duracao inteiro obrigatório
+        descrição
+        autor
+
+    acesso
+        planner
+            criar
 
 comentarios
     tem

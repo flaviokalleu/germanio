@@ -57,6 +57,7 @@ vocabulário da integração
     autor_id é "author_id"
     confidencial é "confidential"
     peso é "weight"
+    estimativa é "time_estimate"
     responsaveis é "assignee_ids"
     fechar é "close"
     reabrir é "reopen"
