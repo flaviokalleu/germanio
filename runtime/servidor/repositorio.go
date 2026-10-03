@@ -27,13 +27,18 @@ func RepoPath(model string, id any) string {
 	return "@hashed/" + h[:2] + "/" + h[2:4] + "/" + h + ".git"
 }
 
-func (a *intentAPI) createRepository(ctx *interp.Context, e *ast.Entity, row map[string]any) error {
+// createRepository gives a new record its repository: an empty one, or a
+// copy of the repository of origin (the record it copies, GEP 0029).
+func (a *intentAPI) createRepository(ctx *interp.Context, e *ast.Entity, row, origin map[string]any) error {
 	if !e.Repository || a.s.Git == nil {
 		return nil
 	}
 	path := RepoPath(e.Singular, row["id"])
-	branch := defaultBranch(row)
-	if err := a.s.Git.Init(path, branch); err != nil {
+	if src := toStr(origin["repositorio"]); src != "" {
+		if err := a.s.Git.Copy(src, path); err != nil {
+			return err
+		}
+	} else if err := a.s.Git.Init(path, defaultBranch(row)); err != nil {
 		return err
 	}
 	undoOnRollback(ctx, func() { a.s.Git.Remove(path) })

@@ -173,6 +173,53 @@ func (s *Store) Init(rel, defaultBranch string) error {
 	return err
 }
 
+// Copy creates the bare repository dst as a copy of src: every branch and
+// tag and the same default branch, in storage of its own. Objects are hard
+// linked when the file system allows it (git never changes an object, so
+// the copies stay independent); other refs, hooks and the configuration of
+// src are not copied, and dst keeps no link back to src.
+func (s *Store) Copy(src, dst string) error {
+	sp, err := s.open(src)
+	if err != nil {
+		return err
+	}
+	dp, err := s.Path(dst)
+	if err != nil {
+		return err
+	}
+	if _, err := os.Stat(dp); err == nil {
+		return fmt.Errorf("repositório já existe: %s", dst)
+	}
+	if err := os.MkdirAll(filepath.Dir(dp), 0o750); err != nil {
+		return err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), s.Timeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, s.Bin, "clone", "--bare", "--quiet", "--", sp, dp)
+	cmd.Env = baseEnv()
+	if out, err := cmd.CombinedOutput(); err != nil {
+		os.RemoveAll(dp)
+		return fmt.Errorf("git clone: %s", strings.TrimSpace(string(out)))
+	}
+	fail := func(err error) error {
+		os.RemoveAll(dp)
+		return err
+	}
+	// An empty source has no branch to follow: keep its default branch.
+	if head, err := s.run(sp, nil, nil, "symbolic-ref", "HEAD"); err == nil {
+		if _, err := s.run(dp, nil, nil, "symbolic-ref", "HEAD", strings.TrimSpace(string(head))); err != nil {
+			return fail(err)
+		}
+	}
+	if _, err := s.run(dp, nil, nil, "remote", "remove", "origin"); err != nil {
+		return fail(err)
+	}
+	if _, err := s.run(dp, nil, nil, "config", "http.receivepack", "true"); err != nil {
+		return fail(err)
+	}
+	return nil
+}
+
 // Exists reports whether the repository exists.
 func (s *Store) Exists(rel string) bool {
 	p, err := s.Path(rel)

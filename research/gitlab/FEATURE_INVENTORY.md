@@ -35,8 +35,8 @@ Escopo núcleo v1 = features marcadas **[N]** (fluxos 1–5 da missão + testes 
 | PR-02 [N] | Ver projeto | resolve `ns/path`; README, branches, visibilidade | `/:ns/:proj` | `GET /api/v4/projects/:id` (id ou path url-encoded) | projects | por visibilidade/membro | | | PASS | TestFluxo1 |
 | PR-03 [N] | Membros do projeto | adicionar/remover/alterar nível | members | `/projects/:id/members` | members | Maintainer+ | | | PASS | TestFluxo4 (adiciona membro) |
 | PR-04 | Editar/arquivar/remover projeto | | settings | `PUT/DELETE /projects/:id`, archive | projects | Maintainer / Owner | git | | PASS | TestProjetoArquivado (arquivar por `archived`; endpoints POST archive/unarchive ainda não) |
-| PR-05 | Fork | | | `POST /projects/:id/fork` | | | git | | ADIADO → FASE 5 (amplitude) | |
-| PR-06 | Estrelas, tópicos, avatar | | | | | | uploads | | ADIADO → FASE 5 (amplitude; avatar depende da GEP 0014) | |
+| PR-05 | Fork | cópia com repositório | botão Copiar | `POST /projects/:id/fork` | projects | quem vê e baixa código | git | SUPPORTED (GEP 0029, `copiar`) | PASS (sem `/forks` e fork para namespace de pessoa) | TestFork, TestCopiasDeReceitas, TestCopy |
+| PR-06 | Estrelas, tópicos, avatar | marcar, filtrar, imagem | projeto | star/unstar, `topic`, avatar | projects | quem vê | uploads | SUPPORTED (GEP 0030, `recebe estrelas`) | PASS (sem `/starrers`; um tópico por consulta) | TestEstrelas, TestTopicos, TestAvatar |
 
 ## Repositórios
 

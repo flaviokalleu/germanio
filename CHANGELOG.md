@@ -18,6 +18,10 @@ published under that name.
   the secret sealed by AES-GCM under `GERMANIO_SEGREDO`, hashed single-use recovery codes.
 - Public keys (`chave pública` field type, GEP 0032) with fingerprint; GitLab `/user/keys`.
 - Repository archive download (`repository/archive`), under `baixar_codigo`.
+- Copies of a record (`acesso` › papel › `copiar`, GEP 0029, em teste): GitLab fork, with the
+  repository cloned, never more visible than the original.
+- Marks by people (`recebe estrelas`, GEP 0030, em teste), filtering by one item of a list
+  (topics), and `<campo>_endereco` for files (avatar).
 
 ## [0.7.0] — 2026-09-29
 

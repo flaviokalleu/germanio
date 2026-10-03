@@ -345,6 +345,8 @@ válidas. `construcao_do_sistema` são as construções sem sujeito único (`ten
 | `integração` / `integração` › `nome "projects"` | `disponibilize D para integração [como "projects"]` |
 | `quando criar` / `antes de excluir` + corpo | `quando criar d` / `antes de excluir d` |
 | `recebe aprovações`, `recebe eventos do projeto` + tipos | `d recebe …` |
+| `recebe estrelas` ([GEP 0030](gep/0030-estrelas-topicos-avatar.md), em teste) | `d recebe estrelas` (cada pessoa que vê o registro marca uma vez e desmarca; `estrelas` conta; `?marcados=sim` lista as suas) |
+| `acesso` › `usuario` › `copiar` ([GEP 0029](gep/0029-copias.md), em teste) | `usuario pode copiar D` (cópia em nome de quem copia, com as regras de criar, `copiado_de_id`, repositório copiado, nunca mais visível que o original) |
 | `executa pipelines a cada envio de código conforme "arquivo"` | `d executa …` |
 | `executam jobs` (em `runners`) | `runners executam jobs` |
 | `repositório pode começar com "README.md" contendo "# {nome}"` | `repositório do d pode começar com …` |
@@ -623,7 +625,8 @@ todos podem ver produtos
 - Ações sinônimas: ver/listar/mostrar · criar/cadastrar/adicionar · editar/alterar ·
   excluir/remover · pesquisar/buscar. Transições como `bloquear` são declaradas por `usuario pode bloquear`; não exigem hook manual.
   Ação específica sem semântica declarativa só usa `quando` como escape hatch do nível 3.
-  Embutidas: `sair` (deixa de ser membro), `revogar` (dados revogáveis), `baixar código`/`enviar código`.
+  Embutidas: `sair` (deixa de ser membro), `revogar` (dados revogáveis), `baixar código`/`enviar código`,
+  `copiar` ([GEP 0029](gep/0029-copias.md), em teste).
 - Um campo `visibility` (`private`/`internal`/`public`) libera ver e baixar código para todos
   (público) ou para quem está conectado (interno).
 - Dentro de algo que tem membros, regras genéricas (todos, qualquer pessoa conectada) só valem se esse algo
@@ -638,6 +641,9 @@ todos podem ver produtos
 
 `permita criar projetos` libera para qualquer pessoa conectada (ou qualquer visitante se não
 há login). `permita filtrar clientes por cidade` e `permita pesquisar clientes` habilitam filtro e busca.
+Em teste na [GEP 0030](gep/0030-estrelas-topicos-avatar.md): o singular de uma lista de textos filtra
+por um item dela (`permita filtrar projetos por topico` → `?topico=go`), e um registro com arquivo
+mostra também `<campo>_endereco`, onde baixá-lo.
 
 ## Pendências
 

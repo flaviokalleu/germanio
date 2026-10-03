@@ -1,0 +1,35 @@
+crie sistema Receitas
+
+usuarios
+    tem
+        nome obrigatório
+        email obrigatório e único
+        senha min 8
+
+tenha login
+tenha cadastro
+
+receitas
+    tem
+        titulo obrigatório
+        preparo
+        etiquetas lista de texto
+        autor
+        foto imagem
+
+    recebe favoritos
+
+    acesso
+        usuario
+            criar
+            ver
+            copiar
+        autor
+            editar
+            excluir
+
+    permita
+        filtrar por etiqueta
+
+página Receitas
+    mostre receitas
