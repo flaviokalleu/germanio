@@ -1104,10 +1104,8 @@ func (ps *pageSite) fixedFor(chain []step) map[string]any {
 		out["recurso"], out["recurso_id"] = parent.e.Singular, parent.ref
 		return out
 	}
-	for field, target := range child.e.Parents {
-		if target == parent.e.Singular {
-			out[field] = parent.ref
-		}
+	if field := parentFieldOf(child.e, parent.e.Singular); field != "" {
+		out[field] = parent.ref
 	}
 	return out
 }

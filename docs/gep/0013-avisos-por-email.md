@@ -36,13 +36,23 @@ tenha avisos por e-mail
 - The e-mail configuration is the one of GEP 0008 (`GERMANIO_SMTP_*` or
   `GERMANIO_CORREIO_PASTA`); without it the application starts and says the notices are not
   available (never a silent failure).
-- Only pending items are notified. Mentions, digests, per-person preferences and other channels
-  (push, chat) are not in this GEP.
+- **Each person may turn the e-mails off** (amendment, inventory NT-03). The choice is ordinary
+  data of the people: a yes/no field named after the phrase, `avisos_por_email` (for example
+  `avisos_por_email privado começa com verdadeiro`). A person with it off still gets every pending
+  item; only the e-mail is not sent. An empty value (a person created before the field existed)
+  counts as yes. Who may change it, and who sees it, are the ordinary rules of the people
+  (`editar seu perfil`, `privado`). A field with that name that is not yes/no is an error.
+  `ge explain usuario` shows the choice.
+- Only pending items are notified (mentions are pending items too, GEP 0017). Digests,
+  preferences per kind of notice and other channels (push, chat) are not in this GEP.
 
 ## Errors
 
 `tenha avisos por e-mail` without any `pendência para`: the error says notices tell people about
 their pending items and shows how to declare them.
+
+`avisos_por_email` in the people that is not yes/no: the error shows
+`avisos_por_email começa com verdadeiro`.
 
 ## Evaluation
 
@@ -61,4 +71,7 @@ Additive.
 
 `TestAvisosPorEmail` (the assignee gets one e-mail after the change; the one assigning gets
 none; an undone change sends none; a restricted record's title is not in the e-mail), the
-missing-pending error.
+missing-pending error; `TestAvisosPorEmailEscolhaDaPessoa` (a person with `avisos_por_email` off
+keeps the pending item and gets no e-mail; nobody else changes or sees the choice),
+`TestAvisosPorEmailEscolha` (the yes/no error) and the GitLab end-to-end test
+`TestPreferenciaDeAvisos`.

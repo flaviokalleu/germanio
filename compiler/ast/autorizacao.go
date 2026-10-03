@@ -19,6 +19,10 @@ type App struct {
 	ActivityEntity string
 	// EmailNotices: every new pending item is also sent by e-mail (GEP 0013).
 	EmailNotices bool
+	// EmailChoiceField: the people's yes/no field `avisos_por_email`; a
+	// person with it off gets the pending item but no e-mail ("" when the
+	// people have no such field; GEP 0013, em teste).
+	EmailChoiceField string
 	// Presence: people show whether they have a page open (GEP 0021).
 	Presence    bool
 	Login       *LoginDecl
@@ -49,6 +53,13 @@ type Entity struct {
 	Label    string
 	// Parent relations (pertence a): field → entity model name.
 	Parents map[string]string
+	// IndependentParents: two or more parent fields not inside one another
+	// (a link naming two issues); a record is then seen or changed only by
+	// whoever sees every filled one.
+	IndependentParents []string
+	// MoveField: the parent field a record may change by moving
+	// (`issue pode mudar de projeto`, GEP 0034, em teste); "" when it may not.
+	MoveField string
 	// Children (tem): entity model names.
 	Children []string
 	// HierarchyField links an entity to itself (grupo tem subgrupos).

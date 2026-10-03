@@ -83,6 +83,8 @@ Rules:
 | [0030](0030-estrelas-topicos-avatar.md) | Marks by people (`recebe estrelas`), one item of a list as a filter, the address of a file | Em teste |
 | [0031](0031-confirmacao-de-email.md) | E-mail confirmation (`tenha confirmação de e-mail`) | Em teste |
 | [0032](0032-dois-fatores-e-chaves.md) | Credentials beyond the password: public keys (`chave pública`) and two-factor authentication (`tenha autenticação em dois fatores`) | Em teste |
+| [0033](0033-adaptador-pede-a-aplicacao.md) | An adapter asks the application itself (`superficie.pedir`, `superficie.contar`) | Em teste |
+| [0034](0034-mudar-de-lugar.md) | A record moves to another parent (`pode mudar de projeto`) | Em teste |
 | [0035](0035-git-lfs.md) | Large files in repositories (Git LFS; no syntax) | Em teste |
 | [0036](0036-espelhos.md) | Mirrors of a repository (`espelham o repositório do projeto`) | Em teste |
 

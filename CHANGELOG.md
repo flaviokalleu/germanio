@@ -30,6 +30,11 @@ published under that name.
   streaming, `GERMANIO_LFS_MAX_MB`, same rules as clone and push.
 - Repository mirrors (`espelhos espelham o repositório do projeto`, GEP 0036, em teste): push and
   pull mirrors over http(s) only, through the SSRF-protected client, credentials hidden.
+- Issues: weight, time estimate and spent time, links between issues, moving an issue to another
+  project (`pode mudar de projeto`, GEP 0034, em teste).
+- Adapters may ask the application itself as the caller (`superficie.pedir`, `superficie.contar`,
+  GEP 0033, em teste): GitLab events, `/application/statistics`, time tracking.
+- Per-person choice of notification e-mail (`avisos_por_email`, amendment to GEP 0013).
 
 ## [0.7.0] — 2026-09-29
 

@@ -14,6 +14,10 @@ issues
         labels por nome
         responsaveis
         comentarios
+        peso inteiro min 0
+        estimativa inteiro min 0
+        tempos gastos
+        ligacoes
 
     começa aberta
 
@@ -21,6 +25,7 @@ issues
         fechar
         reabrir
         ser confidencial
+        mudar de projeto
 
     pendência para
         responsaveis
@@ -49,7 +54,39 @@ issues
 
     permita
         pesquisar
-        filtrar por estado, autor, labels, responsaveis e milestone
+        filtrar por estado, autor, labels, responsaveis, milestone e peso
+
+    integração
+
+# Controle de tempo: quanto se estima (em segundos) e cada tempo gasto
+# registrado por alguém, que pode ser negativo para descontar.
+tempos gastos
+    singular tempo gasto
+
+    tem
+        duracao inteiro obrigatório
+        descrição
+        autor
+
+    acesso
+        planner
+            criar
+
+# Ligações: uma issue relacionada a outra, de qualquer projeto. Só quem vê
+# as duas vê a ligação; ela sai com qualquer uma delas.
+ligacoes
+    singular ligacao
+
+    pertence a
+        issue como relacionada
+
+    acesso
+        guest
+            criar
+            excluir
+
+    permita
+        filtrar por relacionada
 
     integração
 

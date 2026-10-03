@@ -6,7 +6,8 @@ import (
 )
 
 // NT-02: o feed de eventos é o histórico do Germanio (GEP 0011) com os nomes
-// da API do GitLab. Ninguém vê eventos do que não pode ver.
+// da API do GitLab (ações como opened e closed, traduzidas pelo adaptador).
+// Ninguém vê eventos do que não pode ver.
 func TestAtividade(t *testing.T) {
 	base := gitlab(t)
 	ada := signup(t, base, "ada")
@@ -31,13 +32,13 @@ func TestAtividade(t *testing.T) {
 		return strings.Join(out, ",")
 	}
 	all := titles(ada)
-	for _, want := range []string{"criar #1 Bug público", "fechar #1 Bug público", "criar #2 Falha secreta", "criar #1 Plano interno"} {
+	for _, want := range []string{"opened #1 Bug público", "closed #1 Bug público", "opened #2 Falha secreta", "opened #1 Plano interno"} {
 		if !strings.Contains(all, want) {
 			t.Fatalf("a autora deveria ver %q: %s", want, all)
 		}
 	}
 	seen := titles(eve)
-	if !strings.Contains(seen, "criar #1 Bug público") {
+	if !strings.Contains(seen, "opened #1 Bug público") {
 		t.Fatalf("eventos de projeto público são visíveis: %s", seen)
 	}
 	for _, hidden := range []string{"Falha secreta", "Plano interno"} {
@@ -46,7 +47,7 @@ func TestAtividade(t *testing.T) {
 		}
 	}
 	// o histórico de um projeto: o que pertence a ele
-	if l := eve.list("/api/v4/events?dentro=projeto&dentro_id=" + id(pub) + "&target_type=issue"); len(l) != 2 {
+	if l := eve.list("/api/v4/projects/" + id(pub) + "/events?target_type=issue"); len(l) != 2 {
 		t.Fatalf("histórico do projeto público para quem não é membro: %v", l)
 	}
 }

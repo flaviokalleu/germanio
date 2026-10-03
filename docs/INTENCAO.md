@@ -328,6 +328,7 @@ válidas. `construcao_do_sistema` são as construções sem sujeito único (`ten
 | `pertence a` + `grupo opcional`, `cliente como dono` | `d pertence a grupo opcional` |
 | `começa aberta` | `d começa aberta` |
 | `pode` + `fechar`, `reabrir`, `ser confidencial` | `d pode fechar` … |
+| `pode` › `mudar de projeto` ([GEP 0034](gep/0034-mudar-de-lugar.md), em teste) | `d pode mudar de projeto` (quem edita o registro onde está e pode criar no destino o leva; ganha o próximo número de lá) |
 | `regras` › `quem cria vira owner` | `quem cria d vira owner` |
 | `regras` › `precisa de pelo menos um owner` | `todo d precisa ter pelo menos um owner` |
 | `regras` › `herda membros do grupo` | `d herda membros do grupo` |
@@ -639,6 +640,11 @@ todos podem ver produtos
 - Uma referência (lista ou única) a algo que pertence a um pai que o registro também tem
   — a label ou o milestone do projeto de uma issue — só aceita itens do mesmo pai; o resto
   é tratado como inexistente. Pessoas e referências de sistema não contam como pai.
+- Ninguém cria um registro dentro de algo que não vê, nem aponta uma referência para algo que não
+  vê: para essa pessoa, o outro registro não existe ("não encontrado").
+- Um registro que nomeia dois registros independentes (uma ligação entre duas issues, de
+  `pertence a issue como relacionada`) só é visto e mudado por quem vê os dois, sejam quais forem
+  as regras dele; ele aparece sob o dono principal (`issue_id`) e sai com qualquer um dos dois.
 - Ninguém concede papel acima do próprio.
 - Nada que pertence a uma pessoa é criado em nome de outra, exceto por administradores.
 - Registros invisíveis respondem "não encontrado", nunca "proibido".
@@ -666,7 +672,8 @@ quem é escrito como `@nome de usuário` nos textos do registro, se essa pessoa 
 
 `tenha avisos por e-mail` ([GEP 0013](gep/0013-avisos-por-email.md), **em teste**, não normativa
 até a decisão do mantenedor) manda cada nova pendência também por e-mail ao dono, depois de a
-mudança ser salva, com a configuração de e-mail da recuperação de senha.
+mudança ser salva, com a configuração de e-mail da recuperação de senha. Cada pessoa pode
+desligar os e-mails com um campo sim/não das pessoas, `avisos_por_email` (a pendência continua).
 
 ## Migração
 
@@ -827,6 +834,13 @@ vocabulário da integração        # só nomes externos; o domínio segue em po
     fechar é "close"
     papel é "access_level"       # papéis viajam como seus níveis
 ```
+
+Quando uma chamada externa é outra forma de uma operação que a aplicação já oferece (outro
+caminho, outros nomes, uma busca antes), o adaptador, em `integracoes/`, pede à própria aplicação
+com `superficie.pedir(metodo, caminho, corpo, consulta)` e conta com `superficie.contar(dado,
+estado)` ([GEP 0033](gep/0033-adaptador-pede-a-aplicacao.md), **em teste**): o pedido roda como a
+pessoa que chamou, com as mesmas regras, visibilidade, transação, histórico e eventos. Um
+adaptador nunca lê nem escreve registros por fora dessas regras.
 
 ## Estados e transições: contrato genérico
 

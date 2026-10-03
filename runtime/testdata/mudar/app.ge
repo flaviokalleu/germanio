@@ -1,0 +1,58 @@
+crie sistema Atendimento
+
+usuarios
+    tem
+        nome
+        email obrigatório e único
+        senha min 8
+
+tenha login
+tenha cadastro
+
+tenha papeis
+    atendente 10
+    supervisor 30
+
+filas
+    tem
+        nome obrigatório
+        membros com papel
+        chamados
+        etiquetas
+    pode
+        ser arquivada
+    regras
+        quem cria vira supervisor
+        arquivada é somente leitura
+    acesso
+        usuario
+            criar
+        atendente
+            ver
+        supervisor
+            administrar
+
+etiquetas
+    tem
+        nome obrigatório
+    acesso
+        atendente
+            ver
+        supervisor
+            administrar
+
+chamados
+    tem
+        numero por fila
+        titulo obrigatório
+        autor
+        etiquetas por nome
+    pode
+        mudar de fila
+    guarda histórico
+    acesso
+        atendente
+            ver
+            criar
+        autor ou supervisor
+            editar

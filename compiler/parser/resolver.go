@@ -727,6 +727,15 @@ func ResolveIntent(prog *ast.Program) error {
 		// A capability has no object: "issue pode fechar", "issue pode ser
 		// confidencial". With an object it is a permission for people.
 		e := r.byName[g.Role]
+		if e != nil && app.Level(g.Role) == 0 && !reservedRoles[g.Role] && g.Verb == "mudar" {
+			// issue pode mudar de projeto (GEP 0034): a record may move to
+			// another parent of the same kind
+			if err := r.movable(e, g); err != nil {
+				return err
+			}
+			in.Capabilities = append(in.Capabilities, g)
+			continue
+		}
 		if e == nil || app.Level(g.Role) > 0 || reservedRoles[g.Role] || (g.Target != "" && g.Verb != "ser") {
 			grants = append(grants, g)
 			continue
@@ -1324,6 +1333,16 @@ func ResolveIntent(prog *ast.Program) error {
 			return r.errAt(in.EmailNoticesPos, "tenha avisos por e-mail avisa cada pessoa das suas pendências, mas nenhum dado gera pendências. Declare, no bloco do dado: pendência para › responsaveis")
 		}
 		app.EmailNotices = true
+		// Each person may turn the e-mails off with an ordinary yes/no field
+		// of the people named after the phrase: avisos_por_email.
+		if le := app.Entities[app.LoginEntity]; le != nil {
+			if f := fieldByNameAST(le.Model, "avisos_por_email"); f != nil {
+				if f.Type != ast.FieldBooleano {
+					return r.errAt(f.Pos, "avisos_por_email diz se a pessoa quer os avisos por e-mail, então é sim ou não. Escreva: avisos_por_email começa com verdadeiro")
+				}
+				app.EmailChoiceField = "avisos_por_email"
+			}
+		}
 	}
 
 	// 10a3. Presence (GEP 0021, em teste) is about the people who log in.
@@ -1404,6 +1423,36 @@ func ResolveIntent(prog *ast.Program) error {
 		}
 		integOrigin[e] = it
 		e.Integrate = name
+	}
+
+	// Records that name two independent parents (a link between two issues,
+	// a citation between two documents) are seen and changed only by whoever
+	// sees every filled one. Parents inside one another (an issue's project
+	// and milestone) are not independent: the inner one counts.
+	for _, n := range app.Order {
+		e := app.Entities[n]
+		var fields []string
+		for f, t := range e.Parents {
+			if t != app.LoginEntity && t != e.Singular {
+				fields = append(fields, f)
+			}
+		}
+		sort.Strings(fields)
+		var inner []string
+		for _, f := range fields {
+			outer := false
+			for _, g := range fields {
+				if f != g && e.Parents[f] != e.Parents[g] && r.isAncestor(app.Entities[e.Parents[f]], app.Entities[e.Parents[g]]) {
+					outer = true
+				}
+			}
+			if !outer {
+				inner = append(inner, f)
+			}
+		}
+		if len(inner) >= 2 {
+			e.IndependentParents = inner
+		}
 	}
 
 	// Custom verbs must have a definition.
@@ -1765,6 +1814,44 @@ func (r *resolver) belongsTo(e, c *ast.Entity) bool {
 		}
 	}
 	return e.Singular == r.app.MemberModel && c.HasMembers
+}
+
+// movable checks `X pode mudar de Y` (GEP 0034): Y is a parent of X, the
+// one X moves between.
+func (r *resolver) movable(e *ast.Entity, g *ast.Grant) error {
+	if g.Target == "" {
+		return r.errAt(g.Pos, "%s pode mudar de quê? Diga de onde ele muda, por exemplo: %s pode mudar de projeto", e.Singular, e.Singular)
+	}
+	pe := r.byName[g.Target]
+	if pe == nil {
+		return r.errAt(g.Pos, "%s pode mudar de %s: não conheço %q. Um registro muda de um dado ao qual pertence", e.Singular, g.Target, g.Target)
+	}
+	field := ""
+	if e.Parents[pe.Singular+"_id"] == pe.Singular {
+		field = pe.Singular + "_id"
+	} else {
+		var fields []string
+		for f, t := range e.Parents {
+			if t == pe.Singular {
+				fields = append(fields, f)
+			}
+		}
+		sort.Strings(fields)
+		if len(fields) > 0 {
+			field = fields[0]
+		}
+	}
+	if field == "" || pe.Singular == r.app.LoginEntity || e.Singular == r.app.MemberModel || pe == e {
+		return r.errAt(g.Pos, "%s pode mudar de %s: %s não pertence a %s.\nPor quê: mudar é levar o registro de um %s para outro.\nComo corrigir: declare antes que %s pertence a %s (por exemplo: %s › tem › %s)", e.Singular, pe.Singular, e.Singular, pe.Singular, pe.Singular, e.Singular, pe.Singular, pe.Plural, e.Plural)
+	}
+	if e.Transitions["mudar"] != nil {
+		return r.errAt(g.Pos, "%s já tem a ação mudar como mudança de estado; mudar de %s seria outra coisa com o mesmo nome", e.Singular, pe.Singular)
+	}
+	if e.MoveField != "" && e.MoveField != field {
+		return r.errAt(g.Pos, "%s já pode mudar de %s; um registro muda de um só lugar", e.Singular, strings.TrimSuffix(e.MoveField, "_id"))
+	}
+	e.MoveField = field
+	return nil
 }
 
 func (r *resolver) isAncestor(a, b *ast.Entity) bool {

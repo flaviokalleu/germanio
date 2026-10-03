@@ -132,6 +132,9 @@ func Entidade(prog *ast.Program, nome string) (string, error) {
 			w("  cadastro: qualquer pessoa cria a própria conta (/cadastro); campos como admin nunca são aceitos\n")
 		}
 		w("  bloqueio: %d senhas erradas seguidas bloqueiam a conta por %d minutos; um endereço que erra 50 logins em 10 minutos espera\n", app.Login.LockAttempts, app.Login.LockMinutes)
+		if app.EmailNotices && app.EmailChoiceField != "" {
+			w("  avisos por e-mail: cada pessoa recebe as novas pendências por e-mail, a não ser que desligue %s (a pendência continua)\n", app.EmailChoiceField)
+		}
 		if app.Login.Recovery {
 			w("  recuperação de senha: /esqueci envia por e-mail um link de uso único, válido por 1 hora, para o endereço público (GERMANIO_URL_PUBLICA); a resposta não revela se a conta existe; o e-mail vem do ambiente (GERMANIO_SMTP_* ou GERMANIO_CORREIO_PASTA)\n")
 		}
@@ -173,6 +176,12 @@ func Entidade(prog *ast.Program, nome string) (string, error) {
 	}
 	if vt := e.ViewThrough; vt != nil {
 		w("Visibilidade: cada registro é visto por quem vê o registro que ele descreve (%s, %s); se ele não existe mais, por quem vê %s; senão, só por %s. Ninguém além do administrador muda ou exclui\n", vt.Kind, vt.ID, vt.ParentKind, strings.TrimSuffix(vt.Author, "_id"))
+	}
+	if e.MoveField != "" {
+		w("Pode mudar de %s: quem pode editar o registro onde ele está e criar um no destino o leva para outro; ganha o próximo número de lá; listas por nome ficam com os nomes que o destino também tem, e outras referências ao lugar antigo saem\n", strings.TrimSuffix(e.MoveField, "_id"))
+	}
+	if len(e.IndependentParents) >= 2 {
+		w("Vários donos: cada registro nomeia %s; é visto e mudado só por quem vê todos eles, e sai com qualquer um\n", strings.Join(e.IndependentParents, " e "))
 	}
 	if len(e.PendingFields) > 0 {
 		w("Pendências: quem passa a estar em %s recebe uma pendência (dado %s); quem sai perde as abertas; excluir o registro exclui as pendências\n", strings.Join(e.PendingFields, ", "), app.PendingEntity)

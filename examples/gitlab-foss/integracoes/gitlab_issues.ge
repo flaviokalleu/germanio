@@ -1,0 +1,174 @@
+# NÍVEL AVANÇADO / ADAPTADOR DE COMPATIBILIDADE
+#
+# Rotas de issues da API v4 do GitLab que têm outra forma que a superfície
+# gerada: controle de tempo (time_estimate, add_spent_time, time_stats) e
+# ligações entre issues (links, com o projeto e o número da outra issue) e
+# mover uma issue para outro projeto (move).
+# Cada rota traduz o formato do GitLab e pede à própria aplicação (GEP 0033),
+# como a pessoa que chamou: quem pode estimar, registrar tempo ou ver a issue
+# está em backend/issues/.
+
+logica
+    # A duração "humana" do GitLab: 1mo = 4w, 1w = 5d, 1d = 8h (dias de
+    # trabalho); um número sozinho são horas.
+    definir UNIDADES = {mo: 576000, w: 144000, d: 28800, h: 3600, m: 60, s: 1}
+    definir ORDEM_DAS_UNIDADES = ["mo", "w", "d", "h", "m", "s"]
+
+    funcao segundos_de(duracao)
+        se duracao == nulo
+            retornar nulo
+        definir s = minusculo(regex.substituir("\\s+", texto(duracao), ""))
+        definir sinal = 1
+        se comeca_com(s, "-")
+            sinal = -1
+            s = substring(s, 1)
+        se regex.casa("^[0-9]+$", s)
+            retornar sinal * numero(s) * 3600
+        se nao regex.casa("^([0-9]+(mo|w|d|h|m|s))+$", s)
+            retornar nulo
+        definir total = 0
+        para cada parte em regex.todos("[0-9]+(mo|w|d|h|m|s)", s)
+            definir quantos = numero(regex.encontrar("^[0-9]+", parte)[0])
+            total = total + quantos * UNIDADES[regex.encontrar("[a-z]+$", parte)[0]]
+        retornar sinal * total
+
+    funcao duracao_humana(segundos)
+        se segundos == nulo ou segundos == 0
+            retornar nulo
+        definir resto = abs(segundos)
+        definir partes = []
+        para cada u em ORDEM_DAS_UNIDADES
+            definir n = inteiro(resto / UNIDADES[u])
+            se n > 0
+                partes = adicionar(partes, texto(n) + u)
+                resto = resto - n * UNIDADES[u]
+        definir humana = juntar(partes, " ")
+        se segundos < 0
+            humana = "-" + humana
+        retornar humana
+
+    funcao duracao_pedida(requisicao)
+        definir d = obter(requisicao.consulta, "duration", obter(requisicao.corpo, "duration", nulo))
+        definir s = segundos_de(d)
+        se s == nulo
+            responder(400, {message: {duration: ["is invalid (use a duration like 3h30m)"]}})
+        retornar s
+
+    # O caminho de uma issue: o projeto pelo id ou pelo endereço, a issue
+    # pelo número dentro dele.
+    funcao issue_em(requisicao)
+        retornar ["projects", requisicao.parametros.id, "issues", requisicao.parametros.iid]
+
+    # Todo o tempo gasto numa issue: os registros de tempo, de página em página.
+    funcao tempo_gasto(caminho)
+        definir total = 0
+        definir pagina = 1
+        definir paginas = 1
+        enquanto pagina <= paginas
+            definir r = exigir(superficie.pedir("GET", adicionar(caminho, "tempos_gastos"), nulo, {per_page: 100, page: pagina}))
+            para cada registro em r.corpo
+                total = total + obter(registro, "duration", 0)
+            paginas = numero(obter(r.cabecalhos, "X-Total-Pages", "1"))
+            pagina = pagina + 1
+        retornar total
+
+    funcao estatisticas_de_tempo(caminho)
+        definir issue = exigir(superficie.pedir("GET", caminho))
+        definir estimativa = obter(issue.corpo, "time_estimate", 0)
+        definir gasto = tempo_gasto(caminho)
+        retornar {time_estimate: estimativa, total_time_spent: gasto, human_time_estimate: duracao_humana(estimativa), human_total_time_spent: duracao_humana(gasto)}
+
+    # Uma issue ligada, como o GitLab a mostra: a outra issue e a ligação. Uma
+    # issue que a pessoa não vê não aparece (a ligação também não).
+    funcao com_ligada(lista, outra_id, ligacao)
+        definir r = superficie.pedir("GET", ["issues", outra_id])
+        se r.estado != 200
+            retornar lista
+        definir issue = r.corpo
+        issue.issue_link_id = ligacao.id
+        issue.link_type = "relates_to"
+        issue.link_created_at = ligacao.created_at
+        retornar adicionar(lista, issue)
+
+    funcao parametro(requisicao, nome, padrao)
+        retornar obter(requisicao.consulta, nome, obter(requisicao.corpo, nome, padrao))
+
+rotas
+    rota GET "/api/v4/projects/:id/issues/:iid/time_stats"
+        responder(200, estatisticas_de_tempo(issue_em(requisicao)))
+
+    rota POST "/api/v4/projects/:id/issues/:iid/time_estimate"
+        definir s = duracao_pedida(requisicao)
+        se s < 0
+            responder(400, {message: {time_estimate: ["must be greater than or equal to 0"]}})
+        exigir(superficie.pedir("PUT", issue_em(requisicao), {time_estimate: s}))
+        responder(200, estatisticas_de_tempo(issue_em(requisicao)))
+
+    rota POST "/api/v4/projects/:id/issues/:iid/reset_time_estimate"
+        exigir(superficie.pedir("PUT", issue_em(requisicao), {time_estimate: 0}))
+        responder(200, estatisticas_de_tempo(issue_em(requisicao)))
+
+    rota POST "/api/v4/projects/:id/issues/:iid/add_spent_time"
+        definir s = duracao_pedida(requisicao)
+        definir caminho = issue_em(requisicao)
+        se s < 0 e tempo_gasto(caminho) + s < 0
+            responder(400, {message: {time_spent: ["Time to subtract exceeds the total time spent"]}})
+        definir resumo = obter(requisicao.consulta, "summary", obter(requisicao.corpo, "summary", nulo))
+        exigir(superficie.pedir("POST", adicionar(caminho, "tempos_gastos"), {duration: s, description: resumo}))
+        responder(201, estatisticas_de_tempo(caminho))
+
+    # Como no GitLab: zerar o tempo gasto registra o tempo que desconta tudo.
+    rota POST "/api/v4/projects/:id/issues/:iid/reset_spent_time"
+        definir caminho = issue_em(requisicao)
+        definir gasto = tempo_gasto(caminho)
+        se gasto != 0
+            exigir(superficie.pedir("POST", adicionar(caminho, "tempos_gastos"), {duration: 0 - gasto, description: "reset"}))
+        responder(200, estatisticas_de_tempo(caminho))
+
+    # Ligações: as que esta issue fez e as que outras fizeram com ela.
+    rota GET "/api/v4/projects/:id/issues/:iid/links"
+        definir caminho = issue_em(requisicao)
+        definir esta = exigir(superficie.pedir("GET", caminho))
+        definir lista = []
+        definir feitas = exigir(superficie.pedir("GET", adicionar(caminho, "ligacoes"), nulo, {per_page: 100}))
+        para cada ligacao em feitas.corpo
+            lista = com_ligada(lista, ligacao.relacionada_id, ligacao)
+        definir recebidas = exigir(superficie.pedir("GET", "ligacoes", nulo, {relacionada_id: esta.corpo.id, per_page: 100}))
+        para cada ligacao em recebidas.corpo
+            lista = com_ligada(lista, ligacao.issue_id, ligacao)
+        responder(200, lista)
+
+    rota POST "/api/v4/projects/:id/issues/:iid/links"
+        definir projeto_alvo = parametro(requisicao, "target_project_id", nulo)
+        definir numero_alvo = parametro(requisicao, "target_issue_iid", nulo)
+        definir tipo = parametro(requisicao, "link_type", "relates_to")
+        se projeto_alvo == nulo ou numero_alvo == nulo
+            responder(400, {message: "target_project_id and target_issue_iid are missing"})
+        se tipo != "relates_to"
+            responder(400, {message: {link_type: ["does not have a valid value"]}})
+        definir caminho = issue_em(requisicao)
+        definir origem = exigir(superficie.pedir("GET", caminho))
+        definir alvo = exigir(superficie.pedir("GET", ["projects", projeto_alvo, "issues", numero_alvo]))
+        exigir(superficie.pedir("POST", adicionar(caminho, "ligacoes"), {relacionada_id: alvo.corpo.id}))
+        responder(201, {source_issue: origem.corpo, target_issue: alvo.corpo, link_type: tipo})
+
+    rota DELETE "/api/v4/projects/:id/issues/:iid/links/:ligacao"
+        definir esta = exigir(superficie.pedir("GET", issue_em(requisicao)))
+        definir ligacao = exigir(superficie.pedir("GET", ["ligacoes", requisicao.parametros.ligacao])).corpo
+        se ligacao.issue_id != esta.corpo.id e ligacao.relacionada_id != esta.corpo.id
+            responder(404, {message: "404 Not found"})
+        definir outra_id = ligacao.relacionada_id
+        se ligacao.relacionada_id == esta.corpo.id
+            outra_id = ligacao.issue_id
+        definir outra = exigir(superficie.pedir("GET", ["issues", outra_id]))
+        exigir(superficie.pedir("DELETE", ["ligacoes", requisicao.parametros.ligacao]))
+        responder(200, {source_issue: esta.corpo, target_issue: outra.corpo, link_type: "relates_to"})
+
+    # Mover para outro projeto: a issue muda de projeto (GEP 0034) e ganha o
+    # próximo número de lá.
+    rota POST "/api/v4/projects/:id/issues/:iid/move"
+        definir destino = parametro(requisicao, "to_project_id", nulo)
+        se destino == nulo
+            responder(400, {message: "to_project_id is missing"})
+        definir r = exigir(superficie.pedir("POST", adicionar(issue_em(requisicao), "mudar"), {project_id: destino}))
+        responder(201, r.corpo)
