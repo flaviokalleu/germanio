@@ -789,6 +789,17 @@ senha certa não zera a conta), há 10 códigos de recuperação de uso único; 
 para OAuth nem git (o token de acesso continua valendo); o segredo fica cifrado com
 `GERMANIO_SEGREDO` (sem ela, ligar é recusado) e nunca é mostrado depois de ligar.
 
+`tenha login com conta externa` ([GEP 0039](gep/0039-login-com-conta-externa.md), **em teste**,
+não normativa até a decisão do mantenedor; implica o login) põe na página de entrar o botão
+"Entrar com …" de um provedor OpenID Connect. Qual provedor é configuração do servidor
+(`GERMANIO_OIDC_EMISSOR`, `_CLIENTE`, `_SEGREDO`, `_NOME`), nunca do programa. O runtime usa código
+com PKCE, `state` e `nonce`, confere a assinatura do id_token (RS256/ES256, chaves do provedor) e
+`iss`, `aud`, `exp` e `nonce`; o retorno vai para `GERMANIO_URL_PUBLICA`. A conta externa é
+reconhecida pelo emissor e pelo sujeito; um e-mail só encontra uma conta existente quando o provedor
+o verificou **e** este sistema também o confirmou (`tenha confirmação de e-mail`); senão, a pessoa
+entra com a senha e liga a conta externa em `/conta-externa`. Conta nova só com `tenha cadastro`.
+A sessão é a mesma do login com senha, e os dois fatores continuam valendo.
+
 `tenha administrador inicial "root"` cria a primeira pessoa administradora (login `root`)
 quando ainda não existe ninguém e o servidor recebeu `GERMANIO_ADMIN_SENHA`
 (e, opcionalmente, `GERMANIO_ADMIN_EMAIL`); a senha nunca aparece no `.ge`.
@@ -912,6 +923,7 @@ Nada disto aparece no `.ge`; é configuração de quem hospeda a aplicação.
 | `GERMANIO_PROXIES_CONFIAVEIS` | IPs/CIDRs dos proxies reversos; só deles se aceita `X-Forwarded-For`/`X-Real-IP`/`CF-Connecting-IP` (padrão: nenhum — o IP é o da conexão) |
 | `GERMANIO_ADMIN_SENHA` / `GERMANIO_ADMIN_EMAIL` | senha (e e-mail) do `administrador inicial`, usados só enquanto não existe ninguém |
 | `GERMANIO_PERMITIR_REDE_LOCAL` | permite webhooks/chamadas para endereços internos (desligado por padrão, proteção SSRF) |
+| `GERMANIO_OIDC_EMISSOR` / `_CLIENTE` / `_SEGREDO` / `_NOME` | provedor do `tenha login com conta externa`: emissor exato, cliente, segredo do cliente (só do ambiente, nunca no log) e nome do botão |
 
 ## Trabalho remoto e teste de generalização
 
