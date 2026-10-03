@@ -71,3 +71,21 @@ GEP 0023: `cartoes por estado` abaixo de `mostre`, onde já fica `20 por página
 - Arrastar envia o mesmo botão do movimento. A coluna não aceita um cartão sem aquele movimento.
 - O servidor confere de novo, e um movimento forjado é recusado.
 - O quadro se atualiza pela página viva.
+
+### Passo 3 — navegador de verdade (2026-10-02)
+
+`TestNavegador` dirige um Chromium sem tela (`playwright-core`). É opcional: roda com
+`GERMANIO_NAVEGADOR` e `GERMANIO_NAVEGADOR_MODULOS`, e é pulado sem eles, como o do
+`gitlab-runner`. Ele cobre, só pelas páginas:
+- cadastrar-se, criar um quadro e um cartão;
+- **arrastar** o cartão para "concluido";
+- outra aba ver a mudança **sem recarregar**;
+- uma aba **offline** durante uma mudança recuperá-la ao voltar.
+
+O teste encontrou um bug: quando a nova busca falhava (offline), a atualização era descartada.
+Agora ela é tentada de novo, e voltar a ficar online dispara uma atualização.
+
+```bash
+GERMANIO_NAVEGADOR=<chromium headless> GERMANIO_NAVEGADOR_MODULOS=<node_modules com playwright-core> \
+  go test -run TestNavegador ./runtime/
+```

@@ -193,7 +193,7 @@ que mostram os contêineres. As marcas são estado por pessoa e saem junto com e
 | 1 | 10 000 conexões sem erro | **cumprido** | 10 000 assinaturas, 0 falhas, 50 000 de 50 000 avisos; memória de pico 940 MB (Go: 428 MB) — [`2026-10-02-tempo-real-10k.txt`](../bench/resultados/2026-10-02-tempo-real-10k.txt) |
 | 2 | p99 ≤ 2× o Go | **cumprido** (passo 7) | 1,07× a 500, 1,03× a 2 000 e 1,56× a 10 000 conexões — [`2026-10-02-tempo-real-linhas.txt`](../bench/resultados/2026-10-02-tempo-real-linhas.txt); limite: medido com visitantes anônimos (ver passo 7) |
 | 3 | ordem por canal | **cumprido** | `TestOrdemSobConcorrencia`: 8 pessoas × 10 mensagens simultâneas, sequência 1–80 sem buracos nem repetições |
-| 4 | retomada após queda | **cumprido no desenho; teste de navegador pendente** | a página reconecta (SSE, `retry` 2 s) e busca de novo uma vez; os dados são duráveis no banco |
+| 4 | retomada após queda | **cumprido** (provado num navegador real na FASE 3) | `TestNavegador`: aba offline durante uma mudança recupera ao voltar; o teste achou e motivou a correção de um bug (uma busca que falhava era descartada) |
 | 5 | autorização em tempo real | **cumprido** | `TestPaginasVivas` com mutação: aviso a quem não vê e aviso antes do commit são pegos |
 | 6 | contrapressão | **cumprido** | `TestAvisoNaoBloqueiaComClienteParado`: 10 000 avisos com um cliente parado, sem bloquear e sem acumular |
 | 7 | presença | **cumprido** | `TestPresenca` (tolerância, volta dentro da tolerância) |
@@ -205,7 +205,7 @@ Capabilities criadas na fase até aqui:
 - presença (GEP 0021);
 - leitura e contagem de não lidas (GEP 0022).
 
-Todos os critérios têm evidência (o 4 com a ressalva do teste de navegador).
+Todos os critérios têm evidência.
 
 ### Passo 7 — a melhoria de latência (2026-10-02)
 
@@ -244,5 +244,4 @@ Pendências registradas para fases seguintes:
 - "digitando…" (estado efêmero por conversa): FASE 3, junto com estado de interface;
 - presença e avisos entre vários processos: FASE 4;
 - custo com milhares de pessoas diferentes (visibilidade por registro em cache): FASE 4;
-- teste de reconexão num navegador real: FASE 3, junto com o resto do comportamento do cliente;
 - `apagar_onde` (exclusão em lote) sem aviso; o hub antigo de `/ws` (G66) só no renderizador técnico.

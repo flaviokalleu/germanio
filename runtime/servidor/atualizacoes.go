@@ -456,17 +456,18 @@ const liveScript = `(function () {
     if (busy || typing()) { pending = true; return; }
     busy = true; pending = false;
     fetch(location.href, {credentials: 'same-origin', headers: {'X-Germanio-Vivo': '1'}})
-      .then(function (r) { return r.ok ? r.text() : null; })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
       .then(function (html) {
-        if (!html) return;
         var doc = new DOMParser().parseFromString(html, 'text/html');
         document.querySelectorAll('[data-vivo]').forEach(function (el) {
           var fresh = doc.querySelector('[data-vivo="' + el.getAttribute('data-vivo') + '"]');
           if (fresh) el.replaceWith(document.importNode(fresh, true));
         });
       })
-      .finally(function () { busy = false; if (pending) refresh(); });
+      .then(function () { busy = false; if (pending) refresh(); },
+            function () { busy = false; pending = true; setTimeout(refresh, 2000); }); // offline: try again
   }
+  window.addEventListener('online', refresh);
   document.addEventListener('focusout', function () { setTimeout(function () { if (pending) refresh(); }, 0); });
   // a row of a table changed: insert, replace or remove only that row (on
   // the first page without search or filters; otherwise refresh)
