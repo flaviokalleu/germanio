@@ -142,5 +142,25 @@ Limites registrados:
 - `apagar_onde` (exclusão em lote) ainda não anuncia;
 - o hub antigo de `/ws` continua servindo só o renderizador técnico anterior (G66).
 
-O gerador `bench/tempo_real` ainda fala o protocolo do baseline (mensagem completa por
-WebSocket); medir a Conversa pede um modo SSE no gerador (próximo passo).
+### Passo 3 — primeira medição (2026-10-02)
+
+O gerador ganhou `-modo sse`: cada assinante mantém a assinatura da página e, a cada aviso,
+busca a lista de novo, como o navegador faz. A latência é medida do envio até o assinante ter o
+dado. Resultado em
+[`bench/resultados/2026-10-02-tempo-real-germanio.txt`](../bench/resultados/2026-10-02-tempo-real-germanio.txt)
+(50 mensagens a 10/s):
+
+| Conexões | Go p99 | Germanio p99 | Razão | Entregas Germanio | Memória pico Go / Germanio |
+| --- | --- | --- | --- | --- | --- |
+| 500 | 8,3 ms | 43,6 ms | 5,2× | 25 000 de 25 000 | 44 MB / 115 MB |
+| 2 000 | 19,1 ms | 294,5 ms | 15× | 100 000 de 100 000 | 141 MB / 293 MB |
+
+O critério 1 (conexões sem erro) e o critério de entrega estão cumpridos. O **critério 2 (p99 ≤
+2× o Go) não está**, e a causa está medida: cada aviso faz cada assinante buscar a lista
+inteira, ou seja, N consultas por mudança contra um envio pronto no Go.
+
+Próximo passo, sem mudar a semântica (as regras continuam num só lugar):
+- o aviso passa a levar o registro já projetado para aquele assinante (`serializeFor`, as mesmas
+  regras da lista; a visibilidade já foi conferida para decidir o aviso), e a página aplica a
+  mudança na região viva;
+- a busca completa fica só para a reconexão e para mudanças que tiram o registro de vista.

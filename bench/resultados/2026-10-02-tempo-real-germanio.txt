@@ -1,0 +1,27 @@
+# Tempo real — Germanio (páginas vivas, GEP 0020) × baseline em Go
+data:      2026-10-02T21:11:50-03:00
+commit:    167c605 (com alterações locais: modo sse do gerador)
+go:        go version go1.27.1 linux/amd64
+cpu:       Intel(R) Core(TM) i7-10750H CPU @ 2.60GHz (12 núcleos)
+carga:     50 mensagens a 10/s; latência do envio até o assinante TER o dado (Go: mensagem completa por WebSocket; Germanio: aviso SSE + nova busca da lista)
+
+alvo=go-chat conexoes=500 falhas_conexao=0 remetentes=1 enviadas=50 falhas_envio=0 duracao_envio=5.004s
+entregas=25000 esperadas=25000 faltando=0 fora_de_ordem=0 repetidas=0 ressincronizacoes=0
+latencia_entrega p50=3.063207ms p90=4.867868ms p99=8.313667ms max=9.983142ms
+memoria_servidor rss_antes=10676KB rss_pico=43656KB
+
+alvo=germanio-vivo modo=sse conexoes=500 falhas_conexao=0 enviadas=50 falhas_envio=0 duracao_envio=5.274s
+avisos=25000 maximo_possivel=25000 (avisos fundidos contam uma vez)
+latencia_ate_ver p50=19.297332ms p90=28.277489ms p99=43.630068ms max=46.324922ms
+memoria_servidor rss_antes=35656KB rss_pico=115488KB
+
+alvo=go-chat conexoes=2000 falhas_conexao=0 remetentes=1 enviadas=50 falhas_envio=0 duracao_envio=5.01s
+entregas=100000 esperadas=100000 faltando=0 fora_de_ordem=0 repetidas=0 ressincronizacoes=0
+latencia_entrega p50=7.525214ms p90=12.899211ms p99=19.098042ms max=26.227289ms
+memoria_servidor rss_antes=10676KB rss_pico=141300KB
+
+alvo=germanio-vivo modo=sse conexoes=2000 falhas_conexao=0 enviadas=50 falhas_envio=0 duracao_envio=6.119s
+avisos=100000 maximo_possivel=100000 (avisos fundidos contam uma vez)
+latencia_ate_ver p50=71.156575ms p90=141.627212ms p99=294.526465ms max=565.330162ms
+memoria_servidor rss_antes=35712KB rss_pico=292696KB
+

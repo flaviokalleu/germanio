@@ -9,11 +9,13 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"slices"
@@ -51,7 +53,13 @@ func main() {
 	rate := flag.Int("taxa", 200, "mensagens por segundo (todas somadas)")
 	pid := flag.Int("pid", 0, "processo do servidor (memória em /proc)")
 	label := flag.String("rotulo", "", "nome do alvo no relatório")
+	mode := flag.String("modo", "ws", "ws: mensagens completas por WebSocket (baseline); sse: avisos de página viva do Germanio + nova busca")
+	refetch := flag.String("busca", "/_ge/api/mensagens?por_pagina=20", "no modo sse, o que a página busca de novo a cada aviso")
 	flag.Parse()
+	if *mode == "sse" {
+		runSSE(*base, *wsPath, *postPath, *refetch, *conns, *total, *rate, *pid, *label)
+		return
+	}
 
 	wsURL := strings.Replace(*base, "http", "ws", 1) + *wsPath
 	st := &stats{}
@@ -183,4 +191,100 @@ func rss(pid int) int64 {
 		}
 	}
 	return 0
+}
+
+// runSSE loads the live pages of Germanio (GEP 0020): N viewers keep the
+// page's subscription open; on each notice a viewer fetches the page's data
+// again, as the browser does. The latency is from the send to the end of
+// that fetch — what a person sees. Sends are spaced so each notice belongs
+// to the latest send; coalesced notices are reported, not hidden.
+func runSSE(base, sub, post, refetch string, conns, total, rate, pid int, label string) {
+	tr := &http.Transport{MaxIdleConns: conns * 2, MaxIdleConnsPerHost: conns * 2}
+	client := &http.Client{Transport: tr}
+	var lastSend atomic.Int64
+	st := &stats{}
+	var notices, dialErr atomic.Int64
+	ctx, cancel := context.WithCancel(context.Background())
+	var ready, done sync.WaitGroup
+	before := rss(pid)
+	for range conns {
+		ready.Add(1)
+		done.Add(1)
+		go func() {
+			defer done.Done()
+			req, _ := http.NewRequestWithContext(ctx, "GET", base+sub, nil)
+			resp, err := client.Do(req)
+			if err != nil || resp.StatusCode != 200 {
+				dialErr.Add(1)
+				ready.Done()
+				return
+			}
+			defer resp.Body.Close()
+			sc := bufio.NewScanner(resp.Body)
+			signalled := false
+			for sc.Scan() {
+				line := sc.Text()
+				if !signalled && strings.HasPrefix(line, ": ligado") {
+					signalled = true
+					ready.Done()
+				}
+				if line != "event: mudou" {
+					continue
+				}
+				notices.Add(1)
+				sent := lastSend.Load()
+				r, err := client.Get(base + refetch)
+				if err == nil {
+					io.Copy(io.Discard, r.Body)
+					r.Body.Close()
+				}
+				st.mu.Lock()
+				st.lat = append(st.lat, time.Duration(time.Now().UnixNano()-sent))
+				st.mu.Unlock()
+			}
+		}()
+	}
+	ready.Wait()
+	peak := atomic.Int64{}
+	go func() {
+		for ctx.Err() == nil {
+			if kb := rss(pid); kb > peak.Load() {
+				peak.Store(kb)
+			}
+			time.Sleep(200 * time.Millisecond)
+		}
+	}()
+	interval := time.Second / time.Duration(max(rate, 1))
+	var postErr int
+	start := time.Now()
+	for range total {
+		lastSend.Store(time.Now().UnixNano())
+		resp, err := client.Post(base+post, "application/json", strings.NewReader(`{"texto":"x"}`))
+		if err != nil || resp.StatusCode >= 300 {
+			postErr++
+		}
+		if resp != nil {
+			io.Copy(io.Discard, resp.Body)
+			resp.Body.Close()
+		}
+		time.Sleep(interval)
+	}
+	sendTime := time.Since(start)
+	time.Sleep(2 * time.Second)
+	cancel()
+	done.Wait()
+	slices.Sort(st.lat)
+	pct := func(p float64) time.Duration {
+		if len(st.lat) == 0 {
+			return 0
+		}
+		return st.lat[min(len(st.lat)-1, int(float64(len(st.lat))*p))]
+	}
+	expected := int64(total) * int64(conns-int(dialErr.Load()))
+	fmt.Printf("alvo=%s modo=sse conexoes=%d falhas_conexao=%d enviadas=%d falhas_envio=%d duracao_envio=%s\n", label, conns, dialErr.Load(), total, postErr, sendTime.Round(time.Millisecond))
+	fmt.Printf("avisos=%d maximo_possivel=%d (avisos fundidos contam uma vez)\n", notices.Load(), expected)
+	fmt.Printf("latencia_ate_ver p50=%s p90=%s p99=%s max=%s\n", pct(0.50), pct(0.90), pct(0.99), pct(1))
+	if pid > 0 {
+		fmt.Printf("memoria_servidor rss_antes=%dKB rss_pico=%dKB\n", before, peak.Load())
+	}
 }

@@ -1,0 +1,11 @@
+crie sistema Vivo
+
+mensagens
+    tem
+        texto obrigatório
+
+permita criar mensagens
+permita ver mensagens
+
+página Mensagens
+    mostre mensagens
