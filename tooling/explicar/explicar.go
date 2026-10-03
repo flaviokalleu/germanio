@@ -128,6 +128,9 @@ func Entidade(prog *ast.Program, nome string) (string, error) {
 			w("  cadastro: qualquer pessoa cria a própria conta (/cadastro); campos como admin nunca são aceitos\n")
 		}
 		w("  bloqueio: %d senhas erradas seguidas bloqueiam a conta por %d minutos; um endereço que erra 50 logins em 10 minutos espera\n", app.Login.LockAttempts, app.Login.LockMinutes)
+		if app.EmailNotices && app.EmailChoiceField != "" {
+			w("  avisos por e-mail: cada pessoa recebe as novas pendências por e-mail, a não ser que desligue %s (a pendência continua)\n", app.EmailChoiceField)
+		}
 		if app.Login.Recovery {
 			w("  recuperação de senha: /esqueci envia por e-mail um link de uso único, válido por 1 hora, para o endereço público (GERMANIO_URL_PUBLICA); a resposta não revela se a conta existe; o e-mail vem do ambiente (GERMANIO_SMTP_* ou GERMANIO_CORREIO_PASTA)\n")
 		}

@@ -652,7 +652,8 @@ quem é escrito como `@nome de usuário` nos textos do registro, se essa pessoa 
 
 `tenha avisos por e-mail` ([GEP 0013](gep/0013-avisos-por-email.md), **em teste**, não normativa
 até a decisão do mantenedor) manda cada nova pendência também por e-mail ao dono, depois de a
-mudança ser salva, com a configuração de e-mail da recuperação de senha.
+mudança ser salva, com a configuração de e-mail da recuperação de senha. Cada pessoa pode
+desligar os e-mails com um campo sim/não das pessoas, `avisos_por_email` (a pendência continua).
 
 ## Migração
 

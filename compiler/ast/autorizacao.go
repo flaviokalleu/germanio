@@ -19,6 +19,10 @@ type App struct {
 	ActivityEntity string
 	// EmailNotices: every new pending item is also sent by e-mail (GEP 0013).
 	EmailNotices bool
+	// EmailChoiceField: the people's yes/no field `avisos_por_email`; a
+	// person with it off gets the pending item but no e-mail ("" when the
+	// people have no such field; GEP 0013, em teste).
+	EmailChoiceField string
 	// Presence: people show whether they have a page open (GEP 0021).
 	Presence    bool
 	Login       *LoginDecl

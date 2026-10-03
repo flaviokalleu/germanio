@@ -1244,6 +1244,16 @@ func ResolveIntent(prog *ast.Program) error {
 			return r.errAt(in.EmailNoticesPos, "tenha avisos por e-mail avisa cada pessoa das suas pendências, mas nenhum dado gera pendências. Declare, no bloco do dado: pendência para › responsaveis")
 		}
 		app.EmailNotices = true
+		// Each person may turn the e-mails off with an ordinary yes/no field
+		// of the people named after the phrase: avisos_por_email.
+		if le := app.Entities[app.LoginEntity]; le != nil {
+			if f := fieldByNameAST(le.Model, "avisos_por_email"); f != nil {
+				if f.Type != ast.FieldBooleano {
+					return r.errAt(f.Pos, "avisos_por_email diz se a pessoa quer os avisos por e-mail, então é sim ou não. Escreva: avisos_por_email começa com verdadeiro")
+				}
+				app.EmailChoiceField = "avisos_por_email"
+			}
+		}
 	}
 
 	// 10a3. Presence (GEP 0021, em teste) is about the people who log in.
