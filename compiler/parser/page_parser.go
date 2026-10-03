@@ -8,6 +8,21 @@ import (
 	"github.com/flaviokalleu/germanio/compiler/lexer"
 )
 
+// pageWord is a page keyword as written, lowercased and without accents, so
+// seção, cartão, código and rodapé read like secao, cartao, codigo, rodape.
+func pageWord(tok lexer.Token) string { return foldWord(strings.ToLower(tok.Value)) }
+
+// pageBlockWord: the words that open a block of a page; any of them ends the
+// block before it.
+func pageBlockWord(w string) bool {
+	switch w {
+	case "pagina", "page", "navbar", "navegacao", "header", "hero", "capa", "destaque_principal",
+		"secao", "section", "rodape", "footer":
+		return true
+	}
+	return false
+}
+
 // parseCustomPage parses a single custom page declaration.
 //
 //	pagina "/site"
@@ -37,7 +52,7 @@ func (p *Parser) parseCustomPage() (*ast.CustomPage, error) {
 			break
 		}
 
-		val := strings.ToLower(tok.Value)
+		val := pageWord(tok)
 		if val == "pagina" || val == "page" || val == "rotas" || val == "routes" ||
 			val == "paginas" || val == "pages" || val == "tabela" || val == "quando" ||
 			val == "app" || val == "banco" || val == "tema" || val == "sidebar" {
@@ -60,7 +75,7 @@ func (p *Parser) parseCustomPage() (*ast.CustomPage, error) {
 		case "navbar", "navegacao", "header":
 			p.advance()
 			page.Blocks = append(page.Blocks, p.parsePageNavbar())
-		case "hero", "destaque_principal":
+		case "hero", "capa", "destaque_principal":
 			p.advance()
 			page.Blocks = append(page.Blocks, p.parsePageHero())
 		case "secao", "section":
@@ -91,13 +106,13 @@ func (p *Parser) parsePageNavbar() *ast.PageNavbar {
 			break
 		}
 
-		val := strings.ToLower(tok.Value)
-		if val == "pagina" || val == "page" || val == "hero" || val == "secao" || val == "rodape" || val == "footer" {
+		val := pageWord(tok)
+		if pageBlockWord(val) {
 			break
 		}
 
 		switch val {
-		case "logo":
+		case "logo", "marca":
 			p.advance()
 			p.skipWhitespace()
 			if !p.isAtEnd() && p.current().Type == lexer.TokenString {
@@ -152,13 +167,13 @@ func (p *Parser) parsePageHero() *ast.PageHero {
 			break
 		}
 
-		val := strings.ToLower(tok.Value)
-		if val == "pagina" || val == "page" || val == "navbar" || val == "secao" || val == "rodape" || val == "footer" {
+		val := pageWord(tok)
+		if pageBlockWord(val) {
 			break
 		}
 
 		switch val {
-		case "badge", "selo", "tag":
+		case "badge", "selo", "tag", "etiqueta":
 			p.advance()
 			p.skipWhitespace()
 			if !p.isAtEnd() && p.current().Type == lexer.TokenString {
@@ -198,8 +213,8 @@ func (p *Parser) parsePageHero() *ast.PageHero {
 			p.advance()
 			p.skipWhitespace()
 			isPrimary := true
-			if !p.isAtEnd() && (p.current().Value == "primario" || p.current().Value == "secundario") {
-				if p.current().Value == "secundario" {
+			if !p.isAtEnd() && (pageWord(p.current()) == "primario" || pageWord(p.current()) == "secundario") {
+				if pageWord(p.current()) == "secundario" {
 					isPrimary = false
 				}
 				p.advance()
@@ -214,6 +229,18 @@ func (p *Parser) parsePageHero() *ast.PageHero {
 				btn.URL = p.advance().Value
 			}
 			hero.Buttons = append(hero.Buttons, btn)
+		case "fundo", "background":
+			p.advance()
+			p.skipWhitespace()
+			if !p.isAtEnd() && p.current().Type == lexer.TokenString {
+				hero.Background = p.advance().Value
+			}
+		case "ponto", "point":
+			p.advance()
+			p.skipWhitespace()
+			if !p.isAtEnd() && p.current().Type == lexer.TokenString {
+				hero.Points = append(hero.Points, p.advance().Value)
+			}
 		case "codigo", "code":
 			p.advance()
 			p.skipWhitespace()
@@ -252,8 +279,8 @@ func (p *Parser) parsePageSection() *ast.PageSection {
 			break
 		}
 
-		val := strings.ToLower(tok.Value)
-		if val == "pagina" || val == "page" || val == "navbar" || val == "hero" || val == "secao" || val == "rodape" || val == "footer" {
+		val := pageWord(tok)
+		if pageBlockWord(val) {
 			break
 		}
 
@@ -263,6 +290,21 @@ func (p *Parser) parsePageSection() *ast.PageSection {
 			p.skipWhitespace()
 			if !p.isAtEnd() && p.current().Type == lexer.TokenString {
 				sec.Subtitle = p.advance().Value
+			}
+		case "fundo", "background":
+			p.advance()
+			p.skipWhitespace()
+			if !p.isAtEnd() && p.current().Type == lexer.TokenString {
+				sec.Background = p.advance().Value
+			} else if !p.isAtEnd() && (strings.EqualFold(p.current().Value, "claro") || strings.EqualFold(p.current().Value, "light")) {
+				p.advance()
+				sec.Light = true
+			}
+		case "imagem", "image":
+			p.advance()
+			p.skipWhitespace()
+			if !p.isAtEnd() && p.current().Type == lexer.TokenString {
+				sec.Image = p.advance().Value
 			}
 		case "grade", "grid":
 			p.advance()
@@ -274,10 +316,11 @@ func (p *Parser) parsePageSection() *ast.PageSection {
 				p.advance()
 			}
 			p.skipWhitespace()
-			if !p.isAtEnd() && (p.current().Value == "colunas" || p.current().Value == "cols") {
+			if !p.isAtEnd() && (pageWord(p.current()) == "colunas" || p.current().Value == "cols") {
 				p.advance()
 			}
 		case "card", "cartao":
+			cardCol := tok.Column
 			p.advance()
 			p.skipWhitespace()
 			card := &ast.PageCard{}
@@ -290,8 +333,9 @@ func (p *Parser) parsePageSection() *ast.PageSection {
 				if cTok.Type == lexer.TokenEOF {
 					break
 				}
-				cVal := strings.ToLower(cTok.Value)
-				if cVal == "card" || cVal == "cartao" || cVal == "secao" || cVal == "hero" || cVal == "rodape" || cVal == "codigo" {
+				cVal := pageWord(cTok)
+				// what is not indented under the card belongs to the section
+				if cTok.Column <= cardCol || pageBlockWord(cVal) {
 					break
 				}
 				switch cVal {
@@ -301,7 +345,7 @@ func (p *Parser) parsePageSection() *ast.PageSection {
 					if !p.isAtEnd() && p.current().Type == lexer.TokenString {
 						card.Icon = p.advance().Value
 					}
-				case "tag", "badge":
+				case "tag", "badge", "etiqueta", "selo":
 					p.advance()
 					p.skipWhitespace()
 					if !p.isAtEnd() && p.current().Type == lexer.TokenString {
@@ -328,7 +372,7 @@ func (p *Parser) parsePageSection() *ast.PageSection {
 				case "botao", "button":
 					p.advance()
 					p.skipWhitespace()
-					if !p.isAtEnd() && (p.current().Value == "primario" || p.current().Value == "primary") {
+					if !p.isAtEnd() && (pageWord(p.current()) == "primario" || pageWord(p.current()) == "primary") {
 						card.ButtonPrimary = true
 						p.advance()
 					}
@@ -385,13 +429,13 @@ func (p *Parser) parsePageFooter() *ast.PageFooter {
 			break
 		}
 
-		val := strings.ToLower(tok.Value)
-		if val == "pagina" || val == "page" || val == "hero" || val == "secao" || val == "navbar" {
+		val := pageWord(tok)
+		if pageBlockWord(val) {
 			break
 		}
 
 		switch val {
-		case "copyright", "texto", "text":
+		case "copyright", "texto", "text", "direitos":
 			p.advance()
 			p.skipWhitespace()
 			if !p.isAtEnd() && p.current().Type == lexer.TokenString {

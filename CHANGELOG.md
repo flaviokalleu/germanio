@@ -56,7 +56,15 @@ published under that name.
   either order, also enforced by a unique index.
 - Per-person choice of notification e-mail (`avisos_por_email`, amendment to GEP 0013).
 
+### Pages
+
+- Presentation pages in Portuguese (GEP 0059, em teste): `página "/"`, `navegação`, `capa`,
+  `seção`, `cartão`, `etiqueta`, `rodapé`, accents accepted; `fundo` (image or `claro`), `imagem`,
+  `ponto`, 1 and 4 column grids, code panels in sections; only same-application images; no
+  sideways scroll on phones. The project's landing page (`examples/landing/`) is written with it.
+
 ### Tests
+
 
 - The examples smoke test runs from a temporary directory, so the legacy WhatsApp example no longer
   leaves `whatsapp.db` inside the repository.

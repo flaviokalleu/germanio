@@ -14,7 +14,7 @@ func TestExamplesLoadAndServe(t *testing.T) {
 		"../examples/legacy/blog.ge", "../examples/legacy/crm.ge", "../examples/legacy/ecommerce.ge",
 		"../examples/legacy/cadastro-simples.ge", "../examples/legacy/english-mode.ge", "../examples/legacy/prompt-saas.ge",
 		"../examples/legacy/whaticket.ge", "../examples/legacy/evoticket/inicio.ge", "../examples/legacy/whaticket/inicio.ge",
-		"../examples/site-germanio/inicio.ge", "../demo/plano/inicio.ge", "../demo/organizado/inicio.ge",
+		"../examples/site-germanio/inicio.ge", "../examples/landing/app.ge", "../demo/plano/inicio.ge", "../demo/organizado/inicio.ge",
 	}
 	for _, ex := range examples {
 		t.Run(filepath.Base(filepath.Dir(ex))+"/"+filepath.Base(ex), func(t *testing.T) {

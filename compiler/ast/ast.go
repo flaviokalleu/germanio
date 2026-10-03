@@ -531,6 +531,10 @@ type PageHero struct {
 	Command     string
 	Mascot      string
 	CodePreview *PageCodePreview
+	// Background is an image under the hero (`fundo "/assets/x.png"`).
+	Background string
+	// Points are short highlights shown under the buttons (`ponto "…"`).
+	Points []string
 }
 
 func (p *PageHero) UIBlockType() string { return "Hero" }
@@ -553,6 +557,12 @@ type PageSection struct {
 	Cards      []*PageCard
 	CodeBlocks []*PageCodeBlock
 	TextBlocks []string
+	// Light renders the section as a light band (`fundo claro`).
+	Light bool
+	// Background is an image under the section (`fundo "/assets/x.png"`).
+	Background string
+	// Image is a wide picture after the section header (`imagem "/assets/x.png"`).
+	Image string
 }
 
 func (p *PageSection) UIBlockType() string { return "Section" }

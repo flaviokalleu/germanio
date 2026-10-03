@@ -1,0 +1,140 @@
+crie sistema Germanio
+
+página "/"
+    título "Germanio — Desenvolva mais com menos complexidade"
+
+    navegação
+        marca "/assets/germanio.png" "Germanio"
+        link "Início" "/"
+        link "Documentação" "https://github.com/flaviokalleu/germanio/tree/main/docs"
+        link "Exemplos" "https://github.com/flaviokalleu/germanio/tree/main/examples"
+        link "Comunidade" "https://github.com/flaviokalleu/germanio/discussions"
+        botão "Baixar" "https://github.com/flaviokalleu/germanio"
+
+    capa
+        fundo "/assets/montanhas.png"
+        selo "UMA LINGUAGEM. APLICAÇÕES COMPLETAS."
+        título "Desenvolva mais com"
+        destaque "menos complexidade."
+        descrição "Germanio é uma linguagem em português, declarativa e determinística. Você descreve o que existe, quem pode fazer o quê e o que aparece; o Germanio entrega o banco, o login, as permissões, a API e as páginas."
+        botão primário "Começar agora →" "#comecar"
+        botão secundário "Ver documentação" "https://github.com/flaviokalleu/germanio/tree/main/docs"
+        ponto "Sintaxe em português"
+        ponto "Full-stack nativo"
+        ponto "Runtime em Go"
+        ponto "Sem IA: sempre o mesmo resultado"
+        código "app.ge" "crie sistema Tarefas\n\ntarefas\n    tem\n        título obrigatório até 120\n        prazo data\n    pertence a usuario\n    começa aberta\n    pode\n        concluir\n    acesso\n        usuario\n            criar seus\n            ver seus\n\npágina Tarefas\n    mostre tarefas\n    permita\n        pesquisar\n        cadastrar"
+
+    seção "Por que Germanio"
+        fundo claro
+        subtítulo "Menos conceitos para aprender. As mesmas garantias de um sistema bem feito."
+        grade 4 colunas
+            cartão
+                ícone "📄"
+                título "Simples de aprender"
+                texto "Palavras do dia a dia em português e a indentação dizendo o que pertence a quê. O compilador explica cada erro: o quê, onde, por quê e como corrigir."
+            cartão
+                ícone "🧩"
+                título "Full-stack integrado"
+                texto "Dados, regras, permissões, API e páginas numa única descrição. Sem rotas, SQL ou HTML escritos à mão para o caso comum."
+            cartão
+                ícone "🛡️"
+                título "Seguro por padrão"
+                texto "Validação, sessões, proteção CSRF, autorização por registro e escaping vêm prontos. Quem não pode ver um registro recebe não encontrado."
+            cartão
+                ícone "⚡"
+                título "Medido, não prometido"
+                texto "O runtime é Go. Os benchmarks comparam o Germanio com a mesma aplicação escrita direto em Go, com máquina, comando e data publicados."
+
+    seção "Do zero a uma aplicação completa."
+        subtítulo "Este é um programa inteiro. Rode com ge run app.ge e abra o navegador."
+        código "app.ge" "crie sistema Tarefas\n\nusuarios\n    tem\n        nome obrigatório\n        email obrigatório e único\n        senha min 8\n\ntenha login\ntenha cadastro\nlogin usa email\n\ntarefas\n    tem\n        título obrigatório até 120\n        descrição\n        prazo data\n    pertence a usuario\n    começa aberta\n    pode\n        concluir\n        reabrir\n    acesso\n        usuario\n            criar seus\n            ver seus\n            editar seus\n            concluir seus\n            reabrir seus\n            excluir seus\n\npágina Tarefas\n    mostre tarefas\n    permita\n        pesquisar\n        cadastrar\n        editar\n        excluir"
+
+    seção "O que você ganha sem escrever"
+        subtítulo "Tudo isto sai das 38 linhas acima."
+        grade 3 colunas
+            cartão
+                ícone "🗄️"
+                etiqueta "BANCO"
+                título "Tabelas e migrações"
+                texto "O banco é criado e atualizado sozinho. Renomear um campo só com intenção explícita, para nunca perder dados por engano."
+            cartão
+                ícone "🔐"
+                etiqueta "LOGIN"
+                título "Cadastro, sessão e CSRF"
+                texto "Páginas de cadastro e entrada, senhas guardadas com hash, bloqueio após tentativas erradas e proteção contra requisições forjadas."
+            cartão
+                ícone "👥"
+                etiqueta "PERMISSÕES"
+                título "Cada pessoa vê o que é seu"
+                texto "seus quer dizer seus: ninguém vê, edita ou conclui a tarefa de outra pessoa, nem pela página, nem pela API."
+            cartão
+                ícone "🔄"
+                etiqueta "ESTADOS"
+                título "Concluir e reabrir"
+                texto "As transições registram quem fez e quando. Só aparecem para quem pode fazê-las."
+            cartão
+                ícone "🔌"
+                etiqueta "API"
+                título "API REST pronta"
+                texto "Listar com busca e paginação, ver, criar, editar e excluir, com as mesmas regras das páginas."
+            cartão
+                ícone "🔍"
+                etiqueta "EXPLICAÇÃO"
+                título "ge explain"
+                texto "Mostra tudo o que o Germanio entendeu: campos, estados, quem pode cada ação e de onde veio cada conclusão."
+                código "ge explain tarefas app.ge"
+
+    seção "Feito para o mundo real"
+        fundo "/assets/montanhas.png"
+        subtítulo "A prova de profundidade: uma reimplementação do GitLab FOSS escrita em Germanio."
+        imagem "/assets/editor.png"
+        grade 4 colunas
+            cartão
+                ícone "🦊"
+                etiqueta "GITLAB"
+                título "61 de 61"
+                texto "Itens do inventário do GitLab FOSS reimplementados e testados: projetos, grupos, issues, merge requests e muito mais."
+            cartão
+                ícone "🚀"
+                etiqueta "CI/CD"
+                título "gitlab-runner oficial"
+                texto "Pipelines executados pelo runner oficial do GitLab, com artefatos, dependências entre jobs e containers."
+            cartão
+                ícone "🌿"
+                etiqueta "GIT"
+                título "HTTP e SSH"
+                texto "Clone e push por HTTP e por SSH, branches protegidas, LFS e espelhos, com as mesmas regras de acesso."
+            cartão
+                ícone "📡"
+                etiqueta "TEMPO REAL"
+                título "Páginas vivas"
+                texto "O que outra pessoa muda aparece na sua tela sem recarregar, só para quem pode ver."
+
+    seção "Comece em um minuto"
+        subtítulo "Você precisa do Go e do Git. O banco SQLite já vem embutido."
+        grade 3 colunas
+            cartão
+                ícone "1️⃣"
+                etiqueta "INSTALAR"
+                título "Baixe e compile"
+                texto "Um único binário: ge."
+                código "git clone https://github.com/flaviokalleu/germanio.git\ncd germanio\ngo build -o ge ./cmd/ge"
+            cartão
+                ícone "2️⃣"
+                etiqueta "CRIAR"
+                título "Crie um projeto"
+                texto "O comando cria o app.ge e as pastas do projeto."
+                código "./ge new meu_app"
+            cartão
+                ícone "3️⃣"
+                etiqueta "RODAR"
+                título "Rode e abra o navegador"
+                texto "O servidor confere o programa antes de subir e recarrega quando você salva."
+                código "./ge run meu_app/app.ge\n# http://localhost:8080"
+
+    rodapé
+        direitos "Germanio © 2026 — Linguagem aberta, licença MIT."
+        link "GitHub" "https://github.com/flaviokalleu/germanio"
+        link "Documentação" "https://github.com/flaviokalleu/germanio/tree/main/docs"
+        link "Licença" "https://github.com/flaviokalleu/germanio/blob/main/LICENSE"

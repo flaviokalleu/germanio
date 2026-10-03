@@ -139,7 +139,10 @@ func (p *Parser) Parse() (*ast.Program, error) {
 						return nil, err
 					}
 					handled = true
-				case "pagina", "page":
+				case "pagina", "page", "página":
+					if tok.Value == "página" && p.peekNextMeaningful().Type != lexer.TokenString {
+						break // página Clientes is the intent page, not a page at an address
+					}
 					page, err := p.parseCustomPage()
 					if err != nil {
 						return nil, err

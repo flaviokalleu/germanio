@@ -344,12 +344,12 @@ func renderDeclarativePage(page *ast.CustomPage, meta pageMeta) string {
     }
     .grid-3 {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
       gap: 28px;
     }
     .grid-2 {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
       gap: 28px;
     }
     .card {
@@ -362,6 +362,7 @@ func renderDeclarativePage(page *ast.CustomPage, meta pageMeta) string {
       justify-content: space-between;
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      min-width: 0;
     }
     .card:hover {
       border-color: var(--border-hover);
@@ -453,6 +454,91 @@ func renderDeclarativePage(page *ast.CustomPage, meta pageMeta) string {
     .footer-links a:hover {
       color: var(--text-primary);
     }
+    /* Photo backgrounds, highlights, light bands, wide images */
+    .hero-photo {
+      background-size: cover;
+      background-position: center right;
+      padding: 110px 0 140px 0;
+    }
+    .hero-photo .hero-title { font-size: 4rem; }
+    .hero-points {
+      list-style: none;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 26px;
+      margin-top: 34px;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+    .hero-points li {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .hero-points li::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-cyan);
+      box-shadow: 0 0 8px var(--accent-cyan);
+    }
+    .section-photo {
+      background-size: cover;
+      background-position: center;
+    }
+    .section-light {
+      --bg-card: #FFFFFF;
+      --bg-card-hover: #FFFFFF;
+      --border-card: #E2E8F0;
+      --border-subtle: #E2E8F0;
+      --text-secondary: #475569;
+      background: #F5F7FB;
+      color: #0F172A;
+      border-top: none;
+    }
+    .section-light .section-title,
+    .section-light .card-title { color: #0B1220; }
+    .section-light .card { box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.06); }
+    .section-light .card:hover { border-color: #93C5FD; box-shadow: 0 12px 32px rgba(22, 139, 255, 0.12); }
+    .section-light .card-tag { color: #0B63CE; background: #EAF3FF; border-color: #BFDBFE; }
+    .section-image {
+      display: block;
+      width: 100%;
+      border-radius: 20px;
+      border: 1px solid rgba(0, 217, 255, 0.18);
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6), 0 0 40px rgba(0, 217, 255, 0.08);
+      margin-bottom: 44px;
+    }
+    .section-editor { margin-top: 28px; }
+    .section-split {
+      display: grid;
+      grid-template-columns: 0.8fr 1.2fr;
+      gap: 56px;
+      align-items: start;
+    }
+    .section-split .section-header { position: sticky; top: 110px; }
+    .section-split .section-editor { margin-top: 0; }
+    .section-split > *, .hero-grid > * { min-width: 0; }
+    @media (max-width: 960px) {
+      .section-split { grid-template-columns: 1fr; gap: 0; }
+      .section-split .section-header { position: static; }
+    }
+    .grid-1 { display: grid; grid-template-columns: 1fr; gap: 28px; }
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr));
+      gap: 22px;
+    }
+    @media (max-width: 960px) {
+      .hero-photo { padding: 70px 0 90px 0; background-position: center; }
+      .hero-photo .hero-title { font-size: 2.6rem; }
+    }
+    @media (max-width: 520px) {
+      .hero-title { font-size: 2.2rem; }
+      .grid-2 { grid-template-columns: 1fr; }
+      .grid-3 { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -541,10 +627,17 @@ func renderNavbar(b *strings.Builder, nav *ast.PageNavbar) {
 }
 
 func renderHero(b *strings.Builder, hero *ast.PageHero) {
-	b.WriteString(`
+	if bg, ok := pageImageURL(hero.Background); ok {
+		b.WriteString(`
+  <div class="hero-section hero-photo" style="background-image: linear-gradient(90deg, rgba(5,7,10,0.94) 0%, rgba(5,7,10,0.72) 45%, rgba(5,7,10,0.25) 100%), linear-gradient(180deg, rgba(5,7,10,0) 70%, var(--bg-main) 100%), url('` + bg + `');">
+    <div class="container hero-grid">
+      <div>`)
+	} else {
+		b.WriteString(`
   <div class="hero-section">
     <div class="container hero-grid">
       <div>`)
+	}
 
 	if hero.Badge != "" {
 		b.WriteString(fmt.Sprintf(`
@@ -589,7 +682,16 @@ func renderHero(b *strings.Builder, hero *ast.PageHero) {
           </div>`, html.EscapeString(hero.Command)))
 	}
 	b.WriteString(`
-        </div>
+        </div>`)
+	if len(hero.Points) > 0 {
+		b.WriteString(`
+        <ul class="hero-points">`)
+		for _, pt := range hero.Points {
+			b.WriteString(`<li>` + html.EscapeString(pt) + `</li>`)
+		}
+		b.WriteString(`</ul>`)
+	}
+	b.WriteString(`
       </div>
 
       <div>`)
@@ -629,10 +731,27 @@ func renderHero(b *strings.Builder, hero *ast.PageHero) {
 }
 
 func renderSection(b *strings.Builder, sec *ast.PageSection) {
-	b.WriteString(`
-  <div class="section">
+	class := "section"
+	if sec.Light {
+		class += " section-light"
+	}
+	if bg, ok := pageImageURL(sec.Background); ok {
+		b.WriteString(`
+  <div class="` + class + ` section-photo" style="background-image: linear-gradient(180deg, var(--bg-main) 0%, rgba(5,7,10,0.55) 25%, rgba(5,7,10,0.55) 75%, var(--bg-main) 100%), url('` + bg + `');">
     <div class="container">`)
+	} else {
+		b.WriteString(`
+  <div class="` + class + `">
+    <div class="container">`)
+	}
 
+	// A section with only code shows its header beside the code, like a
+	// worked example; with cards or images the code goes below them.
+	split := len(sec.CodeBlocks) > 0 && len(sec.Cards) == 0 && sec.Image == ""
+	if split {
+		b.WriteString(`
+      <div class="section-split">`)
+	}
 	if sec.Title != "" {
 		b.WriteString(`
       <div class="section-header">`)
@@ -646,10 +765,24 @@ func renderSection(b *strings.Builder, sec *ast.PageSection) {
       </div>`)
 	}
 
+	if img, ok := pageImageURL(sec.Image); ok {
+		alt := sec.Title
+		if alt == "" {
+			alt = "Imagem"
+		}
+		b.WriteString(`
+      <img class="section-image" src="` + img + `" alt="` + html.EscapeString(alt) + `" loading="lazy">`)
+	}
+
 	if len(sec.Cards) > 0 {
 		gridClass := "grid-3"
-		if sec.Columns == 2 {
+		switch sec.Columns {
+		case 1:
+			gridClass = "grid-1"
+		case 2:
 			gridClass = "grid-2"
+		case 4:
+			gridClass = "grid-4"
 		}
 		b.WriteString(fmt.Sprintf(`
       <div class="%s">`, gridClass))
@@ -708,10 +841,50 @@ func renderSection(b *strings.Builder, sec *ast.PageSection) {
       </div>`)
 	}
 
+	for _, cb := range sec.CodeBlocks {
+		filename := cb.Title
+		if filename == "" {
+			filename = "app.ge"
+		}
+		b.WriteString(fmt.Sprintf(`
+      <div class="editor-card section-editor">
+        <div class="editor-header">
+          <div style="display: flex; align-items: center;">
+            <div class="editor-dots"><div class="dot dot-red"></div><div class="dot dot-yellow"></div><div class="dot dot-green"></div></div>
+            <span class="editor-filename">%s</span>
+          </div>
+          <span class="editor-badge">.GE</span>
+        </div>
+        <pre class="editor-code"><code>%s</code></pre>
+      </div>`, html.EscapeString(filename), highlightGermanioCode(cb.Code)))
+	}
+
+	if split {
+		b.WriteString(`
+      </div>`)
+	}
 	b.WriteString(`
     </div>
   </div>
 `)
+}
+
+// pageImageURL accepts only images served by the application itself (a path
+// starting with "/", not "//") made of characters that cannot leave a CSS
+// url('…') or an HTML attribute; anything else is ignored. Images from other
+// sites are left out on purpose: a page should not depend on, or leak its
+// visitors to, a third party by default.
+func pageImageURL(u string) (string, bool) {
+	if !strings.HasPrefix(u, "/") || strings.HasPrefix(u, "//") || len(u) > 512 {
+		return "", false
+	}
+	for _, r := range u {
+		ok := r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || strings.ContainsRune("/._-", r)
+		if !ok {
+			return "", false
+		}
+	}
+	return u, true
 }
 
 func renderFooter(b *strings.Builder, foot *ast.PageFooter) {

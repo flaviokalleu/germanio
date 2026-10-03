@@ -378,6 +378,11 @@ quem pode fazê-la. Cada cartão tem os movimentos como botões, e arrastar é s
 `página Clientes` + `mostre clientes`, `permita` + ações e `20 por página` **é** `crie página
 Clientes` com o mesmo corpo. `pagina "/caminho"` (com texto entre aspas) continua sendo a página
 estática do nível técnico; os dois se distinguem pelo que vem depois da palavra.
+Em teste na [GEP 0059](gep/0059-pagina-de-apresentacao.md): a página estática aceita as palavras
+em português, com ou sem acento (`página "/"`, `navegação`, `capa`, `seção`, `cartão`, `etiqueta`,
+`rodapé`), imagem de fundo (`fundo "/assets/x.png"`), faixa clara (`fundo claro`), imagem larga
+(`imagem`), destaques (`ponto`) e exemplo de código ao lado do título; só imagens da própria
+aplicação.
 
 Seções de página ([GEP 0002](gep/0002-secoes-de-pagina.md), aceita): uma tabela fechada de
 regiões com significado de domínio. Nenhuma é obrigatória; cada uma troca só o próprio padrão;
