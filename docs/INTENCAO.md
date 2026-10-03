@@ -912,6 +912,18 @@ Nada disto aparece no `.ge`; é configuração de quem hospeda a aplicação.
 | `GERMANIO_PROXIES_CONFIAVEIS` | IPs/CIDRs dos proxies reversos; só deles se aceita `X-Forwarded-For`/`X-Real-IP`/`CF-Connecting-IP` (padrão: nenhum — o IP é o da conexão) |
 | `GERMANIO_ADMIN_SENHA` / `GERMANIO_ADMIN_EMAIL` | senha (e e-mail) do `administrador inicial`, usados só enquanto não existe ninguém |
 | `GERMANIO_PERMITIR_REDE_LOCAL` | permite webhooks/chamadas para endereços internos (desligado por padrão, proteção SSRF) |
+| `GERMANIO_SSH_ENDERECO` | liga o git por SSH nesse endereço (`:2222`); sem ela, nenhum servidor SSH existe ([GEP 0037](gep/0037-git-por-ssh.md), em teste) |
+| `GERMANIO_SSH_CHAVE_HOST` | arquivo da chave do servidor SSH (padrão `<GERMANIO_GIT_RAIZ>/.ssh/chave_host_ed25519`): criada uma vez com permissão 0600, nunca mostrada; legível por outros, a partida para |
+| `GERMANIO_SSH_CONEXOES` | conexões SSH atendidas ao mesmo tempo (padrão 64; 8 por endereço) |
+
+Git por SSH ([GEP 0037](gep/0037-git-por-ssh.md), **em teste**, sem frase no `.ge`): com
+`GERMANIO_SSH_ENDERECO`, quem cadastrou uma chave (`chave pública` num dado que pertence às
+pessoas) clona e envia com `git clone ssh://git@servidor:2222/grupo/projeto.git`, com as mesmas
+regras do HTTP (baixar e enviar código, somente leitura, branches protegidas, `antes de enviar
+código`, e depois do envio os eventos, o histórico e as execuções). Só a chave autentica; só
+`git-upload-pack` e `git-receive-pack` rodam, nunca um shell; pessoa bloqueada ou com e-mail não
+confirmado é recusada com o motivo. Um programa sem repositórios ou sem chaves das pessoas não
+parte com a variável definida, e o erro diz o que declarar.
 
 ## Trabalho remoto e teste de generalização
 
