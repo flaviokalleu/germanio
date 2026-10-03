@@ -60,6 +60,18 @@ copiar` keeps it: the built-in meaning only applies when the program says nothin
   (`copiar é "fork"`). The answer is 201 with the copy. Pages show a "Copiar" button to whoever may
   copy, and open the copy afterwards.
 
+## Amendment: the copies of one original
+
+The listing of a data with copies accepts `?copiado_de_id=<original>` (the original by its
+reference or unique field; the vocabulary renames the parameter like the field,
+`forked_from_project_id`). It keeps the copies of that original that the person sees — each copy
+still passes `ver` — and only when the person also sees the original; otherwise the list is empty,
+so a copy never tells someone where it came from (the rule of `copiado_de` above). Pagination,
+search and the other filters work as on any listing. The GitLab adapter answers
+`GET /projects/:id/forks` with it (404 when the project is hidden). Creating the copy in a place
+named by its address is GEP 0044. Tests: `runtime` `TestVariosValoresLugarECopias`, GitLab E2E
+`TestForksDoProjeto`.
+
 ## Alternatives studied
 
 - **A capability section (`pode` › `ser copiado`).** `ser X` already means a yes/no condition

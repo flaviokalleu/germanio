@@ -189,6 +189,18 @@ func (b *Banco) filterSQL(modelo string, cols map[string]bool, filtros map[strin
 			}
 			where = append(where, "("+strings.Join(ors, " OR ")+")")
 			continue
+		case "contem_todos":
+			// every one of the values (a list field containing all the given items)
+			list, ok := filtros[key].([]any)
+			if !ok {
+				return nil, nil, fmt.Errorf("o filtro '%s' exige uma lista", key)
+			}
+			for _, item := range list {
+				where = append(where, "LOWER("+col+") LIKE "+b.ph(*n)+" ESCAPE '\\'")
+				args = append(args, "%"+escapeLike(strings.ToLower(fmt.Sprint(item)))+"%")
+				*n++
+			}
+			continue
 		case "comeca_com":
 			where = append(where, col+" LIKE "+b.ph(*n)+" ESCAPE '\\'")
 			val = escapeLike(fmt.Sprint(val)) + "%"
