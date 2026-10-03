@@ -91,6 +91,11 @@ func TestInterfaceWeb(t *testing.T) {
 			t.Fatalf("página do projeto sem %q:\n%s", want, page)
 		}
 	}
+	// IS-09: as issues do projeto aparecem num board por estado (GEP 0023)
+	if !strings.Contains(page, `class="coluna" data-estado="aberta"`) || !strings.Contains(page, `class="coluna" data-estado="fechada"`) {
+		t.Fatalf("a página do projeto não mostra as issues por estado:\n%s", page)
+	}
+
 	// erro aparece para a pessoa, sem perder a página
 	code, page, _ = b.submit("/projetos/novo", url.Values{"_csrf": {csrf}, "_campos": {"1"}, "nome": {"Outro"}, "caminho": {"web-app"}})
 	if code != 200 || !strings.Contains(page, "aviso erro") {

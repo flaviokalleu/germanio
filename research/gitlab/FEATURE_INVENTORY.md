@@ -65,7 +65,7 @@ Escopo núcleo v1 = features marcadas **[N]** (fluxos 1–5 da missão + testes 
 | IS-06 | Milestones | | milestones | `/milestones` | milestones | Reporter+ | | | PASS | TestMilestones |
 | IS-07 [N] | Filtros e busca | state, labels, assignee, author, search | lista | `GET /issues?state&labels&search` | issues | leitura | | | PASS | TestFluxo3 |
 | IS-08 [N] | Confidencial | visível só a Reporter+, autor, assignees | | `confidential` | issues | | | | PASS | TestFluxo3, TestIssuesPrivadasNaoVazam |
-| IS-09 | Boards, weights, time tracking, links, moves | | | | | | | | ADIADO → FASE 3 (boards: arrastar, estado local; a sincronização entre pessoas usa a FASE 2) | |
+| IS-09 | Boards, weights, time tracking, links, moves | | | | | | | | PARTIAL (boards: as issues de cada projeto em colunas por estado, arrastar = transição, GEP 0023; pesos, controle de tempo, ligações entre issues e mover entre projetos ainda não) | TestInterfaceWeb, TestPorEstado, TestNavegador |
 
 ## Merge Requests
 

@@ -4,6 +4,7 @@ importar projetos e grupos do backend
 
 página Projetos
     mostre projetos
+        issues por estado
     topo
         título "Projetos"
         ações

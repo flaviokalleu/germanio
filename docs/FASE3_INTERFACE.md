@@ -1,7 +1,9 @@
 # FASE 3 — Interface altamente interativa
 
-> **Estado: INICIADA em 2026-10-02**, depois do encerramento da FASE 2
-> ([FASE2_TEMPO_REAL.md](FASE2_TEMPO_REAL.md)).
+> **Estado: ENCERRADA em 2026-10-02.** GEP da fase (0023, por estado) em teste, AGUARDANDO
+> DECISÃO. Critérios 1–7 com evidência; regressão: nenhuma piora ≥ 1,5×
+> ([`2026-10-02-494cfa0.txt`](../bench/resultados/2026-10-02-494cfa0.txt)). Os boards também
+> estão no GitLab (as issues de cada projeto por estado).
 
 **Pergunta da fase:** Germanio constrói experiências de interface complexas, e não só sistemas
 administrativos, sem virar React traduzido?
