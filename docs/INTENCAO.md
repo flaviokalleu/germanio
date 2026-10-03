@@ -359,6 +359,9 @@ válidas. `construcao_do_sistema` são as construções sem sujeito único (`ten
 | `guarda histórico` ([GEP 0011](gep/0011-historico.md), em teste) | `d guarda histórico` |
 | `guarda leitura` ([GEP 0022](gep/0022-leitura.md), em teste) | `d guarda leitura` (abrir o contêiner lê; ele mostra `nao_lidas` a cada pessoa) |
 | `usam variaveis do projeto` ([GEP 0015](gep/0015-variaveis-das-execucoes.md), em teste; nas execuções) | `pipelines usam as variaveis do projeto` |
+| `indicadores` › `total de issues abertas`, `soma do peso das issues como peso total` ([GEP 0047](gep/0047-agregados.md), em teste) | `milestone mostra soma do peso das issues como peso total` (cada registro mostra quantos registros apontam para ele, ou a soma de um campo de número deles, contando só o que quem vê pode ver; calculado pelo banco numa consulta, nunca guardado nem aceito na entrada; o nome vem de `como` ou da própria linha) |
+| `pode` › `zerar tempo gasto` ([GEP 0047](gep/0047-agregados.md), em teste) | `issue pode zerar tempo gasto` (a ação `zerar_tempo_gasto` registra, numa mudança só e com o registro travado, o registro que desconta a soma; pode quem pode criar esses registros ali e vê todos eles) |
+| `regras` › `única por par de issues` ([GEP 0048](gep/0048-pares.md), em teste) | `ligacao é única por par de issues` (as duas referências à issue nunca são a mesma — 400 — e o mesmo par, em qualquer ordem, aparece uma vez — 409; o banco também garante) |
 | `espelham o repositório do projeto` ([GEP 0036](gep/0036-espelhos.md), em teste; no dado dos espelhos, com `url` e `pertence a projeto`) | `espelhos espelham o repositório do projeto` |
 
 Uma **ação sem alvo** vale para o próprio dado (a coleção: `administrar` sem alvo inclui
@@ -443,8 +446,10 @@ de `permita`. Um rótulo sozinho (`"Novo cliente"`) é erro: um texto não é um
 valem na página da coleção (não nas listas aninhadas). `ge explain pagina Clientes` mostra cada
 seção como declarada ou padrão e quem vê cada ação. Indicadores (`indicadores` ›
 `total de issues abertas`) estão em teste na [GEP 0012](gep/0012-indicadores.md), não normativa
-até a decisão do mantenedor: cada número conta só o que quem vê a página pode ver. Gráficos,
-somas e médias ainda não existem: cada um depende de uma GEP própria.
+até a decisão do mantenedor: cada número conta só o que quem vê a página pode ver. Os números
+de cada registro (contagens e somas do que pertence a ele) estão em teste na
+[GEP 0047](gep/0047-agregados.md) e aparecem nos detalhes do registro. Gráficos, médias e somas
+num painel ainda não existem: cada um depende de uma GEP própria.
 
 ### Fusão e conflitos
 
@@ -1096,9 +1101,9 @@ A tabela é um contrato de aceitação, não uma declaração de que todos os te
 
 - Verbos que ligam e desligam uma condição sem máquina de estados (`pode` › `arquivar`,
   `restaurar`) ainda não existem; hoje a forma é `pode` › `ser arquivado`.
-- `gráfico`, `lista` e indicadores como `total de clientes` nas páginas seguem como direção,
-  dependentes de uma GEP de agregados (as seções `topo`, `filtros`, `colunas` e `vazio` são
-  norma: Página).
+- `gráfico`, `lista` e somas num painel seguem como direção (as seções `topo`, `filtros`,
+  `colunas` e `vazio` são norma: Página); contagens numa página estão em teste na GEP 0012 e
+  os números de cada registro na GEP 0047.
 - `ge check --nivel N` (avisar construções acima de um nível) ainda não existe.
 
 ## Checklist de design de novas construções

@@ -88,6 +88,8 @@ Rules:
 | [0035](0035-git-lfs.md) | Large files in repositories (Git LFS; no syntax) | Em teste |
 | [0036](0036-espelhos.md) | Mirrors of a repository (`espelham o repositório do projeto`) | Em teste |
 | [0039](0039-login-com-conta-externa.md) | Sign-in with an external account, OpenID Connect (`tenha login com conta externa`) | Em teste |
+| [0047](0047-agregados.md) | Numbers of a record: counts and sums of what belongs to it, and zeroing a sum (`indicadores` › `soma do peso das issues`, `pode zerar tempo gasto`) | Em teste |
+| [0048](0048-pares.md) | A link is unique per pair, never to itself (`única por par de issues`) | Em teste |
 
 Revisão final das GEPs em teste 0010–0017, com recomendação por GEP e sem mudança de status:
 [REVISAO_0010_0017.md](REVISAO_0010_0017.md).
