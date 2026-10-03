@@ -1,0 +1,29 @@
+crie sistema Suporte
+
+usuarios
+    tem
+        nome obrigatório
+        email obrigatório e único
+        senha min 8
+        avisos_por_email privado começa com verdadeiro
+    acesso
+        usuario
+            ver
+            editar seu perfil
+
+tenha login
+tenha cadastro
+tenha avisos por e-mail
+
+chamados
+    tem
+        titulo obrigatório
+        autor
+        responsaveis
+    pendência para
+        responsaveis
+    acesso
+        usuario
+            ver
+            criar
+            editar

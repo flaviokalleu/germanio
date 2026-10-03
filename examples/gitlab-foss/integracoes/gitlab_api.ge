@@ -1,0 +1,97 @@
+# NÍVEL AVANÇADO / ADAPTADOR DE COMPATIBILIDADE
+#
+# Partes da API v4 do GitLab que têm outro formato que a superfície gerada:
+# o feed de eventos (nomes de ação do GitLab), as preferências de notificação
+# e as estatísticas do administrador. Cada rota só traduz e pede à própria
+# aplicação (GEP 0033), como a pessoa que chamou: quem pode ver o quê está em
+# backend/.
+
+logica
+    definir CABECALHOS_DE_PAGINA = ["X-Total", "X-Page", "X-Per-Page", "X-Total-Pages"]
+
+    # Uma resposta recusada volta como veio (404, 403, 401...).
+    funcao exigir(r)
+        se r.estado >= 300
+            responder(r.estado, r.corpo)
+        retornar r
+
+    funcao pagina_de(r)
+        definir h = {}
+        para cada nome em CABECALHOS_DE_PAGINA
+            se tem(r.cabecalhos, nome)
+                h[nome] = r.cabecalhos[nome]
+        retornar h
+
+    # O histórico (GEP 0011) guarda verbos do domínio; o GitLab chama as ações
+    # pelo que aconteceu.
+    funcao acao_gitlab(acao, tipo)
+        se acao == "criar"
+            se tipo == "issue" ou tipo == "merge_request"
+                retornar "opened"
+            se tipo == "comentario"
+                retornar "commented on"
+            retornar "created"
+        definir nomes = {fechar: "closed", reabrir: "reopened", mesclar: "accepted", editar: "updated", excluir: "destroyed", enviar_codigo: "pushed to", aprovar: "approved", desaprovar: "unapproved", mudar: "updated"}
+        retornar obter(nomes, acao, acao)
+
+    funcao tipo_gitlab(tipo)
+        definir nomes = {issue: "Issue", merge_request: "MergeRequest", comentario: "Note", milestone: "Milestone", projeto: "Project", grupo: "Group", label: "Label"}
+        retornar obter(nomes, tipo, tipo)
+
+    funcao tipo_germanio(tipo)
+        definir nomes = {issue: "issue", merge_request: "merge_request", note: "comentario", milestone: "milestone", project: "projeto"}
+        se tipo == nulo
+            retornar nulo
+        retornar obter(nomes, minusculo(tipo), tipo)
+
+    funcao evento_gitlab(a)
+        definir ev = {id: a.id, action_name: acao_gitlab(a.action_name, a.target_type), target_id: a.target_id, target_type: tipo_gitlab(a.target_type), target_title: a.target_title, author_id: a.author_id, created_at: a.created_at, project_id: nulo}
+        se obter(a, "dentro", nulo) == "projeto"
+            ev.project_id = a.dentro_id
+        retornar ev
+
+    funcao listar_eventos(consulta, requisicao)
+        consulta.page = obter(requisicao.consulta, "page", nulo)
+        consulta.per_page = obter(requisicao.consulta, "per_page", nulo)
+        consulta.target_type = tipo_germanio(obter(requisicao.consulta, "target_type", nulo))
+        definir r = exigir(superficie.pedir("GET", "historico", nulo, consulta))
+        definir lista = []
+        para cada at em r.corpo
+            lista = adicionar(lista, evento_gitlab(at))
+        responder(200, lista, pagina_de(r))
+
+    funcao nivel(pessoa)
+        se obter(pessoa, "avisos_por_email", verdadeiro) == falso
+            retornar "disabled"
+        retornar "participating"
+
+rotas
+    rota GET "/api/v4/events"
+        listar_eventos({}, requisicao)
+
+    rota GET "/api/v4/projects/:id/events"
+        definir p = exigir(superficie.pedir("GET", ["projects", requisicao.parametros.id]))
+        listar_eventos({dentro: "projeto", dentro_id: p.corpo.id}, requisicao)
+
+    rota GET "/api/v4/notification_settings"
+        definir eu = exigir(superficie.pedir("GET", "user"))
+        responder(200, {level: nivel(eu.corpo), notification_email: obter(eu.corpo, "email", nulo)})
+
+    rota PUT "/api/v4/notification_settings"
+        definir eu = exigir(superficie.pedir("GET", "user"))
+        definir pedido = obter(requisicao.consulta, "level", obter(requisicao.corpo, "level", nulo))
+        se pedido != nulo
+            se nao contem(["disabled", "participating", "watch", "global", "mention", "custom"], pedido)
+                responder(400, {message: {level: ["is not included in the list"]}})
+            definir r = exigir(superficie.pedir("PUT", ["users", eu.corpo.id], {avisos_por_email: pedido != "disabled"}))
+            eu = r
+        responder(200, {level: nivel(eu.corpo), notification_email: obter(eu.corpo, "email", nulo)})
+
+    # Estatísticas da instância: o GitLab só as mostra ao administrador. Os
+    # números contam como os indicadores (GEP 0012).
+    rota GET "/api/v4/application/statistics"
+        se atual == nulo
+            responder(401, {message: "401 Unauthorized"})
+        se nao acesso.administrador()
+            responder(403, {message: "403 Forbidden"})
+        responder(200, {users: texto(superficie.contar("usuarios")), active_users: texto(superficie.contar("usuarios", "ativo")), projects: texto(superficie.contar("projetos")), groups: texto(superficie.contar("grupos")), issues: texto(superficie.contar("issues")), merge_requests: texto(superficie.contar("merge_requests")), notes: texto(superficie.contar("comentarios")), milestones: texto(superficie.contar("milestones")), forks: "0", snippets: "0", ssh_keys: "0"})

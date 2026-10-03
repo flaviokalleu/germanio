@@ -19,6 +19,10 @@ type App struct {
 	ActivityEntity string
 	// EmailNotices: every new pending item is also sent by e-mail (GEP 0013).
 	EmailNotices bool
+	// EmailChoiceField: the people's yes/no field `avisos_por_email`; a
+	// person with it off gets the pending item but no e-mail ("" when the
+	// people have no such field; GEP 0013, em teste).
+	EmailChoiceField string
 	// Presence: people show whether they have a page open (GEP 0021).
 	Presence    bool
 	Login       *LoginDecl
@@ -49,6 +53,13 @@ type Entity struct {
 	Label    string
 	// Parent relations (pertence a): field → entity model name.
 	Parents map[string]string
+	// IndependentParents: two or more parent fields not inside one another
+	// (a link naming two issues); a record is then seen or changed only by
+	// whoever sees every filled one.
+	IndependentParents []string
+	// MoveField: the parent field a record may change by moving
+	// (`issue pode mudar de projeto`, GEP 0034, em teste); "" when it may not.
+	MoveField string
 	// Children (tem): entity model names.
 	Children []string
 	// HierarchyField links an entity to itself (grupo tem subgrupos).
@@ -97,12 +108,17 @@ type Entity struct {
 	Review *Review
 	// Approvals: `X recebe aprovações` (aprovar/desaprovar, people list).
 	Approvals bool
+	// ApprovalsNeeded: verb → approvals required before it happens (GEP 0026).
+	ApprovalsNeeded map[string]int
 	// Finals: states no transition leaves (mesclado é final).
 	Finals []string
 	// Execution: this entity is a run of steps (pipelines) or a step (jobs).
 	Execution *Execution
 	// Subscription: records of this entity receive events of an owner (webhooks).
 	Subscription *Subscription
+	// Mirror: records of this entity are mirrors of the owner's repository
+	// (`espelhos espelham o repositório do projeto`, GEP 0036).
+	Mirror *Mirror
 	// ReadOnlyWhen: flag that freezes the record and what belongs to it
 	// (`projeto arquivado é somente leitura`).
 	ReadOnlyWhen string
@@ -113,6 +129,15 @@ type Entity struct {
 	Repository bool // X tem repositório
 	// InitialFile: `repositório do projeto pode começar com "README.md" contendo "# {nome}"`.
 	InitialFile *RepoFile
+	// Copies: someone may copy a record (an access rule for `copiar`, GEP
+	// 0029); the copy records its origin in copiado_de_id.
+	Copies bool
+	// Marks: people mark records once each (`projetos recebe estrelas`,
+	// GEP 0030); the name of the marks is also the field with their count.
+	Marks string
+	// ItemFilters: a filter named after one item of a list field (topico →
+	// topicos, GEP 0030).
+	ItemFilters map[string]string
 	RepoKey     string   // field whose value addresses the repository (<valor>.git)
 	Search      []string // fields searched by pesquisar
 	Filters     []string // fields accepted by filtrar
@@ -174,7 +199,15 @@ type Restriction struct {
 type Review struct {
 	Source, Target string // field names
 	RepoVia        string // parent field leading to the record with the repository
+	// Runs: the executions of the record with the repository; a merge can
+	// wait for the latest one of the source branch to succeed (GEP 0027).
+	Runs string
 }
+
+// Merge methods of the record with the repository (GEP 0027): a merge
+// commit, a merge commit over a source brought up to date, or no merge
+// commit at all (the target only advances).
+var MergeMethods = []string{"mesclagem", "semi_linear", "linear"}
 
 // Execution describes runs defined by a file in the repository.
 type Execution struct {
@@ -207,6 +240,14 @@ type Subscription struct {
 	Owner      string
 	OwnerField string
 	Kinds      []string // enviar_codigo, issues, merge_requests…
+}
+
+// Mirror: each record (with a url) is an external repository that receives
+// the owner's code after every change, or from which the owner's repository
+// is brought periodically, according to its sentido (GEP 0036).
+type Mirror struct {
+	Owner      string
+	OwnerField string
 }
 
 // ViewThrough names the fields of a record that point at the record it

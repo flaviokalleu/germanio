@@ -382,6 +382,12 @@ func (a *intentAPI) runLock(id any) *sync.Mutex {
 // fail does not block the stages after it. The run's state summarises its
 // steps.
 func (a *intentAPI) advance(ctx *interp.Context, run *ast.Entity, runID any) {
+	finished := ""
+	defer func() { // after the lock is released: merges waiting for this run (GEP 0027)
+		if finished != "" {
+			a.runFinished(ctx, run, runID, finished)
+		}
+	}()
 	lock := a.runLock(runID)
 	lock.Lock()
 	defer lock.Unlock()
@@ -413,6 +419,7 @@ func (a *intentAPI) advance(ctx *interp.Context, run *ast.Entity, runID any) {
 		}
 	}
 	a.in.Op(ctx, run.Singular, "atualizar", runID, change)
+	finished = st
 	if res, _ := a.in.Op(ctx, run.Singular, "buscar", runID); res != nil {
 		a.emit(ctx, run, st, res.(map[string]any), nil) // run finished
 		a.history(ctx, nil, run, st, nil, res.(map[string]any))

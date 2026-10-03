@@ -152,22 +152,26 @@ func (a *intentAPI) authorizeSSH(ctx context.Context, entities []*ast.Entity, wh
 	case a.s.unconfirmed(atual):
 		return nil, fmt.Errorf("confirme o seu e-mail antes de usar o git; o link de confirmação foi enviado quando você se cadastrou.")
 	}
+	// the person is already known by the key: identify returns them
 	ictx.Values["atual"] = atual
 	ictx.Values["token"] = "ssh"
-	e, row := a.findRepository(ictx, entities, address)
-	if refusal := a.authorizeGit(ictx, atual, e, row, service); refusal != nil {
-		switch refusal.kind {
-		case gitReadOnly:
-			return nil, fmt.Errorf("%s", refusal.message)
-		case gitVerb:
-			if refusal.verb == "enviar_codigo" {
-				return nil, fmt.Errorf("você pode ver o repositório %q, mas não pode enviar código para ele. Peça a quem administra um papel que permita enviar código.", address)
-			}
-			return nil, fmt.Errorf("você pode ver o repositório %q, mas não pode baixar o código dele. Peça a quem administra um papel que permita baixar código.", address)
-		default:
-			return nil, fmt.Errorf("o repositório %q não foi encontrado, ou você não tem acesso a ele. Confira o endereço (por exemplo ssh://servidor/grupo/projeto.git).", address)
+	var refusal error
+	grant, ok := a.codeAccess(ictx, r, entities, address, service == "receive-pack", false, func(status int, msg string) {
+		switch {
+		case status == http.StatusUnauthorized || status == http.StatusNotFound:
+			refusal = fmt.Errorf("o repositório %q não foi encontrado, ou você não tem acesso a ele. Confira o endereço (por exemplo ssh://servidor/grupo/projeto.git).", address)
+		case msg == codeDenied("enviar_codigo"):
+			refusal = fmt.Errorf("você pode ver o repositório %q, mas não pode enviar código para ele. Peça a quem administra um papel que permita enviar código.", address)
+		case msg == codeDenied("baixar_codigo"):
+			refusal = fmt.Errorf("você pode ver o repositório %q, mas não pode baixar o código dele. Peça a quem administra um papel que permita baixar código.", address)
+		default: // a read-only record: the rule's own friendly message
+			refusal = fmt.Errorf("%s", msg)
 		}
+	})
+	if !ok {
+		return nil, refusal
 	}
+	e, row := grant.e, grant.row
 	repo, _ := row["repositorio"].(string)
 	acc := &git.SSHAccess{Repo: repo}
 	if service == "receive-pack" {

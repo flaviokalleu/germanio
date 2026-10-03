@@ -27,13 +27,18 @@ func RepoPath(model string, id any) string {
 	return "@hashed/" + h[:2] + "/" + h[2:4] + "/" + h + ".git"
 }
 
-func (a *intentAPI) createRepository(ctx *interp.Context, e *ast.Entity, row map[string]any) error {
+// createRepository gives a new record its repository: an empty one, or a
+// copy of the repository of origin (the record it copies, GEP 0029).
+func (a *intentAPI) createRepository(ctx *interp.Context, e *ast.Entity, row, origin map[string]any) error {
 	if !e.Repository || a.s.Git == nil {
 		return nil
 	}
 	path := RepoPath(e.Singular, row["id"])
-	branch := defaultBranch(row)
-	if err := a.s.Git.Init(path, branch); err != nil {
+	if src := toStr(origin["repositorio"]); src != "" {
+		if err := a.s.Git.Copy(src, path); err != nil {
+			return err
+		}
+	} else if err := a.s.Git.Init(path, defaultBranch(row)); err != nil {
 		return err
 	}
 	undoOnRollback(ctx, func() { a.s.Git.Remove(path) })
@@ -83,6 +88,7 @@ func (a *intentAPI) removeRepository(e *ast.Entity, row map[string]any) {
 	if e.Repository && a.s.Git != nil {
 		if p, ok := row["repositorio"].(string); ok && p != "" {
 			a.s.Git.Remove(p)
+			lfsStore().RemoveRepo(p) // the large files go with the repository
 		}
 	}
 }
@@ -106,6 +112,10 @@ func (s *Servidor) gitMiddleware(next http.Handler) http.Handler {
 		}
 		key := strings.TrimPrefix(r.URL.Path[:i], "/")
 		sub := r.URL.Path[i+5:]
+		if lfs, ok := strings.CutPrefix(sub, "info/lfs/"); ok {
+			a.serveLFS(w, r, repoEntities, key, lfs)
+			return
+		}
 		service, advertise, ok := git.ServiceFromRequest(r, sub)
 		if !ok {
 			http.NotFound(w, r)
@@ -115,44 +125,106 @@ func (s *Servidor) gitMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (a *intentAPI) serveGit(w http.ResponseWriter, r *http.Request, entities []*ast.Entity, key, service string, advertise bool) {
-	ctx := &interp.Context{Request: r, Writer: w}
-	challenge := func() {
-		w.Header().Set("WWW-Authenticate", `Basic realm="Germanio"`)
-		http.Error(w, "HTTP Basic: Access denied", http.StatusUnauthorized)
+// repoRecord finds the record whose repository is addressed by key.
+func (a *intentAPI) repoRecord(ctx *interp.Context, entities []*ast.Entity, key string) (*ast.Entity, map[string]any) {
+	for _, cand := range entities {
+		res, err := a.in.Op(ctx, cand.Singular, "encontrar", map[string]any{cand.RepoKey: key})
+		if m, ok := res.(map[string]any); ok && err == nil {
+			return cand, m
+		}
 	}
-	e, row := a.findRepository(ctx, entities, key)
-	// A running step's token reads the repository of that step (remote executors clone with it).
-	if _, pass, ok := r.BasicAuth(); ok && row != nil && service == "upload-pack" {
+	return nil, nil
+}
+
+// codeGrant is who may use a repository over a Git transport.
+type codeGrant struct {
+	e          *ast.Entity
+	row, atual map[string]any
+	step       bool // a running step's token (reads only)
+}
+
+// codeAccess applies the rules of every Git transport (smart HTTP, LFS):
+// reading needs to see the record and, when declared, baixar código;
+// writing needs enviar código, a record that is not read-only and a token
+// scope that allows it. A running step's token may read the repository of
+// that step (remote executors clone with it). deny answers a refusal in the
+// transport's own format; 401 asks for credentials.
+func (a *intentAPI) codeAccess(ctx *interp.Context, r *http.Request, entities []*ast.Entity, key string, write, stepReads bool, deny func(status int, msg string)) (codeGrant, bool) {
+	e, row := a.repoRecord(ctx, entities, key)
+	if _, pass, ok := r.BasicAuth(); ok && row != nil && !write && stepReads {
 		if step, job := a.stepByToken(ctx, pass, true); job != nil && a.stepOwnerIs(ctx, step, job, e, row) {
-			a.gitProtocol(w, r, ctx, row, service, advertise)
-			return
+			return codeGrant{e: e, row: row, step: true}, true
 		}
 	}
 	atual, err := a.s.identify(ctx, r)
 	if err != nil {
-		challenge()
+		deny(http.StatusUnauthorized, "")
+		return codeGrant{}, false
+	}
+	if row == nil || !a.in.Can(ctx, atual, e, "ver", row) {
+		if atual == nil {
+			deny(http.StatusUnauthorized, "")
+		} else {
+			deny(http.StatusNotFound, "")
+		}
+		return codeGrant{}, false
+	}
+	verb := "baixar_codigo"
+	if write {
+		verb = "enviar_codigo"
+		if le, _ := a.lockedAncestor(ctx, e, row, true, 0); le != nil {
+			deny(http.StatusForbidden, interp.Friendly(a.readOnlyError(le)))
+			return codeGrant{}, false
+		}
+	}
+	if !a.s.scopeAllows(ctx, verb) {
+		deny(http.StatusForbidden, "The token does not have the scope for this operation")
+		return codeGrant{}, false
+	}
+	allowed := false
+	if verb == "baixar_codigo" && len(e.Rules["baixar_codigo"]) == 0 {
+		allowed = true // seeing the record is enough to clone when no rule narrows it
+	} else {
+		allowed = a.in.Can(ctx, atual, e, verb, row)
+	}
+	if !allowed {
+		if atual == nil {
+			deny(http.StatusUnauthorized, "")
+		} else {
+			deny(http.StatusForbidden, codeDenied(verb))
+		}
+		return codeGrant{}, false
+	}
+	return codeGrant{e: e, row: row, atual: atual}, true
+}
+
+// codeDenied is the refusal of someone who sees the repository but may not
+// download (baixar_codigo) or send (enviar_codigo) code.
+func codeDenied(verb string) string {
+	return "You are not allowed to " + strings.ReplaceAll(verb, "_codigo", " code") + " in this repository"
+}
+
+func (a *intentAPI) serveGit(w http.ResponseWriter, r *http.Request, entities []*ast.Entity, key, service string, advertise bool) {
+	ctx := &interp.Context{Request: r, Writer: w}
+	acc, ok := a.codeAccess(ctx, r, entities, key, service == "receive-pack", service == "upload-pack", func(status int, msg string) {
+		switch status {
+		case http.StatusUnauthorized:
+			w.Header().Set("WWW-Authenticate", `Basic realm="Germanio"`)
+			http.Error(w, "HTTP Basic: Access denied", http.StatusUnauthorized)
+		case http.StatusNotFound:
+			http.NotFound(w, r)
+		default:
+			http.Error(w, msg, status)
+		}
+	})
+	if !ok {
 		return
 	}
-	refusal := a.authorizeGit(ctx, atual, e, row, service)
-	switch {
-	case refusal == nil:
-	case atual == nil && refusal.kind != gitReadOnly:
-		challenge()
-		return
-	case refusal.kind == gitHidden:
-		http.NotFound(w, r)
-		return
-	case refusal.kind == gitReadOnly:
-		http.Error(w, refusal.message, http.StatusForbidden)
-		return
-	case refusal.kind == gitScope:
-		http.Error(w, "The token does not have the scope for this operation", http.StatusForbidden)
-		return
-	default:
-		http.Error(w, "You are not allowed to "+strings.ReplaceAll(refusal.verb, "_codigo", " code")+" in this repository", http.StatusForbidden)
+	if acc.step {
+		a.gitProtocol(w, r, ctx, acc.row, service, advertise)
 		return
 	}
+	e, row, atual := acc.e, acc.row, acc.atual
 	repo, _ := row["repositorio"].(string)
 	var check func([]git.RefUpdate) error
 	if service == "receive-pack" {
@@ -168,18 +240,6 @@ func (a *intentAPI) serveGit(w http.ResponseWriter, r *http.Request, entities []
 	}
 }
 
-// findRepository finds the record whose repository is addressed by key
-// (the value of its repository key), or nil.
-func (a *intentAPI) findRepository(ctx *interp.Context, entities []*ast.Entity, key string) (*ast.Entity, map[string]any) {
-	for _, cand := range entities {
-		res, err := a.in.Op(ctx, cand.Singular, "encontrar", map[string]any{cand.RepoKey: key})
-		if m, ok := res.(map[string]any); ok && err == nil {
-			return cand, m
-		}
-	}
-	return nil, nil
-}
-
 // repositoryEntities lists the data whose records have a repository.
 func (a *intentAPI) repositoryEntities() []*ast.Entity {
 	var out []*ast.Entity
@@ -189,46 +249,6 @@ func (a *intentAPI) repositoryEntities() []*ast.Entity {
 		}
 	}
 	return out
-}
-
-// What the rules say about one Git request, whatever the transport (smart
-// HTTP, SSH): a refusal kind, or nil when the request may go on.
-type gitRefusal struct {
-	kind    int
-	verb    string // baixar_codigo or enviar_codigo
-	message string // the read-only reason, already friendly
-}
-
-const (
-	gitHidden   = iota // no such repository, or the person may not see it
-	gitReadOnly        // the record (or an ancestor) is read-only
-	gitScope           // the access token's scopes do not cover it
-	gitVerb            // the person sees it but may not download / send code
-)
-
-// authorizeGit decides whether atual may download (upload-pack) or send
-// (receive-pack) code to the repository of row.
-func (a *intentAPI) authorizeGit(ctx *interp.Context, atual map[string]any, e *ast.Entity, row map[string]any, service string) *gitRefusal {
-	if row == nil || !a.in.Can(ctx, atual, e, "ver", row) {
-		return &gitRefusal{kind: gitHidden}
-	}
-	verb := "baixar_codigo"
-	if service == "receive-pack" {
-		verb = "enviar_codigo"
-		if le, _ := a.lockedAncestor(ctx, e, row, true, 0); le != nil {
-			return &gitRefusal{kind: gitReadOnly, verb: verb, message: interp.Friendly(a.readOnlyError(le))}
-		}
-	}
-	if !a.s.scopeAllows(ctx, verb) {
-		return &gitRefusal{kind: gitScope, verb: verb}
-	}
-	if verb == "baixar_codigo" && len(e.Rules["baixar_codigo"]) == 0 {
-		return nil // seeing the record is enough to clone when no rule narrows it
-	}
-	if !a.in.Can(ctx, atual, e, verb, row) {
-		return &gitRefusal{kind: gitVerb, verb: verb}
-	}
-	return nil
 }
 
 // pushRules checks the updates of a push before anything is written:
@@ -251,8 +271,9 @@ func pushVars(atual map[string]any, e *ast.Entity, row map[string]any, list []gi
 	return map[string]any{"atual": nilIfEmpty(atual), "registro": row, e.Singular: row, "atualizacoes": updatesToMaps(list)}
 }
 
-// afterPush runs what follows a push that changed refs: the event, the
-// history, the executions and `quando enviar código`.
+// afterPush runs what follows a push that changed refs, on every
+// transport: the event, the history, the executions, the push mirrors
+// (codeChanged) and `quando enviar código`.
 func (a *intentAPI) afterPush(ctx *interp.Context, atual map[string]any, e *ast.Entity, row map[string]any, applied []git.RefUpdate) {
 	pushed := map[string]any{"atualizacoes": updatesToMaps(applied), "id": row["id"]}
 	for k, v := range row {
@@ -266,6 +287,7 @@ func (a *intentAPI) afterPush(ctx *interp.Context, atual map[string]any, e *ast.
 		fmt.Printf("[germanio] histórico do envio de código: %v\n", err)
 	}
 	a.startRuns(ctx, atual, e, row, updatesToMaps(applied))
+	a.codeChanged(ctx, e, row)
 	if h := e.Hooks["enviar_codigo"]; h != nil {
 		if _, _, err := a.in.RunHook(ctx, h, pushVars(atual, e, row, applied)); err != nil {
 			// The push already happened; report the failure in the log.
@@ -535,6 +557,7 @@ func (a *intentAPI) mountRepository(mux *routeMux, base string, e *ast.Entity) {
 		}
 		update.New = id
 		a.startRuns(ctx, atual, e, row, updatesToMaps([]git.RefUpdate{update}))
+		a.codeChanged(ctx, e, row)
 		a.json(w, 200, map[string]any{"file_path": path, "branch": branch, "commit_id": id}, nil)
 	}, true))
 	mux.HandleFunc("GET "+root+"/"+names["compare"], h(func(w http.ResponseWriter, r *http.Request, ctx *interp.Context, atual, row map[string]any, repo string) {
@@ -749,10 +772,11 @@ func (a *intentAPI) checkBranches(ctx *interp.Context, e *ast.Entity, data map[s
 	return nil
 }
 
-// merge joins origem into destino in the repository. Merging into the main
-// branch counts as sending code to it (protected branch rules apply);
-// drafts (rascunho) cannot be merged; conflicts refuse with the file list.
-func (a *intentAPI) merge(ctx *interp.Context, atual map[string]any, e *ast.Entity, row map[string]any) error {
+// mergeReady checks what must hold before merging, except waiting for
+// executions: the record is open and not a draft, the branches do not
+// conflict, the approvals are there (GEP 0026) and merging into the target
+// counts as sending code to it (protected branch rules apply).
+func (a *intentAPI) mergeReady(ctx *interp.Context, atual map[string]any, e *ast.Entity, row map[string]any) error {
 	en := a.app.Messages == "en"
 	for _, final := range e.Finals {
 		if fmt.Sprint(row[e.StateField]) == final {
@@ -773,31 +797,88 @@ func (a *intentAPI) merge(ctx *interp.Context, atual map[string]any, e *ast.Enti
 		}
 		return &interp.RuntimeError{Status: 406, Message: msg}
 	}
-	repo, parent := a.reviewRepo(ctx, e, row)
+	if len(e.ApprovalsNeeded) > 0 {
+		// conflicts are told before missing approvals: approving does not fix them
+		if check := a.mergeCheck(ctx, e, row); check != nil && check["pode"] == false {
+			return a.conflictError(toStrings(check["conflitos"]))
+		}
+		if err := a.approvalGate(e, "mesclar", row); err != nil {
+			return err
+		}
+	}
+	_, parent := a.reviewRepo(ctx, e, row)
 	pe := a.app.Entities[e.Parents[e.Review.RepoVia]]
 	target := fmt.Sprint(row[e.Review.Target])
-	if err := a.protectedBranch(ctx, atual, pe, parent, []git.RefUpdate{{Old: "(atual)", New: "(mescla)", Ref: "refs/heads/" + target}}); err != nil {
+	return a.protectedBranch(ctx, atual, pe, parent, []git.RefUpdate{{Old: "(atual)", New: "(mescla)", Ref: "refs/heads/" + target}})
+}
+
+// merge joins origem into destino in the repository, in the way the record
+// with the repository chooses (forma_de_mesclar, GEP 0027): a merge commit
+// (mesclagem); a merge commit over an origem brought up to date first
+// (semi_linear); or no merge commit, destino only advancing to an origem
+// brought up to date (linear). squash writes every change as one commit
+// on top of destino instead. Bringing origem up to date rewrites it, so it
+// follows the rules of sending code to origem. Conflicts refuse with the
+// file list.
+func (a *intentAPI) merge(ctx *interp.Context, atual map[string]any, e *ast.Entity, row map[string]any, squash bool) error {
+	if err := a.mergeReady(ctx, atual, e, row); err != nil {
 		return err
 	}
+	repo, parent := a.reviewRepo(ctx, e, row)
+	pe := a.app.Entities[e.Parents[e.Review.RepoVia]]
+	target, source := fmt.Sprint(row[e.Review.Target]), fmt.Sprint(row[e.Review.Source])
+	targetRef, sourceRef := "refs/heads/"+target, "refs/heads/"+source
 	title := fmt.Sprint(first(toStr(row["titulo"]), toStr(row["title"])))
-	msg := fmt.Sprintf("Merge branch '%s' into '%s'\n\n%s\n", row[e.Review.Source], target, title)
+	msg := fmt.Sprintf("Merge branch '%s' into '%s'\n\n%s\n", source, target, title)
 	author := git.Signature{Name: toStr(atual["nome"]), Email: toStr(atual["email"])}
 	if author.Name == "" {
 		author.Name = toStr(atual["username"])
 	}
-	sha, err := a.s.Git.Merge(repo, target, "refs/heads/"+fmt.Sprint(row[e.Review.Source]), msg, author)
+	before, err := a.s.Git.Resolve(repo, targetRef)
+	if err != nil {
+		return err
+	}
+	method := toStr(parent["forma_de_mesclar"])
+	var sha string
+	switch {
+	case squash:
+		sha, err = a.s.Git.Squash(repo, target, sourceRef, title+"\n", author)
+	case method == "linear" || method == "semi_linear":
+		upToDate, aerr := a.s.Git.IsAncestor(repo, targetRef, sourceRef)
+		if aerr != nil {
+			return aerr
+		}
+		if !upToDate {
+			if err := a.protectedBranch(ctx, atual, pe, parent, []git.RefUpdate{{Old: "(atual)", New: "(rebase)", Ref: sourceRef}}); err != nil {
+				return err
+			}
+			if _, err = a.s.Git.Rebase(repo, source, targetRef, author); err != nil {
+				break
+			}
+		}
+		if method == "linear" {
+			sha, err = a.s.Git.FastForward(repo, target, sourceRef)
+		} else {
+			sha, err = a.s.Git.Merge(repo, target, sourceRef, msg, author)
+		}
+	default:
+		sha, err = a.s.Git.Merge(repo, target, sourceRef, msg, author)
+	}
 	if err != nil {
 		var conf *git.ErrConflict
 		if errorsAs(err, &conf) {
-			m := "Há conflitos entre as branches: " + strings.Join(conf.Files, ", ")
-			if en {
-				m = "Branch cannot be merged"
-			}
-			return &interp.RuntimeError{Status: 406, Message: m}
+			return a.conflictError(conf.Files)
 		}
 		return err
 	}
-	_, err = a.in.Op(ctx, e.Singular, "atualizar", row["id"], map[string]any{"commit_mesclagem": sha})
+	change := map[string]any{"commit_mesclagem": sha, "base_mesclagem": before}
+	if e.Review.Runs != "" {
+		change["mesclar_quando_passar"], change["mesclagem_agendada_por_id"] = false, nil
+	}
+	_, err = a.in.Op(ctx, e.Singular, "atualizar", row["id"], change)
+	if err == nil {
+		a.codeChanged(ctx, pe, parent)
+	}
 	return err
 }
 
@@ -838,6 +919,9 @@ func (a *intentAPI) reviewView(w http.ResponseWriter, r *http.Request, ctx *inte
 		// after merging, compare the merge commit with its first parent
 		if c, err := a.s.Git.GetCommit(repo, sha); err == nil && len(c.ParentIDs) == 2 {
 			dst, src = c.ParentIDs[0], c.ParentIDs[1]
+		} else if base, _ := row["base_mesclagem"].(string); err == nil && base != "" {
+			// squashed or fast-forwarded (GEP 0027): from destino before the merge
+			dst, src = base, sha
 		}
 	}
 	base, err := a.s.Git.MergeBase(repo, dst, src)

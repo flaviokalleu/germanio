@@ -727,6 +727,15 @@ func ResolveIntent(prog *ast.Program) error {
 		// A capability has no object: "issue pode fechar", "issue pode ser
 		// confidencial". With an object it is a permission for people.
 		e := r.byName[g.Role]
+		if e != nil && app.Level(g.Role) == 0 && !reservedRoles[g.Role] && g.Verb == "mudar" {
+			// issue pode mudar de projeto (GEP 0034): a record may move to
+			// another parent of the same kind
+			if err := r.movable(e, g); err != nil {
+				return err
+			}
+			in.Capabilities = append(in.Capabilities, g)
+			continue
+		}
 		if e == nil || app.Level(g.Role) > 0 || reservedRoles[g.Role] || (g.Target != "" && g.Verb != "ser") {
 			grants = append(grants, g)
 			continue
@@ -848,6 +857,31 @@ func ResolveIntent(prog *ast.Program) error {
 		e.Approvals = true
 		e.Model.Fields = append(e.Model.Fields, &ast.Field{Name: "aprovacoes", Type: ast.FieldLista, ListOf: app.LoginEntity, System: true})
 	}
+	// X recebe estrelas (GEP 0030): each person marks a record once; the
+	// record keeps how many marks it has under the name of the marks.
+	for _, md := range in.Marks {
+		e, err := r.entity(md.Entity, md.Pos)
+		if err != nil {
+			return err
+		}
+		if e.Marks == md.Name {
+			continue // the same fact again
+		}
+		if app.LoginEntity == "" {
+			return r.errAt(md.Pos, "%s recebe %s: marcas são das pessoas\nPor quê: cada pessoa marca um registro uma vez, e só há pessoas com login\nComo corrigir: declare tenha login", e.Plural, md.Name)
+		}
+		if e.Marks != "" {
+			return r.errAt(md.Pos, "%s já recebe %s; não pode receber também %s\nPor quê: as ações marcar e desmarcar seriam ambíguas com duas marcas no mesmo dado\nComo corrigir: mantenha um só: %s recebe %s", e.Plural, e.Marks, md.Name, e.Plural, e.Marks)
+		}
+		if fieldByNameAST(e.Model, md.Name) != nil || app.Entities[md.Name] != nil {
+			return r.errAt(md.Pos, "%s recebe %s: %s já é um campo ou um dado\nPor quê: o nome das marcas também é o campo com a contagem delas\nComo corrigir: use outro nome para as marcas ou para o campo", e.Plural, md.Name, md.Name)
+		}
+		e.Marks = md.Name
+		e.Model.Fields = append(e.Model.Fields, &ast.Field{Name: md.Name, Type: ast.FieldInteiro, HasDefault: true, DefaultValue: 0.0, System: true, Pos: md.Pos})
+	}
+	if err := r.approvalMinimums(in); err != nil {
+		return err
+	}
 
 	for _, f := range in.Finals {
 		e, err := r.entity(f.Entity, f.Pos)
@@ -916,6 +950,10 @@ func ResolveIntent(prog *ast.Program) error {
 			sys("repetido", ast.FieldBooleano), sys("imagem", ast.FieldTexto), sys("artefatos_expiram_em", ast.FieldTexto))
 	}
 	if err := r.runVariables(in); err != nil {
+		return err
+	}
+	mergeOptions(app)
+	if err := r.mirrors(in); err != nil {
 		return err
 	}
 
@@ -1068,6 +1106,15 @@ func ResolveIntent(prog *ast.Program) error {
 					pm.By[i] = f
 				}
 				if fieldByNameAST(e.Model, f) == nil {
+					// one item of a list: filtrar por topico (topicos lista de texto), GEP 0030
+					if list := itemList(e.Model, f); list != "" {
+						if e.ItemFilters == nil {
+							e.ItemFilters = map[string]string{}
+						}
+						e.ItemFilters[f] = list
+						e.Filters = appendUnique(e.Filters, f)
+						continue
+					}
 					return r.errAt(pm.Pos, "permita filtrar %s por %s: %s não tem esse campo", pm.Target, f, e.Singular)
 				}
 				e.Filters = appendUnique(e.Filters, f)
@@ -1286,6 +1333,16 @@ func ResolveIntent(prog *ast.Program) error {
 			return r.errAt(in.EmailNoticesPos, "tenha avisos por e-mail avisa cada pessoa das suas pendências, mas nenhum dado gera pendências. Declare, no bloco do dado: pendência para › responsaveis")
 		}
 		app.EmailNotices = true
+		// Each person may turn the e-mails off with an ordinary yes/no field
+		// of the people named after the phrase: avisos_por_email.
+		if le := app.Entities[app.LoginEntity]; le != nil {
+			if f := fieldByNameAST(le.Model, "avisos_por_email"); f != nil {
+				if f.Type != ast.FieldBooleano {
+					return r.errAt(f.Pos, "avisos_por_email diz se a pessoa quer os avisos por e-mail, então é sim ou não. Escreva: avisos_por_email começa com verdadeiro")
+				}
+				app.EmailChoiceField = "avisos_por_email"
+			}
+		}
 	}
 
 	// 10a3. Presence (GEP 0021, em teste) is about the people who log in.
@@ -1368,6 +1425,36 @@ func ResolveIntent(prog *ast.Program) error {
 		e.Integrate = name
 	}
 
+	// Records that name two independent parents (a link between two issues,
+	// a citation between two documents) are seen and changed only by whoever
+	// sees every filled one. Parents inside one another (an issue's project
+	// and milestone) are not independent: the inner one counts.
+	for _, n := range app.Order {
+		e := app.Entities[n]
+		var fields []string
+		for f, t := range e.Parents {
+			if t != app.LoginEntity && t != e.Singular {
+				fields = append(fields, f)
+			}
+		}
+		sort.Strings(fields)
+		var inner []string
+		for _, f := range fields {
+			outer := false
+			for _, g := range fields {
+				if f != g && e.Parents[f] != e.Parents[g] && r.isAncestor(app.Entities[e.Parents[f]], app.Entities[e.Parents[g]]) {
+					outer = true
+				}
+			}
+			if !outer {
+				inner = append(inner, f)
+			}
+		}
+		if len(inner) >= 2 {
+			e.IndependentParents = inner
+		}
+	}
+
 	// Custom verbs must have a definition.
 	for _, n := range app.Order {
 		e := app.Entities[n]
@@ -1375,13 +1462,28 @@ func ResolveIntent(prog *ast.Program) error {
 			if !standardVerb(verb) {
 				builtin := (verb == "sair" && (e.HasMembers || e.InheritVia != "")) || (verb == "revogar" && e.Model.Revocable) || e.Transitions[verb] != nil ||
 					((verb == "aprovar" || verb == "desaprovar") && e.Approvals) ||
-					(e.Execution != nil && (verb == "cancelar" || verb == "repetir" || verb == "executar"))
+					(e.Execution != nil && (verb == "cancelar" || verb == "repetir" || verb == "executar")) ||
+					(verb == "copiar" && e.Hooks[verb] == nil && e.Transitions[verb] == nil)
 				if _, ok := e.Hooks[verb]; !ok && !builtin {
 					return fmt.Errorf("a ação %q sobre %s não tem definição. Escreva:\n\nquando %s %s\n    ...", verb, e.Plural, verb, e.Singular)
 				}
 				for _, rl := range rules {
 					rl.Custom = true
 				}
+			}
+		}
+		if e.Marks != "" {
+			for _, verb := range []string{"marcar", "desmarcar"} {
+				if e.Transitions[verb] != nil || e.Hooks[verb] != nil || len(e.Rules[verb]) > 0 {
+					return fmt.Errorf("%s recebe %s: a ação %q já pertence às marcas\nPor quê: quem vê o registro o marca e desmarca; nenhuma outra ação pode ter esse nome\nComo corrigir: dê outro nome à sua ação", e.Plural, e.Marks, verb)
+				}
+			}
+		}
+		// `copiar` (GEP 0029): a copy of a record remembers which one it came from.
+		if len(e.Rules["copiar"]) > 0 && e.Hooks["copiar"] == nil && e.Transitions["copiar"] == nil {
+			e.Copies = true
+			if fieldByNameAST(e.Model, "copiado_de_id") == nil {
+				e.Model.Fields = append(e.Model.Fields, &ast.Field{Name: "copiado_de_id", Label: "copiado de", Type: ast.FieldInteiro, Reference: e.Singular, Index: true, System: true})
 			}
 		}
 		prog.Models = append(prog.Models, e.Model)
@@ -1504,6 +1606,21 @@ func appendUnique(list []string, v string) []string {
 		}
 	}
 	return append(list, v)
+}
+
+// itemList: the list field (of texts or numbers) whose items are named by
+// the singular item ("topico" → "topicos"), or "".
+func itemList(m *ast.Model, item string) string {
+	for _, f := range m.Fields {
+		if f.Type != ast.FieldLista || f.System || (f.ListOf != "texto" && f.ListOf != "numero") {
+			continue
+		}
+		name := strings.ToLower(f.Name)
+		if Singular(name) == item || altSingular(name) == item {
+			return name
+		}
+	}
+	return ""
 }
 
 func fieldByNameAST(m *ast.Model, name string) *ast.Field {
@@ -1697,6 +1814,44 @@ func (r *resolver) belongsTo(e, c *ast.Entity) bool {
 		}
 	}
 	return e.Singular == r.app.MemberModel && c.HasMembers
+}
+
+// movable checks `X pode mudar de Y` (GEP 0034): Y is a parent of X, the
+// one X moves between.
+func (r *resolver) movable(e *ast.Entity, g *ast.Grant) error {
+	if g.Target == "" {
+		return r.errAt(g.Pos, "%s pode mudar de quê? Diga de onde ele muda, por exemplo: %s pode mudar de projeto", e.Singular, e.Singular)
+	}
+	pe := r.byName[g.Target]
+	if pe == nil {
+		return r.errAt(g.Pos, "%s pode mudar de %s: não conheço %q. Um registro muda de um dado ao qual pertence", e.Singular, g.Target, g.Target)
+	}
+	field := ""
+	if e.Parents[pe.Singular+"_id"] == pe.Singular {
+		field = pe.Singular + "_id"
+	} else {
+		var fields []string
+		for f, t := range e.Parents {
+			if t == pe.Singular {
+				fields = append(fields, f)
+			}
+		}
+		sort.Strings(fields)
+		if len(fields) > 0 {
+			field = fields[0]
+		}
+	}
+	if field == "" || pe.Singular == r.app.LoginEntity || e.Singular == r.app.MemberModel || pe == e {
+		return r.errAt(g.Pos, "%s pode mudar de %s: %s não pertence a %s.\nPor quê: mudar é levar o registro de um %s para outro.\nComo corrigir: declare antes que %s pertence a %s (por exemplo: %s › tem › %s)", e.Singular, pe.Singular, e.Singular, pe.Singular, pe.Singular, e.Singular, pe.Singular, pe.Plural, e.Plural)
+	}
+	if e.Transitions["mudar"] != nil {
+		return r.errAt(g.Pos, "%s já tem a ação mudar como mudança de estado; mudar de %s seria outra coisa com o mesmo nome", e.Singular, pe.Singular)
+	}
+	if e.MoveField != "" && e.MoveField != field {
+		return r.errAt(g.Pos, "%s já pode mudar de %s; um registro muda de um só lugar", e.Singular, strings.TrimSuffix(e.MoveField, "_id"))
+	}
+	e.MoveField = field
+	return nil
 }
 
 func (r *resolver) isAncestor(a, b *ast.Entity) bool {

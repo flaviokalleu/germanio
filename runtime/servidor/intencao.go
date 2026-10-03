@@ -1,6 +1,7 @@
 package servidor
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -55,11 +56,14 @@ func (s *Servidor) registerIntent(mux *routeMux) error {
 	s.intent = a
 	a.live = newLiveHub(a)
 	a.setupReading()
+	a.setupMarks()
 	a.setupTextImages()
 	s.registerTaskModule()
 	s.tasks().handle("entrega", a.deliver)
+	a.startMirrors()
 	a.mountSearch(mux)
 	a.registerRemoteModule()
+	s.registerSurfaceModule(a)
 	a.startLeases()
 	a.startArtifactCleanup()
 	for _, name := range app.Order {
@@ -87,8 +91,12 @@ func (a *intentAPI) mount(mux *routeMux, base string, e *ast.Entity, integration
 func (a *intentAPI) mountLevel(mux *routeMux, base string, chain []*ast.Entity, integration bool) {
 	e := chain[len(chain)-1]
 	item := base + "/{r" + strconv.Itoa(len(chain)-1) + "}"
+	addr := a.fileAddressing(base, e, integration)
 	h := func(op, verb string) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
+			if addr != nil {
+				r = r.WithContext(context.WithValue(r.Context(), fileAddressKey{}, addr))
+			}
 			if !unsafeMethods[r.Method] {
 				a.serve(w, r, chain, op, verb)
 				return
@@ -113,6 +121,15 @@ func (a *intentAPI) mountLevel(mux *routeMux, base string, chain []*ast.Entity, 
 	}
 	if e.Approvals {
 		actions["aprovar"], actions["desaprovar"] = true, true
+	}
+	if e.Marks != "" {
+		actions["marcar"], actions["desmarcar"] = true, true
+	}
+	if e.Review != nil && e.Review.Runs != "" {
+		actions["cancelar_mesclagem"] = true
+	}
+	if e.MoveField != "" {
+		actions["mudar"] = true // GEP 0034
 	}
 	if e.Execution != nil {
 		actions["cancelar"] = true
@@ -322,6 +339,7 @@ func serializeFor(ctx *interp.Context, in *interp.Interpreter, atual map[string]
 	defer func() {
 		if in != nil && ctx != nil {
 			namesOut(ctx, in, e, out)
+			originOut(ctx, in, atual, e, row, out)
 		}
 	}()
 	files := map[string]bool{}
@@ -338,6 +356,11 @@ func serializeFor(ctx *interp.Context, in *interp.Interpreter, atual map[string]
 		switch {
 		case files[k]:
 			out[k] = publicMeta(v)
+			if out[k] != nil {
+				if href := fileAddress(ctx, e, row, k); href != "" {
+					out[k+"_endereco"] = href
+				}
+			}
 		case hidden[k]:
 		case k == "criado_em":
 			out["created_at"] = v
@@ -397,12 +420,58 @@ func (a *intentAPI) parentScope(parent *ast.Entity, parentRow map[string]any, ch
 	if child == parent && parent.HierarchyField != "" {
 		return map[string]any{parent.HierarchyField: parentRow["id"]}
 	}
-	for field, target := range child.Parents {
-		if target == parent.Singular {
-			return map[string]any{field: parentRow["id"]}
-		}
+	if field := parentFieldOf(child, parent.Singular); field != "" {
+		return map[string]any{field: parentRow["id"]}
 	}
 	return map[string]any{}
+}
+
+// parentFieldOf: the field that ties child to its parent of entity p —
+// <p>_id when there is one (a record may also name another record of the
+// same kind: a link names its issue and a related issue), else the first
+// by name. Never "any field" of a map.
+func parentFieldOf(child *ast.Entity, p string) string {
+	if child.Parents[p+"_id"] == p {
+		return p + "_id"
+	}
+	var fields []string
+	for field, target := range child.Parents {
+		if target == p {
+			fields = append(fields, field)
+		}
+	}
+	if len(fields) == 0 {
+		return ""
+	}
+	sort.Strings(fields)
+	return fields[0]
+}
+
+// hiddenReference returns the entity of a record that data names (not a
+// person) and atual cannot see: nobody creates or points a record at
+// something they could not see, whatever else they may do.
+func (a *intentAPI) hiddenReference(ctx *interp.Context, atual map[string]any, e *ast.Entity, data map[string]any) *ast.Entity {
+	if a.in.IsAdmin(atual) {
+		return nil
+	}
+	fields := make([]string, 0, len(e.Parents))
+	for field := range e.Parents {
+		fields = append(fields, field)
+	}
+	sort.Strings(fields)
+	for _, field := range fields {
+		target := e.Parents[field]
+		if data[field] == nil || target == a.app.LoginEntity || target == e.Singular {
+			continue
+		}
+		pe := a.app.Entities[target]
+		res, _ := a.in.Op(ctx, pe.Singular, "buscar", data[field])
+		row, _ := res.(map[string]any)
+		if row == nil || !a.in.Can(ctx, atual, pe, "ver", row) {
+			return pe
+		}
+	}
+	return nil
 }
 
 // writable filters a payload to the fields people may set.
@@ -528,6 +597,7 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 			return
 		}
 		out := serializeFor(ctx, a.in, atual, e, row, false)
+		approvalStatus(e, row, out)
 		if e.Review != nil && e.Review.Target != "" && fmt.Sprint(row[e.StateField]) == e.Initial {
 			if check := a.mergeCheck(ctx, e, row); check != nil {
 				out["pode_mesclar"] = check["pode"]
@@ -566,11 +636,15 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 			deny(nil)
 			return
 		}
+		if pe := a.hiddenReference(ctx, atual, e, data); pe != nil {
+			a.fail(w, 404, a.msg("404", pe))
+			return
+		}
 		if err := a.frozenFor(ctx, "criar", e, data, data); err != nil {
 			a.failErr(w, r, err)
 			return
 		}
-		a.create(w, r, ctx, atual, e, data, body)
+		a.create(w, r, ctx, atual, e, data, body, nil)
 	case "editar":
 		row := a.find(ctx, e, ref, scope)
 		if row == nil || !a.in.Can(ctx, atual, e, "ver", row) {
@@ -595,6 +669,10 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 		for k := range scope {
 			delete(data, k)
 		}
+		if pe := a.hiddenReference(ctx, atual, e, data); pe != nil {
+			a.fail(w, 404, a.msg("404", pe))
+			return
+		}
 		if err := a.namesIn(ctx, atual, e, data, row); err != nil {
 			a.failErr(w, r, err)
 			return
@@ -608,6 +686,10 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 				a.failErr(w, r, err)
 				return
 			}
+		}
+		if err := a.mirrorInput(e, data, row); err != nil {
+			a.failErr(w, r, err)
+			return
 		}
 		merged := map[string]any{}
 		for k, v := range row {
@@ -640,6 +722,7 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 				return
 			}
 		}
+		a.mirrorSaved(ctx, e, urow)
 		if e.MinRole != "" && (movedTo(data, row, e.HierarchyField) || movedTo(data, row, e.InheritVia)) {
 			if err := a.keepsHolderAfter(ctx, e, urow); err != nil {
 				a.failErr(w, r, err)
@@ -708,13 +791,30 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 			a.leave(w, r, ctx, atual, e, row)
 			return
 		}
+		// Copying reads the record; an archived one may be copied (GEP 0029).
+		if verb == "copiar" && e.Copies {
+			a.copyRecord(w, r, ctx, atual, e, row, body, deny)
+			return
+		}
+		// A mark is the person's, not a change of the record (GEP 0030).
+		if e.Marks != "" && (verb == "marcar" || verb == "desmarcar") {
+			a.markAction(w, r, ctx, atual, e, row, verb)
+			return
+		}
 		if err := a.frozenFor(ctx, "acao", e, row, nil); err != nil {
 			a.failErr(w, r, err)
+			return
+		}
+		if verb == "mudar" && e.MoveField != "" {
+			a.move(w, r, ctx, atual, e, row, a.inwardBody(e, body), deny)
 			return
 		}
 		checkVerb := verb
 		if verb == "desaprovar" && len(e.Rules[verb]) == 0 {
 			checkVerb = "aprovar"
+		}
+		if verb == "cancelar_mesclagem" {
+			checkVerb = "mesclar" // whoever may merge may stop a scheduled merge
 		}
 		if !a.in.Can(ctx, atual, e, checkVerb, row) {
 			deny(row)
@@ -744,31 +844,50 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 			a.json(w, 200, serializeFor(ctx, a.in, atual, e, updated, false), nil)
 			return
 		}
-		if tr := e.Transitions[verb]; tr != nil && verb == "mesclar" && e.Review != nil && e.Review.Target != "" {
-			if err := a.merge(ctx, atual, e, row); err != nil {
-				a.failErr(w, r, err)
-				return
-			}
-			row = a.find(ctx, e, fmt.Sprint(row["id"]), nil)
-		}
-		if tr := e.Transitions[verb]; tr != nil {
-			updated, err := a.in.Transition(ctx, atual, e, tr, row)
+		review := e.Review != nil && e.Review.Target != ""
+		if verb == "cancelar_mesclagem" && review && e.Review.Runs != "" {
+			updated, err := a.unscheduleMerge(ctx, e, row)
 			if err != nil {
 				a.failErr(w, r, err)
 				return
 			}
-			if h := e.Hooks[verb]; h != nil {
-				if _, _, err := a.in.RunHook(ctx, h, a.hookVars(atual, e, updated, body)); err != nil {
+			a.json(w, 200, serializeFor(ctx, a.in, atual, e, updated, false), nil)
+			return
+		}
+		if tr := e.Transitions[verb]; tr != nil && verb == "mesclar" && review {
+			in := a.inwardBody(e, body)
+			if e.Review.Runs != "" && truthy(in["mesclar_quando_passar"]) {
+				scheduled, err := a.scheduleMerge(ctx, atual, e, row)
+				if err != nil {
 					a.failErr(w, r, err)
 					return
 				}
-				updated = a.find(ctx, e, fmt.Sprint(row["id"]), nil)
+				if scheduled != nil {
+					a.json(w, 200, serializeFor(ctx, a.in, atual, e, scheduled, false), nil)
+					return
+				}
 			}
-			if err := a.history(ctx, atual, e, verb, row, updated); err != nil {
+			squash := truthy(row["juntar_commits"])
+			if v, ok := in["juntar_commits"]; ok {
+				squash = truthy(v)
+			}
+			if err := a.merge(ctx, atual, e, row, squash); err != nil {
 				a.failErr(w, r, err)
 				return
 			}
-			a.emit(ctx, e, verb, updated, atual)
+			row = a.find(ctx, e, fmt.Sprint(row["id"]), nil)
+		} else if tr != nil {
+			if err := a.approvalGate(e, verb, row); err != nil {
+				a.failErr(w, r, err)
+				return
+			}
+		}
+		if tr := e.Transitions[verb]; tr != nil {
+			updated, err := a.transition(ctx, atual, e, tr, row, body)
+			if err != nil {
+				a.failErr(w, r, err)
+				return
+			}
 			a.json(w, 200, serializeFor(ctx, a.in, atual, e, updated, false), nil)
 			return
 		}
@@ -795,6 +914,32 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 		}
 		a.json(w, 200, result, nil)
 	}
+}
+
+// transition performs a declared action: the state change, its hook, the
+// history and the events. A record waiting to be merged stops waiting
+// when it leaves the initial state (GEP 0027).
+func (a *intentAPI) transition(ctx *interp.Context, atual map[string]any, e *ast.Entity, tr *ast.Transition, row, body map[string]any) (map[string]any, error) {
+	updated, err := a.in.Transition(ctx, atual, e, tr, row)
+	if err != nil {
+		return nil, err
+	}
+	if e.Review != nil && e.Review.Runs != "" && truthy(updated["mesclar_quando_passar"]) && tr.Target != e.Initial {
+		if updated, err = a.unscheduleMerge(ctx, e, updated); err != nil {
+			return nil, err
+		}
+	}
+	if h := e.Hooks[tr.Verb]; h != nil {
+		if _, _, err := a.in.RunHook(ctx, h, a.hookVars(atual, e, updated, body)); err != nil {
+			return nil, err
+		}
+		updated = a.find(ctx, e, fmt.Sprint(row["id"]), nil)
+	}
+	if err := a.history(ctx, atual, e, tr.Verb, row, updated); err != nil {
+		return nil, err
+	}
+	a.emit(ctx, e, tr.Verb, updated, atual)
+	return updated, nil
 }
 
 func (a *intentAPI) hookVars(atual map[string]any, e *ast.Entity, row map[string]any, body map[string]any) map[string]any {
@@ -867,13 +1012,18 @@ func (a *intentAPI) memberedParentLevel(ctx *interp.Context, atual map[string]an
 	return level, membered
 }
 
-func (a *intentAPI) create(w http.ResponseWriter, r *http.Request, ctx *interp.Context, atual map[string]any, e *ast.Entity, data, body map[string]any) {
+// create saves a new record; origin is the record it copies (GEP 0029), or nil.
+func (a *intentAPI) create(w http.ResponseWriter, r *http.Request, ctx *interp.Context, atual map[string]any, e *ast.Entity, data, body, origin map[string]any) {
 	if h := e.Hooks["antes_criar"]; h != nil {
 		// dados is the record about to be created; the hook may adjust it.
 		if _, _, err := a.in.RunHook(ctx, h, map[string]any{"atual": nilIfEmpty(atual), "dados": data, "entrada": body}); err != nil {
 			a.failErr(w, r, err)
 			return
 		}
+	}
+	if err := a.mirrorInput(e, data, nil); err != nil {
+		a.failErr(w, r, err)
+		return
 	}
 	if err := a.guards(ctx, atual, e, data, nil); err != nil {
 		a.failErr(w, r, err)
@@ -893,14 +1043,17 @@ func (a *intentAPI) create(w http.ResponseWriter, r *http.Request, ctx *interp.C
 			return
 		}
 	}
-	if err := a.createRepository(ctx, e, row); err != nil {
+	if err := a.createRepository(ctx, e, row, origin); err != nil {
 		a.failErr(w, r, err)
 		return
 	}
-	if err := a.initialFile(atual, e, row, body); err != nil {
-		a.failErr(w, r, err)
-		return
+	if origin == nil {
+		if err := a.initialFile(atual, e, row, body); err != nil {
+			a.failErr(w, r, err)
+			return
+		}
 	}
+	a.mirrorSaved(ctx, e, row)
 	out := serializeFor(ctx, a.in, atual, e, row, false)
 	for _, f := range e.Model.Fields {
 		if f.Type == ast.FieldSegredo {
@@ -1120,6 +1273,9 @@ func (a *intentAPI) remove(ctx *interp.Context, atual map[string]any, e *ast.Ent
 				return err
 			}
 		}
+		if err := a.personMarks(ctx, row); err != nil {
+			return err
+		}
 		if err := a.personReferences(ctx, row); err != nil {
 			return err
 		}
@@ -1145,27 +1301,50 @@ func (a *intentAPI) cascade(ctx *interp.Context, e *ast.Entity, row map[string]a
 		return fmt.Errorf("exclusão aninhada demais")
 	}
 	for _, c := range a.childrenOf(e) {
-		sc := a.parentScope(e, row, c)
-		if len(sc) == 0 {
-			continue
+		// what belongs to the record through any of its fields goes with it
+		// (a link that names this issue as its issue or as the related one)
+		scopes := []map[string]any{a.parentScope(e, row, c)}
+		if c != e && c.Singular != a.app.MemberModel {
+			own := parentFieldOf(c, e.Singular)
+			fields := []string{}
+			for field, target := range c.Parents {
+				if target == e.Singular && field != own {
+					fields = append(fields, field)
+				}
+			}
+			sort.Strings(fields)
+			for _, field := range fields {
+				scopes = append(scopes, map[string]any{field: row["id"]})
+			}
 		}
-		// Each pass deletes what it read, so the first batch is always the next one.
-		for {
-			kids, err := a.in.Op(ctx, c.Singular, "filtrar", sc, map[string]any{"limite": 500, "ordenar": "id"})
-			if err != nil {
-				return err
+		for _, sc := range scopes {
+			if len(sc) == 0 {
+				continue
 			}
-			if len(kids.([]any)) == 0 {
-				break
-			}
-			for _, k := range kids.([]any) {
-				if err := a.cascade(ctx, c, k.(map[string]any), depth+1); err != nil {
+			// Each pass deletes what it read, so the first batch is always the next one.
+			for {
+				kids, err := a.in.Op(ctx, c.Singular, "filtrar", sc, map[string]any{"limite": 500, "ordenar": "id"})
+				if err != nil {
 					return err
+				}
+				if len(kids.([]any)) == 0 {
+					break
+				}
+				for _, k := range kids.([]any) {
+					if err := a.cascade(ctx, c, k.(map[string]any), depth+1); err != nil {
+						return err
+					}
 				}
 			}
 		}
 	}
 	if err := a.dropPending(ctx, e, row["id"], nil); err != nil {
+		return err
+	}
+	if err := a.forgetOrigin(ctx, e, row["id"]); err != nil {
+		return err
+	}
+	if err := a.dropMarks(ctx, e, row["id"]); err != nil {
 		return err
 	}
 	if _, err := a.in.Op(ctx, e.Singular, "deletar", row["id"]); err != nil {
@@ -1221,6 +1400,11 @@ func (a *intentAPI) list(w http.ResponseWriter, r *http.Request, ctx *interp.Con
 		if v == "" {
 			continue
 		}
+		if list := e.ItemFilters[f]; list != "" {
+			// one item of a list (?topico=go → topicos has "go"), GEP 0030
+			filters[list+"__contem"] = `"` + strings.ReplaceAll(v, `"`, "") + `"`
+			continue
+		}
 		if fd := fieldOf(e, f); fd != nil && fd.Type == ast.FieldLista {
 			if fd.ByName != "" {
 				ids, _ := a.nameFilter(ctx, e, fd, v, filters)
@@ -1231,6 +1415,14 @@ func (a *intentAPI) list(w http.ResponseWriter, r *http.Request, ctx *interp.Con
 			continue
 		}
 		filters[f] = v
+	}
+	marked := "marcados"
+	if a.extern {
+		marked = a.ext(marked)
+	}
+	if e.Marks != "" && truthy(q.Get(marked)) {
+		// only what the person marked (GEP 0030)
+		filters["id__em"] = a.markedBy(atual, e)
 	}
 	opts := map[string]any{"ordenar": "-id"}
 	if s := first(q.Get("search"), q.Get("q"), q.Get("pesquisa")); s != "" && len(e.Search) > 0 {
@@ -1421,7 +1613,8 @@ func (a *intentAPI) stateFields() map[string]bool {
 			out[e.StateField] = true
 		}
 		for _, f := range e.Model.Fields {
-			if f.Type == ast.FieldEnum && f.System {
+			// roles (papel) travel as their levels instead
+			if f.Type == ast.FieldEnum && (f.System || strings.ToLower(f.Name) != "papel") {
 				out[strings.ToLower(f.Name)] = true
 			}
 		}
@@ -1538,6 +1731,32 @@ func (a *intentAPI) inwardState(e *ast.Entity, v string) string {
 	return v
 }
 
+// enumValues: the fixed choices of e's field named key (nil if none).
+func enumValues(e *ast.Entity, key string) []string {
+	if e == nil || e.Model == nil {
+		return nil
+	}
+	for _, f := range e.Model.Fields {
+		if f.Type == ast.FieldEnum && strings.EqualFold(f.Name, key) {
+			return f.EnumValues
+		}
+	}
+	return nil
+}
+
+// inwardChoice reads an external word as one of the field's choices (one
+// external word may name words of different fields: "merge").
+func (a *intentAPI) inwardChoice(choices []string, v string) string {
+	for _, k := range a.candidates(v) {
+		for _, c := range choices {
+			if k == c {
+				return k
+			}
+		}
+	}
+	return v
+}
+
 func (a *intentAPI) inwardBody(e *ast.Entity, body map[string]any) map[string]any {
 	if !a.extern || len(a.app.Vocabulary) == 0 {
 		return body
@@ -1547,7 +1766,11 @@ func (a *intentAPI) inwardBody(e *ast.Entity, body map[string]any) map[string]an
 	for k, v := range body {
 		key := a.inwardField(e, k)
 		if s, ok := v.(string); ok && states[key] {
-			v = a.inwardState(e, s)
+			if choices := enumValues(e, key); choices != nil {
+				v = a.inwardChoice(choices, s)
+			} else {
+				v = a.inwardState(e, s)
+			}
 		}
 		if n, ok := v.(float64); ok && key == "papel" {
 			for _, role := range a.app.Roles {
@@ -1566,6 +1789,9 @@ func (a *intentAPI) inwardBody(e *ast.Entity, body map[string]any) map[string]an
 //   - nobody grants a role above their own (memberships).
 func (a *intentAPI) guards(ctx *interp.Context, atual map[string]any, e *ast.Entity, data, before map[string]any) error {
 	if err := a.checkBranches(ctx, e, data); err != nil {
+		return err
+	}
+	if err := a.copyCeiling(ctx, e, data); err != nil {
 		return err
 	}
 	if l := a.app.Login; l != nil && e.Singular == l.TokenEntity && len(l.Scopes) > 0 && data["escopos"] != nil {

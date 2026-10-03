@@ -328,12 +328,14 @@ válidas. `construcao_do_sistema` são as construções sem sujeito único (`ten
 | `pertence a` + `grupo opcional`, `cliente como dono` | `d pertence a grupo opcional` |
 | `começa aberta` | `d começa aberta` |
 | `pode` + `fechar`, `reabrir`, `ser confidencial` | `d pode fechar` … |
+| `pode` › `mudar de projeto` ([GEP 0034](gep/0034-mudar-de-lugar.md), em teste) | `d pode mudar de projeto` (quem edita o registro onde está e pode criar no destino o leva; ganha o próximo número de lá) |
 | `regras` › `quem cria vira owner` | `quem cria d vira owner` |
 | `regras` › `precisa de pelo menos um owner` | `todo d precisa ter pelo menos um owner` |
 | `regras` › `herda membros do grupo` | `d herda membros do grupo` |
 | `regras` › `não pode ser mais visível que o grupo` | `d não pode ser mais visível que o grupo` |
 | `regras` › `arquivado é somente leitura` | `d arquivado é somente leitura` |
 | `regras` › `mesclado é final` | `d mesclado é final` |
+| `regras` › `precisa de 2 aprovações para mesclar` ([GEP 0026](gep/0026-minimo-de-aprovacoes.md), em teste) | `d precisam de 2 aprovações para mesclar` (a ação espera aprovações de pessoas diferentes do autor; o dado `recebe aprovações`) |
 | `regras` › `confidencial pode ser vista por` + pessoas | `d confidencial pode ser vista por` + pessoas |
 | `acesso` › `developer` › `enviar código` | `developer pode enviar código para D` |
 | `acesso` › `usuario` › `criar seus` | `usuario pode criar seus D` |
@@ -345,6 +347,8 @@ válidas. `construcao_do_sistema` são as construções sem sujeito único (`ten
 | `integração` / `integração` › `nome "projects"` | `disponibilize D para integração [como "projects"]` |
 | `quando criar` / `antes de excluir` + corpo | `quando criar d` / `antes de excluir d` |
 | `recebe aprovações`, `recebe eventos do projeto` + tipos | `d recebe …` |
+| `recebe estrelas` ([GEP 0030](gep/0030-estrelas-topicos-avatar.md), em teste) | `d recebe estrelas` (cada pessoa que vê o registro marca uma vez e desmarca; `estrelas` conta; `?marcados=sim` lista as suas) |
+| `acesso` › `usuario` › `copiar` ([GEP 0029](gep/0029-copias.md), em teste) | `usuario pode copiar D` (cópia em nome de quem copia, com as regras de criar, `copiado_de_id`, repositório copiado, nunca mais visível que o original) |
 | `executa pipelines a cada envio de código conforme "arquivo"` | `d executa …` |
 | `executam jobs` (em `runners`) | `runners executam jobs` |
 | `repositório pode começar com "README.md" contendo "# {nome}"` | `repositório do d pode começar com …` |
@@ -355,6 +359,7 @@ válidas. `construcao_do_sistema` são as construções sem sujeito único (`ten
 | `guarda histórico` ([GEP 0011](gep/0011-historico.md), em teste) | `d guarda histórico` |
 | `guarda leitura` ([GEP 0022](gep/0022-leitura.md), em teste) | `d guarda leitura` (abrir o contêiner lê; ele mostra `nao_lidas` a cada pessoa) |
 | `usam variaveis do projeto` ([GEP 0015](gep/0015-variaveis-das-execucoes.md), em teste; nas execuções) | `pipelines usam as variaveis do projeto` |
+| `espelham o repositório do projeto` ([GEP 0036](gep/0036-espelhos.md), em teste; no dado dos espelhos, com `url` e `pertence a projeto`) | `espelhos espelham o repositório do projeto` |
 
 Uma **ação sem alvo** vale para o próprio dado (a coleção: `administrar` sem alvo inclui
 criar, como `administrar projetos`). Uma ação com alvo explícito (`adicionar membros`,
@@ -480,7 +485,9 @@ Equivale a: developer pode enviar código para projetos
 | `quem cria projeto vira owner` | quem cria vira membro com esse papel — exceto quando o dado herda membros de um pai e foi criado dentro dele (os membros já vêm do pai) |
 | `todo grupo precisa ter pelo menos um owner` | ninguém remove nem rebaixa o último membro com esse papel (ou superior) |
 | `repositório do projeto pode começar com "README.md" contendo "# {nome}"` | ao criar com `iniciar_repositorio` (nome externo pelo vocabulário), o repositório nasce com esse arquivo; `{campo}` vira o valor do registro |
-| `projeto tem repositório` | cada registro tem um repositório Git criado e removido com ele e servido em `/<campo único>.git`; branches, tags, commits, árvore, arquivos e comparação seguem as regras de baixar e enviar código; quem pode baixar código também baixa uma revisão inteira como um arquivo (`repositorio/baixar.zip`, `.tar.gz`, `.tar`; nome externo pelo vocabulário: `repository/archive.zip?sha=`), gerado em fluxo pelo git, sem shell, com poucos downloads ao mesmo tempo |
+| `projeto tem repositório` | cada registro tem um repositório Git criado e removido com ele e servido em `/<campo único>.git`; branches, tags, commits, árvore, arquivos e comparação seguem as regras de baixar e enviar código; quem pode baixar código também baixa uma revisão inteira como um arquivo (`repositorio/baixar.zip`, `.tar.gz`, `.tar`; nome externo pelo vocabulário: `repository/archive.zip?sha=`), gerado em fluxo pelo git, sem shell, com poucos downloads ao mesmo tempo; arquivos grandes (Git LFS) seguem as mesmas regras, conferidos pelo sha256 e limitados por objeto ([GEP 0035](gep/0035-git-lfs.md), em teste) |
+| `origem: branch` e `destino: branch` (linhas de `X tem`, num dado que pertence a algo com repositório) | X propõe mudanças: as branches precisam existir e ser diferentes; X mostra mudanças, commits e conflitos; `mesclar` junta a origem no destino (rascunho não mescla; mesclar no destino segue as regras de enviar código). Em teste na [GEP 0027](gep/0027-formas-de-mesclar.md), sem frase nova: `forma_de_mesclar` do dono do repositório (`mesclagem`, `semi_linear`, `linear`), `juntar_commits` de X e, quando o dono `executa` algo, `mesclar_quando_passar` (espera a última execução da origem e mescla como quem pediu, verificando tudo de novo) |
+| `espelhos espelham o repositório do projeto` | cada espelho (`url`) é uma cópia do repositório em outro servidor Git, só http(s) e nunca na rede local: `sentido` `enviar` manda o repositório inteiro depois de cada mudança do código, `receber` traz o da url periodicamente; usuário e senha da url ficam ocultos; cada tentativa fica registrada sem atrapalhar quem envia código ([GEP 0036](gep/0036-espelhos.md), em teste) |
 
 **Tipo pelo nome** (quando não há tipo): `email`→email · `senha`/`password`→senha protegida ·
 `telefone`→telefone · `foto`/`avatar`/`imagem`→imagem · `descricao`/`description`→texto longo ·
@@ -623,7 +630,8 @@ todos podem ver produtos
 - Ações sinônimas: ver/listar/mostrar · criar/cadastrar/adicionar · editar/alterar ·
   excluir/remover · pesquisar/buscar. Transições como `bloquear` são declaradas por `usuario pode bloquear`; não exigem hook manual.
   Ação específica sem semântica declarativa só usa `quando` como escape hatch do nível 3.
-  Embutidas: `sair` (deixa de ser membro), `revogar` (dados revogáveis), `baixar código`/`enviar código`.
+  Embutidas: `sair` (deixa de ser membro), `revogar` (dados revogáveis), `baixar código`/`enviar código`,
+  `copiar` ([GEP 0029](gep/0029-copias.md), em teste).
 - Um campo `visibility` (`private`/`internal`/`public`) libera ver e baixar código para todos
   (público) ou para quem está conectado (interno).
 - Dentro de algo que tem membros, regras genéricas (todos, qualquer pessoa conectada) só valem se esse algo
@@ -632,12 +640,20 @@ todos podem ver produtos
 - Uma referência (lista ou única) a algo que pertence a um pai que o registro também tem
   — a label ou o milestone do projeto de uma issue — só aceita itens do mesmo pai; o resto
   é tratado como inexistente. Pessoas e referências de sistema não contam como pai.
+- Ninguém cria um registro dentro de algo que não vê, nem aponta uma referência para algo que não
+  vê: para essa pessoa, o outro registro não existe ("não encontrado").
+- Um registro que nomeia dois registros independentes (uma ligação entre duas issues, de
+  `pertence a issue como relacionada`) só é visto e mudado por quem vê os dois, sejam quais forem
+  as regras dele; ele aparece sob o dono principal (`issue_id`) e sai com qualquer um dos dois.
 - Ninguém concede papel acima do próprio.
 - Nada que pertence a uma pessoa é criado em nome de outra, exceto por administradores.
 - Registros invisíveis respondem "não encontrado", nunca "proibido".
 
 `permita criar projetos` libera para qualquer pessoa conectada (ou qualquer visitante se não
 há login). `permita filtrar clientes por cidade` e `permita pesquisar clientes` habilitam filtro e busca.
+Em teste na [GEP 0030](gep/0030-estrelas-topicos-avatar.md): o singular de uma lista de textos filtra
+por um item dela (`permita filtrar projetos por topico` → `?topico=go`), e um registro com arquivo
+mostra também `<campo>_endereco`, onde baixá-lo.
 
 ## Pendências
 
@@ -656,7 +672,8 @@ quem é escrito como `@nome de usuário` nos textos do registro, se essa pessoa 
 
 `tenha avisos por e-mail` ([GEP 0013](gep/0013-avisos-por-email.md), **em teste**, não normativa
 até a decisão do mantenedor) manda cada nova pendência também por e-mail ao dono, depois de a
-mudança ser salva, com a configuração de e-mail da recuperação de senha.
+mudança ser salva, com a configuração de e-mail da recuperação de senha. Cada pessoa pode
+desligar os e-mails com um campo sim/não das pessoas, `avisos_por_email` (a pendência continua).
 
 ## Migração
 
@@ -818,6 +835,13 @@ vocabulário da integração        # só nomes externos; o domínio segue em po
     papel é "access_level"       # papéis viajam como seus níveis
 ```
 
+Quando uma chamada externa é outra forma de uma operação que a aplicação já oferece (outro
+caminho, outros nomes, uma busca antes), o adaptador, em `integracoes/`, pede à própria aplicação
+com `superficie.pedir(metodo, caminho, corpo, consulta)` e conta com `superficie.contar(dado,
+estado)` ([GEP 0033](gep/0033-adaptador-pede-a-aplicacao.md), **em teste**): o pedido roda como a
+pessoa que chamou, com as mesmas regras, visibilidade, transação, histórico e eventos. Um
+adaptador nunca lê nem escreve registros por fora dessas regras.
+
 ## Estados e transições: contrato genérico
 
 `issue começa aberta` com `fechar` e `reabrir` usa o mesmo mecanismo de estados que ticket,
@@ -911,7 +935,9 @@ Nada disto aparece no `.ge`; é configuração de quem hospeda a aplicação.
 | `GERMANIO_JOB_TIMEOUT` | tempo máximo de uma etapa |
 | `GERMANIO_PROXIES_CONFIAVEIS` | IPs/CIDRs dos proxies reversos; só deles se aceita `X-Forwarded-For`/`X-Real-IP`/`CF-Connecting-IP` (padrão: nenhum — o IP é o da conexão) |
 | `GERMANIO_ADMIN_SENHA` / `GERMANIO_ADMIN_EMAIL` | senha (e e-mail) do `administrador inicial`, usados só enquanto não existe ninguém |
-| `GERMANIO_PERMITIR_REDE_LOCAL` | permite webhooks/chamadas para endereços internos (desligado por padrão, proteção SSRF) |
+| `GERMANIO_PERMITIR_REDE_LOCAL` | permite webhooks/chamadas/espelhos para endereços internos (desligado por padrão, proteção SSRF) |
+| `GERMANIO_LFS_MAX_MB` | maior arquivo grande (Git LFS) aceito por objeto, em MB (padrão 100) |
+| `GERMANIO_ESPELHO_MINUTOS` | de quantos em quantos minutos os espelhos que recebem buscam o código (padrão 30) |
 | `GERMANIO_SSH_ENDERECO` | liga o git por SSH nesse endereço (`:2222`); sem ela, nenhum servidor SSH existe ([GEP 0037](gep/0037-git-por-ssh.md), em teste) |
 | `GERMANIO_SSH_CHAVE_HOST` | arquivo da chave do servidor SSH (padrão `<GERMANIO_GIT_RAIZ>/.ssh/chave_host_ed25519`): criada uma vez com permissão 0600, nunca mostrada; legível por outros, a partida para |
 | `GERMANIO_SSH_CONEXOES` | conexões SSH atendidas ao mesmo tempo (padrão 64; 8 por endereço) |
@@ -920,7 +946,7 @@ Git por SSH ([GEP 0037](gep/0037-git-por-ssh.md), **em teste**, sem frase no `.g
 `GERMANIO_SSH_ENDERECO`, quem cadastrou uma chave (`chave pública` num dado que pertence às
 pessoas) clona e envia com `git clone ssh://git@servidor:2222/grupo/projeto.git`, com as mesmas
 regras do HTTP (baixar e enviar código, somente leitura, branches protegidas, `antes de enviar
-código`, e depois do envio os eventos, o histórico e as execuções). Só a chave autentica; só
+código`, e depois do envio os eventos, o histórico, as execuções e os espelhos). Só a chave autentica; só
 `git-upload-pack` e `git-receive-pack` rodam, nunca um shell; pessoa bloqueada ou com e-mail não
 confirmado é recusada com o motivo. Um programa sem repositórios ou sem chaves das pessoas não
 parte com a variável definida, e o erro diz o que declarar.

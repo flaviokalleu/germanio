@@ -127,6 +127,12 @@ var bcryptCost = bcrypt.DefaultCost
 
 // prepareWrite validates and transforms data for a create or update.
 // It returns the values to store and the secrets to reveal once.
+// SequenceKey names the numbering of a field (numero por projeto) inside
+// one parent record: 1, 2, 3… for each project.
+func SequenceKey(m *ast.Model, field string, parent any) string {
+	return fmt.Sprintf("%s.%s:%v", strings.ToLower(m.Name), strings.ToLower(field), toString(parent))
+}
+
 func (interp *Interpreter) prepareWrite(c *Call, m *ast.Model, data map[string]any, create bool, id int64) (map[string]any, map[string]any) {
 	out := map[string]any{}
 	reveal := map[string]any{}
@@ -158,7 +164,7 @@ func (interp *Interpreter) prepareWrite(c *Call, m *ast.Model, data map[string]a
 			case f.Type == ast.FieldVisibilidade:
 				out[key] = "private"
 			case f.NumberedBy != "" && out[strings.ToLower(f.NumberedBy)] != nil:
-				n, err := db.Sequencia(fmt.Sprintf("%s.%s:%v", strings.ToLower(m.Name), key, toString(out[strings.ToLower(f.NumberedBy)])))
+				n, err := db.Sequencia(SequenceKey(m, key, out[strings.ToLower(f.NumberedBy)]))
 				if err != nil {
 					panic(c.Fail(0, "numeração de %s: %s", f.Name, err))
 				}

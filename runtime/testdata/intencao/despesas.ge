@@ -1,0 +1,30 @@
+crie sistema Despesas
+
+usuarios
+    tem
+        nome obrigatório
+        email obrigatório e único
+        senha
+
+tenha login
+tenha cadastro
+login usa email
+
+despesas
+    tem
+        descricao obrigatório
+        autor
+    começa aberta
+    pode
+        pagar
+        arquivar
+    recebe aprovações
+    regras
+        precisa de duas aprovações para pagar
+    acesso
+        usuario
+            ver
+            criar
+            aprovar
+            pagar
+            arquivar

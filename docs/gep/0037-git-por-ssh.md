@@ -54,8 +54,9 @@ being required: `git clone ssh://git@servidor:2222/grupo/projeto.git`.
 - **Rules:** exactly those of smart HTTP, through the same functions: seeing the record,
   `baixar código` / `enviar código`, read-only records, protected branches (default branch and
   GEP 0016), `antes de enviar código` (its refusal is shown by `git push` as the server's
-  reason), and after a push the event to integrations, the history, the executions and `quando
-  enviar código`. A repository the person may not see answers "not found", never "forbidden".
+  reason), and after a push the event to integrations, the history, the executions, the push
+  mirrors ([GEP 0036](0036-espelhos.md)) and `quando enviar código`, and LFS objects are
+  not served over SSH (they keep using HTTP). A repository the person may not see answers "not found", never "forbidden".
 - **Host key:** ed25519, created once (folder 0700, file 0600, never overwritten) and read
   afterwards; a file that others can read stops the start with the fix (`chmod 600`). It is
   never logged.

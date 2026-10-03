@@ -77,8 +77,16 @@ Rules:
 | [0021](0021-presenca.md) | Presence (`tenha presença`) | Em teste |
 | [0022](0022-leitura.md) | Reading and unread counts (`guarda leitura`) | Em teste |
 | [0023](0023-por-estado.md) | Showing data by state, boards (`cartoes por estado`) | Em teste |
+| [0026](0026-minimo-de-aprovacoes.md) | A minimum of approvals before an action (`precisa de 2 aprovações para mesclar`) | Em teste |
+| [0027](0027-formas-de-mesclar.md) | How a proposal is merged (squash, linear) and merging when the executions pass (no syntax) | Em teste |
+| [0029](0029-copias.md) | Copies of a record (`acesso` › `copiar`) | Em teste |
+| [0030](0030-estrelas-topicos-avatar.md) | Marks by people (`recebe estrelas`), one item of a list as a filter, the address of a file | Em teste |
 | [0031](0031-confirmacao-de-email.md) | E-mail confirmation (`tenha confirmação de e-mail`) | Em teste |
 | [0032](0032-dois-fatores-e-chaves.md) | Credentials beyond the password: public keys (`chave pública`) and two-factor authentication (`tenha autenticação em dois fatores`) | Em teste |
+| [0033](0033-adaptador-pede-a-aplicacao.md) | An adapter asks the application itself (`superficie.pedir`, `superficie.contar`) | Em teste |
+| [0034](0034-mudar-de-lugar.md) | A record moves to another parent (`pode mudar de projeto`) | Em teste |
+| [0035](0035-git-lfs.md) | Large files in repositories (Git LFS; no syntax) | Em teste |
+| [0036](0036-espelhos.md) | Mirrors of a repository (`espelham o repositório do projeto`) | Em teste |
 | [0037](0037-git-por-ssh.md) | Git over SSH (no syntax; `GERMANIO_SSH_ENDERECO`) | Em teste |
 
 Revisão final das GEPs em teste 0010–0017, com recomendação por GEP e sem mudança de status:

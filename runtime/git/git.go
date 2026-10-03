@@ -173,6 +173,53 @@ func (s *Store) Init(rel, defaultBranch string) error {
 	return err
 }
 
+// Copy creates the bare repository dst as a copy of src: every branch and
+// tag and the same default branch, in storage of its own. Objects are hard
+// linked when the file system allows it (git never changes an object, so
+// the copies stay independent); other refs, hooks and the configuration of
+// src are not copied, and dst keeps no link back to src.
+func (s *Store) Copy(src, dst string) error {
+	sp, err := s.open(src)
+	if err != nil {
+		return err
+	}
+	dp, err := s.Path(dst)
+	if err != nil {
+		return err
+	}
+	if _, err := os.Stat(dp); err == nil {
+		return fmt.Errorf("repositório já existe: %s", dst)
+	}
+	if err := os.MkdirAll(filepath.Dir(dp), 0o750); err != nil {
+		return err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), s.Timeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, s.Bin, "clone", "--bare", "--quiet", "--", sp, dp)
+	cmd.Env = baseEnv()
+	if out, err := cmd.CombinedOutput(); err != nil {
+		os.RemoveAll(dp)
+		return fmt.Errorf("git clone: %s", strings.TrimSpace(string(out)))
+	}
+	fail := func(err error) error {
+		os.RemoveAll(dp)
+		return err
+	}
+	// An empty source has no branch to follow: keep its default branch.
+	if head, err := s.run(sp, nil, nil, "symbolic-ref", "HEAD"); err == nil {
+		if _, err := s.run(dp, nil, nil, "symbolic-ref", "HEAD", strings.TrimSpace(string(head))); err != nil {
+			return fail(err)
+		}
+	}
+	if _, err := s.run(dp, nil, nil, "remote", "remove", "origin"); err != nil {
+		return fail(err)
+	}
+	if _, err := s.run(dp, nil, nil, "config", "http.receivepack", "true"); err != nil {
+		return fail(err)
+	}
+	return nil
+}
+
 // Exists reports whether the repository exists.
 func (s *Store) Exists(rel string) bool {
 	p, err := s.Path(rel)
@@ -771,6 +818,140 @@ func (s *Store) Merge(rel, target, source, message string, author Signature) (st
 		return "", err
 	}
 	return newID, nil
+}
+
+// Squash writes everything source changed since its merge base with target
+// as one new commit on top of target (a squash merge), and advances target
+// only if it did not move meanwhile. It fails on conflicts.
+func (s *Store) Squash(rel, target, source, message string, author Signature) (string, error) {
+	tID, err := s.Resolve(rel, "refs/heads/"+target)
+	if err != nil {
+		return "", err
+	}
+	sID, err := s.Resolve(rel, source)
+	if err != nil {
+		return "", err
+	}
+	check, err := s.CheckMerge(rel, tID, sID)
+	if err != nil {
+		return "", err
+	}
+	if !check.CanMerge {
+		return "", &ErrConflict{Files: check.Conflicts}
+	}
+	p, _ := s.Path(rel)
+	out, err := s.run(p, strings.NewReader(message), sigEnv(author, author), "commit-tree", check.TreeID, "-p", tID, "-F", "-")
+	if err != nil {
+		return "", err
+	}
+	newID := strings.TrimSpace(string(out))
+	if err := s.UpdateRef(rel, "refs/heads/"+target, newID, tID); err != nil {
+		return "", err
+	}
+	return newID, nil
+}
+
+// ErrNotFastForward: target has commits that source lacks, so target
+// cannot simply advance to source.
+var ErrNotFastForward = errors.New("o destino tem commits que a origem não tem")
+
+// FastForward advances target to source when target is an ancestor of
+// source (no new commit), only if target did not move meanwhile.
+func (s *Store) FastForward(rel, target, source string) (string, error) {
+	tID, err := s.Resolve(rel, "refs/heads/"+target)
+	if err != nil {
+		return "", err
+	}
+	sID, err := s.Resolve(rel, source)
+	if err != nil {
+		return "", err
+	}
+	ok, err := s.IsAncestor(rel, tID, sID)
+	if err != nil {
+		return "", err
+	}
+	if !ok {
+		return "", ErrNotFastForward
+	}
+	if tID == sID {
+		return sID, nil
+	}
+	if err := s.UpdateRef(rel, "refs/heads/"+target, sID, tID); err != nil {
+		return "", err
+	}
+	return sID, nil
+}
+
+// MaxRebaseCommits bounds the commits one Rebase replays.
+const MaxRebaseCommits = 1000
+
+// Rebase replays the commits of branch that onto lacks on top of onto,
+// oldest first, keeping each commit's author and message (merge commits
+// are dropped and commits whose changes onto already has disappear, as in
+// git rebase). It works without a working tree (git merge-tree with an
+// explicit base for every commit) and advances branch only if it did not
+// move meanwhile. A branch already on top of onto is left as it is. It
+// fails with *ErrConflict when a commit does not apply.
+func (s *Store) Rebase(rel, branch, onto string, committer Signature) (string, error) {
+	bID, err := s.Resolve(rel, "refs/heads/"+branch)
+	if err != nil {
+		return "", err
+	}
+	oID, err := s.Resolve(rel, onto)
+	if err != nil {
+		return "", err
+	}
+	if ok, err := s.IsAncestor(rel, oID, bID); err != nil || ok {
+		return bID, err
+	}
+	if _, err := s.MergeBase(rel, oID, bID); err != nil {
+		return "", err
+	}
+	p, _ := s.Path(rel)
+	out, err := s.run(p, nil, nil, "log", "--reverse", "--no-merges", "--max-count="+strconv.Itoa(MaxRebaseCommits+1), "--format="+commitFormat, oID+".."+bID)
+	if err != nil {
+		return "", err
+	}
+	commits := parseCommits(out)
+	if len(commits) > MaxRebaseCommits {
+		return "", fmt.Errorf("a branch tem mais de %d commits para reaplicar", MaxRebaseCommits)
+	}
+	head := oID
+	for _, c := range commits {
+		if len(c.ParentIDs) == 0 {
+			return "", fmt.Errorf("sem ancestral comum: %w", ErrNotFound)
+		}
+		out, err := s.run(p, nil, nil, "merge-tree", "--write-tree", "--name-only", "--no-messages", "--merge-base="+c.ParentIDs[0], head, c.ID)
+		lines := strings.Split(strings.TrimSpace(string(out)), "\n")
+		if err != nil {
+			var ge *Error
+			if errors.As(err, &ge) && ge.ExitCode() == 1 {
+				var conflicts []string
+				for _, l := range lines[1:] {
+					if l != "" {
+						conflicts = append(conflicts, l)
+					}
+				}
+				return "", &ErrConflict{Files: conflicts}
+			}
+			return "", err
+		}
+		tree := lines[0]
+		if cur, err := s.run(p, nil, nil, "rev-parse", head+"^{tree}"); err == nil && strings.TrimSpace(string(cur)) == tree {
+			continue // onto already has these changes
+		}
+		when, _ := time.Parse(time.RFC3339, c.AuthorAt)
+		author := Signature{Name: c.AuthorName, Email: c.AuthorEmail, When: when}
+		out, err = s.run(p, strings.NewReader(c.Message+"\n"), sigEnv(author, committer), "commit-tree", tree, "-p", head, "-F", "-")
+		if err != nil {
+			return "", err
+		}
+		head = strings.TrimSpace(string(out))
+	}
+	if err := s.UpdateRef(rel, "refs/heads/"+branch, head, bID); err != nil {
+		return "", err
+	}
+	return head, nil
 }
 
 // ErrConflict lists files that prevent a merge.
