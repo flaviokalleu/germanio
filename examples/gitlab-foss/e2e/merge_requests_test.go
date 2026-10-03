@@ -61,12 +61,12 @@ func TestFluxo4MergeRequest(t *testing.T) {
 	if commits := ada.list(mrPath + "/commits"); len(commits) != 1 || commits[0].(map[string]any)["title"] != "Add feature" {
 		t.Fatalf("commits do MR: %v", commits)
 	}
-	// regra de aprovação (GEP 0026): uma aprovação de quem não é o autor
-	if got["approvals_required"] != float64(1) || got["approvals_left"] != float64(1) {
+	// como no GitLab FOSS, aprovar é opcional: nenhum mínimo para mesclar
+	// (o mínimo da GEP 0026 é testado em runtime/aprovacoes_test.go)
+	if v, ok := got["approvals_required"]; ok && v != float64(0) {
 		t.Fatalf("aprovações necessárias: %v", got)
 	}
-	bob.must("POST", mrPath+"/approve", nil, 200) // o autor aprova, mas não conta
-	ada.must("POST", mrPath+"/merge", nil, 405)
+	bob.must("POST", mrPath+"/approve", nil, 200) // o autor pode aprovar
 	bob.must("POST", mrPath+"/unapprove", nil, 200)
 	// revisão: comentário e aprovação
 	ada.must("POST", mrPath+"/notes", map[string]any{"body": "LGTM"}, 201)

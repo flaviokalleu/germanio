@@ -93,10 +93,9 @@ SAML (assinatura XML, superfície que pede implementação dedicada e auditada) 
 credencial deste sistema, não login com outro). Limites registrados nas próprias linhas do
 inventário (por exemplo: sem LFS por SSH, um tópico por consulta, soma de pesos por milestone).
 
-Decisão de produto pendente: o domínio do GitLab exige 1 aprovação para mesclar, para exercitar
-a GEP 0026. O GitLab FOSS não exige aprovação; para ficar idêntico basta tirar a linha
-`precisa de uma aprovação para mesclar` do domínio de merge requests e ajustar os dois E2E que a
-verificam.
+Decisão de produto (mantenedor, 2026-10-02): o domínio do GitLab não exige aprovação para mesclar,
+como o GitLab FOSS. O mínimo de aprovações (GEP 0026) continua disponível e testado fora do
+GitLab (`TestMinimoDeAprovacoes`, `TestMesclarQuandoPassarComAprovacoes`).
 
 Acoplamento: busca por `gitlab`, `/api/v4`, `merge_request`, `PRIVATE-TOKEN`, `forked_from`,
 `remote_mirror` no core (`compiler/`, `runtime/`, `tooling/`): só comentários de exemplo.

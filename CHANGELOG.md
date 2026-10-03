@@ -23,7 +23,8 @@ published under that name.
 - Marks by people (`recebe estrelas`, GEP 0030, em teste), filtering by one item of a list
   (topics), and `<campo>_endereco` for files (avatar).
 - A minimum of approvals before an action (`precisa de 2 aprovações para mesclar`, GEP 0026,
-  em teste); the author's approval does not count.
+  em teste); the author's approval does not count. The GitLab example does not require approvals,
+  like GitLab FOSS.
 - Ways to merge (GEP 0027, em teste, no syntax): squash, semi-linear, linear (fast-forward after
   rebase), and merging when the executions of the source pass.
 - Git LFS over HTTP (GEP 0035, em teste, no syntax): batch API, sha256 and size checked while
