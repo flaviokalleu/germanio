@@ -92,7 +92,7 @@ Escopo núcleo v1 = features marcadas **[N]** (fluxos 1–5 da missão + testes 
 | CI-07 | Variáveis de CI | projeto; mascaradas | settings | `/variables` | ci_variables | Maintainer+ | cripto | SUPPORTED (GEP 0015, em teste) | PASS (variáveis do projeto chegam às etapas do executor local e do runner oficial; valor oculto nunca volta pela API e aparece como [MASKED] no log; os nomes CI_* vencem; variáveis de grupo, protegidas e por ambiente ainda não) | TestVariaveisDeCI, TestRunnerOficial |
 | CI-08 | Artefatos | upload/download | job | `/jobs/:id/artifacts` | ci_job_artifacts | | uploads | SUPPORTED (GEP 0014, em teste) | PARTIAL (o `gitlab-runner` oficial envia `artifacts: paths` e o zip volta para quem vê o job; o executor local ainda não junta artefatos; expiração e navegação dentro do zip não) | TestRunnerOficial, TestArquivos |
 | CI-09 | needs/DAG, rules/only/except, when:manual, allow_failure | | | | | | | | ADIADO → BACKLOG (DAG, rules, manual avançado: capability de fluxo de execução) | |
-| CI-10 | Isolamento de execução (containers) | runner docker executor | | | | | docker | MISSING | ADIADO → FASE 4 (escala/infraestrutura: isolamento de execução) | |
+| CI-10 | Isolamento de execução (containers) | runner docker executor | | | | | docker | MISSING | PASS (executor local com GERMANIO_EXECUTOR=docker: todos os comandos de um passo num único container, com as variáveis do passo, sem rede, sem capabilities, sem escalada de privilégio, limite de processos e o usuário do host; o runner oficial usa o próprio executor docker) | TestPassoEmConteiner |
 
 ## Integrações, notificações, admin
 

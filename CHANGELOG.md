@@ -45,6 +45,9 @@ hierarchical syntax.
   activity is seen only by whoever sees the record it describes. A vocabulary that translates
   the same name twice with different values is now an error instead of a silent override (G105).
 - Repositories list, create and remove tags under the same rules as code.
+- Isolated steps: with `GERMANIO_EXECUTOR=docker`, a step that names an image runs all its commands
+  in one container with its variables, no network, no capabilities, no privilege escalation, a
+  process limit and the host user (before: one container per line, without the variables).
 - Editing a file on the web (API and the file page) commits as the person, under the rules of
   pushing code; executions start as after a push.
 - Boards (GEP 0023, in test): `cartoes por estado` under `mostre` shows a data in columns by

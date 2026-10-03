@@ -639,14 +639,12 @@ func (x *executor) execute(ctx context.Context, log *logBuffer, owner, run, job 
 	}
 	log.mask(hiddenValues(local)...)
 	runLines := func(list []string) bool {
+		if x.mode == "docker" && toStr(job["imagem"]) != "" {
+			return x.inContainer(ctx, log, work, toStr(job["imagem"]), env, list)
+		}
 		for _, line := range list {
 			fmt.Fprintf(log, "$ %s\n", line)
-			var cmd *exec.Cmd
-			if x.mode == "docker" && toStr(job["imagem"]) != "" {
-				cmd = exec.CommandContext(ctx, "docker", "run", "--rm", "--network", "none", "-v", work+":/builds/projeto", "-w", "/builds/projeto", toStr(job["imagem"]), "sh", "-c", line)
-			} else {
-				cmd = exec.CommandContext(ctx, "sh", "-c", line)
-			}
+			cmd := exec.CommandContext(ctx, "sh", "-c", line)
 			cmd.Dir, cmd.Env = work, env
 			cmd.Stdout, cmd.Stderr = log, log
 			if err := cmd.Run(); err != nil {
