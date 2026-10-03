@@ -8,6 +8,8 @@ projetos
         descrição
         visibilidade
         branch_padrao começa com "main"
+        tópicos lista de texto
+        avatar imagem
         repositório
         criador
         membros com papel
@@ -25,15 +27,19 @@ projetos
         precisa de pelo menos um owner
         arquivado é somente leitura
 
+    recebe estrelas
+
     repositório pode começar com "README.md" contendo "# {nome}\n"
 
     acesso
         usuario
             criar seus
+            copiar
         guest
             ver
         reporter
             baixar código
+            copiar
         developer
             criar
             enviar código
@@ -47,6 +53,7 @@ projetos
 
     permita
         pesquisar
+        filtrar por tópico
 
     integração
         nome "projects"
