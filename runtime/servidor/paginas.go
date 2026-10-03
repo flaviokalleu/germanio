@@ -309,6 +309,10 @@ func fieldLabel(f *ast.Field) string {
 	return label(f.Name)
 }
 
+// pluralLabel: the data's plural as the author wrote it (cartoes → Cartoes,
+// merge requests → Merge requests), never the singular plus an s.
+func pluralLabel(e *ast.Entity) string { return label(e.Plural) }
+
 func label(name string) string {
 	name = strings.ReplaceAll(strings.TrimSuffix(name, "_id"), "_", " ")
 	if name == "" {
@@ -481,7 +485,7 @@ func rowHTML(e *ast.Entity, row map[string]any, base string, names []string) str
 
 func (ps *pageSite) tableWith(e *ast.Entity, rows []any, base string, names []string) template.HTML {
 	cols := tableColumns(e, names)
-	td := tableData{Empty: fmt.Sprintf("Nenhum registro de %s ainda.", strings.ToLower(e.Label)), Caption: e.Label + "s"}
+	td := tableData{Empty: fmt.Sprintf("Nenhum registro de %s ainda.", strings.ToLower(e.Label)), Caption: pluralLabel(e)}
 	td.Heads = append(td.Heads, e.Label)
 	for _, c := range cols {
 		td.Heads = append(td.Heads, fieldLabel(c))
@@ -706,7 +710,7 @@ func (ps *pageSite) serve(w http.ResponseWriter, r *http.Request) {
 	for i, st := range chain {
 		if i > 0 {
 			href += "/" + st.e.Plural
-			v.Crumbs = append(v.Crumbs, link{href, st.e.Label + "s"})
+			v.Crumbs = append(v.Crumbs, link{href, pluralLabel(st.e)})
 		}
 		if st.ref != "" {
 			href += "/" + url.PathEscape(st.ref)
@@ -752,7 +756,7 @@ func (ps *pageSite) serve(w http.ResponseWriter, r *http.Request) {
 		// The page's own sections (GEP 0002, em teste) replace only their
 		// default, and only on the page itself (not on nested lists).
 		own := len(chain) == 1
-		v.Title = last.e.Label + "s"
+		v.Title = pluralLabel(last.e)
 		if own && pg.Title != "" {
 			v.Title = pg.Title
 		}
@@ -807,7 +811,11 @@ func (ps *pageSite) serve(w http.ResponseWriter, r *http.Request) {
 			if own {
 				cols = pg.Columns
 			}
-			body.WriteString(string(ps.tableWith(last.e, rows, base, cols)))
+			if byState(pg, last.e) {
+				body.WriteString(string(ps.board(ctx, atual, last.e, rows, base, v.CSRF, "quadro")))
+			} else {
+				body.WriteString(string(ps.tableWith(last.e, rows, base, cols)))
+			}
 		}
 		body.WriteString(string(htmlOf(pagerTpl, pager(q, len(rows), per))))
 		body.WriteString(`</div>`)
@@ -853,17 +861,21 @@ func (ps *pageSite) serve(w http.ResponseWriter, r *http.Request) {
 		ccode, cout, _ := ps.call(r, "GET", api+"/"+c.Plural+"?por_pagina=10", nil)
 		if ccode >= 500 {
 			// an internal failure is shown, never hidden like a permission
-			body.WriteString(string(htmlOf(sectionTpl, map[string]any{"Title": c.Label + "s"})))
+			body.WriteString(string(htmlOf(sectionTpl, map[string]any{"Title": pluralLabel(c)})))
 			body.WriteString(string(htmlOf(emptyTpl, "Não foi possível carregar esta parte agora. Tente de novo mais tarde.")))
 			continue
 		}
 		if ccode != 200 {
 			continue // not allowed to see: nothing is shown
 		}
-		body.WriteString(string(htmlOf(sectionTpl, map[string]any{"Title": c.Label + "s", "Href": base + "/" + c.Plural})))
-		body.WriteString(`<div data-vivo="filhos-` + template.HTMLEscapeString(c.Plural) + `">`)
-		body.WriteString(string(ps.table(c, asList(cout), base+"/"+c.Plural)))
-		body.WriteString(`</div>`)
+		body.WriteString(string(htmlOf(sectionTpl, map[string]any{"Title": pluralLabel(c), "Href": base + "/" + c.Plural})))
+		if byState(pg, c) {
+			body.WriteString(string(ps.board(ctx, atual, c, asList(cout), base+"/"+c.Plural, v.CSRF, "filhos-"+c.Plural)))
+		} else {
+			body.WriteString(`<div data-vivo="filhos-` + template.HTMLEscapeString(c.Plural) + `">`)
+			body.WriteString(string(ps.table(c, asList(cout), base+"/"+c.Plural)))
+			body.WriteString(`</div>`)
+		}
 		childChain := append(append([]step{}, chain...), step{e: c})
 		if atual != nil && ps.a.canCreateFor(ctx, atual, c, childChain) {
 			body.WriteString(string(ps.form(base+"/"+c.Plural+"/novo", "Criar", v.CSRF, c.NovoRotulo(), ps.inputs(r, childChain, c, nil, ps.fixedFor(childChain)))))
@@ -1453,6 +1465,7 @@ pre{background:var(--soft);border:1px solid var(--line);border-radius:6px;paddin
 .diff .add{background:#dafbe1}.diff .del{background:#ffebe9}.diff .hunk{color:var(--muted)}
 @media (prefers-color-scheme:dark){.diff .add{background:#12261e}.diff .del{background:#2d1117}}
 .paginas{display:flex;gap:12px;margin-top:10px}.intro{color:var(--muted);margin:-8px 0 16px}
+.quadro{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(220px,1fr);gap:12px;overflow-x:auto;margin:0 0 20px}.coluna{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:10px;min-height:120px}.coluna h3{margin:0 0 8px;font-size:15px}.coluna .contagem{color:var(--muted);font-weight:400}.coluna ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;min-height:60px}.cartao{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px}.cartao[draggable=true]{cursor:grab}.cartao .mover{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}.cartao .mover form{margin:0}.cartao .mover button{font-size:12px;padding:2px 8px}.coluna.alvo{outline:2px dashed var(--accent)}
 .indicadores{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:0 0 20px}.indicador{border:1px solid var(--line);border-radius:8px;padding:14px;background:var(--soft);display:flex;flex-direction:column}.indicador .valor{font-size:28px;font-weight:700}.indicador .rotulo{color:var(--muted)}
 a.botao{display:inline-block;padding:7px 14px;border-radius:6px;background:var(--accent);color:var(--on-accent);text-decoration:none}
 @media (max-width:640px){main{padding:12px}th,td{padding:6px 8px}}

@@ -70,7 +70,8 @@ func Pagina(prog *ast.Program, nome string) (string, error) {
 		}
 		return "padrão"
 	}
-	title := e.Label + "s"
+	title := strings.ReplaceAll(e.Plural, "_", " ")
+	title = strings.ToUpper(title[:1]) + title[1:]
 	if pg.Title != "" {
 		title = pg.Title
 	}

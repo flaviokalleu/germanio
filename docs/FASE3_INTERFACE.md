@@ -45,4 +45,29 @@ FASE 2: "digitando…" e o teste de reconexão num navegador real.
 
 ## Diário da fase
 
-(vazio)
+### Passo 1 — o Quadro com o que existe (2026-10-02)
+
+O domínio coube na linguagem atual:
+- quadros com membros e papéis;
+- cartões com estados e transições (`começa pendente`, `pode comecar/concluir/reabrir`, com quem
+  e quando);
+- responsáveis, menções, histórico e presença.
+
+Obstáculos:
+
+| # | Obstáculo | Tipo | Encaminhamento |
+| --- | --- | --- | --- |
+| 1 | um estado não pode ter duas palavras (`a fazer`) | limite da linguagem | registrado; contornado com `pendente` |
+| 2 | não há como mostrar um dado em colunas por estado nem mover por arraste | capability faltante (a central da fase) | GEP 0023, em teste: feita (`TestPorEstado`) |
+| 3 | os títulos das seções eram o singular mais "s" ("Cartaos") | bug de interface | corrigido: o plural do dado como o autor escreveu |
+| 4 | edição no próprio cartão, painel sem sair do quadro, seleção, desfazer, atalhos | capabilities faltantes | próximos passos |
+
+### Passo 2 — por estado (2026-10-02)
+
+GEP 0023: `cartoes por estado` abaixo de `mostre`, onde já fica `20 por página`.
+- As colunas são os estados: o inicial, depois os destinos das transições.
+- Cada cartão tem como botões só os movimentos que aquela pessoa pode fazer a partir do estado
+  dele. Isso vale para teclado, leitor de tela e páginas sem JavaScript.
+- Arrastar envia o mesmo botão do movimento. A coluna não aceita um cartão sem aquele movimento.
+- O servidor confere de novo, e um movimento forjado é recusado.
+- O quadro se atualiza pela página viva.

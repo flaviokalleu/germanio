@@ -600,15 +600,28 @@ func (p *Parser) parseCrie(head dline, body []dline) error {
 			bw := wordsOf(body[i].toks)
 			switch {
 			case bw[0] == "mostre":
-				pg.Show, _ = phrase(bw[1:])
+				shown := bw[1:]
+				if n := len(shown); n >= 3 && shown[n-2] == "por" && shown[n-1] == "estado" {
+					// mostre cartoes por estado (GEP 0023, em teste)
+					shown = shown[:n-2]
+					name, _ := phrase(shown)
+					pg.ByState = append(pg.ByState, &ast.PageByState{Data: name, Pos: p.at(body[i].toks[0])})
+				}
+				pg.Show, _ = phrase(shown)
 				for _, k := range children(body, i) {
 					kw := wordsOf(k.toks)
 					if len(kw) == 3 && kw[1] == "por" && kw[2] == "pagina" {
 						pg.PerPage, _ = strconv.Atoi(kw[0])
 						continue
 					}
+					if n := len(kw); n >= 3 && kw[n-2] == "por" && kw[n-1] == "estado" {
+						// cartoes por estado, under mostre (GEP 0023, em teste)
+						name, _ := phrase(kw[:n-2])
+						pg.ByState = append(pg.ByState, &ast.PageByState{Data: name, Pos: p.at(k.toks[0])})
+						continue
+					}
 					return p.teach(k.toks[0], "\""+lineText(k)+"\" não é algo que mostre aceite",
-						"abaixo de mostre só cabe quantos registros aparecem por página", "escreva, por exemplo: 20 por página", "")
+						"abaixo de mostre cabe quantos registros aparecem por página, ou um dado mostrado por estado", "escreva, por exemplo: 20 por página, ou cartoes por estado", "")
 				}
 				i += len(children(body, i))
 			case bw[0] == "permita":

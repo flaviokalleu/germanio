@@ -211,6 +211,14 @@ type PageDecl struct {
 	Empty   *PageEmpty    // vazio › título, texto, ação
 	// Indicators (GEP 0012, em teste): indicadores › total de <dado> [estado].
 	Indicators []*PageIndicator
+	// ByState: data shown in columns by state (GEP 0023, em teste).
+	ByState []*PageByState
+}
+
+// PageByState: Data (resolved to its singular) is shown by state on the page.
+type PageByState struct {
+	Data string
+	Pos  diagnostics.Position
 }
 
 // PageIndicator counts the records of Entity (in State, when given) the

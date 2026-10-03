@@ -332,11 +332,16 @@ func (ps *pageSite) dependencies(r *http.Request, path string) (map[string]bool,
 		if len(chain) == 1 {
 			cols = pg.Columns
 		}
-		rows[last.e.Singular] = &rowRegion{name: "lista", base: strings.TrimSuffix(path, "/"), cols: cols, scope: scope}
+		if !byState(pg, last.e) { // a board refreshes as a whole
+			rows[last.e.Singular] = &rowRegion{name: "lista", base: strings.TrimSuffix(path, "/"), cols: cols, scope: scope}
+		}
 		return deps, rows, only
 	}
 	for _, c := range ps.a.childrenOf(last.e) {
 		deps[c.Singular] = true
+		if byState(pg, c) {
+			continue // a board refreshes as a whole
+		}
 		rows[c.Singular] = &rowRegion{name: "filhos-" + c.Plural, base: strings.TrimSuffix(path, "/") + "/" + c.Plural, scope: ps.a.parentScope(last.e, parentRow, c)}
 	}
 	return deps, rows, only
@@ -407,6 +412,40 @@ func (ps *pageSite) serveLive(w http.ResponseWriter, r *http.Request) {
 // after a reconnection (something may have been missed meanwhile). It waits
 // while the person is typing in a form.
 const liveScript = `(function () {
+  // boards (GEP 0023): dropping a card on a column submits that card's own
+  // move button for the column; a card without that move is not accepted
+  var dragged = null;
+  document.addEventListener('dragstart', function (e) {
+    var card = e.target.closest && e.target.closest('.cartao[draggable=true]');
+    if (!card) return;
+    dragged = card;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', card.getAttribute('data-id'));
+  });
+  function moveFor(col) {
+    return dragged && col && dragged.querySelector('form[data-alvo="' + col.getAttribute('data-estado') + '"]');
+  }
+  document.addEventListener('dragover', function (e) {
+    var col = e.target.closest && e.target.closest('.coluna');
+    if (moveFor(col)) { e.preventDefault(); col.classList.add('alvo'); }
+  });
+  document.addEventListener('dragleave', function (e) {
+    var col = e.target.closest && e.target.closest('.coluna');
+    if (col) col.classList.remove('alvo');
+  });
+  document.addEventListener('drop', function (e) {
+    var col = e.target.closest && e.target.closest('.coluna');
+    var form = moveFor(col);
+    if (!form) return;
+    e.preventDefault();
+    col.classList.remove('alvo');
+    var card = dragged;
+    col.querySelector('ul').appendChild(card);
+    fetch(form.action, {method: 'POST', body: new URLSearchParams(new FormData(form)), credentials: 'same-origin'})
+      .then(function (r) { if (!r.ok) location.reload(); });
+  });
+  document.addEventListener('dragend', function () { dragged = null; });
+
   if (!window.EventSource) return;
   var pending = false, busy = false;
   function typing() {

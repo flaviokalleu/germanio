@@ -363,6 +363,10 @@ regra vai no bloco dele. `seu/seus` restringe aos registros da própria pessoa.
 
 ### Página
 
+Abaixo de `mostre`, `cartoes por estado` ([GEP 0023](gep/0023-por-estado.md), **em teste**) mostra
+um dado em colunas, uma por estado; mover um cartão é a transição que leva àquela coluna, só para
+quem pode fazê-la. Cada cartão tem os movimentos como botões, e arrastar é só um atalho.
+
 `página Clientes` + `mostre clientes`, `permita` + ações e `20 por página` **é** `crie página
 Clientes` com o mesmo corpo. `pagina "/caminho"` (com texto entre aspas) continua sendo a página
 estática do nível técnico; os dois se distinguem pelo que vem depois da palavra.

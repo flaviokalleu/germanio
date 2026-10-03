@@ -1,0 +1,6 @@
+# Quadro: tarefas em colunas — aplicação de referência da FASE 3 (interface interativa).
+
+crie sistema Quadro
+
+importar "backend"
+importar "frontend"

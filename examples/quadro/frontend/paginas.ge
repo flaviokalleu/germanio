@@ -1,0 +1,12 @@
+# O que aparece.
+
+importar quadros do backend
+
+página Quadros
+    mostre quadros
+        cartoes por estado
+    permita
+        criar
+
+página Pendências
+    mostre pendências

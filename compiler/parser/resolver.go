@@ -1157,6 +1157,16 @@ func ResolveIntent(prog *ast.Program) error {
 		if err := r.indicators(pg); err != nil {
 			return err
 		}
+		for _, bs := range pg.ByState {
+			e, err := r.entity(bs.Data, bs.Pos)
+			if err != nil {
+				return err
+			}
+			if e.StateField == "" || len(e.Transitions) == 0 {
+				return r.errAt(bs.Pos, "%s por estado: %s não tem estados. Declare, no bloco de %s: começa <estado> e pode <ação> (por exemplo: começa pendente, pode concluir)", e.Plural, e.Plural, e.Plural)
+			}
+			bs.Data = e.Singular
+		}
 		target := pg.Show
 		if target == "" {
 			target = pg.Manage

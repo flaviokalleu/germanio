@@ -1,0 +1,63 @@
+# Quadros, cartões e quem pode mover o quê.
+
+usuarios
+    tem
+        nome obrigatório
+        username obrigatório e único
+        email obrigatório e único
+        senha min 8
+
+tenha login
+tenha cadastro
+tenha presença
+
+tenha papeis
+    leitor 10
+    editor 30
+    gestor 50
+
+quadros
+    tem
+        nome obrigatório
+        cartoes
+        membros com papel
+    regras
+        quem cria vira gestor
+        precisa de pelo menos um gestor
+    acesso
+        usuario
+            criar
+        leitor
+            ver
+        editor
+            adicionar membros
+        gestor
+            administrar
+
+cartoes
+    singular cartao
+    tem
+        titulo obrigatório
+        descricao formatado
+        responsaveis
+        etiquetas
+    pertence a quadro
+    começa pendente
+    pode
+        comecar
+        concluir
+        reabrir
+    pendência para
+        responsaveis
+        mencionados
+    guarda histórico
+    acesso
+        leitor
+            ver
+        editor
+            criar
+            editar
+            comecar
+            concluir
+            reabrir
+            excluir

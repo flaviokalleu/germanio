@@ -1,0 +1,53 @@
+crie sistema PorEstado
+
+usuarios
+    tem
+        nome obrigatório
+        email obrigatório e único
+        senha min 8
+
+tenha login
+tenha cadastro
+
+tenha papeis
+    leitor 10
+    editor 30
+    gestor 50
+
+quadros
+    tem
+        nome obrigatório
+        cartoes
+        membros com papel
+    regras
+        quem cria vira gestor
+    acesso
+        usuario
+            criar
+        leitor
+            ver
+        gestor
+            administrar
+
+cartoes
+    singular cartao
+    tem
+        titulo obrigatório
+    pertence a quadro
+    começa pendente
+    pode
+        comecar
+        concluir
+        reabrir
+    acesso
+        leitor
+            ver
+        editor
+            criar
+            comecar
+            concluir
+            reabrir
+
+página Quadros
+    mostre quadros
+        cartoes por estado

@@ -45,6 +45,9 @@ hierarchical syntax.
   activity is seen only by whoever sees the record it describes. A vocabulary that translates
   the same name twice with different values is now an error instead of a silent override (G105).
 - Repositories list, create and remove tags under the same rules as code.
+- Boards (GEP 0023, in test): `cartoes por estado` under `mostre` shows a data in columns by
+  state; moving a card is the transition, offered as buttons and by dragging, only to people who
+  may perform it. Section titles use the data's own plural (no more "Cartaos").
 - Reading (GEP 0022, in test): `guarda leitura` — opening a container reads it; containers show
   each viewer their unread count; lists and live pages follow it.
 - Presence (GEP 0021, in test): `tenha presença` gives people `online` while they have a page
