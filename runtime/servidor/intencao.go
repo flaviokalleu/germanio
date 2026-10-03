@@ -50,6 +50,7 @@ func (s *Servidor) registerIntent(mux *routeMux) error {
 	}
 	s.intent = a
 	a.live = newLiveHub(a)
+	a.setupReading()
 	s.registerTaskModule()
 	s.tasks().handle("entrega", a.deliver)
 	a.mountSearch(mux)
@@ -317,6 +318,9 @@ func serializeFor(ctx *interp.Context, in *interp.Interpreter, atual map[string]
 	}
 	if in != nil && in.Online != nil && in.App != nil && e.Singular == in.App.LoginEntity && row["id"] != nil {
 		out["online"] = in.Online(row["id"])
+	}
+	if in != nil && in.Decorate != nil {
+		in.Decorate(atual, e, row, out)
 	}
 	for k, v := range row {
 		switch {
@@ -1082,6 +1086,11 @@ func (a *intentAPI) remove(ctx *interp.Context, atual map[string]any, e *ast.Ent
 	if e.Singular == a.app.LoginEntity {
 		if err := a.personLeaves(ctx, row); err != nil {
 			return err
+		}
+		if a.in.Decorate != nil { // the person's reading marks go with them (GEP 0022)
+			if _, err := a.dbOf(ctx).Executar(fmt.Sprintf(`DELETE FROM %s WHERE pessoa_id = %s`, readTable, a.s.ph(1)), row["id"]); err != nil {
+				return err
+			}
 		}
 		if err := a.personReferences(ctx, row); err != nil {
 			return err

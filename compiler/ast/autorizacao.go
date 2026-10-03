@@ -86,6 +86,9 @@ type Entity struct {
 	// History: every change of this data is recorded in the history
 	// (issue guarda histórico; GEP 0011, em teste).
 	History bool
+	// ReadParent: records of this data are read per person, by opening the
+	// record of ReadParent they belong to through ReadField (GEP 0022).
+	ReadParent, ReadField string
 	// ViewThrough: a record of this data is seen by whoever sees the record
 	// it describes (the history); nil for ordinary data.
 	ViewThrough *ViewThrough

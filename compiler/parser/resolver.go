@@ -1244,8 +1244,11 @@ func ResolveIntent(prog *ast.Program) error {
 		app.Presence = true
 	}
 
-	// 10b. History (GEP 0011, em teste).
+	// 10b. History (GEP 0011, em teste) and reading (GEP 0022, em teste).
 	if err := r.history(in, app); err != nil {
+		return err
+	}
+	if err := r.reading(in, app); err != nil {
 		return err
 	}
 

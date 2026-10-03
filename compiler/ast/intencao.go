@@ -63,6 +63,8 @@ type Intent struct {
 	EmailNoticesPos diagnostics.Position
 	// History: `issue guarda histórico` (GEP 0011, em teste).
 	History []*HistoryDecl
+	// Reading: `mensagem guarda leitura` (GEP 0022, em teste).
+	Reading []*HistoryDecl
 	// Renames: renomeie nome de clientes para nome_completo (G93).
 	Renames []*RenameDecl
 	// Discards: descarte telefone de clientes (removed on purpose, data kept).
@@ -276,6 +278,7 @@ func MergeIntent(a, b *Intent) *Intent {
 	a.Capabilities = append(a.Capabilities, b.Capabilities...)
 	a.PendingItems = append(a.PendingItems, b.PendingItems...)
 	a.History = append(a.History, b.History...)
+	a.Reading = append(a.Reading, b.Reading...)
 	a.EmailNotices = a.EmailNotices || b.EmailNotices
 	a.Presence = a.Presence || b.Presence
 	if a.EmailNoticesPos.Line == 0 {

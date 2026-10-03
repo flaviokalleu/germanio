@@ -122,7 +122,7 @@ Obstáculos encontrados:
 | 1 | um dado chamado `mensagens` derrubava o compilador (pânico: colisão com a frase `mensagens em inglês`) | bug do core | corrigido, com teste de equivalência |
 | 2 | nenhuma página se atualiza sozinha quando o que ela mostra muda | capability faltante (a central da fase) | GEP 0020, em teste: feito (`TestPaginasVivas`, com mutação provando visibilidade e commit) |
 | 3 | presença (online/offline) e "digitando" não existem | capability faltante | presença: GEP 0021, em teste, feita (`TestPresenca`); "digitando" fica para depois |
-| 4 | lido/não lido e contadores por pessoa não existem | capability faltante | depois da 0020 |
+| 4 | lido/não lido e contadores por pessoa não existem | capability faltante | GEP 0022, em teste: feita (`TestLeitura`) |
 | 5 | o hub de tempo real atual manda tudo a todos e descarta em silêncio (G66) | dívida do core | substituído pelo mecanismo da 0020 |
 
 ### Passo 2 — páginas vivas (2026-10-02)
@@ -176,3 +176,10 @@ pessoa fica offline depois que a última página fecha e passa a tolerância (10
 mudança de presença é uma mudança da pessoa, então as páginas que mostram pessoas se atualizam.
 Um erro de contagem (voltar dentro da tolerância deixava a pessoa online para sempre) foi achado
 na revisão e tem teste.
+
+### Passo 5 — leitura (2026-10-02)
+
+GEP 0022 (`guarda leitura`, irmã de `guarda histórico`): abrir a página do contêiner lê tudo o
+que há nele para a pessoa. O contêiner mostra `nao_lidas` a cada um, sem contar o que a própria
+pessoa escreveu, e as listas exibem a contagem. Mensagens novas e leituras atualizam as páginas
+que mostram os contêineres. As marcas são estado por pessoa e saem junto com ela.

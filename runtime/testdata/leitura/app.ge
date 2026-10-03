@@ -1,0 +1,33 @@
+crie sistema Leitura
+
+usuarios
+    tem
+        nome obrigatório
+        email obrigatório e único
+        senha min 8
+
+tenha login
+tenha cadastro
+
+canais
+    tem
+        nome obrigatório
+        mensagens
+    acesso
+        usuario
+            criar
+            ver
+
+mensagens
+    tem
+        texto obrigatório
+        autor
+    pertence a canal
+    guarda leitura
+    acesso
+        usuario
+            criar
+            ver
+
+página Canais
+    mostre canais

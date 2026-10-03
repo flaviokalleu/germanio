@@ -400,6 +400,8 @@ type tableRow struct {
 	Title string
 	Body  template.HTML // full formatted text of records without a title (comments)
 	Cells []cell
+	// Unread: records inside not read yet by the viewer (GEP 0022)
+	Unread int
 }
 type tableData struct {
 	Heads   []string
@@ -439,6 +441,9 @@ func (ps *pageSite) tableWith(e *ast.Entity, rows []any, base string, names []st
 			ref = display(n)
 		}
 		tr := tableRow{Href: base + "/" + url.PathEscape(ref), Title: titleOf(e, row)}
+		if n := int(asNumber(row["nao_lidas"])); n > 0 {
+			tr.Unread = n
+		}
 		if body, ok := formattedBody(e, row); ok {
 			tr.Title, tr.Body = e.Label+" "+display(row["id"]), body
 		}
@@ -788,6 +793,9 @@ func (ps *pageSite) serve(w http.ResponseWriter, r *http.Request) {
 	}
 	row, _ := out.(map[string]any)
 	record := ps.record(ctx, last.e, row)
+	if atual != nil {
+		ps.a.markRead(atual["id"], last.e, row["id"]) // looking is reading (GEP 0022)
+	}
 	v.Title = titleOf(last.e, row)
 	if len(view) > 0 {
 		ps.repositoryView(w, r, v, chain, api, view)
@@ -1424,7 +1432,7 @@ var introTpl = tpl(`<p class="intro">{{.}}</p>`)
 var actionLinkTpl = tpl(`<p class="acoes"><a class="botao" href="{{.Href}}">{{.Label}}</a></p>`)
 var emptyStateTpl = tpl(`<div class="vazio" role="status">{{if .Title}}<h2>{{.Title}}</h2>{{end}}{{if .Text}}<p>{{.Text}}</p>{{end}}{{with .Action}}<p><a class="botao" href="{{.Href}}">{{.Label}}</a></p>{{end}}</div>`)
 var tableTpl = tpl(`{{if .Rows}}<div class="tabela"><table>{{if .Caption}}<caption class="sr">{{.Caption}}</caption>{{end}}<thead><tr>{{range .Heads}}<th scope="col">{{.}}</th>{{end}}</tr></thead><tbody>
-{{range .Rows}}<tr><td><a href="{{.Href}}">{{.Title}}</a>{{if .Body}}<div class="texto">{{.Body}}</div>{{end}}</td>{{range .Cells}}<td>{{if .Badge}}<span class="selo">{{.Text}}</span>{{else}}{{.Text}}{{end}}</td>{{end}}</tr>{{end}}
+{{range .Rows}}<tr><td><a href="{{.Href}}">{{.Title}}</a>{{if .Unread}} <span class="selo nao-lidas">{{.Unread}} não lidas</span>{{end}}{{if .Body}}<div class="texto">{{.Body}}</div>{{end}}</td>{{range .Cells}}<td>{{if .Badge}}<span class="selo">{{.Text}}</span>{{else}}{{.Text}}{{end}}</td>{{end}}</tr>{{end}}
 </tbody></table></div>{{else}}<div class="vazio">{{.Empty}}</div>{{end}}`)
 var formTpl = tpl(`<form class="{{if .Title}}caixa{{end}}" method="post" action="{{.Action}}">{{if .Title}}<h3>{{.Title}}</h3>{{end}}
 <input type="hidden" name="_csrf" value="{{.CSRF}}"><input type="hidden" name="_campos" value="1">

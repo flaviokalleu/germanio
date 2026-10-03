@@ -129,13 +129,27 @@ func (h *liveHub) presenceChanged(id any) {
 // onChange records a write; it is announced once the change is kept.
 func (h *liveHub) onChange(ctx *interp.Context, model string, before, after map[string]any) {
 	c := change{model: strings.ToLower(model), before: before, after: after}
+	announce := func() {
+		h.publish(c)
+		// a record read per person changes the unread count of its container
+		if e := h.a.app.Entities[c.model]; e != nil && e.ReadParent != "" {
+			row := c.after
+			if row == nil {
+				row = c.before
+			}
+			if res, _ := h.a.in.Op(&interp.Context{}, e.ReadParent, "buscar", row[e.ReadField]); res != nil {
+				p := res.(map[string]any)
+				h.publish(change{model: e.ReadParent, before: p, after: p})
+			}
+		}
+	}
 	if ctx != nil {
 		if st := txOf(ctx.Request); st != nil {
-			st.onCommit = append(st.onCommit, func() { h.publish(c) })
+			st.onCommit = append(st.onCommit, announce)
 			return
 		}
 	}
-	h.publish(c) // outside a request transaction the write is already kept
+	announce() // outside a request transaction the write is already kept
 }
 
 func (h *liveHub) publish(c change) {

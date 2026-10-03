@@ -353,6 +353,7 @@ válidas. `construcao_do_sistema` são as construções sem sujeito único (`ten
 | `renomeie nome para nome_completo` | `renomeie nome de D para nome_completo` (veja Migração) |
 | `descarte fax` (GEP 0010, em teste) | `descarte fax de D` (veja Migração) |
 | `guarda histórico` ([GEP 0011](gep/0011-historico.md), em teste) | `d guarda histórico` |
+| `guarda leitura` ([GEP 0022](gep/0022-leitura.md), em teste) | `d guarda leitura` (abrir o contêiner lê; ele mostra `nao_lidas` a cada pessoa) |
 | `usam variaveis do projeto` ([GEP 0015](gep/0015-variaveis-das-execucoes.md), em teste; nas execuções) | `pipelines usam as variaveis do projeto` |
 
 Uma **ação sem alvo** vale para o próprio dado (a coleção: `administrar` sem alvo inclui

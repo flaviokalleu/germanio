@@ -104,3 +104,26 @@ func (r *resolver) history(in *ast.Intent, app *ast.App) error {
 	app.ActivityEntity = ae.Singular
 	return nil
 }
+
+// reading resolves `guarda leitura` (GEP 0022, em teste): the records belong
+// to a container that is not the people data.
+func (r *resolver) reading(in *ast.Intent, app *ast.App) error {
+	for _, d := range in.Reading {
+		e, err := r.entity(d.Entity, d.Pos)
+		if err != nil {
+			return err
+		}
+		for field, target := range e.Parents {
+			if target != app.LoginEntity {
+				e.ReadParent, e.ReadField = target, field
+			}
+		}
+		if e.ReadParent == "" {
+			return r.errAt(d.Pos, "%s guarda leitura, mas %s não pertence a nada onde se leia (por exemplo: pertence a canal)", e.Plural, e.Plural)
+		}
+		if app.LoginEntity == "" {
+			return r.errAt(d.Pos, "leitura é de cada pessoa: declare também tenha login")
+		}
+	}
+	return nil
+}

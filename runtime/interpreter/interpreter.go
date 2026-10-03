@@ -147,6 +147,9 @@ type Interpreter struct {
 	// Online, when set, tells whether the person with this id has a page of
 	// the application open (presence, GEP 0021).
 	Online func(id any) bool
+	// Decorate, when set, adds values computed for the viewer to a record
+	// being shown (unread counts, GEP 0022).
+	Decorate func(atual map[string]any, e *ast.Entity, row, out map[string]any)
 }
 
 // New creates a new interpreter.

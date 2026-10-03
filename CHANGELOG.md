@@ -41,6 +41,8 @@ hierarchical syntax. Nothing below is in a tagged release yet.
   activity is seen only by whoever sees the record it describes. A vocabulary that translates
   the same name twice with different values is now an error instead of a silent override (G105).
 - Repositories list, create and remove tags under the same rules as code.
+- Reading (GEP 0022, in test): `guarda leitura` — opening a container reads it; containers show
+  each viewer their unread count; lists and live pages follow it.
 - Presence (GEP 0021, in test): `tenha presença` gives people `online` while they have a page
   open, with a grace period; pages showing people follow it.
 - Pages stay up to date (GEP 0020, in test; no syntax): an open page follows the changes of what

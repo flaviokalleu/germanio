@@ -109,7 +109,7 @@ func (p *Parser) isIntentLine() bool {
 		if (x == "usa" || x == "usam") && len(w) >= 5 && (contains(w, "do") || contains(w, "da") || contains(w, "dos") || contains(w, "das")) {
 			return true // pipelines usam as variaveis do projeto (GEP 0015)
 		}
-		if x == "guarda" && i+2 == len(w)-1 && w[i+2] == "historico" {
+		if x == "guarda" && i+2 == len(w)-1 && (w[i+2] == "historico" || w[i+2] == "leitura") {
 			return true // issue guarda histórico (GEP 0011)
 		}
 	}
@@ -370,6 +370,15 @@ func (p *Parser) intentFrom(head dline, body []dline) error {
 			in.Visibility = append(in.Visibility, rule)
 			return nil
 		}
+	}
+	if n := len(w); n >= 3 && w[n-2] == "guarda" && w[n-1] == "leitura" {
+		// mensagem guarda leitura (GEP 0022, em teste)
+		subject, _ := phrase(w[:n-2])
+		if subject == "" {
+			return p.teach(head.toks[0], "\""+lineText(head)+"\" não diz de qual dado", "guarda leitura vem depois do dado", "escreva, por exemplo: mensagem guarda leitura (ou, no bloco do dado: guarda leitura)", "")
+		}
+		p.intent().Reading = append(p.intent().Reading, &ast.HistoryDecl{Entity: subject, Pos: pos})
+		return nil
 	}
 	if n := len(w); n >= 3 && w[n-2] == "guarda" && w[n-1] == "historico" {
 		// issue guarda histórico (GEP 0011, em teste)
