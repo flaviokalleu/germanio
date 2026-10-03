@@ -1336,6 +1336,36 @@ func ResolveIntent(prog *ast.Program) error {
 		e.Integrate = name
 	}
 
+	// Records that name two independent parents (a link between two issues,
+	// a citation between two documents) are seen and changed only by whoever
+	// sees every filled one. Parents inside one another (an issue's project
+	// and milestone) are not independent: the inner one counts.
+	for _, n := range app.Order {
+		e := app.Entities[n]
+		var fields []string
+		for f, t := range e.Parents {
+			if t != app.LoginEntity && t != e.Singular {
+				fields = append(fields, f)
+			}
+		}
+		sort.Strings(fields)
+		var inner []string
+		for _, f := range fields {
+			outer := false
+			for _, g := range fields {
+				if f != g && e.Parents[f] != e.Parents[g] && r.isAncestor(app.Entities[e.Parents[f]], app.Entities[e.Parents[g]]) {
+					outer = true
+				}
+			}
+			if !outer {
+				inner = append(inner, f)
+			}
+		}
+		if len(inner) >= 2 {
+			e.IndependentParents = inner
+		}
+	}
+
 	// Custom verbs must have a definition.
 	for _, n := range app.Order {
 		e := app.Entities[n]

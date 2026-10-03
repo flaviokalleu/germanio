@@ -393,12 +393,58 @@ func (a *intentAPI) parentScope(parent *ast.Entity, parentRow map[string]any, ch
 	if child == parent && parent.HierarchyField != "" {
 		return map[string]any{parent.HierarchyField: parentRow["id"]}
 	}
-	for field, target := range child.Parents {
-		if target == parent.Singular {
-			return map[string]any{field: parentRow["id"]}
-		}
+	if field := parentFieldOf(child, parent.Singular); field != "" {
+		return map[string]any{field: parentRow["id"]}
 	}
 	return map[string]any{}
+}
+
+// parentFieldOf: the field that ties child to its parent of entity p —
+// <p>_id when there is one (a record may also name another record of the
+// same kind: a link names its issue and a related issue), else the first
+// by name. Never "any field" of a map.
+func parentFieldOf(child *ast.Entity, p string) string {
+	if child.Parents[p+"_id"] == p {
+		return p + "_id"
+	}
+	var fields []string
+	for field, target := range child.Parents {
+		if target == p {
+			fields = append(fields, field)
+		}
+	}
+	if len(fields) == 0 {
+		return ""
+	}
+	sort.Strings(fields)
+	return fields[0]
+}
+
+// hiddenReference returns the entity of a record that data names (not a
+// person) and atual cannot see: nobody creates or points a record at
+// something they could not see, whatever else they may do.
+func (a *intentAPI) hiddenReference(ctx *interp.Context, atual map[string]any, e *ast.Entity, data map[string]any) *ast.Entity {
+	if a.in.IsAdmin(atual) {
+		return nil
+	}
+	fields := make([]string, 0, len(e.Parents))
+	for field := range e.Parents {
+		fields = append(fields, field)
+	}
+	sort.Strings(fields)
+	for _, field := range fields {
+		target := e.Parents[field]
+		if data[field] == nil || target == a.app.LoginEntity || target == e.Singular {
+			continue
+		}
+		pe := a.app.Entities[target]
+		res, _ := a.in.Op(ctx, pe.Singular, "buscar", data[field])
+		row, _ := res.(map[string]any)
+		if row == nil || !a.in.Can(ctx, atual, pe, "ver", row) {
+			return pe
+		}
+	}
+	return nil
 }
 
 // writable filters a payload to the fields people may set.
@@ -562,6 +608,10 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 			deny(nil)
 			return
 		}
+		if pe := a.hiddenReference(ctx, atual, e, data); pe != nil {
+			a.fail(w, 404, a.msg("404", pe))
+			return
+		}
 		if err := a.frozenFor(ctx, "criar", e, data, data); err != nil {
 			a.failErr(w, r, err)
 			return
@@ -590,6 +640,10 @@ func (a *intentAPI) serve(w http.ResponseWriter, r *http.Request, chain []*ast.E
 		data := a.writable(atual, e, body, nil)
 		for k := range scope {
 			delete(data, k)
+		}
+		if pe := a.hiddenReference(ctx, atual, e, data); pe != nil {
+			a.fail(w, 404, a.msg("404", pe))
+			return
 		}
 		if err := a.namesIn(ctx, atual, e, data, row); err != nil {
 			a.failErr(w, r, err)
@@ -1127,22 +1181,39 @@ func (a *intentAPI) cascade(ctx *interp.Context, e *ast.Entity, row map[string]a
 		return fmt.Errorf("exclusão aninhada demais")
 	}
 	for _, c := range a.childrenOf(e) {
-		sc := a.parentScope(e, row, c)
-		if len(sc) == 0 {
-			continue
+		// what belongs to the record through any of its fields goes with it
+		// (a link that names this issue as its issue or as the related one)
+		scopes := []map[string]any{a.parentScope(e, row, c)}
+		if c != e && c.Singular != a.app.MemberModel {
+			own := parentFieldOf(c, e.Singular)
+			fields := []string{}
+			for field, target := range c.Parents {
+				if target == e.Singular && field != own {
+					fields = append(fields, field)
+				}
+			}
+			sort.Strings(fields)
+			for _, field := range fields {
+				scopes = append(scopes, map[string]any{field: row["id"]})
+			}
 		}
-		// Each pass deletes what it read, so the first batch is always the next one.
-		for {
-			kids, err := a.in.Op(ctx, c.Singular, "filtrar", sc, map[string]any{"limite": 500, "ordenar": "id"})
-			if err != nil {
-				return err
+		for _, sc := range scopes {
+			if len(sc) == 0 {
+				continue
 			}
-			if len(kids.([]any)) == 0 {
-				break
-			}
-			for _, k := range kids.([]any) {
-				if err := a.cascade(ctx, c, k.(map[string]any), depth+1); err != nil {
+			// Each pass deletes what it read, so the first batch is always the next one.
+			for {
+				kids, err := a.in.Op(ctx, c.Singular, "filtrar", sc, map[string]any{"limite": 500, "ordenar": "id"})
+				if err != nil {
 					return err
+				}
+				if len(kids.([]any)) == 0 {
+					break
+				}
+				for _, k := range kids.([]any) {
+					if err := a.cascade(ctx, c, k.(map[string]any), depth+1); err != nil {
+						return err
+					}
 				}
 			}
 		}

@@ -53,6 +53,10 @@ type Entity struct {
 	Label    string
 	// Parent relations (pertence a): field → entity model name.
 	Parents map[string]string
+	// IndependentParents: two or more parent fields not inside one another
+	// (a link naming two issues); a record is then seen or changed only by
+	// whoever sees every filled one.
+	IndependentParents []string
 	// Children (tem): entity model names.
 	Children []string
 	// HierarchyField links an entity to itself (grupo tem subgrupos).

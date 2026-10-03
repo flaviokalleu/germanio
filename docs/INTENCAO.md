@@ -628,6 +628,11 @@ todos podem ver produtos
 - Uma referência (lista ou única) a algo que pertence a um pai que o registro também tem
   — a label ou o milestone do projeto de uma issue — só aceita itens do mesmo pai; o resto
   é tratado como inexistente. Pessoas e referências de sistema não contam como pai.
+- Ninguém cria um registro dentro de algo que não vê, nem aponta uma referência para algo que não
+  vê: para essa pessoa, o outro registro não existe ("não encontrado").
+- Um registro que nomeia dois registros independentes (uma ligação entre duas issues, de
+  `pertence a issue como relacionada`) só é visto e mudado por quem vê os dois, sejam quais forem
+  as regras dele; ele aparece sob o dono principal (`issue_id`) e sai com qualquer um dos dois.
 - Ninguém concede papel acima do próprio.
 - Nada que pertence a uma pessoa é criado em nome de outra, exceto por administradores.
 - Registros invisíveis respondem "não encontrado", nunca "proibido".

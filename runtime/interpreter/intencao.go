@@ -331,6 +331,22 @@ func (interp *Interpreter) Can(ctx *Context, atual map[string]any, e *ast.Entity
 		// nobody but an administrator changes it
 		return verb == "ver" && interp.seesDescribed(ctx, atual, vt, record)
 	}
+	if record != nil {
+		// A record of two independent parents (a link between two issues) is
+		// never more visible than the stricter one: whatever its own rules
+		// say, only someone who sees every filled one may see or change it.
+		if len(e.IndependentParents) >= 2 {
+			for _, f := range e.IndependentParents {
+				if record[f] == nil {
+					continue
+				}
+				pe := interp.App.Entities[e.Parents[f]]
+				if !interp.Can(ctx, atual, pe, "ver", interp.load(ctx, pe, record[f])) {
+					return false
+				}
+			}
+		}
+	}
 	if verb == "ver" && record != nil {
 		// `X confidencial pode ser vista por …`: when the flag is set, only
 		// those listed see it, whatever else would allow it.
@@ -405,7 +421,7 @@ func (interp *Interpreter) RulePasses(ctx *Context, atual map[string]any, e *ast
 func RecordDependent(e *ast.Entity) bool {
 	// restrictions (X confidencial pode ser vista por …) hide single records:
 	// a list must check each one
-	if e.Visibility != "" || e.ViewThrough != nil || len(e.Restrictions) > 0 || len(e.Hooks["antes_ver"].GetBody()) > 0 {
+	if e.Visibility != "" || e.ViewThrough != nil || len(e.Restrictions) > 0 || len(e.Hooks["antes_ver"].GetBody()) > 0 || len(e.IndependentParents) >= 2 {
 		return true
 	}
 	for _, v := range []string{"ver", "editar", "excluir"} {
