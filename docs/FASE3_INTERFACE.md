@@ -60,7 +60,7 @@ Obstáculos:
 | 1 | um estado não pode ter duas palavras (`a fazer`) | limite da linguagem | registrado; contornado com `pendente` |
 | 2 | não há como mostrar um dado em colunas por estado nem mover por arraste | capability faltante (a central da fase) | GEP 0023, em teste: feita (`TestPorEstado`) |
 | 3 | os títulos das seções eram o singular mais "s" ("Cartaos") | bug de interface | corrigido: o plural do dado como o autor escreveu |
-| 4 | edição no próprio cartão, painel sem sair do quadro, seleção, desfazer, atalhos | capabilities faltantes | desfazer e atalhos de movimento: feitos (passo 4); painel, edição no cartão e seleção: próximos |
+| 4 | edição no próprio cartão, painel sem sair do quadro, seleção, desfazer, atalhos | capabilities faltantes | desfazer e atalhos de movimento: feitos (passo 4); painel com edição: feito (passo 5); seleção: próxima |
 
 ### Passo 2 — por estado (2026-10-02)
 
@@ -101,3 +101,10 @@ Sem sintaxe nova, como parte da GEP 0023:
 
 Provado no navegador (`TestNavegador`): a seta move, o anúncio sai, o botão aparece e Ctrl+Z
 devolve o cartão, com a outra aba vendo cada passo.
+
+### Passo 5 — painel (2026-10-02)
+
+O link do cartão abre o registro num `<dialog>` nativo sobre o quadro: o foco fica dentro e Esc
+fecha. Os formulários de dentro (editar, ações) enviam sem sair do quadro: o painel se recarrega e
+o quadro se atualiza. O link continua sendo um link, sem JavaScript ou com Ctrl/clique do meio.
+Provado no navegador: abre, edita o título (o quadro mostra o novo) e Esc fecha.

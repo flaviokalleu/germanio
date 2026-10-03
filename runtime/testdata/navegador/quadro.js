@@ -62,6 +62,18 @@ function fail(msg) { console.error('FALHA: ' + msg); process.exit(1); }
   await pb.waitForSelector('.coluna[data-estado=pendente] .cartao >> text=Durante a queda', { timeout: 8000 })
     .catch(() => fail('Ctrl+Z não desfez o movimento'));
 
+  // the card opens in a panel; editing its title there updates the board
+  await pa.locator('.cartao a', { hasText: 'Login' }).click();
+  await pa.waitForSelector('dialog.painel[open] h1, dialog.painel[open] h2', { timeout: 5000 })
+    .catch(() => fail('o cartão não abriu num painel'));
+  if (!pa.url().endsWith('/quadros/1')) fail('abrir o painel saiu do quadro: ' + pa.url());
+  await pa.fill('dialog.painel form[action$="/editar"] input[name=titulo]', 'Login novo');
+  await pa.click('dialog.painel form[action$="/editar"] button');
+  await pa.waitForSelector('.quadro .cartao >> text=Login novo', { timeout: 8000 })
+    .catch(() => fail('editar no painel não atualizou o quadro'));
+  await pa.keyboard.press('Escape');
+  if (await pa.locator('dialog.painel[open]').count() !== 0) fail('Esc não fechou o painel');
+
   console.log('ok');
   await browser.close();
 })().catch(e => fail(e.message));

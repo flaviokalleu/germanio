@@ -38,6 +38,9 @@ already sits: it says how the page shows a data, nothing else.
   keys (when that move is one of its buttons); every move is announced to screen readers; Ctrl+Z
   or the "Desfazer" button undoes the last move by making the move back, which the server checks
   like any other (an undo the person may not make is refused and said so).
+- **Panel:** a card's link opens the record in a panel over the board (a native dialog: focus
+  stays inside, Escape closes); the forms in it (edit, actions) submit without leaving the board.
+  Without JavaScript, or with Ctrl/middle click, the link opens the record's page as before.
 - **Live:** moves made by others arrive through the live pages (GEP 0020).
 - A data without states is an error that says so.
 

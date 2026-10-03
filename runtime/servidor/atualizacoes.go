@@ -502,6 +502,48 @@ const liveScript = `(function () {
   });
   document.addEventListener('dragend', function () { dragged = null; });
 
+  // a card opens in a panel over the board (its link still works on its
+  // own); forms inside the panel submit without leaving the board
+  var panel = null;
+  function openPanel(href) {
+    fetch(href, {credentials: 'same-origin'}).then(function (r) { return r.text(); }).then(function (html) {
+      var doc = new DOMParser().parseFromString(html, 'text/html');
+      var main = doc.querySelector('main');
+      if (!main) { location.href = href; return; }
+      if (!panel) {
+        panel = document.createElement('dialog');
+        panel.className = 'painel';
+        panel.setAttribute('aria-label', 'Detalhes');
+        document.body.appendChild(panel);
+        panel.addEventListener('submit', function (e) {
+          var form = e.target;
+          if ((form.method || '').toLowerCase() !== 'post') return;
+          e.preventDefault();
+          fetch(form.action, {method: 'POST', body: new URLSearchParams(new FormData(form)), credentials: 'same-origin'})
+            .then(function () {
+              if (/\/excluir$/.test(form.action)) panel.close(); else openPanel(panel.getAttribute('data-href'));
+              refresh();
+            });
+        });
+        panel.addEventListener('click', function (e) { if (e.target === panel) panel.close(); });
+      }
+      panel.setAttribute('data-href', href);
+      panel.innerHTML = '<button type="button" class="fechar" aria-label="Fechar">×</button>';
+      panel.querySelector('.fechar').addEventListener('click', function () { panel.close(); });
+      Array.prototype.forEach.call(main.children, function (el) {
+        if (el.matches('nav.migalhas, .aviso')) return;
+        panel.appendChild(document.importNode(el, true));
+      });
+      if (!panel.open) panel.showModal();
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('.cartao a');
+    if (!a || e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return;
+    e.preventDefault();
+    openPanel(a.href);
+  });
+
   if (!window.EventSource) return;
   var pending = false, busy = false;
   function typing() {
