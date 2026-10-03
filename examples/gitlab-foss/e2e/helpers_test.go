@@ -19,6 +19,7 @@ func gitlab(t *testing.T) string {
 	t.Helper()
 	t.Setenv("GERMANIO_SQLITE", filepath.Join(t.TempDir(), "gitlab.db"))
 	t.Setenv("GERMANIO_GIT_RAIZ", filepath.Join(t.TempDir(), "repos"))
+	t.Setenv("GERMANIO_ARQUIVOS", filepath.Join(t.TempDir(), "arquivos")) // files stay out of the repository
 	t.Setenv("GERMANIO_BCRYPT_RAPIDO", "1")
 	t.Setenv("GERMANIO_ADMIN_SENHA", "rootpassword1")
 	t.Setenv("GERMANIO_ADMIN_EMAIL", "admin@example.com")

@@ -1,0 +1,40 @@
+crie sistema Obras
+
+# Execuções sem GitLab, CI ou pipeline: cada obra monta seus passos a partir
+# do arquivo de montagem do próprio repositório (formato nativo).
+
+usuarios
+    tem
+        nome obrigatório
+        email obrigatório e único
+        senha min 8
+
+tenha login
+tenha cadastro
+
+obras
+    tem
+        nome obrigatório
+        caminho obrigatório e único
+        montagens
+        repositório
+    executa montagens a cada envio de código conforme "montagem.yml"
+    acesso
+        usuario
+            criar
+            ver
+
+repositório da obra pode começar com "montagem.yml" contendo "estagios: [construir, conferir]\netapas:\n  base:\n    estagio: construir\n    comandos: [mkdir -p saida, echo base > saida/b.txt]\n    artefatos: [saida/]\n    artefatos_expiram_em: 1 hora\n  lento:\n    estagio: construir\n    comandos: sleep 4\n  usa:\n    estagio: conferir\n    precisa: [base]\n    comandos: grep base saida/b.txt\n  so_principal:\n    estagio: conferir\n    comandos: echo principal\n    somente_em: [branch padrão]\n  fora:\n    estagio: conferir\n    comandos: echo fora\n    exceto_em: [main]\n  aprovar:\n    estagio: conferir\n    comandos: echo aprovado\n    quando: manual\n    pode_falhar: sim\n"
+
+montagens
+    tem
+        passos
+    acesso
+        usuario
+            criar
+            ver
+            ver passos
+
+passos
+    tem
+        artefatos arquivo

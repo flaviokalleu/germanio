@@ -266,6 +266,7 @@ func (a *intentAPI) payload(ctx *interp.Context, w *ast.Entity, id any, token st
 		artifacts = append(artifacts, l)
 	}
 	out["artefatos"] = artifacts
+	out["dependencias"] = a.dependencies(ctx, w, row)
 	for _, l := range spec.Script {
 		commands = append(commands, l)
 	}

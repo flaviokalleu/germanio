@@ -1,14 +1,27 @@
 # NÍVEL AVANÇADO / ADAPTADOR DE COMPATIBILIDADE
 #
 # Lê o formato .gitlab-ci.yml e o traduz para o arquivo de execução nativo do
-# Germanio (estagios, etapas, comandos, depois, quando, pode_falhar, imagem).
-# Também dá às etapas as variáveis CI_* que os scripts do GitLab esperam.
+# Germanio (estagios, etapas, comandos, depois, quando, pode_falhar, imagem,
+# artefatos, artefatos_expiram_em, precisa, recebe_artefatos_de, somente_em,
+# exceto_em, regras). Também dá às etapas as variáveis CI_* que os scripts do
+# GitLab esperam.
+#
+# rules/only/except: só condições sobre a branch são traduzidas
+# ($CI_COMMIT_BRANCH / $CI_COMMIT_REF_NAME com ==, !=, =~, !~, ou comparadas a
+# $CI_DEFAULT_BRANCH), unidas por && e ||. As execuções nascem de envios de
+# código para branches: $CI_PIPELINE_SOURCE vale "push", $CI_COMMIT_TAG e
+# $CI_MERGE_REQUEST_* não existem. Qualquer outra condição é recusada com uma
+# mensagem que diz o que escrever, em vez de ser ignorada em silêncio.
 
 traduza arquivos de execução com ler_gitlab_ci
 traduza variáveis das etapas com variaveis_gitlab
 
 logica
     definir CHAVES_GLOBAIS = ["stages", "variables", "image", "default", "include", "workflow", "before_script", "after_script", "services", "cache"]
+    definir VARIAVEIS_DA_BRANCH = ["$CI_COMMIT_BRANCH", "$CI_COMMIT_REF_NAME"]
+    definir REFS_DE_BRANCH = ["branches", "pushes", "web", "api"]
+    definir REFS_SEM_BRANCH = ["tags", "merge_requests", "schedules", "triggers", "external", "pipelines", "chat", "external_pull_requests"]
+    definir MOMENTOS = {on_success: "automatico", manual: "manual", always: "sempre", never: "nunca", delayed: "automatico"}
 
     funcao linhas(valor)
         se valor == nulo
@@ -42,12 +55,20 @@ logica
                 falhar(400, "o job " + nome + " usa a etapa \"" + estagio + "\", que não está em stages")
             definir momento = obter(job, "when", "on_success")
             definir etapa = {estagio: estagio, comandos: mesclar_listas(linhas(obter(job, "before_script", antes)), script), depois: linhas(obter(job, "after_script", depois)), imagem: obter(job, "image", imagem), pode_falhar: obter(job, "allow_failure", momento == "manual")}
-            etapa.artefatos = linhas(obter(obter(job, "artifacts", {}), "paths", nulo))
+            definir artefatos = obter(job, "artifacts", {})
+            etapa.artefatos = linhas(obter(artefatos, "paths", nulo))
+            definir expira = obter(artefatos, "expire_in", nulo)
+            se expira != nulo
+                definir tempo = duracao_germanio(expira, nome)
+                se tempo != nulo
+                    etapa.artefatos_expiram_em = tempo
             etapa.quando = "automatico"
             se momento == "manual"
                 etapa.quando = "manual"
             se momento == "always"
                 etapa.quando = "sempre"
+            traduzir_dependencias(job, etapa, nome)
+            traduzir_condicoes(job, etapa, nome)
             etapas[nome] = etapa
         se tamanho(chaves(etapas)) == 0
             falhar(400, "nenhum job definido")
@@ -59,8 +80,210 @@ logica
             todas = adicionar(todas, item)
         retornar todas
 
+    # needs → precisa; dependencies (ou needs com artifacts: false) → recebe_artefatos_de
+    funcao traduzir_dependencias(job, etapa, nome)
+        se tem(job, "needs")
+            definir precisa = []
+            definir com_artefatos = []
+            definir algum_sem_artefatos = falso
+            para cada item em linhas(job.needs)
+                se tipo(item) == "texto"
+                    precisa = adicionar(precisa, item)
+                    com_artefatos = adicionar(com_artefatos, item)
+                    continue
+                se tipo(item) != "objeto" ou nao tem(item, "job")
+                    falhar(400, "o job " + nome + " tem em needs um item sem job; escreva needs: [build] ou needs: [{job: build}] (needs de outro projeto ou pipeline ainda não são suportados)")
+                se obter(item, "optional", falso)
+                    precisa = adicionar(precisa, {etapa: item.job, opcional: verdadeiro})
+                senao
+                    precisa = adicionar(precisa, item.job)
+                se obter(item, "artifacts", verdadeiro)
+                    com_artefatos = adicionar(com_artefatos, item.job)
+                senao
+                    algum_sem_artefatos = verdadeiro
+            etapa.precisa = precisa
+            se algum_sem_artefatos
+                etapa.recebe_artefatos_de = com_artefatos
+        se tem(job, "dependencies")
+            etapa.recebe_artefatos_de = linhas(job.dependencies)
+
+    # rules → regras; only/except → somente_em/exceto_em
+    funcao traduzir_condicoes(job, etapa, nome)
+        se tem(job, "only")
+            etapa.somente_em = branches_de_refs(job.only, nome, "only")
+        se tem(job, "except")
+            etapa.exceto_em = branches_de_refs(job.except, nome, "except")
+        se tem(job, "rules")
+            definir regras = []
+            para cada regra em linhas(job.rules)
+                para cada nativa em regras_germanio(regra, job, nome)
+                    regras = adicionar(regras, nativa)
+            se tamanho(regras) == 0
+                regras = [{quando: "nunca"}]
+            etapa.regras = regras
+
+    funcao branches_de_refs(valor, nome, chave)
+        definir refs = valor
+        se tipo(valor) == "objeto"
+            para cada k em chaves(valor)
+                se k != "refs"
+                    falhar(400, "o job " + nome + " usa " + chave + ": " + k + ", que ainda não é suportado; use só nomes de branches em " + chave)
+            refs = obter(valor, "refs", [])
+        definir lista = []
+        para cada ref em linhas(refs)
+            se contem(REFS_DE_BRANCH, ref)
+                lista = adicionar(lista, "*")
+                continue
+            se contem(REFS_SEM_BRANCH, ref)
+                continue
+            se comeca_com(ref, "/")
+                lista = adicionar(lista, glob_de_regex(ref, nome))
+                continue
+            lista = adicionar(lista, ref)
+        retornar lista
+
+    # Uma regra do GitLab vira uma ou mais regras nativas (|| separa alternativas).
+    funcao regras_germanio(regra, job, nome)
+        se tipo(regra) != "objeto"
+            falhar(400, "o job " + nome + " tem em rules um item que não é um mapa; escreva rules: [{if: '$CI_COMMIT_BRANCH == \"main\"'}]")
+        para cada k em chaves(regra)
+            se nao contem(["if", "when", "allow_failure"], k)
+                falhar(400, "o job " + nome + " usa rules: " + k + ", que ainda não é suportado; use if com a branch, when e allow_failure")
+        definir base = {}
+        se tem(regra, "when")
+            se nao tem(MOMENTOS, regra.when)
+                falhar(400, "o job " + nome + " tem rules: when: " + texto(regra.when) + "; use on_success, manual, always ou never")
+            base.quando = MOMENTOS[regra.when]
+        se tem(regra, "allow_failure")
+            base.pode_falhar = regra.allow_failure
+        senao
+            se obter(regra, "when", "") == "manual" e nao tem(job, "allow_failure")
+                base.pode_falhar = falso
+        se nao tem(regra, "if")
+            retornar [base]
+        definir saida = []
+        para cada alternativa em dividir(regra["if"], "||")
+            definir nativa = condicao_germanio(alternativa, nome)
+            se nativa != nulo
+                para cada k em chaves(base)
+                    nativa[k] = base[k]
+                saida = adicionar(saida, nativa)
+        retornar saida
+
+    # Termos unidos por &&: devolve {em, exceto_em} ou nulo quando nunca vale.
+    funcao condicao_germanio(alternativa, nome)
+        definir nativa = {}
+        definir exceto = []
+        para cada parte em dividir(alternativa, "&&")
+            definir termo = termo_germanio(cortar(parte), nome)
+            se termo == nulo
+                retornar nulo
+            se tem(termo, "em")
+                se tem(nativa, "em")
+                    falhar(400, "o job " + nome + " compara a branch duas vezes com && em \"" + cortar(alternativa) + "\"; use || ou uma única comparação")
+                nativa.em = termo.em
+            se tem(termo, "exceto_em")
+                exceto = mesclar_listas(exceto, termo.exceto_em)
+        se tamanho(exceto) > 0
+            nativa.exceto_em = exceto
+        retornar nativa
+
+    # Um termo: {} sempre vale, nulo nunca vale, {em} ou {exceto_em}.
+    funcao termo_germanio(termo, nome)
+        definir erro = "o job " + nome + " usa a condição \"" + termo + "\", que ainda não é suportada; compare a branch, por exemplo $CI_COMMIT_BRANCH == \"main\""
+        definir operador = nulo
+        para cada op em ["!=", "==", "=~", "!~"]
+            se operador == nulo e contem(termo, op)
+                operador = op
+        se operador == nulo
+            se contem(VARIAVEIS_DA_BRANCH, termo) ou termo == "$CI_PIPELINE_SOURCE"
+                retornar {}
+            se termo == "$CI_COMMIT_TAG" ou comeca_com(termo, "$CI_MERGE_REQUEST_")
+                retornar nulo
+            falhar(400, erro)
+        definir lados = dividir(termo, operador)
+        se tamanho(lados) != 2
+            falhar(400, erro)
+        definir variavel = cortar(lados[0])
+        definir valor = sem_aspas(cortar(lados[1]))
+        definir igual = operador == "==" ou operador == "=~"
+        definir alvo = valor
+        se operador == "=~" ou operador == "!~"
+            alvo = glob_de_regex(valor, nome)
+        se valor == "$CI_DEFAULT_BRANCH"
+            alvo = "branch padrão"
+        se contem(VARIAVEIS_DA_BRANCH, variavel)
+            se valor == "null"
+                se igual
+                    retornar nulo
+                retornar {}
+            se igual
+                retornar {em: [alvo]}
+            retornar {exceto_em: [alvo]}
+        se variavel == "$CI_PIPELINE_SOURCE"
+            se (valor == "push") == igual
+                retornar {}
+            retornar nulo
+        se variavel == "$CI_COMMIT_TAG" ou comeca_com(variavel, "$CI_MERGE_REQUEST_")
+            se (valor == "null") == igual
+                retornar {}
+            retornar nulo
+        falhar(400, erro)
+
+    funcao sem_aspas(s)
+        se tamanho(s) >= 2 e (comeca_com(s, "\"") e termina_com(s, "\"") ou comeca_com(s, "'") e termina_com(s, "'"))
+            retornar substring(s, 1, tamanho(s) - 1)
+        retornar s
+
+    # /^release-.*$/ → release-*; o que não couber em nome com * é recusado.
+    funcao glob_de_regex(re, nome)
+        se nao comeca_com(re, "/") ou nao termina_com(re, "/") ou tamanho(re) < 3
+            falhar(400, "o job " + nome + " usa a expressão " + re + "; escreva-a entre barras, como /^release-.*$/")
+        definir r = substring(re, 1, tamanho(re) - 1)
+        definir inicio = "*"
+        definir fim = "*"
+        se comeca_com(r, "^")
+            r = substring(r, 1)
+            inicio = ""
+        se termina_com(r, "$")
+            r = substring(r, 0, tamanho(r) - 1)
+            fim = ""
+        r = substituir(substituir(r, "\\/", "/"), "\\-", "-")
+        r = substituir(r, ".*", "*")
+        r = substituir(r, "\\.", "§")
+        para cada c em [".", "+", "?", "(", ")", "[", "]", "{", "}", "|", "\\", "^", "$"]
+            se contem(r, c)
+                falhar(400, "o job " + nome + " usa a expressão " + re + ", que não cabe num nome de branch com *; use por exemplo /^release-.*$/ ou o nome da branch")
+        retornar inicio + substituir(r, "§", ".") + fim
+
+    # expire_in do GitLab ("1 week", "2 hrs 20 min", "3600") → "7 dias", ...
+    funcao duracao_germanio(valor, nome)
+        definir s = minusculo(cortar(texto(valor)))
+        se s == "never"
+            retornar nulo
+        definir unidades = {"s": "segundos", "sec": "segundos", "secs": "segundos", "second": "segundos", "seconds": "segundos", "m": "minutos", "min": "minutos", "mins": "minutos", "minute": "minutos", "minutes": "minutos", "h": "horas", "hr": "horas", "hrs": "horas", "hour": "horas", "hours": "horas", "d": "dias", "day": "dias", "days": "dias", "w": "semanas", "wk": "semanas", "wks": "semanas", "week": "semanas", "weeks": "semanas", "mo": "meses", "mos": "meses", "month": "meses", "months": "meses", "y": "anos", "yr": "anos", "yrs": "anos", "year": "anos", "years": "anos"}
+        definir palavras = []
+        para cada p em dividir(s, " ")
+            se cortar(p) != "" e cortar(p) != "and"
+                palavras = adicionar(palavras, cortar(p))
+        se tamanho(palavras) == 1 e eh_numero(palavras[0])
+            retornar palavras[0] + " segundos"
+        se tamanho(palavras) == 0
+            falhar(400, "o job " + nome + " tem artifacts: expire_in: " + s + "; escreva por exemplo \"1 week\" ou \"30 mins\"")
+        definir saida = []
+        definir i = 0
+        enquanto i < tamanho(palavras)
+            se i + 1 >= tamanho(palavras)
+                falhar(400, "o job " + nome + " tem artifacts: expire_in: " + s + "; escreva por exemplo \"1 week\" ou \"30 mins\"")
+            definir unidade = obter(unidades, palavras[i + 1], nulo)
+            se unidade == nulo
+                falhar(400, "o job " + nome + " tem artifacts: expire_in com a unidade \"" + palavras[i + 1] + "\"; use sec, mins, hrs, days, weeks, months ou years")
+            saida = adicionar(saida, palavras[i] + " " + unidade)
+            i = i + 2
+        retornar juntar(saida, " ")
+
     funcao variaveis_gitlab(t)
-        definir v = {CI: "true", GITLAB_CI: "true", CI_JOB_ID: t.id, CI_JOB_NAME: t.dados.nome, CI_JOB_STAGE: t.dados.etapa, CI_PIPELINE_ID: t.execucao.id, CI_COMMIT_SHA: t.execucao.versao, CI_COMMIT_REF_NAME: t.execucao.branch, CI_PROJECT_ID: t.dono.id, CI_PROJECT_PATH: t.repositorio}
+        definir v = {CI: "true", GITLAB_CI: "true", CI_JOB_ID: t.id, CI_JOB_NAME: t.dados.nome, CI_JOB_STAGE: t.dados.etapa, CI_PIPELINE_ID: t.execucao.id, CI_COMMIT_SHA: t.execucao.versao, CI_COMMIT_REF_NAME: t.execucao.branch, CI_COMMIT_BRANCH: t.execucao.branch, CI_PROJECT_ID: t.dono.id, CI_PROJECT_PATH: t.repositorio}
         se t.diretorio != nulo
             v.CI_PROJECT_DIR = t.diretorio
         retornar v

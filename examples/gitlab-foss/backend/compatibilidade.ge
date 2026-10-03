@@ -118,3 +118,5 @@ vocabulário da integração
     eventos_comentarios é "note_events"
     cabecalho_evento é "X-Gitlab-Event"
     cabecalho_token é "X-Gitlab-Token"
+    cabecalho_trabalho é "JOB-TOKEN"
+    artefatos_expiram_em é "artifacts_expire_at"

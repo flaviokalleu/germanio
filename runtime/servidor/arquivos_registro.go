@@ -225,13 +225,19 @@ func uploadOf(r *http.Request) *upload {
 // fileOp serves arquivo_ver / arquivo_enviar / arquivo_remover for row.
 func (a *intentAPI) fileOp(w http.ResponseWriter, r *http.Request, ctx *interp.Context, atual map[string]any, e *ast.Entity, row map[string]any, op string, deny func(map[string]any)) {
 	up := uploadOf(r)
-	if up == nil || row == nil || !a.in.Can(ctx, atual, e, "ver", row) {
+	// running work may read the artifacts it receives with its own token
+	byWork := op == "arquivo_ver" && up != nil && row != nil && atual == nil && a.workMayRead(ctx, r, e, up.field, row)
+	if up == nil || row == nil || !byWork && !a.in.Can(ctx, atual, e, "ver", row) {
 		a.fail(w, 404, a.msg("404", e))
 		return
 	}
 	field := strings.ToLower(up.field.Name)
 	old := metaOf(row[field])
 	if op == "arquivo_ver" {
+		if old != nil && isArtifactField(e, up.field) && artifactsExpired(row) {
+			a.fail(w, 404, map[string]any{"pt": "os artefatos expiraram em " + toStr(row[expiryField]), "en": "artifacts expired"}[a.app.Messages])
+			return
+		}
 		if old == nil {
 			a.fail(w, 404, "nenhum arquivo em "+field)
 			return
@@ -441,20 +447,8 @@ func (a *intentAPI) storeWorkFile(ctx *interp.Context, w *ast.Entity, row map[st
 		if err != nil {
 			return nil, err
 		}
-		key := strings.ToLower(f.Name)
-		old := metaOf(row[key])
-		b, _ := json.Marshal(up.meta)
-		if _, err := a.in.Op(ctx, w.Singular, "atualizar", row["id"], map[string]any{key: string(b)}); err != nil {
-			os.Remove(up.tmp)
+		if err := a.keepFile(ctx, w, row, f, up.tmp, up.meta); err != nil {
 			return nil, err
-		}
-		final := a.filePath(w, up.meta.Chave)
-		os.MkdirAll(filepath.Dir(final), 0o700)
-		if err := os.Rename(up.tmp, final); err != nil {
-			return nil, err
-		}
-		if old != nil {
-			os.Remove(a.filePath(w, old.Chave))
 		}
 		return map[string]any{"nome": up.meta.Nome, "tamanho": up.meta.Tamanho, "tipo": up.meta.Tipo}, nil
 	}
