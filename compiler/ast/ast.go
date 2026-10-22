@@ -424,12 +424,81 @@ func (c *CustomRoute) NodeType() string { return "CustomRoute" }
 // ==================== Custom Page ====================
 
 type CustomPage struct {
-	Path    string // URL path
-	Title   string
-	Content string // raw HTML content
+	Path     string // URL path
+	Title    string
+	Content  string         // raw HTML content (still supported as a fallback escape hatch)
+	Elements []*PageElement // declarative element tree (elementos block); alternative to Content
 }
 
 func (c *CustomPage) NodeType() string { return "CustomPage" }
+
+// ==================== Page Elements (declarative landing-page UI) ====================
+//
+// PageElement is the declarative, HTML/CSS/JS-free building block for
+// marketing/landing pages (the "elementos" block inside pagina). Unlike
+// UIElement (a flat single-node stub used by the strict Germanio engine),
+// PageElement supports children, hover effects and responsive rules, which
+// is what a real page layout needs.
+
+// PageElementKind identifies the kind of a declarative page element.
+type PageElementKind string
+
+const (
+	PageElNavbar    PageElementKind = "navbar"
+	PageElSection   PageElementKind = "secao"
+	PageElGrid      PageElementKind = "grade"
+	PageElItem      PageElementKind = "item"
+	PageElCard      PageElementKind = "cartao"
+	PageElTabs      PageElementKind = "abas"
+	PageElTab       PageElementKind = "aba"
+	PageElSteps     PageElementKind = "cadeia_passos"
+	PageElStep      PageElementKind = "passo"
+	PageElUnify     PageElementKind = "diagrama_unificacao"
+	PageElSide      PageElementKind = "lado"
+	PageElCenter    PageElementKind = "centro"
+	PageElLinks     PageElementKind = "links"
+	PageElLink      PageElementKind = "link"
+	PageElFooter    PageElementKind = "rodape"
+	PageElTitle     PageElementKind = "titulo"
+	PageElHighlight PageElementKind = "destaque"
+	PageElText      PageElementKind = "texto"
+	PageElBadge     PageElementKind = "selo"
+	PageElButton    PageElementKind = "botao"
+	PageElIcon      PageElementKind = "icone"
+	PageElImage     PageElementKind = "imagem"
+	PageElLogo      PageElementKind = "logo"
+	PageElCode      PageElementKind = "bloco_codigo"
+)
+
+// PageElement is a node in a declarative landing-page element tree.
+type PageElement struct {
+	Pos        diagnostics.Position
+	Kind       PageElementKind
+	Text       string            // primary text content (title/paragraph/button label/etc.)
+	Properties map[string]string // "cor", "para" (href), "tamanho", "alinhamento", "colunas",
+	// "estilo" (button/card variant), "icone", "linguagem", "fundo"
+	Children   []*PageElement
+	Hover      *HoverRule
+	Responsive []*ResponsiveRule
+}
+
+func (p *PageElement) NodeType() string { return "PageElement" }
+
+// HoverRule is a deterministic, CSS-only ":hover" effect attached to a PageElement.
+// "ao passar mouse [nos itens]" / "escala 1.05" / "duração 180ms"
+type HoverRule struct {
+	Scope    string // "self" (default) or "itens" (applies to each direct child)
+	Scale    string // e.g. "1.05"
+	Duration string // e.g. "180ms" or "0.2s"
+}
+
+// ResponsiveRule is a deterministic, CSS-only "@media" rule attached to a PageElement.
+// "em telas menores que 768px" / "esconda ..." / "mostre ..."
+type ResponsiveRule struct {
+	MaxWidth string   // "768px"
+	Hide     []string // "" = the element itself; "menu"/"menu hamburguer" reserved (navbar only)
+	Show     []string
+}
 
 // ==================== Sidebar Item ====================
 

@@ -2,9 +2,11 @@ package parser
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/flaviokalleu/germanio/compiler/ast"
+	"github.com/flaviokalleu/germanio/compiler/diagnostics"
 	"github.com/flaviokalleu/germanio/compiler/lexer"
 )
 
@@ -3110,6 +3112,13 @@ func (p *Parser) parsePaginas() error {
 					if !p.isAtEnd() && p.current().Type == lexer.TokenString {
 						page.Content = p.advance().Value
 					}
+				case "elementos", "elements":
+					p.advance()
+					elems, err := p.parsePageElements(0)
+					if err != nil {
+						return err
+					}
+					page.Elements = elems
 				default:
 					p.advance()
 				}
@@ -3122,6 +3131,498 @@ func (p *Parser) parsePaginas() error {
 		p.advance()
 	}
 	return nil
+}
+
+// ==================== Declarative Page Elements (landing-page UI DSL) ====================
+//
+// This subsystem parses the "elementos" block inside pagina — a declarative,
+// HTML/CSS/JS-free tree of PageElement nodes. It follows the same
+// indent-depth-comparison strategy as parseBlock (see above): the first
+// TokenIndent strictly greater than the caller's indent establishes the
+// level for this list of siblings; a shallower indent ends the level and
+// puts the token back for the caller.
+
+// parsePageElements parses the top-level list of elements right after
+// "elementos"/"elements". Any stray "ao passar mouse"/"em telas menores que"
+// found directly at this level (which have no element to attach to) are
+// parsed and discarded leniently, consistent with the rest of parsePaginas.
+func (p *Parser) parsePageElements(minIndent int) ([]*ast.PageElement, error) {
+	children, _, _, err := p.parseElementChildren(minIndent)
+	return children, err
+}
+
+// diagFail builds a coded diagnostics.Diagnostic for the legacy parser.
+// The legacy Parser (unlike geParser) carries no Filename/Source, so the
+// resulting message has no source-line excerpt — still a coded, actionable
+// error, just without the fancy pointer the strict engine's errors show.
+func (p *Parser) diagFail(t lexer.Token, code, msg, why, fix string) error {
+	return &diagnostics.Diagnostic{
+		Code:     code,
+		Position: diagnostics.Position{Line: t.Line, Column: t.Column},
+		Source:   p.program.Source,
+		Message:  msg,
+		Reason:   why,
+		Fix:      fix,
+	}
+}
+
+// pageElementKinds is the set of recognized element keywords.
+var pageElementKinds = map[ast.PageElementKind]bool{
+	ast.PageElNavbar: true, ast.PageElSection: true, ast.PageElGrid: true, ast.PageElItem: true,
+	ast.PageElCard: true, ast.PageElTabs: true, ast.PageElTab: true, ast.PageElSteps: true,
+	ast.PageElStep: true, ast.PageElUnify: true, ast.PageElSide: true, ast.PageElCenter: true,
+	ast.PageElLinks: true, ast.PageElLink: true, ast.PageElFooter: true, ast.PageElTitle: true,
+	ast.PageElHighlight: true, ast.PageElText: true, ast.PageElBadge: true, ast.PageElButton: true,
+	ast.PageElIcon: true, ast.PageElImage: true, ast.PageElLogo: true, ast.PageElCode: true,
+}
+
+// parseElementChildren parses a list of sibling lines at one indent level
+// under a page element (or under "elementos" itself), separating out
+// "ao passar mouse" (-> hover) and "em telas menores que" (-> responsive)
+// blocks from ordinary element children.
+func (p *Parser) parseElementChildren(minIndent int) ([]*ast.PageElement, *ast.HoverRule, []*ast.ResponsiveRule, error) {
+	var children []*ast.PageElement
+	var hover *ast.HoverRule
+	var responsive []*ast.ResponsiveRule
+	bodyIndent := -1
+
+	for !p.isAtEnd() {
+		tok := p.current()
+		if tok.Type == lexer.TokenNewline {
+			p.advance()
+			continue
+		}
+		if tok.Type != lexer.TokenIndent {
+			break
+		}
+		indent := tok.Indent
+		p.advance()
+
+		if bodyIndent == -1 {
+			if indent > minIndent {
+				bodyIndent = indent
+			} else {
+				p.pos--
+				return children, hover, responsive, nil
+			}
+		}
+		if indent < bodyIndent {
+			p.pos--
+			return children, hover, responsive, nil
+		}
+		if p.isAtEnd() || p.current().Type == lexer.TokenNewline {
+			continue
+		}
+		if p.isBlockKeyword() {
+			p.pos--
+			return children, hover, responsive, nil
+		}
+
+		switch p.current().Value {
+		case "ao":
+			h, err := p.parseHoverRule(bodyIndent)
+			if err != nil {
+				return nil, nil, nil, err
+			}
+			hover = h
+		case "em":
+			r, err := p.parseResponsiveRule(bodyIndent)
+			if err != nil {
+				return nil, nil, nil, err
+			}
+			responsive = append(responsive, r)
+		default:
+			el, err := p.parseOnePageElement(bodyIndent)
+			if err != nil {
+				return nil, nil, nil, err
+			}
+			if el != nil {
+				children = append(children, el)
+			}
+		}
+	}
+	return children, hover, responsive, nil
+}
+
+// parseOnePageElement parses a single element line (keyword + inline
+// same-line args) and then recurses into its indented body (children plus
+// any hover/responsive rules) via parseElementChildren.
+func (p *Parser) parseOnePageElement(indent int) (*ast.PageElement, error) {
+	tok := p.current()
+	kind := ast.PageElementKind(tok.Value)
+
+	if !pageElementKinds[kind] {
+		// Unknown word at element position: skip the whole line leniently,
+		// matching parsePaginas'/parseTema's own philosophy so one typo
+		// doesn't take down page rendering for the whole app.
+		p.skipToNextLine()
+		return nil, nil
+	}
+	p.advance()
+
+	el := &ast.PageElement{
+		Pos:        diagnostics.Position{Line: tok.Line, Column: tok.Column},
+		Kind:       kind,
+		Properties: map[string]string{},
+	}
+	if err := p.parseInlinePageElementArgs(el); err != nil {
+		return nil, err
+	}
+	p.skipToNextLine()
+
+	if el.Kind == ast.PageElCode {
+		text, found, err := p.tryParseCodeBlockString(indent)
+		if err != nil {
+			return nil, err
+		}
+		if found {
+			el.Text = text
+		}
+	}
+
+	children, hover, responsive, err := p.parseElementChildren(indent)
+	if err != nil {
+		return nil, err
+	}
+	el.Children = children
+	el.Hover = hover
+	el.Responsive = responsive
+	return el, nil
+}
+
+// tryParseCodeBlockString consumes a "bloco_codigo"'s indented triple-quoted
+// string body, if present, without disturbing the token stream otherwise.
+func (p *Parser) tryParseCodeBlockString(indent int) (string, bool, error) {
+	if p.current().Type != lexer.TokenIndent || p.current().Indent <= indent {
+		return "", false, nil
+	}
+	if p.pos+1 >= len(p.tokens) || p.tokens[p.pos+1].Type != lexer.TokenString {
+		return "", false, nil
+	}
+	p.advance() // indent
+	text := p.advance().Value
+	p.skipToNextLine()
+	return strings.TrimSpace(text), true, nil
+}
+
+// parseInlinePageElementArgs parses the same-line arguments/modifiers for
+// one element, per its kind. Everything here is lenient about ordering
+// where the vocabulary allows it, and simply stops (leaving the rest of the
+// line to be discarded by the caller's skipToNextLine) on anything it
+// doesn't recognize.
+func (p *Parser) parseInlinePageElementArgs(el *ast.PageElement) error {
+	switch el.Kind {
+	case ast.PageElNavbar:
+		if p.isNameToken(p.current()) {
+			v := p.current().Value
+			if v == "escuro" || v == "claro" || v == "dark" || v == "light" {
+				el.Properties["tema"] = p.advance().Value
+			}
+		}
+
+	case ast.PageElSection:
+		if p.current().Type == lexer.TokenString {
+			el.Text = p.advance().Value
+		}
+		for {
+			v := p.current().Value
+			switch v {
+			case "fundo":
+				p.advance()
+				if p.isNameToken(p.current()) {
+					el.Properties["fundo"] = ast.ResolveColor(p.advance().Value)
+				}
+			case "alinhamento":
+				p.advance()
+				if p.isNameToken(p.current()) {
+					el.Properties["alinhamento"] = p.advance().Value
+				}
+			default:
+				return nil
+			}
+		}
+
+	case ast.PageElGrid:
+		if p.current().Value == "colunas" {
+			p.advance()
+			tok := p.current()
+			if tok.Type != lexer.TokenNumber {
+				return p.diagFail(tok, "GE4404", "Número de colunas inválido",
+					"grade colunas precisa de um número inteiro positivo.", "Use grade colunas 3.")
+			}
+			n := p.advance().Value
+			iv, err := strconv.Atoi(n)
+			if err != nil || iv <= 0 {
+				return p.diagFail(tok, "GE4404", "Número de colunas inválido",
+					"grade colunas precisa de um número inteiro positivo.", "Use grade colunas 3.")
+			}
+			el.Properties["colunas"] = n
+		}
+
+	case ast.PageElCard:
+		if p.current().Value == "estilo" {
+			p.advance()
+			if p.isNameToken(p.current()) {
+				el.Properties["estilo"] = p.advance().Value
+			}
+		}
+
+	case ast.PageElTab, ast.PageElSide:
+		if p.current().Type == lexer.TokenString {
+			el.Text = p.advance().Value
+		}
+
+	case ast.PageElTitle:
+		if p.isNameToken(p.current()) {
+			v := p.current().Value
+			if v == "grande" || v == "media" || v == "média" || v == "pequena" {
+				el.Properties["tamanho"] = p.advance().Value
+			}
+		}
+		if p.current().Type == lexer.TokenString {
+			el.Text = p.advance().Value
+		}
+
+	case ast.PageElHighlight, ast.PageElText, ast.PageElBadge, ast.PageElIcon,
+		ast.PageElImage, ast.PageElLogo:
+		if p.current().Type == lexer.TokenString {
+			el.Text = p.advance().Value
+		}
+
+	case ast.PageElButton:
+		if p.current().Type != lexer.TokenString && p.isNameToken(p.current()) {
+			word := p.advance().Value
+			if word == "contorno" || word == "fantasma" {
+				el.Properties["estilo"] = word
+			} else {
+				el.Properties["cor"] = ast.ResolveColor(word)
+			}
+		}
+		if p.current().Type != lexer.TokenString && p.isNameToken(p.current()) &&
+			(p.current().Value == "contorno" || p.current().Value == "fantasma") {
+			el.Properties["estilo"] = p.advance().Value
+		}
+		if p.current().Type == lexer.TokenString {
+			el.Text = p.advance().Value
+		}
+		if p.current().Value == "para" {
+			p.advance()
+			if p.current().Type == lexer.TokenString {
+				el.Properties["para"] = p.advance().Value
+			}
+		}
+
+	case ast.PageElLink:
+		if p.current().Type == lexer.TokenString {
+			el.Text = p.advance().Value
+		}
+		if p.current().Type != lexer.TokenString && p.isNameToken(p.current()) && p.current().Value != "para" {
+			el.Properties["cor"] = ast.ResolveColor(p.advance().Value)
+		}
+		if p.current().Value == "para" {
+			p.advance()
+			if p.current().Type == lexer.TokenString {
+				el.Properties["para"] = p.advance().Value
+			}
+		}
+
+	case ast.PageElCode:
+		if p.current().Value == "linguagem" || p.current().Value == "language" {
+			p.advance()
+			if p.current().Type == lexer.TokenString {
+				el.Properties["linguagem"] = p.advance().Value
+			}
+		}
+
+		// ast.PageElItem, PageElAbas, PageElSteps, PageElStep, PageElUnify,
+		// PageElCenter, PageElLinks, PageElFooter: no inline arguments —
+		// everything is expressed via children.
+	}
+	return nil
+}
+
+// parseHoverRule parses:
+//
+//	ao passar mouse [nos itens]
+//	  escala 1.05
+//	  duração 180ms
+//
+// The current token is "ao" when this is called.
+func (p *Parser) parseHoverRule(lineIndent int) (*ast.HoverRule, error) {
+	p.advance() // 'ao'
+	rule := &ast.HoverRule{Scope: "self"}
+
+	for !p.isAtEnd() && p.current().Type != lexer.TokenNewline && p.current().Type != lexer.TokenIndent {
+		if p.current().Value == "nos" {
+			p.advance()
+			if !p.isAtEnd() && p.current().Value == "itens" {
+				p.advance()
+				rule.Scope = "itens"
+			}
+			continue
+		}
+		p.advance() // "passar", "mouse", or anything else — lenient
+	}
+
+	subIndent := -1
+	for !p.isAtEnd() {
+		tok := p.current()
+		if tok.Type == lexer.TokenNewline {
+			p.advance()
+			continue
+		}
+		if tok.Type != lexer.TokenIndent {
+			break
+		}
+		indent := tok.Indent
+		p.advance()
+
+		if subIndent == -1 {
+			if indent > lineIndent {
+				subIndent = indent
+			} else {
+				p.pos--
+				return rule, nil
+			}
+		}
+		if indent < subIndent {
+			p.pos--
+			return rule, nil
+		}
+		if p.isAtEnd() || p.current().Type == lexer.TokenNewline {
+			continue
+		}
+		if p.isBlockKeyword() {
+			p.pos--
+			return rule, nil
+		}
+
+		switch p.current().Value {
+		case "escala":
+			p.advance()
+			tok := p.current()
+			if tok.Type != lexer.TokenNumber {
+				return nil, p.diagFail(tok, "GE4403", "Escala inválida",
+					"escala precisa de um número.", "Use escala 1.05.")
+			}
+			v := p.advance().Value
+			if _, err := strconv.ParseFloat(v, 64); err != nil {
+				return nil, p.diagFail(tok, "GE4403", "Escala inválida",
+					"escala precisa de um número.", "Use escala 1.05.")
+			}
+			rule.Scale = v
+		case "duração", "duracao", "duration":
+			p.advance()
+			tok := p.current()
+			if tok.Type != lexer.TokenNumber {
+				return nil, p.diagFail(tok, "GE4401", "Duração inválida",
+					"duração precisa de um número seguido de ms ou s.", "Use duração 180ms.")
+			}
+			num := p.advance().Value
+			if p.current().Type != lexer.TokenIdentifier || (p.current().Value != "ms" && p.current().Value != "s") {
+				return nil, p.diagFail(p.current(), "GE4401", "Duração inválida",
+					"duração precisa terminar em ms ou s.", "Use duração 180ms ou 0.2s.")
+			}
+			rule.Duration = num + p.advance().Value
+		default:
+			p.skipToNextLine()
+		}
+	}
+	return rule, nil
+}
+
+// readResponsiveTarget reads an optional target name after esconda/mostre:
+// bare (self), "menu", or "menu hamburguer" (the last two only meaningful
+// directly under navbar — see ResponsiveRule docs).
+func (p *Parser) readResponsiveTarget() string {
+	if p.isAtEnd() || p.current().Type == lexer.TokenNewline || p.current().Type == lexer.TokenIndent {
+		return ""
+	}
+	if p.current().Value != "menu" {
+		p.skipToNextLine()
+		return ""
+	}
+	p.advance()
+	if !p.isAtEnd() && p.current().Value == "hamburguer" {
+		p.advance()
+		return "menu hamburguer"
+	}
+	return "menu"
+}
+
+// parseResponsiveRule parses:
+//
+//	em telas menores que 768px
+//	  esconda menu
+//	  mostre menu hamburguer
+//
+// The current token is "em" when this is called. v1 only supports "menores
+// que" (max-width), the only case present in the reference design.
+func (p *Parser) parseResponsiveRule(lineIndent int) (*ast.ResponsiveRule, error) {
+	p.advance() // 'em'
+	for !p.isAtEnd() && p.current().Type != lexer.TokenNewline && p.current().Type != lexer.TokenIndent &&
+		p.current().Type != lexer.TokenNumber {
+		p.advance() // "telas", "menores", "que" — lenient
+	}
+
+	tok := p.current()
+	if tok.Type != lexer.TokenNumber {
+		return nil, p.diagFail(tok, "GE4402", "Largura de tela inválida",
+			"em telas menores que precisa de um número seguido de px.", "Use em telas menores que 768px.")
+	}
+	width := p.advance().Value
+	if p.current().Type != lexer.TokenIdentifier || p.current().Value != "px" {
+		return nil, p.diagFail(p.current(), "GE4402", "Largura de tela inválida",
+			"a largura deve terminar em px.", "Use em telas menores que 768px.")
+	}
+	p.advance()
+	rule := &ast.ResponsiveRule{MaxWidth: width + "px"}
+
+	subIndent := -1
+	for !p.isAtEnd() {
+		t := p.current()
+		if t.Type == lexer.TokenNewline {
+			p.advance()
+			continue
+		}
+		if t.Type != lexer.TokenIndent {
+			break
+		}
+		indent := t.Indent
+		p.advance()
+
+		if subIndent == -1 {
+			if indent > lineIndent {
+				subIndent = indent
+			} else {
+				p.pos--
+				return rule, nil
+			}
+		}
+		if indent < subIndent {
+			p.pos--
+			return rule, nil
+		}
+		if p.isAtEnd() || p.current().Type == lexer.TokenNewline {
+			continue
+		}
+		if p.isBlockKeyword() {
+			p.pos--
+			return rule, nil
+		}
+
+		switch p.current().Value {
+		case "esconda":
+			p.advance()
+			rule.Hide = append(rule.Hide, p.readResponsiveTarget())
+		case "mostre":
+			p.advance()
+			rule.Show = append(rule.Show, p.readResponsiveTarget())
+		default:
+			p.skipToNextLine()
+		}
+	}
+	return rule, nil
 }
 
 // parseSidebarBlock parses sidebar customization.

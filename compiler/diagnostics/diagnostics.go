@@ -44,5 +44,12 @@ var Explanations = map[string]string{
 	"GE3001": "Módulo inválido. Use um arquivo .ge relativo ao projeto, sem ciclos de importação.",
 	"GE3002": "Função privada. Exporte uma função pública que a chame, por exemplo: publico(x) = interna(x).",
 	"GE4102": "Unidade incorreta. Arredondamento usa comprimento, como 16px; rotação usa ângulo, como 45deg.",
+	"GE4401": "Duração inválida. Use um número seguido de ms ou s, como 180ms ou 0.2s.",
+	"GE4402": "Largura de tela inválida. Use um número inteiro seguido de px, como 768px.",
+	"GE4403": "Escala inválida. Use um número, como 1.05.",
+	"GE4404": "Número de colunas inválido. Use um número inteiro positivo, como grade colunas 3.",
+	"GE4410": "Elemento fora de contexto. cartao e item devem estar dentro de grade, secao ou aba.",
+	"GE4411": "Diagrama de unificação incompleto. Use lado \"esquerda\", centro e lado \"direita\".",
+	"GE4412": "Bloco de abas vazio. Toda abas precisa de pelo menos uma aba.",
 	"GE9001": "Limite de execução excedido. Verifique a condição do loop ou da recursão.",
 }

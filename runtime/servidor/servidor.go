@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"html"
 	"io"
 	"mime"
 	"net"
@@ -153,9 +154,19 @@ func (s *Servidor) Iniciar() error {
 			if title == "" {
 				title = s.Program.System.Name
 			}
+
+			var bodyHTML, extraCSS string
+			if len(pg.Elements) > 0 {
+				// Declarative "elementos" tree — the pure-Germanio path,
+				// zero raw HTML/CSS/JS authored by the user.
+				bodyHTML, extraCSS = RenderPageElements(pg.Elements, s.Program.Theme)
+			} else {
+				bodyHTML = pg.Content
+			}
+
 			pageHTML := fmt.Sprintf(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>%s</title>
-<style>body{font-family:system-ui;margin:0;padding:20px}</style></head><body>%s</body></html>`,
-				title, pg.Content)
+<style>body{font-family:system-ui;margin:0;padding:20px}%s</style></head><body>%s</body></html>`,
+				html.EscapeString(title), extraCSS, bodyHTML)
 			w.Write([]byte(pageHTML))
 		})
 	}
